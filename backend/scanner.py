@@ -1,0 +1,562 @@
+"""
+scanner.py — Library walker, ComicInfo.xml parser, thumbnail generator.
+
+Rules:
+- Incremental only: INSERT new, UPDATE changed, FLAG missing — never DELETE
+- Thumbnail generated on first scan, regenerated if file changes
+- format_group detected from folder path ("Series" or "Singles"), never from XML
+- Genres are the only multi-value field stored in a junction table
+- All other credit/list fields stored as raw CSV strings
+"""
+
+import logging
+import os
+import re
+import zipfile
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+from xml.etree import ElementTree as ET
+
+from PIL import Image
+from sqlalchemy.orm import Session
+
+from backend import config
+from backend.models import Issue, IssueGenre, ReadingProgress
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Progress tracking (used by /api/scan/status endpoint)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class ScanProgress:
+    running: bool = False
+    total: int = 0
+    processed: int = 0
+    new: int = 0
+    updated: int = 0
+    skipped: int = 0
+    missing: int = 0
+    errors: int = 0
+    log: list[str] = field(default_factory=list)
+    started_at: Optional[datetime] = None
+    finished_at: Optional[datetime] = None
+
+    def add_log(self, msg: str):
+        logger.info(msg)
+        self.log.append(msg)
+        # Keep log from growing unbounded
+        if len(self.log) > 500:
+            self.log = self.log[-500:]
+
+
+# Module-level singleton — the API status endpoint reads this
+scan_progress = ScanProgress()
+
+# Tracks ALL metadata updates (editor rescans + full scan) since the last full
+# scan completed. _since_scan_count accumulates continuously; at the end of
+# each full scan it is snapshotted into _last_cycle_changes then reset to 0.
+_since_scan_count: int = 0
+_last_cycle_changes: int = 0
+
+
+def get_changes_last_cycle() -> int:
+    return _last_cycle_changes
+
+
+# ---------------------------------------------------------------------------
+# XML parsing helpers
+# ---------------------------------------------------------------------------
+
+def _text(element: Optional[ET.Element], tag: str) -> Optional[str]:
+    """Return stripped text for a child tag, or None if absent/empty/self-closing."""
+    if element is None:
+        return None
+    child = element.find(tag)
+    if child is None:
+        return None
+    # A self-closing tag (<Number />) has text=None; an empty tag (<Number></Number>) has text=""
+    if not child.text or not child.text.strip():
+        return None
+    return child.text.strip()
+
+
+def _int(element: Optional[ET.Element], tag: str) -> Optional[int]:
+    raw = _text(element, tag)
+    if raw is None:
+        return None
+    try:
+        return int(float(raw))  # handle "1.0" style strings
+    except (ValueError, TypeError):
+        return None
+
+
+def _bool_on(element: Optional[ET.Element], tag: str) -> bool:
+    """True only if the tag text is exactly 'on' (case-insensitive). Absent/empty = False."""
+    raw = _text(element, tag)
+    if raw is None:
+        return False
+    return raw.lower() == "on"
+
+
+def _language(element: Optional[ET.Element]) -> Optional[str]:
+    """Check <Language> first, then <LanguageISO> — store whichever is present."""
+    return _text(element, "Language") or _text(element, "LanguageISO")
+
+
+def _genres(element: Optional[ET.Element]) -> list[str]:
+    """Split <Genre> CSV into a list of stripped, non-empty strings."""
+    raw = _text(element, "Genre")
+    if not raw:
+        return []
+    return [g.strip() for g in raw.split(",") if g.strip()]
+
+
+# ---------------------------------------------------------------------------
+# Filename fallback parser
+# ---------------------------------------------------------------------------
+
+_FILENAME_RE = re.compile(
+    r"^(?P<series>.+?)\s*#(?P<number>[\w½]+)\s*(?:\((?P<year>\d{4})\))?"
+    r"(?:\s*.+)?\.cbz$",
+    re.IGNORECASE,
+)
+
+
+def _parse_filename(filename: str) -> dict:
+    """
+    Extract metadata from filename when ComicInfo.xml is missing/corrupt.
+    Pattern: Series Name #Number (Year).cbz
+    Returns a dict of extracted fields; unrecognised fields are None.
+    """
+    m = _FILENAME_RE.match(filename)
+    if not m:
+        # Minimal fallback — just use the stem as series name
+        stem = Path(filename).stem
+        return {"series": stem, "number": None, "year": None}
+
+    return {
+        "series": m.group("series").strip(),
+        "number": m.group("number"),
+        "year": int(m.group("year")) if m.group("year") else None,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Format group detection
+# ---------------------------------------------------------------------------
+
+def _format_group(file_path: str) -> str:
+    """Derive format_group from folder path. 'Singles' takes priority."""
+    if config.SINGLES_FOLDER in file_path:
+        return "Singles"
+    if config.SERIES_FOLDER in file_path:
+        return "Series"
+    return "Series"  # safe default
+
+
+# ---------------------------------------------------------------------------
+# Thumbnail generation
+# ---------------------------------------------------------------------------
+
+def _generate_thumbnail(cbz_path: str, issue_id: int) -> Optional[str]:
+    """
+    Open the CBZ, find the first image alphabetically, resize to thumbnail_size wide,
+    save as backend/thumbnails/{issue_id}.jpg.
+    Returns the thumbnail path string, or None on failure.
+    Never raises — a bad/corrupt image is logged and skipped.
+    """
+    config.THUMBNAIL_DIR.mkdir(parents=True, exist_ok=True)
+    thumb_path = config.THUMBNAIL_DIR / f"{issue_id}.jpg"
+
+    # Tell Pillow to be lenient with truncated/corrupt images
+    from PIL import ImageFile
+    ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+    img = None
+    try:
+        with zipfile.ZipFile(cbz_path, "r") as zf:
+            image_files = sorted(
+                name for name in zf.namelist()
+                if name.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".gif"))
+                and "comicinfo" not in name.lower()
+            )
+            if not image_files:
+                logger.warning("No images found in %s", cbz_path)
+                return None
+
+            # Try images in order until one succeeds — first may be corrupt
+            for cover_name in image_files[:3]:
+                try:
+                    with zf.open(cover_name) as img_file:
+                        raw = img_file.read()  # read all bytes first — avoids zip-entry-closed issues
+                    from io import BytesIO
+                    img = Image.open(BytesIO(raw))
+                    img.load()
+                    break  # success
+                except Exception as img_exc:
+                    logger.warning("Cover image unreadable in %s (%s): %s",
+                                   cbz_path, cover_name, img_exc)
+                    img = None
+
+        if img is None:
+            logger.error("All cover attempts failed for %s", cbz_path)
+            return None
+
+        # Resize maintaining aspect ratio
+        target_width = config.THUMBNAIL_SIZE
+        w, h = img.size
+        target_height = int(h * target_width / w) if w > 0 else target_width
+
+        img = img.convert("RGB")  # ensure JPEG-safe colour mode
+        img = img.resize((target_width, target_height), Image.LANCZOS)
+        img.save(str(thumb_path), "JPEG", quality=85, optimize=True)
+        return str(thumb_path)
+
+    except zipfile.BadZipFile:
+        logger.error("Thumbnail skipped — bad zip: %s", cbz_path)
+        return None
+    except Exception as exc:
+        logger.error("Thumbnail failed for %s: %s", cbz_path, exc)
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Single-file scan (called for new files and changed files)
+# ---------------------------------------------------------------------------
+
+def _parse_cbz(file_path: str) -> tuple[dict, str]:
+    """
+    Open a CBZ and parse its ComicInfo.xml.
+    Returns (metadata_dict, metadata_source) where source is "xml" or "filename".
+    """
+    filename = Path(file_path).name
+    metadata_source = "xml"
+    root_el = None
+
+    try:
+        with zipfile.ZipFile(file_path, "r") as zf:
+            # ComicInfo.xml must be at the root of the archive (case-insensitive)
+            xml_names = [n for n in zf.namelist()
+                         if n.lower() == "comicinfo.xml"]
+            if xml_names:
+                with zf.open(xml_names[0]) as xml_file:
+                    tree = ET.parse(xml_file)
+                    root_el = tree.getroot()
+            else:
+                metadata_source = "filename"
+    except zipfile.BadZipFile:
+        logger.warning("Bad zip file: %s", file_path)
+        metadata_source = "filename"
+    except ET.ParseError:
+        logger.warning("Corrupt ComicInfo.xml in: %s", file_path)
+        metadata_source = "filename"
+    except Exception as exc:
+        logger.error("Unexpected error reading %s: %s", file_path, exc)
+        metadata_source = "filename"
+
+    if metadata_source == "filename" or root_el is None:
+        fallback = _parse_filename(filename)
+        return {
+            "series": fallback["series"],
+            "volume": None,
+            "number": fallback["number"],
+            "title": fallback["series"],
+            "year": fallback["year"],
+            "month": None,
+            "publisher": None,
+            "format": None,
+            "summary": None,
+            "story_arc": None,
+            "story_arc_number": None,
+            "writer": None,
+            "penciller": None,
+            "inker": None,
+            "colorist": None,
+            "letterer": None,
+            "cover_artist": None,
+            "characters": None,
+            "teams": None,
+            "locations": None,
+            "age_rating": None,
+            "language": None,
+            "black_and_white": False,
+            "manga": "No",
+            "page_count": None,
+            "count": None,
+            "genres": [],
+        }, "filename"
+
+    # --- Full XML parse ---
+    # Verify actual image count vs XML page_count
+    actual_page_count = None
+    try:
+        with zipfile.ZipFile(file_path, "r") as zf:
+            actual_page_count = sum(
+                1 for n in zf.namelist()
+                if n.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".gif"))
+            )
+    except Exception:
+        pass
+
+    xml_page_count = _int(root_el, "PageCount")
+    page_count = actual_page_count if actual_page_count is not None else xml_page_count
+
+    series = _text(root_el, "Series") or _parse_filename(filename)["series"]
+
+    return {
+        "series": series,
+        "volume": _int(root_el, "Volume"),
+        "number": _text(root_el, "Number"),
+        "title": _text(root_el, "Title") or series,
+        "year": _int(root_el, "Year"),
+        "month": _int(root_el, "Month"),
+        "publisher": _text(root_el, "Publisher"),
+        "format": _text(root_el, "Format"),
+        "summary": _text(root_el, "Summary"),
+        "story_arc": _text(root_el, "StoryArc"),
+        "story_arc_number": _int(root_el, "StoryArcNumber"),
+        "writer": _text(root_el, "Writer"),
+        "penciller": _text(root_el, "Penciller"),
+        "inker": _text(root_el, "Inker"),
+        "colorist": _text(root_el, "Colorist"),
+        "letterer": _text(root_el, "Letterer"),
+        "cover_artist": _text(root_el, "CoverArtist"),
+        "characters": _text(root_el, "Characters"),
+        "teams": _text(root_el, "Teams"),
+        "locations": _text(root_el, "Locations"),
+        "age_rating": _text(root_el, "AgeRating"),
+        "language": _language(root_el),
+        "black_and_white": _bool_on(root_el, "BlackAndWhite"),
+        "manga": _text(root_el, "Manga") or "No",
+        "page_count": page_count,
+        "count": _int(root_el, "Count"),
+        "genres": _genres(root_el),
+    }, "xml"
+
+
+def _apply_metadata(issue: Issue, meta: dict, source: str,
+                    file_path: str, mtime: datetime):
+    """Write parsed metadata dict into an Issue ORM object."""
+    issue.series          = meta["series"]
+    issue.volume          = meta["volume"]
+    issue.number          = meta["number"]
+    issue.title           = meta["title"]
+    issue.year            = meta["year"]
+    issue.month           = meta["month"]
+    issue.publisher       = meta["publisher"]
+    issue.format          = meta["format"]
+    issue.format_group    = _format_group(file_path)
+    issue.summary         = meta["summary"]
+    issue.story_arc       = meta["story_arc"]
+    issue.story_arc_number = meta["story_arc_number"]
+    issue.writer          = meta["writer"]
+    issue.penciller       = meta["penciller"]
+    issue.inker           = meta["inker"]
+    issue.colorist        = meta["colorist"]
+    issue.letterer        = meta["letterer"]
+    issue.cover_artist    = meta["cover_artist"]
+    issue.characters      = meta["characters"]
+    issue.teams           = meta["teams"]
+    issue.locations       = meta["locations"]
+    issue.age_rating      = meta["age_rating"]
+    issue.language        = meta["language"]
+    issue.black_and_white = meta["black_and_white"]
+    issue.manga           = meta["manga"]
+    issue.page_count      = meta["page_count"]
+    issue.count           = meta["count"]
+    issue.metadata_source = source
+    issue.date_modified   = mtime
+    issue.missing         = False
+
+
+def _sync_genres(db: Session, issue: Issue, genre_list: list[str]):
+    """Replace the issue's genre rows with the current parsed list."""
+    # Delete existing
+    for g in list(issue.genres):
+        db.delete(g)
+    db.flush()
+    # Insert new
+    for genre_name in genre_list:
+        db.add(IssueGenre(issue_id=issue.id, genre_name=genre_name))
+
+
+def _ensure_progress(db: Session, issue: Issue):
+    """Create a ReadingProgress row if one doesn't exist yet."""
+    if issue.progress is None:
+        db.add(ReadingProgress(issue_id=issue.id, status="unread", current_page=0))
+
+
+# ---------------------------------------------------------------------------
+# Scan a single file (also used by POST /api/scan/file)
+# ---------------------------------------------------------------------------
+
+def scan_single_file(file_path: str, db: Session) -> str:
+    """
+    Scan or rescan one CBZ file.
+    Returns one of: "new", "updated", "skipped", "error"
+    """
+    file_path = str(Path(file_path).resolve())
+
+    try:
+        mtime = datetime.utcfromtimestamp(os.path.getmtime(file_path))
+    except FileNotFoundError:
+        # File has disappeared since we started — flag it if it's in the DB
+        issue = db.query(Issue).filter(Issue.file_path == file_path).first()
+        if issue:
+            issue.missing = True
+            db.commit()
+        return "error"
+    except Exception as exc:
+        logger.error("Cannot stat %s: %s", file_path, exc)
+        return "error"
+
+    existing = db.query(Issue).filter(Issue.file_path == file_path).first()
+
+    # --- Skip if unchanged ---
+    if existing and existing.date_modified:
+        # Compare to the nearest second to avoid float precision issues
+        if abs((existing.date_modified - mtime).total_seconds()) < 1:
+            return "skipped"
+
+    # --- Parse metadata ---
+    try:
+        meta, source = _parse_cbz(file_path)
+    except Exception as exc:
+        logger.error("Parse error for %s: %s", file_path, exc)
+        return "error"
+
+    global _since_scan_count
+
+    if existing:
+        # UPDATE
+        _apply_metadata(existing, meta, source, file_path, mtime)
+        db.flush()
+        _sync_genres(db, existing, meta["genres"])
+        thumb = _generate_thumbnail(file_path, existing.id)
+        if thumb:
+            existing.cover_path = thumb
+        db.commit()
+        _since_scan_count += 1
+        return "updated"
+    else:
+        # INSERT
+        issue = Issue(file_path=file_path, date_added=datetime.utcnow())
+        _apply_metadata(issue, meta, source, file_path, mtime)
+        db.add(issue)
+        db.flush()
+        _sync_genres(db, issue, meta["genres"])
+        _ensure_progress(db, issue)
+        thumb = _generate_thumbnail(file_path, issue.id)
+        if thumb:
+            issue.cover_path = thumb
+        db.commit()
+        _since_scan_count += 1
+        return "new"
+
+
+# ---------------------------------------------------------------------------
+# Full library scan
+# ---------------------------------------------------------------------------
+
+def scan_library(db: Session):
+    """
+    Walk the entire library and incrementally update the DB.
+    Updates the module-level scan_progress object throughout.
+    Files in DB that are no longer on disk are flagged missing=True.
+    """
+    global scan_progress
+
+    scan_progress = ScanProgress(running=True, started_at=datetime.utcnow())
+    scan_progress.add_log("Scan started")
+
+    library_root = config.LIBRARY_ROOT
+
+    if not os.path.isdir(library_root):
+        scan_progress.add_log(f"ERROR: library_root not found: {library_root}")
+        scan_progress.running = False
+        scan_progress.finished_at = datetime.utcnow()
+        return
+
+    # ---- Collect all CBZ paths on disk ----
+    exclude = config.SCAN_EXCLUDE  # folder name fragments to skip e.g. ["Processing"]
+    if exclude:
+        scan_progress.add_log(f"Excluding folders: {exclude}")
+
+    disk_paths: set[str] = set()
+    for dirpath, dirs, filenames in os.walk(library_root):
+        # Prune excluded directories in-place so os.walk doesn't descend into them
+        if exclude:
+            dirs[:] = [d for d in dirs if d not in exclude]
+
+        # Also skip if any path component matches an exclusion (catches nested cases)
+        path_parts = Path(dirpath).parts
+        if exclude and any(part in exclude for part in path_parts):
+            continue
+
+        for fname in filenames:
+            if fname.lower().endswith(".cbz"):
+                full = str(Path(dirpath) / fname)
+                disk_paths.add(full)
+
+    scan_progress.total = len(disk_paths)
+    scan_progress.add_log(f"Found {len(disk_paths)} CBZ files on disk")
+
+    # ---- Process each file ----
+    for file_path in sorted(disk_paths):
+        result = scan_single_file(file_path, db)
+        scan_progress.processed += 1
+
+        if result == "new":
+            scan_progress.new += 1
+            scan_progress.add_log(f"NEW: {Path(file_path).name}")
+        elif result == "updated":
+            scan_progress.updated += 1
+            scan_progress.add_log(f"UPDATED: {Path(file_path).name}")
+        elif result == "skipped":
+            scan_progress.skipped += 1
+        elif result == "error":
+            scan_progress.errors += 1
+            scan_progress.add_log(f"ERROR: {Path(file_path).name}")
+
+    # ---- Handle files in DB that are no longer on disk ----
+    # Also silently delete any records whose path falls inside an excluded folder —
+    # these were scanned before the exclusion was added and should be cleaned up.
+    all_db_issues = db.query(Issue).filter(Issue.missing == False).all()  # noqa: E712
+    for issue in all_db_issues:
+        if issue.file_path in disk_paths:
+            continue  # still on disk and in scope — fine
+
+        # Check if this path lives inside an excluded folder
+        path_parts = Path(issue.file_path).parts
+        if exclude and any(part in exclude for part in path_parts):
+            db.delete(issue)
+            scan_progress.add_log(f"REMOVED (excluded folder): {Path(issue.file_path).name}")
+            continue
+
+        # Genuinely missing from disk
+        issue.missing = True
+        scan_progress.missing += 1
+        scan_progress.add_log(f"MISSING: {Path(issue.file_path).name}")
+
+    db.commit()
+
+    scan_progress.add_log(
+        f"Scan complete — "
+        f"new={scan_progress.new}, "
+        f"updated={scan_progress.updated}, "
+        f"skipped={scan_progress.skipped}, "
+        f"missing={scan_progress.missing}, "
+        f"errors={scan_progress.errors}"
+    )
+    scan_progress.running = False
+    scan_progress.finished_at = datetime.utcnow()
+
+    # Snapshot the accumulated change count (includes editor rescans + this
+    # scan's own detections), then reset for the next cycle.
+    global _since_scan_count, _last_cycle_changes
+    _last_cycle_changes = _since_scan_count
+    _since_scan_count = 0

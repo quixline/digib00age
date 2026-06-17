@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ComicVault</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-page="library">
+
+  <header class="site-header">
+    <div class="container inner">
+      <a href="/" class="site-logo">ComicVault</a>
+
+      <!-- Top-level surface tabs -->
+      <nav class="surface-nav" role="tablist" aria-label="Browse surface">
+        <button class="surface-btn active" data-surface="home"   role="tab" aria-selected="true">Home</button>
+        <button class="surface-btn"        data-surface="series" role="tab" aria-selected="false">Series</button>
+        <button class="surface-btn"        data-surface="singles"role="tab" aria-selected="false">Singles</button>
+        <button class="surface-btn"        data-surface="all"    role="tab" aria-selected="false">All</button>
+        <button class="surface-btn"        data-surface="2000ad" role="tab" aria-selected="false">2000 AD</button>
+      </nav>
+
+      <!-- Inline search (shown on Series/Singles/All surfaces) -->
+      <div class="search-wrap" id="searchWrap" hidden>
+        <input
+          type="search"
+          id="searchInput"
+          class="search-input"
+          placeholder="Search…"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <button class="search-clear" id="searchClear" aria-label="Clear search">&#x2715;</button>
+      </div>
+
+      <a href="/admin" class="settings-btn" title="Admin / Settings" aria-label="Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ── HOME SURFACE ──────────────────────────────────────────────────── -->
+    <div id="homeView">
+      <!-- Continue reading strip -->
+      <section class="continue-section" id="continueSection" hidden>
+        <p class="section-label">Continue Reading</p>
+        <div class="continue-strip" id="continueStrip"></div>
+      </section>
+
+      <div id="homeStrips">
+        <div class="loading-state">Loading…</div>
+      </div>
+    </div>
+
+    <!-- ── BROWSE SURFACES (Series / Singles / All) ───────────────────────── -->
+    <div id="browseView" hidden>
+
+      <!-- Single controls bar: pills · sort · grid/list · grouping · filters · count -->
+      <div class="browse-controls">
+        <div class="status-pills" role="group" aria-label="Filter by read status">
+          <button class="status-pill active" data-status="">All</button>
+          <button class="status-pill" data-status="unread">Unread</button>
+          <button class="status-pill" data-status="reading">Reading</button>
+          <button class="status-pill" data-status="read">Read</button>
+        </div>
+
+        <button class="sort-btn" id="sortBtn" title="Sort order">A–Z</button>
+        <button class="view-toggle-btn" id="viewToggle" title="Toggle list/grid view">&#9783;</button>
+
+        <select class="filter-select group-by-select" id="groupBySelect" aria-label="Group by">
+          <option value="">No grouping</option>
+          <option value="year">Year</option>
+          <option value="genre">Genre</option>
+          <option value="publisher">Publisher</option>
+          <option value="writer">Writer</option>
+        </select>
+
+        <select class="filter-select" id="genreFilter"     aria-label="Genre"><option value="">Genre</option></select>
+        <select class="filter-select" id="writerFilter"    aria-label="Writer"><option value="">Writer</option></select>
+        <select class="filter-select" id="artistFilter"    aria-label="Artist"><option value="">Artist</option></select>
+        <select class="filter-select" id="formatFilter"    aria-label="Format"><option value="">Format</option></select>
+        <select class="filter-select" id="decadeFilter"    aria-label="Decade"><option value="">Decade</option></select>
+        <select class="filter-select" id="yearFilter"      aria-label="Year"><option value="">Year</option></select>
+        <select class="filter-select" id="publisherFilter" aria-label="Publisher"><option value="">Publisher</option></select>
+        <select class="filter-select" id="ratingFilter"    aria-label="Rating"><option value="">Rating</option></select>
+        <select class="filter-select" id="bwFilter"        aria-label="B&amp;W">
+          <option value="">B&amp;W</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+        <button class="filter-clear" id="filterClear">Clear</button>
+
+        <span class="browse-count" id="browseCount"></span>
+      </div>
+
+      <!-- Cover grid -->
+      <div class="cover-grid" id="coverGrid">
+        <div class="loading-state">Loading library…</div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination" id="pagination"></div>
+    </div>
+
+    <!-- ── 2000 AD SURFACE ──────────────────────────────────────────────── -->
+    <div id="adView" hidden>
+      <!-- Level 1: year grid -->
+      <div id="adYearGrid">
+        <div class="loading-state">Loading…</div>
+      </div>
+      <!-- Level 2: year detail (hidden until a year is clicked) -->
+      <div id="adYearDetail" hidden>
+        <nav class="back-nav">
+          <button class="btn-primary" id="adBackBtn">&#x2190; All Years</button>
+        </nav>
+        <div id="adYearContent">
+          <div class="loading-state">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

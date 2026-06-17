@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ComicVault — Admin</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-page="admin">
+
+  <header class="site-header">
+    <div class="container inner">
+      <a href="/" class="site-logo">ComicVault</a>
+      <span class="admin-page-label">Admin</span>
+      <a href="/admin" class="settings-btn settings-btn--active" title="Admin / Settings" aria-label="Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <main class="container admin-main">
+
+    <!-- ── Top action row ──────────────────────────────────────────────────── -->
+    <div class="admin-action-row">
+      <a href="/" class="btn-primary">&#x2190; Back</a>
+      <a href="/guide" target="_blank" rel="noopener" class="btn-admin-action">User Guide</a>
+      <button class="btn-admin-action" id="backupBtn">Backup Database</button>
+      <button class="btn-admin-action" disabled title="Password management coming in V2">Password Reset</button>
+    </div>
+
+    <!-- ── Library Stats ───────────────────────────────────────────────────── -->
+    <section class="admin-section">
+      <h2 class="admin-section-heading">Library Stats</h2>
+      <div class="stat-grid" id="statGrid">
+        <div class="loading-state">Loading…</div>
+      </div>
+    </section>
+
+    <!-- ── Library Scan ────────────────────────────────────────────────────── -->
+    <section class="admin-section">
+      <h2 class="admin-section-heading">Library Scan</h2>
+      <div class="stat-grid" id="scanGrid">
+        <div class="loading-state">Loading…</div>
+      </div>
+    </section>
+
+    <!-- ── Library Folders ─────────────────────────────────────────────────── -->
+    <section class="admin-section">
+      <h2 class="admin-section-heading">Library Folders</h2>
+
+      <div class="admin-card">
+        <div class="admin-card-label">Scan Roots</div>
+        <div class="folder-list" id="rootList"></div>
+        <div class="folder-add-row">
+          <input type="text" class="admin-input" id="newRootInput" placeholder="e.g. D:\Comics\…" />
+          <button class="btn-admin-action" id="addRootBtn">Add</button>
+        </div>
+      </div>
+
+      <div class="admin-card admin-card--spaced">
+        <div class="admin-card-label">Exclude Patterns</div>
+        <p class="admin-card-hint">Folder names or patterns skipped during scan (e.g. Processing)</p>
+        <div class="folder-list" id="excludeList"></div>
+        <div class="folder-add-row">
+          <input type="text" class="admin-input" id="newExcludeInput" placeholder="e.g. Processing" />
+          <button class="btn-admin-action" id="addExcludeBtn">Add</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Pagination ──────────────────────────────────────────────────────── -->
+    <section class="admin-section">
+      <h2 class="admin-section-heading">Pagination</h2>
+      <div class="admin-card">
+        <div class="admin-card-label">Results per page</div>
+        <div class="pagination-setting-row">
+          <select class="admin-select" id="pageSizeSelect" aria-label="Page size">
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="500">500</option>
+          </select>
+          <span class="admin-hint">Applies to Series, Singles and All views. Home strips always show 15.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Advanced Settings ───────────────────────────────────────────────── -->
+    <section class="admin-section">
+      <h2 class="admin-section-heading">Advanced Settings</h2>
+      <div class="admin-card">
+        <label class="admin-lock-label">
+          <input type="checkbox" id="advancedLock" />
+          <span>Unlock advanced settings</span>
+        </label>
+        <fieldset class="admin-fieldset" id="advancedFields" disabled>
+          <div class="admin-field-row">
+            <label class="admin-field-label" for="readerLocationInput">Reader Location</label>
+            <div class="admin-field-input-wrap">
+              <input type="text" class="admin-input" id="readerLocationInput" placeholder="comicvault://read/" />
+              <p class="admin-field-hint">No functional effect in V1 — reserved for future reader configuration.</p>
+            </div>
+          </div>
+          <div class="admin-field-row">
+            <label class="admin-field-label">Open Editor</label>
+            <button class="btn-admin-action" disabled title="Integrated editor tab coming in V2">Open Editor (V2)</button>
+          </div>
+          <div class="admin-field-actions">
+            <button class="btn-primary" id="saveAdvancedBtn">Save Advanced Settings</button>
+          </div>
+        </fieldset>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="/static/js/admin.js"></script>
+</body>
+</html>
