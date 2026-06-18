@@ -70,8 +70,17 @@ once this is built (flagged here so it isn't missed — it's a one-line change i
 - CBR/.rar support (`rarfile`, external `rar.exe` shell-out) — library is all-CBZ
 - `Flask-Limiter` — present in CAPT's requirements but never actually used
 - `login.html` / `/api/login` — vestigial dead code, posts to a route that doesn't exist
-- The `/browse` directory-listing route and custom Explorer file-tree UI — replaced by a
-  native OS multi-select file dialog (see Section 5)
+
+**Reinstated, not dropped** (corrected during planning — an earlier draft of this spec
+mistakenly dropped these, see Section 12 change log): the `/browse` directory-listing route,
+`/files/add` and `/folders/add` (recursive), and `file_mgmnt.html`'s breadcrumb/tree-view
+picker UI. These are **server-side, path-based** intake — the server opens files directly
+off disk by path, never via browser upload — which is exactly what makes automatic
+write-back to the original file location work. A browser-upload-based file dialog was
+considered and rejected: browsers never expose a real filesystem path from `<input
+type="file">`, so the server would have no path to write rebuilt archives back to,
+reintroducing a manual move/download step that doesn't exist in CAPT today and isn't
+wanted here either.
 - The two hardcoded-path bugs (`"L:\Comics Archives"` typo vs `"L:\Comic Archives"`, and the
   mismatched venv path in `start_xml_editor.bat`) — moot, since the new code reads
   `library_root` from `config.json` like everything else in ComicVault; no hardcoded path
@@ -103,12 +112,20 @@ Ported as-is from `utils/xml_archive_unpacker.py`:
 No in-place patching. This was a deliberate decision — full-rebuild is simple and proven;
 the collection isn't large enough per-file for rebuild speed to be a problem in practice.
 
-### 3.3 Field merge logic
+### 3.3 Field write logic — selective overwrite, not a smart merge
 - Ported from `widgets/xml_editor.py`'s `build_xml_from_fields`.
-- Only tags present in the submitted field set are touched; every other existing tag in the
-  original XML is preserved verbatim (this is how Volume, Month, Inker, Colorist, Letterer,
-  CoverArtist, Characters, Teams, Locations, Manga, and StoryArcNumber survive edits made via
-  either editor view, even though neither UI exposes them for editing).
+- Important distinction, worth stating precisely: this is **not** a field-by-field smart
+  merge. Every tag exposed in the editor (Section 4's Main + More field list) is **fully
+  overwritten** by whatever's currently in the form when you save — including being blanked
+  out / tag-removed if you cleared that field in the UI, even if the original archive had a
+  value there. There's no "only write if changed" logic and no attempt to reconcile a
+  field's old value against its new one.
+- Tags **not** exposed in the editor at all (Volume, Month, Inker, Colorist, Letterer,
+  CoverArtist, Characters, Teams, Locations, Manga, StoryArcNumber) are the only thing that
+  survives untouched — and only because the merge logic never looks at those tags in either
+  direction, not because of any deliberate preservation rule. "Merge," where it appears
+  elsewhere in this document, means this selective-overwrite behaviour, not a content-aware
+  combination of old and new values within a single field.
 - `BlackAndWhite`: checkbox semantics preserved exactly as today — checked → literal text
   `"on"`, unchecked → tag removed entirely. Matches `SPEC.md` Section 9's parsing rule exactly.
 - `Genre`: single CSV string written to one `<Genre>` tag, same as today — no per-genre
@@ -126,9 +143,33 @@ the collection isn't large enough per-file for rebuild speed to be a problem in 
 - This feature does not exist in the Basic editor at all (single file, nothing to increment
   against) — omit the control entirely from that UI, not just disable it.
 
----
+### 3.5 Multi-ComicInfo.xml detection (Full Editor only)
+Not present in CAPT's current code as investigated — `archive_xml_loader.py` lists `*.xml`
+entries in the archive and silently decodes whichever one it lands on first, with no
+detection or warning if more than one exists. This is new logic, not a port, added because
+it's known to happen occasionally (rare, but real — different tagging tools or a leftover
+file from a previous pass can leave a stray second XML inside an archive) and currently
+fails silently rather than being surfaced.
 
-## 4. Field List & Enforced Dropdowns
+- On load, check `namelist()` for all entries matching `*.xml` (case-insensitive). If more
+  than one is found:
+  - The file's card in the Full Editor's loaded-files list shows a warning state instead of
+    the normal "XML files: ComicInfo.xml" line — e.g. "⚠ 2 XML files found" — rather than
+    silently picking one.
+  - Clicking the warning opens a side-by-side view of all candidate XML files' contents
+    (parsed field values, same shape as the Main/More form, read-only) so Tez can see what
+    each one actually contains before deciding.
+  - Tez picks which one to keep; the editor deletes the others from the archive (via the
+    same extract → modify → rebuild → replace mechanism as a normal save) and proceeds with
+    the kept file as the active ComicInfo.xml for that card.
+- **Full Editor only.** Not needed in the Basic editor — it operates exclusively on files
+  already in ComicVault's library, which by definition went through this check (or simply
+  never had the problem) on their way in.
+- Confirmed out of scope: ComicVault's library *scanner* does not get equivalent detection
+  logic. This is treated as purely a pre-library intake concern; the existing library is
+  already known to be clean, and the scanner's behaviour on this point is left as-is.
+
+
 
 Both Basic and Full editors expose the same complete field set (Main + More), **minus
 `ScanInformation`**, which is dropped from both editors going forward (existing data in
@@ -227,24 +268,41 @@ by the Basic editor — see Section 6). This was a correction made mid-planning;
 drafts of this conversation assumed Full Editor batch-saves would need to trigger rescans —
 they do not, because there is nothing in the DB yet to rescan.
 
-### 5.1 File intake — native multi-select dialog (replaces CAPT's custom Explorer)
-- No custom in-browser file browser, no `/browse` directory-listing route, no recursive
-  folder-add. All of that is dropped.
-- Standard `<input type="file" multiple>` — Tez organises files in Windows Explorer as
-  today, then selects however many files he wants (one or many, e.g. all issues from one
-  series) in a single native "Open" dialog, same as any normal website upload control.
-- "Add a whole folder" simply becomes "select every file inside it" in that same multi-select
-  dialog — functionally equivalent for the realistic case (a handful of new titles a week),
-  and there's no folder-tree concept to preserve since file dialogs select files, not trees.
-- This is desktop-only, same-machine-as-server, by design — confirmed no remote/cross-network
-  file browsing is needed any more (an earlier development phase needed this when working
-  over an external network; that need no longer applies — Tez now does all Full Editor work
-  at the PC, and lighter edits from a laptop go through the Basic editor instead).
-- Because this is a native file dialog, selected file content is uploaded to the FastAPI
-  backend over local HTTP even though source and destination are the same machine. This is
-  a deliberate, accepted minor inefficiency (confirmed in planning) in exchange for proper
-  multi-select — it avoids error-prone manual path copy/paste, and the volume (~a few files
-  a week) makes the overhead irrelevant.
+### 5.1 File intake — reinstated server-side browser/picker (ported from `file_mgmnt.html`)
+A browser-upload file dialog (`<input type="file">`) was considered during planning and
+**rejected**: browsers never expose a real filesystem path for security reasons, so the
+server would receive raw bytes with no known location to write rebuilt archives back to —
+this would have reintroduced a manual download-and-move step that doesn't exist in CAPT
+today and isn't wanted here.
+
+Instead, CAPT's existing file picker is **ported, not replaced**:
+- `GET /browse` — directory listing for a given path, feeds the tree-view UI.
+- `POST /files/add` — add one or more specific files by path.
+- `POST /folders/add` — recursively add every comic archive under a given folder path.
+- `file_mgmnt.html`'s breadcrumb + tree view + multi-select UI, re-skinned to match
+  ComicVault's styling (Section 5.2) but functionally unchanged — navigate folders, tick the
+  files/folders you want, "Add Selected Files/Folder."
+
+This is **server-side, path-based I/O throughout**: the server opens each file directly off
+disk using a real filesystem path it already has, edits it, and writes the rebuilt archive
+back over that exact same path (`os.replace()`, Section 3.2) — automatically, with no upload,
+no download, and no manual move step. This is the same mechanism CAPT already uses
+successfully today; it is being carried forward rather than redesigned.
+
+**Bug fix during the port:** the existing path-guard inconsistency found in investigation
+(`file_mgmnt.js`'s `DEFAULT_PATH` uses `'L:\\Comic Archives'`, but `/rename`, `/fileinfo`,
+and `/update-xml` in `web_server.py` gate access against the typo'd `"L:\\Comics Archives"`
+— note the extra "s") gets corrected as part of this port. The new version should check
+against `library_root` already defined in `config.json`, giving one single source of truth
+for "what counts as a valid path" rather than two hardcoded strings that can silently drift
+apart, as they already have.
+
+**Confirmed desktop-only, same-machine-as-server**, consistent with everything else in
+Section 5 — this was never actually a remote-access requirement; an earlier development
+phase needed *cross-network* file access (a now-retired custom Explorer feature, distinct
+from this folder browser, built for working from outside the home network), and that need
+no longer applies. This path-based picker browsing the server's own local disk is unrelated
+to that and was always fine to keep.
 
 ### 5.2 Layout — three sections, card-styled to match the Admin page
 
@@ -258,8 +316,11 @@ stay muted grey, matching Back/User Guide/Backup Database.
 
 **Column 1 — File Management**
 - Section card, header "File Management."
-- Action row: Explorer (opens native multi-select dialog), Clear List. (`Refresh` is dropped
-  — confirmed dead/unused in the current design.)
+- Action row: Explorer (opens the ported `file_mgmnt` tree-view picker, Section 5.1), **Clear List** (clears the
+  Loaded Files list **and** resets the form/XML Editor column — distinct from Column 2's
+  "Clear," which only clears the Queue; the two buttons are named similarly but act on
+  different things, worth being explicit about in the UI copy and in code comments).
+  (`Refresh` is dropped — confirmed dead/unused in the current design.)
 - "N File(s) Loaded" count.
 - Loaded-files list: same horizontal row style as today (filename, XML-present line,
   Remove button) re-skinned into the Admin-page section-card row style — **no cover
@@ -279,15 +340,29 @@ stay muted grey, matching Back/User Guide/Backup Database.
   behaviour — Queue is a holding area, not something you navigate through).
 - Processing-status indicator: "Ready to process" / "Processing…" (animated ellipsis, red
   background while active) — ported as-is.
+- **Queue auto-empties once Process Queue completes successfully** (see Column 2).
+
+**Loaded vs Queued count as a completion check.** The "N File(s) Loaded" and "Queue: N
+File(s) Loaded" counts aren't purely informational — Tez uses them together to visually
+confirm a batch is fully queued before walking away from a session (e.g. 5 loaded, 5 queued
+→ done; 5 loaded, 3 queued → 2 still need attention). **The UI should visually flag it when
+the two counts don't match** (e.g. a highlight colour or small indicator near the counts)
+rather than just displaying two plain numbers — this is a confirmed requirement, not a
+nice-to-have. Note this check is meaningful for the Queue workflow specifically; Process All
+bypasses the Queue entirely and isn't covered by this indicator.
 
 **Column 2 — XML Editor**
 - Section card, header "XML Editor."
 - Main / More tabs as defined in Section 4.
-- Bottom action row: **Queue** (adds current file to Queue), **Clear** (clears the form),
-  **Process Queue** (writes XML to every file currently in the Queue — this *is* the save
-  action, there is no separate "Save" button), **Process All** (writes XML to every loaded
-  file, bypassing Queue). Process Queue / Process All are the primary actions and should
-  carry the purple accent treatment; Queue/Clear stay secondary/grey.
+- Bottom action row: **Queue** (adds current file to Queue), **Clear** (clears the **Queue**,
+  not the form — flagging since "Clear" reads ambiguously at a glance), **Process Queue**
+  (writes XML to every file currently in the Queue — this *is* the save action, there is no
+  separate "Save" button), **Process All** (writes XML to every loaded file, bypassing
+  Queue). Process Queue / Process All are the primary actions and should carry the purple
+  accent treatment; Queue/Clear stay secondary/grey.
+- **The Queue auto-empties once Process Queue completes successfully** — no manual clear
+  needed afterward; the Queue's "Clear" button is for abandoning a queued set before
+  processing, not for post-batch cleanup.
 
 **Column 3 — Image Viewer**
 - Section card, header "Image Viewer." Kept as-is per planning confirmation:
@@ -368,14 +443,17 @@ and the force-validation are complementary, not redundant: the report shows what
 
 ## 8. Config Additions
 
-`config.json` needs no new top-level keys for file *locations* — the Processing folder is
-already represented via the existing `SCAN_EXCLUDE` mechanism (visible in the Admin page
-screenshot as "Exclude Patterns" → `Processing`), and the Full Editor's native-file-dialog
-intake (Section 5.1) means no `processing_folder` path constant is needed in config at all —
-confirmed during planning that free-roaming-via-native-dialog replaces any need to scope
-intake to a single configured root.
+`config.json` needs no new top-level keys. The Processing folder is already represented via
+the existing `SCAN_EXCLUDE` mechanism (visible in the Admin page screenshot as "Exclude
+Patterns" → `Processing`) and there's no need for a separate `processing_folder` constant —
+the Full Editor's reinstated path-based picker (Section 5.1) can browse to anywhere on disk,
+same as CAPT does today, rather than being scoped to one fixed root.
 
-No change to `library_root`, `db_path`, ports, or any other existing key.
+The one existing key that does get a new *use*: `library_root` should now also back the
+picker's path-validity guard (Section 5.1's bug fix), replacing the two hardcoded/typo'd
+path strings currently scattered across `file_mgmnt.js` and `web_server.py`.
+
+No change to `library_root`'s value, `db_path`, ports, or any other existing key/value.
 
 ---
 
@@ -436,4 +514,7 @@ they aren't lost:
 | Date | Change | Reason |
 |---|---|---|
 | 2026-06-18 | `EDITOR_SPEC.md` created — full planning round complete covering architecture, field lists, enforced dropdowns, Basic/Full editor scope, file intake, and UI styling. Not yet built. | First planning session for V2 priority #1 (CAPT integration), following the read-only investigation report. |
+| 2026-06-18 | Added Section 3.5 (multi-ComicInfo.xml detection, side-by-side comparison, manual removal — Full Editor only). Corrected 3.3 from "merge" to "selective overwrite" wording. Corrected Column 2's "Clear" button (clears Queue, not form) vs Column 1's "Clear List" (clears Loaded Files + form) — these were previously conflated. Added Queue auto-clear-on-completion. Added Loaded/Queued count mismatch visual indicator as a confirmed requirement. | Follow-up review pass after first draft; corrections from Tez against real CAPT behaviour and workflow habits not previously surfaced. |
+| 2026-06-18 | **Reversed** the native-file-dialog file-intake decision (was: `<input type="file" multiple>`, browser-uploaded bytes). Section 5.1 now reinstates CAPT's existing `/browse`, `/files/add`, `/folders/add`, and `file_mgmnt.html` tree-view picker, ported as-is. Section 2's cut-list and Section 8's config notes updated to match. | The native-dialog approach was traced through to its consequence during review: browser uploads never carry a real filesystem path, so the server would have had no known location to write rebuilt archives back to, silently reintroducing a manual download/move step. CAPT's existing path-based picker already solves this correctly and was being dropped under a mistaken assumption that it was only a remote-network feature — it isn't; that was a separate, already-retired custom Explorer feature. The path-guard typo bug found in investigation is fixed during this same port, now checking against `library_root` instead of a second hardcoded string. |
 | 2026-06-18 | `comicvault_v2` migration setup complete (clone, remote repoint, DB copy, config) — see `progress.md` "V2 — Migration Setup Complete" for details. Found and fixed BUG-001 (scanner skipped thumbnail generation for unchanged-mtime files even when the thumbnail was missing on disk) in `comicvault_v2/backend/scanner.py` only — see `BUGS.md`. V1's `scanner.py` is unmodified. | One-time environment setup, prerequisite to starting this spec's build work. The bug surfaced specifically because V2 was set up from a copied DB without its thumbnails — recorded here since it's a real scanner defect, not just a migration footnote. |
+| 2026-06-18 | Build steps 1–4 (editor core, genres endpoint, pre-migration report, Basic Editor) completed against the **pre-revision** Section 5 — none of that work is affected by this file's Section 5.1/3.5 corrections above, since Basic Editor never had a file-picker concern (it always operated on a known `issue_id` from the DB) and Full Editor (the only section touched by the revision) had not been started yet. Full detail per step in `progress.md`. | Confirming no rework needed before continuing to Full Editor under the corrected spec. |
