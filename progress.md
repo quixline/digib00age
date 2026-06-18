@@ -277,3 +277,29 @@ checked the startup log was clean, then stopped the server and checkpointed the 
 **Not yet built:** pre-migration data-hygiene report, the rest of the Basic Editor
 (`GET`/`POST /api/editor/{issue_id}`), Full Editor.
 
+---
+
+## V2 — Pre-Migration Data-Hygiene Report Built (2026-06-18)
+
+**Goal:** `EDITOR_SPEC.md` Section 10, build step 3 / Section 7.
+
+- `backend/editor/migration_report.py` — `generate_report(db)` queries every non-missing
+  issue and flags any `Genre`/`Format`/`AgeRating` value not in the enforced lists.
+  Distinguishes **missing** (field has no value at all) from **invalid** (a value is
+  present but doesn't match) — different cleanup work for Tez, so kept as separate
+  statuses rather than one generic "mismatch" bucket. Genre is checked per individual
+  genre value (an issue can have one bad genre among several good ones and only that
+  one gets flagged). Run via `python -m backend.editor.migration_report`; writes
+  `pre_migration_report.csv` (gitignored — a snapshot of current DB state, not source) to
+  the project root with columns `issue_id, series, file_path, field, current_value,
+  status`, sortable/filterable in any spreadsheet.
+
+**Run against the real V2 DB:** 751 mismatched (issue, field) rows — Genre 447 (380
+invalid / 67 missing), Format 177 (104 invalid / 73 missing), AgeRating 127 (44 invalid /
+83 missing). Spot-checked: correctly catches real drift like `"Zombie"` (not in the
+genre list, while a sibling `"Horror"` value on the same issue passes), `"One-Shot"` vs
+the enforced `"One Shot"`, and `"MA15+"` vs the enforced `"Mature"`.
+
+**Not yet built:** the rest of the Basic Editor (`GET`/`POST /api/editor/{issue_id}`),
+Full Editor.
+

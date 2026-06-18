@@ -44,6 +44,9 @@ flutter_app/windows/flutter/ephemeral/
 V2_MIGRATION_SETUP.md
 V2_FOLLOWUP_COMMIT_AND_SCANNER_FIX.md
 
+# Generated reports — snapshots of current DB state, not source
+pre_migration_report.csv
+
 # OS
 .DS_Store
 Thumbs.db
