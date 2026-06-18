@@ -253,6 +253,27 @@ tag semantics match `SPEC.md` Section 9 exactly, page count is unchanged after r
 and the original real file was untouched throughout; batch increment + multi-file
 processing against two scratch copies. All checks passed.
 
-**Not yet built:** `GET /api/editor/genres` endpoint, pre-migration data-hygiene report,
-Basic Editor, Full Editor — remaining build-order steps in `EDITOR_SPEC.md` Section 10.
+**Not yet built:** pre-migration data-hygiene report, Basic Editor, Full Editor —
+remaining build-order steps in `EDITOR_SPEC.md` Section 10.
+
+---
+
+## V2 — Editor Genres Endpoint Built (2026-06-18)
+
+**Goal:** `EDITOR_SPEC.md` Section 10, build step 2 (remaining piece — `genres.json` and
+`constants.py` were already done as part of the core in the previous step).
+
+- New `backend/routers/editor_basic.py` — `GET /api/editor/genres`, returning the current
+  contents of `genres.json` fresh on every call. Per Section 6.1, this endpoint formally
+  belongs to the Basic Editor router; the rest of that router (`GET`/`POST
+  /api/editor/{issue_id}`) is step 4, not yet built. Full Editor's UI will call this same
+  endpoint rather than getting its own copy, so the two views can never drift out of sync.
+- Registered in `backend/main.py` alongside the existing routers.
+
+**Verified:** started the server, confirmed `GET /api/editor/genres` returns the 21-value
+list, confirmed an existing endpoint (`/api/admin/stats`) still works (no regression),
+checked the startup log was clean, then stopped the server and checkpointed the DB's WAL.
+
+**Not yet built:** pre-migration data-hygiene report, the rest of the Basic Editor
+(`GET`/`POST /api/editor/{issue_id}`), Full Editor.
 

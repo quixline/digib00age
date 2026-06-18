@@ -92,13 +92,14 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Routers — each file owns a slice of the API
 # ---------------------------------------------------------------------------
-from backend.routers import library, reader, progress, admin, home  # noqa: E402
+from backend.routers import library, reader, progress, admin, home, editor_basic  # noqa: E402
 
 app.include_router(library.router, prefix="/api")
 app.include_router(reader.router,  prefix="/api")
 app.include_router(progress.router, prefix="/api")
 app.include_router(admin.router,   prefix="/api")
 app.include_router(home.router,    prefix="/api")
+app.include_router(editor_basic.router, prefix="/api")
 
 # ---------------------------------------------------------------------------
 # Serve frontend static files
