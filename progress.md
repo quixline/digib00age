@@ -437,3 +437,26 @@ folder contents untouched.
 This closes out `EDITOR_SPEC.md`'s build order (Section 10) — CAPT is now fully
 retired as a separate app.
 
+---
+
+## V2 — First Manual Test Pass Fixes (2026-06-18)
+
+Tez ran the first hands-on test of both editors against the live server. Confirmed
+working: tray app's Metadata Editor menu item, the Genre checkbox-grid design choice
+(kept as built). Three small fixes from this pass:
+
+- **BUG-002 fixed** — Full Editor's Queue/Process All buttons were incorrectly gated
+  by the Basic-Editor-only validation rule (Section 4.4). See `BUGS.md`.
+- **Admin page "Open Editor" moved** from inside the locked Advanced Settings
+  fieldset to the top action row, alongside Back/User Guide/Backup Database/Password
+  Reset — confirmed this is a navigation action, not a setting, so it shouldn't need
+  the advanced-settings unlock step.
+- **Dead code removed** — `EDITOR_PORT` constant in `backend/config.py` (only
+  `tray_app.py` read it, already fixed to use `READER_PORT` + `/editor`). No change
+  to `config.json` itself — `editor_port` stays in the file, just unread.
+
+**Not yet tested:** Basic Editor remote access from a second device (Section 6.4).
+
+Tez is continuing manual testing; further bugs/design changes will be logged as they
+come up.
+

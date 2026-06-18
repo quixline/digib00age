@@ -14,6 +14,37 @@ Add new entries at the top. Mark fixed entries with the date and what was change
 
 ## FIXED
 
+### BUG-002 — Full Editor's Queue button stayed disabled for any file whose existing Genre/Format/AgeRating wasn't already enforced-valid
+
+**Found:** 2026-06-18, during Tez's first manual test pass after the Full Editor build.
+
+**Where:** `frontend/js/editor_full.js`, `updateValidityGate()` (now renamed
+`updateActionButtonStates()`).
+
+**What happened:** Queue (and Process All) were gated on the same Genre/Format/
+AgeRating validity check as the Basic Editor's Save button. For any loaded file whose
+current values didn't already pass (e.g. a genre like "Zombie" not in the enforced
+list — the exact kind of file the pre-migration report exists to flag), Queue was
+disabled immediately on focus, before Tez had a chance to fix anything. Reported as
+"the Queue button is dead."
+
+**Root cause:** `EDITOR_SPEC.md` Section 4.4 ("Existing-value mismatch behaviour") is
+explicitly titled **Basic Editor only** — the hard validation gate was never meant to
+apply to Full Editor. It got carried over by extension when building Full Editor's
+form, which shares the same field markup/JS patterns as Basic Editor's popup.
+
+**Fix:** Queue is now only gated on whether a file is focused; Process All only on
+whether any files are loaded; Process Queue only on whether the queue is non-empty.
+Validity enforcement for Full Editor happens server-side at process time only
+(`backend/editor/validation.py`, already in place) — invalid fields are reported as
+per-file errors without aborting the rest of the batch, matching the intended
+workflow (queue first, fix fields, process after). The now-pointless
+genre/format/agerating `change` listeners that only existed to re-run this check were
+removed.
+
+**Status:** Fixed in `editor_full.js`. Basic Editor's Save button is unaffected — its
+gate is correctly scoped per Section 4.4.
+
 ### BUG-001 — Scanner skips thumbnail generation for unchanged-mtime files, even if the thumbnail file is missing
 
 **Found:** 2026-06-18, during V2 migration setup.

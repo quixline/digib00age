@@ -62,7 +62,6 @@ async function loadGenreOptions() {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.value = name;
-    checkbox.addEventListener('change', updateValidityGate);
     label.appendChild(checkbox);
     label.appendChild(document.createTextNode(' ' + name));
     grid.appendChild(label);
@@ -103,7 +102,7 @@ async function refreshFileList() {
   loadedFiles = ordered;
   renderFileList();
   updateMismatchIndicator();
-  updateValidityGate();
+  updateActionButtonStates();
 }
 
 function xmlStatusLine(entry) {
@@ -179,7 +178,7 @@ async function removeFile(fileId) {
   }
   renderFileList();
   updateMismatchIndicator();
-  updateValidityGate();
+  updateActionButtonStates();
 }
 
 async function clearFileList() {
@@ -190,7 +189,7 @@ async function clearFileList() {
   resetViewer();
   renderFileList();
   updateMismatchIndicator();
-  updateValidityGate();
+  updateActionButtonStates();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -210,7 +209,7 @@ async function refreshQueueList() {
   queueFiles = data.files;
   renderQueueList();
   updateMismatchIndicator();
-  updateValidityGate();
+  updateActionButtonStates();
 }
 
 function renderQueueList() {
@@ -256,7 +255,7 @@ async function removeFromQueue(fileId) {
   queueFiles = queueFiles.filter((f) => f.id !== fileId);
   renderQueueList();
   updateMismatchIndicator();
-  updateValidityGate();
+  updateActionButtonStates();
 }
 
 async function clearQueue() {
@@ -264,7 +263,7 @@ async function clearQueue() {
   queueFiles = [];
   renderQueueList();
   updateMismatchIndicator();
-  updateValidityGate();
+  updateActionButtonStates();
 }
 
 async function addCurrentToQueue() {
@@ -346,8 +345,6 @@ function wireXmlEditor() {
       }
     });
   }
-  document.getElementById('fe-format').addEventListener('change', updateValidityGate);
-  document.getElementById('fe-agerating').addEventListener('change', updateValidityGate);
 }
 
 function setField(id, value) {
@@ -398,7 +395,7 @@ function populateForm(fields) {
     checkbox.checked = existingGenres.includes(checkbox.value);
   }
 
-  updateValidityGate();
+  updateActionButtonStates();
 }
 
 function resetForm() {
@@ -406,7 +403,7 @@ function resetForm() {
   for (const checkbox of document.querySelectorAll('#fe-genre-grid input')) checkbox.checked = false;
   document.getElementById('fe-format').value = '';
   document.getElementById('fe-agerating').value = '';
-  updateValidityGate();
+  updateActionButtonStates();
 }
 
 function collectFormFields() {
@@ -432,14 +429,14 @@ function collectFormFields() {
   };
 }
 
-function updateValidityGate() {
-  const anyGenreChecked = document.querySelectorAll('#fe-genre-grid input:checked').length > 0;
-  const formatSet = document.getElementById('fe-format').value !== '';
-  const ratingSet = document.getElementById('fe-agerating').value !== '';
-  const valid = anyGenreChecked && formatSet && ratingSet;
-
-  document.getElementById('feQueueBtn').disabled = !focusedFileId || !valid;
-  document.getElementById('feProcessAllBtn').disabled = loadedFiles.length === 0 || !valid;
+function updateActionButtonStates() {
+  // Section 4.4's hard validation gate (block until Genre/Format/AgeRating are
+  // valid) is explicitly scoped to the Basic Editor only — Full Editor relies
+  // on the server-side check at process time instead (per-file errors are
+  // reported without aborting the batch), so Queue/Process All are only
+  // gated on whether there's anything to act on.
+  document.getElementById('feQueueBtn').disabled = !focusedFileId;
+  document.getElementById('feProcessAllBtn').disabled = loadedFiles.length === 0;
   document.getElementById('feProcessQueueBtn').disabled = queueFiles.length === 0;
 }
 
