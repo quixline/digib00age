@@ -1546,7 +1546,7 @@ ul { list-style: none; }
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   width: 100%;
-  max-width: 520px;
+  max-width: 720px;
   max-height: calc(100vh - 48px);
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -1586,6 +1586,23 @@ ul { list-style: none; }
 .editor-tab-panel { padding: 18px 20px 4px; display: flex; flex-direction: column; gap: 14px; }
 .editor-field { display: flex; flex-direction: column; gap: 6px; }
 .editor-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.fe-number-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.fe-number-row .editor-field-checkbox { white-space: nowrap; }
+.fe-number-row .editor-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.fe-number-row .editor-field:last-child {
+  margin-left: auto;
+}
+.fe-number-row .editor-field label {
+  white-space: nowrap;
+}
 .editor-field label {
   font-size: 12px;
   font-weight: 600;
@@ -1615,6 +1632,11 @@ ul { list-style: none; }
   font-weight: 400;
   color: var(--text);
 }
+#feForm .editor-field-checkbox label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
 .editor-genre-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1625,6 +1647,30 @@ ul { list-style: none; }
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+}
+#fe-genre-grid {
+  grid-template-columns: repeat(5, 1fr);
+}
+.ed-format-row {
+  grid-template-columns: auto auto auto;
+  justify-content: start;
+  align-items: end;
+}
+.ed-format-row .editor-field-checkbox {
+  white-space: nowrap;
+}
+#ed-format, #ed-agerating {
+  max-width: 200px;
+}
+#ed-genre-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+#ed-genre-grid .editor-genre-item {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+#fe-number, #fe-year {
+  max-width: 90px;
 }
 .editor-genre-item {
   display: flex;
@@ -1660,7 +1706,7 @@ ul { list-style: none; }
 /* ── Full Editor toolbox (EDITOR_SPEC.md Section 5) ──────────────────────────── */
 .fe-layout {
   display: grid;
-  grid-template-columns: 340px 380px 1fr;
+  grid-template-columns: 340px 1fr 368px;
   gap: 18px;
   align-items: start;
 }
@@ -1749,14 +1795,14 @@ ul { list-style: none; }
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  min-height: 420px;
+  min-height: 202px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: auto;
   padding: 10px;
 }
-.fe-viewer-img { max-width: 100%; display: block; }
+.fe-viewer-img { max-width: 80%; display: block; }
 .fe-viewer-empty { color: var(--text-3); font-size: 13px; }
 .fe-viewer-controls {
   display: flex;

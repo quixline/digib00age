@@ -65,18 +65,18 @@
                 <label for="fe-title">Issue Title</label>
                 <input type="text" id="fe-title" name="Title">
               </div>
-              <div class="editor-field-row">
+              <div class="editor-field-row fe-number-row">
                 <div class="editor-field">
                   <label for="fe-number">Issue Number</label>
                   <input type="text" id="fe-number" name="Number">
+                </div>
+                <div class="editor-field editor-field-checkbox">
+                  <label><input type="checkbox" id="fe-increment"> Increment #</label>
                 </div>
                 <div class="editor-field">
                   <label for="fe-year">Year</label>
                   <input type="text" id="fe-year" name="Year" inputmode="numeric">
                 </div>
-              </div>
-              <div class="editor-field editor-field-checkbox">
-                <label><input type="checkbox" id="fe-increment"> Increment Number (batch)</label>
               </div>
               <div class="editor-field">
                 <label>Genre <span class="editor-required">*</span></label>
@@ -169,6 +169,8 @@
             <button type="button" class="btn-admin-action" id="fePrevBtn" disabled>◀ Prev</button>
             <span class="fe-page-info" id="fePageInfo">—</span>
             <button type="button" class="btn-admin-action" id="feNextBtn" disabled>Next ▶</button>
+          </div>
+          <div class="fe-viewer-controls">
             <button type="button" class="btn-admin-action" id="feZoomOutBtn" disabled>🔍-</button>
             <button type="button" class="btn-admin-action" id="feZoomInBtn" disabled>🔍+</button>
           </div>
