@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ComicVault — Full Editor</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body data-page="editor-full">
+
+  <header class="site-header">
+    <div class="container inner">
+      <a href="/" class="site-logo">ComicVault</a>
+      <span class="admin-page-label">Full Editor</span>
+    </div>
+  </header>
+
+  <main class="container admin-main">
+    <div class="fe-layout">
+
+      <!-- ── Column 1 — File Management + Queue ──────────────────────────── -->
+      <div class="fe-col fe-col-1">
+        <div class="admin-card">
+          <div class="fe-card-header-row">
+            <div class="admin-card-label">File Management</div>
+            <span class="fe-count" id="feLoadedCount">0 File(s) Loaded</span>
+          </div>
+          <div class="fe-action-row">
+            <button type="button" class="btn-admin-action" id="feExplorerBtn">Explorer</button>
+            <button type="button" class="btn-admin-action" id="feClearListBtn">Clear List</button>
+          </div>
+          <div class="fe-file-list" id="feFileList" tabindex="0"></div>
+        </div>
+
+        <div class="admin-card admin-card--spaced">
+          <div class="fe-card-header-row">
+            <div class="admin-card-label">Queue</div>
+            <span class="fe-count" id="feQueueCount">0 File(s) Loaded</span>
+          </div>
+          <div class="fe-mismatch-indicator" id="feMismatchIndicator" hidden>
+            ⚠ Loaded/Queued counts don't match
+          </div>
+          <div class="fe-file-list fe-queue-list" id="feQueueList"></div>
+          <div class="fe-status-indicator" id="feStatusIndicator">Ready to process</div>
+        </div>
+      </div>
+
+      <!-- ── Column 2 — XML Editor ────────────────────────────────────────── -->
+      <div class="fe-col fe-col-2">
+        <div class="admin-card">
+          <div class="admin-card-label">XML Editor</div>
+
+          <div class="editor-tabs">
+            <button type="button" class="editor-tab-btn active" data-tab="main">Main</button>
+            <button type="button" class="editor-tab-btn" data-tab="more">More</button>
+          </div>
+
+          <form id="feForm">
+            <div class="editor-tab-panel" data-panel="main">
+              <div class="editor-field">
+                <label for="fe-series">Series Title</label>
+                <input type="text" id="fe-series" name="Series">
+              </div>
+              <div class="editor-field">
+                <label for="fe-title">Issue Title</label>
+                <input type="text" id="fe-title" name="Title">
+              </div>
+              <div class="editor-field-row">
+                <div class="editor-field">
+                  <label for="fe-number">Issue Number</label>
+                  <input type="text" id="fe-number" name="Number">
+                </div>
+                <div class="editor-field">
+                  <label for="fe-year">Year</label>
+                  <input type="text" id="fe-year" name="Year" inputmode="numeric">
+                </div>
+              </div>
+              <div class="editor-field editor-field-checkbox">
+                <label><input type="checkbox" id="fe-increment"> Increment Number (batch)</label>
+              </div>
+              <div class="editor-field">
+                <label>Genre <span class="editor-required">*</span></label>
+                <div class="editor-genre-grid" id="fe-genre-grid"></div>
+              </div>
+              <div class="editor-field-row">
+                <div class="editor-field">
+                  <label for="fe-format">Format <span class="editor-required">*</span></label>
+                  <select id="fe-format" name="Format"></select>
+                </div>
+                <div class="editor-field">
+                  <label for="fe-agerating">Age Rating <span class="editor-required">*</span></label>
+                  <select id="fe-agerating" name="AgeRating"></select>
+                </div>
+              </div>
+              <div class="editor-field editor-field-checkbox">
+                <label><input type="checkbox" id="fe-bw" name="BlackAndWhite"> Black &amp; White</label>
+              </div>
+              <div class="editor-field">
+                <label for="fe-summary">Summary</label>
+                <textarea id="fe-summary" name="Summary" rows="4"></textarea>
+              </div>
+            </div>
+
+            <div class="editor-tab-panel" data-panel="more" hidden>
+              <div class="editor-field-row">
+                <div class="editor-field">
+                  <label for="fe-count">Count</label>
+                  <input type="text" id="fe-count" name="Count">
+                </div>
+                <div class="editor-field">
+                  <label for="fe-pagecount">Page Count</label>
+                  <input type="text" id="fe-pagecount" name="PageCount">
+                </div>
+              </div>
+              <div class="editor-field">
+                <label for="fe-writer">Writer</label>
+                <input type="text" id="fe-writer" name="Writer">
+              </div>
+              <div class="editor-field">
+                <label for="fe-penciller">Penciller</label>
+                <input type="text" id="fe-penciller" name="Penciller">
+              </div>
+              <div class="editor-field">
+                <label for="fe-publisher">Publisher</label>
+                <input type="text" id="fe-publisher" name="Publisher">
+              </div>
+              <div class="editor-field">
+                <label for="fe-storyarc">Story Arc</label>
+                <input type="text" id="fe-storyarc" name="StoryArc">
+              </div>
+              <div class="editor-field">
+                <label for="fe-language">Language</label>
+                <input type="text" id="fe-language" name="Language" list="fe-language-options">
+                <datalist id="fe-language-options">
+                  <option value="English">
+                  <option value="French">
+                  <option value="Spanish">
+                  <option value="German">
+                  <option value="Dutch">
+                </datalist>
+              </div>
+              <div class="editor-field">
+                <label for="fe-notes">Notes</label>
+                <input type="text" id="fe-notes" name="Notes">
+              </div>
+            </div>
+
+            <div class="editor-error" id="feError" hidden></div>
+
+            <div class="fe-form-actions">
+              <button type="button" class="btn-admin-action" id="feQueueBtn">Queue</button>
+              <button type="button" class="btn-admin-action" id="feClearQueueBtn">Clear</button>
+              <button type="button" class="btn-primary" id="feProcessQueueBtn" disabled>Process Queue</button>
+              <button type="button" class="btn-primary" id="feProcessAllBtn" disabled>Process All</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- ── Column 3 — Image Viewer ──────────────────────────────────────── -->
+      <div class="fe-col fe-col-3">
+        <div class="admin-card fe-viewer-card">
+          <div class="admin-card-label">Image Viewer</div>
+          <div class="fe-viewer-frame">
+            <img id="feViewerImg" class="fe-viewer-img" alt="">
+            <div class="fe-viewer-empty" id="feViewerEmpty">No file selected</div>
+          </div>
+          <div class="fe-viewer-controls">
+            <button type="button" class="btn-admin-action" id="fePrevBtn" disabled>◀ Prev</button>
+            <span class="fe-page-info" id="fePageInfo">—</span>
+            <button type="button" class="btn-admin-action" id="feNextBtn" disabled>Next ▶</button>
+            <button type="button" class="btn-admin-action" id="feZoomOutBtn" disabled>🔍-</button>
+            <button type="button" class="btn-admin-action" id="feZoomInBtn" disabled>🔍+</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ── File picker modal (ported from file_mgmnt.html, Section 5.1) ──────── -->
+  <div id="fePickerOverlay" class="editor-overlay" hidden>
+    <div class="editor-modal fe-picker-modal">
+      <div class="editor-modal-header">
+        <h2 class="editor-modal-title">Explorer</h2>
+        <button type="button" class="editor-close-btn" id="fePickerCloseBtn" aria-label="Close">&times;</button>
+      </div>
+      <div class="fe-picker-breadcrumb" id="fePickerBreadcrumb"></div>
+      <div class="fe-picker-controls">
+        <button type="button" class="btn-admin-action" id="fePickerHomeBtn">Home</button>
+        <button type="button" class="btn-admin-action" id="fePickerUpBtn">Up One Level</button>
+        <button type="button" class="btn-admin-action" id="fePickerSelectAllBtn">Select All</button>
+        <button type="button" class="btn-admin-action" id="fePickerDeselectAllBtn">Deselect All</button>
+        <span class="fe-picker-selected-count" id="fePickerSelectedCount">0 items selected</span>
+      </div>
+      <div class="fe-picker-tree" id="fePickerTree"></div>
+      <div class="editor-actions">
+        <button type="button" class="btn-admin-action" id="fePickerAddFilesBtn">Add Selected Files</button>
+        <button type="button" class="btn-primary" id="fePickerAddFolderBtn">Add Selected Folder</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Multi-ComicInfo.xml resolution modal (Section 3.5) ─────────────────── -->
+  <div id="feMultiXmlOverlay" class="editor-overlay" hidden>
+    <div class="editor-modal fe-multixml-modal">
+      <div class="editor-modal-header">
+        <h2 class="editor-modal-title">Multiple ComicInfo.xml Found</h2>
+        <button type="button" class="editor-close-btn" id="feMultiXmlCloseBtn" aria-label="Close">&times;</button>
+      </div>
+      <p class="fe-multixml-hint">This archive contains more than one XML file. Pick which one to keep — the others will be removed.</p>
+      <div class="fe-multixml-candidates" id="feMultiXmlCandidates"></div>
+    </div>
+  </div>
+
+  <script src="/static/js/editor_full.js"></script>
+</body>
+</html>

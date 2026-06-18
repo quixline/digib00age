@@ -7,9 +7,11 @@
 > Record any deviations at the bottom of this file (Section 12, Change Log), same convention
 > as `SPEC.md`.
 >
-> **Status:** Planning complete. Not yet built. This is the top and only priority — all other
-> V2 work (installer, cloud backup, app-store distribution, server discovery, password
-> protection, V2.1 fixes) is paused until this is complete and tested.
+> **Status:** Built and verified (2026-06-18) — all of Section 10's build order is complete:
+> shared core, genres endpoint, pre-migration report, Basic Editor, Full Editor, and the
+> tray app/Admin page wiring. See `progress.md` for the per-step build log and what was
+> verified. CAPT is fully retired as a separate app. Next: live use by Tez, working through
+> the pre-migration report's flagged issues, and any V2.1 follow-up fixes that surface.
 
 ---
 
@@ -518,3 +520,4 @@ they aren't lost:
 | 2026-06-18 | **Reversed** the native-file-dialog file-intake decision (was: `<input type="file" multiple>`, browser-uploaded bytes). Section 5.1 now reinstates CAPT's existing `/browse`, `/files/add`, `/folders/add`, and `file_mgmnt.html` tree-view picker, ported as-is. Section 2's cut-list and Section 8's config notes updated to match. | The native-dialog approach was traced through to its consequence during review: browser uploads never carry a real filesystem path, so the server would have had no known location to write rebuilt archives back to, silently reintroducing a manual download/move step. CAPT's existing path-based picker already solves this correctly and was being dropped under a mistaken assumption that it was only a remote-network feature — it isn't; that was a separate, already-retired custom Explorer feature. The path-guard typo bug found in investigation is fixed during this same port, now checking against `library_root` instead of a second hardcoded string. |
 | 2026-06-18 | `comicvault_v2` migration setup complete (clone, remote repoint, DB copy, config) — see `progress.md` "V2 — Migration Setup Complete" for details. Found and fixed BUG-001 (scanner skipped thumbnail generation for unchanged-mtime files even when the thumbnail was missing on disk) in `comicvault_v2/backend/scanner.py` only — see `BUGS.md`. V1's `scanner.py` is unmodified. | One-time environment setup, prerequisite to starting this spec's build work. The bug surfaced specifically because V2 was set up from a copied DB without its thumbnails — recorded here since it's a real scanner defect, not just a migration footnote. |
 | 2026-06-18 | Build steps 1–4 (editor core, genres endpoint, pre-migration report, Basic Editor) completed against the **pre-revision** Section 5 — none of that work is affected by this file's Section 5.1/3.5 corrections above, since Basic Editor never had a file-picker concern (it always operated on a known `issue_id` from the DB) and Full Editor (the only section touched by the revision) had not been started yet. Full detail per step in `progress.md`. | Confirming no rework needed before continuing to Full Editor under the corrected spec. |
+| 2026-06-18 | Build steps 5–6 complete: Full Editor (`editor_full.py` + `editor_full.html`/`.js`, path-based picker, multi-XML detection/resolution, queue + batch processing with increment, image viewer) and tray app/Admin page wiring to `/editor`. `archive_io.py` gained a shared `_rebuild_archive()` helper and `keep_single_xml()`; validation logic extracted to a new shared `validation.py` so Basic and Full Editor enforce Genre/Format/AgeRating identically. Full detail in `progress.md`. This closes out Section 10 — CAPT is fully retired. | Completes the build round this spec exists to plan. |

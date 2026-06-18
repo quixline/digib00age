@@ -351,3 +351,89 @@ Full Editor.
 
 **Not yet built:** Full Editor, tray app wiring.
 
+---
+
+## V2 — Full Editor Built (2026-06-18)
+
+**Goal:** `EDITOR_SPEC.md` Section 10, build steps 5–6 — the three-column toolbox
+(`/editor`, own page, never touches the DB) and wiring it up from the tray app and
+Admin page. Built against the **revised** Section 5.1 (path-based file picker
+reinstated — see the `EDITOR_SPEC.md` change-log entry from earlier this session).
+
+**Shared core additions** (`backend/editor/`):
+- `archive_io.py` refactored to share a `_rebuild_archive()` helper between writing
+  ComicInfo.xml and the new `keep_single_xml()` (Section 3.5 — deletes every `*.xml`
+  entry except the one Tez picks, renaming it to `ComicInfo.xml` if needed).
+- `validation.py` — the Genre/Format/AgeRating enforcement gate, extracted out of
+  `editor_basic.py` so Full Editor's batch processing can reuse the exact same rule
+  per file rather than a second copy of the logic.
+
+**Backend** (`backend/routers/editor_full.py`, all in-memory, single-session, never
+touches the issues table):
+- File picker — `GET browse`, `POST files/add`, `POST folders/add`, ported from
+  CAPT's `web_server.py`, validated against `config.LIBRARY_ROOT` (fixes the
+  investigation-flagged typo bug — old CAPT checked some routes against a
+  `"L:\Comics Archives"` typo and others against the correct string inconsistently).
+  `.cbr` is excluded entirely (CBZ-only allowlist).
+- Working set (Loaded Files): list/remove/clear, `GET files/{id}/xml` (multi-XML
+  detection — returns `multiple_xml: true` + parsed fields for every candidate when
+  an archive has more than one), `POST files/{id}/resolve-xml` (pick one, delete the
+  rest), `GET files/{id}/preview` + `GET files/{id}/page/{n}` (image viewer, mirrors
+  the existing `/api/page/{issue_id}/{page_number}` pattern but reads a working-set
+  path instead of a DB row).
+- Queue: add/list/remove/clear, separate from the Loaded Files working set.
+- `POST process` — `mode: "queue"` (each file's own captured fields; successes are
+  removed from the queue, failures stay for retry) or `mode: "all"` (one shared field
+  set applied to every file in `file_ids`, in caller-supplied order — respects
+  drag-and-drop reorder). Both support `increment_enabled`/`start_issue_no`
+  (sequential, no collision guardrail, per Section 3.4). Per-file validation failures
+  are collected as errors rather than aborting the whole batch.
+- New `/editor` page route in `main.py` serving `editor_full.html`.
+
+**Frontend** (`editor_full.html` + `editor_full.js`, self-contained — no dependency
+on `app.js`):
+- Three-column layout matching the Admin page's card language (`admin-card`,
+  `folder-row`-style horizontal rows) per Section 5.2: File Management + Queue,
+  XML Editor (same Main/More fields as Basic Editor plus the Increment Number
+  checkbox, which Basic omits), Image Viewer.
+- Drag-and-drop reorder and arrow-key navigation on the Loaded Files list (unified
+  focus mechanic — both ways of moving focus load the same file into the editor).
+  Queue has neither, by design.
+- Loaded/Queued count mismatch shown as a visible amber banner, not just two numbers.
+- File picker as an in-page modal (tree view, breadcrumb, Select All/Deselect All,
+  Add Selected Files/Folder) rather than CAPT's separate popup window — simpler
+  given Full Editor is already its own page, same underlying interaction model.
+- Multi-XML resolution as a side-by-side read-only comparison modal, one "Keep this
+  one" button per candidate.
+- Process Queue auto-disables when the queue is empty; Process All and the Queue
+  button both gate on the same Genre/Format/AgeRating validity check as Basic Editor.
+
+**Tray app + Admin page wiring:**
+- `tray_app.py`'s `open_editor()` now opens `http://localhost:{READER_PORT}/editor`
+  instead of the old `:8001` (`EDITOR_PORT` import removed, now fully unused —
+  `editor_port` stays in `config.json` untouched per Section 8, just no longer read
+  anywhere in code).
+- Admin page's "Open Editor (V2)" placeholder (`disabled`, inside the locked Advanced
+  Settings fieldset) replaced with a real `<a href="/editor" target="_blank">` link.
+  Deliberately **not** form-gated by the Advanced Settings unlock checkbox — `<a>`
+  tags aren't affected by a parent `<fieldset disabled>` the way `<button>` is, and
+  that's the right behaviour here: opening the editor is a navigation action like
+  "User Guide", not a setting change, so it shouldn't need the same unlock step.
+
+**Verified** entirely against scratch copies staged in the real, scan-excluded
+`Processing` folder (never touching Tez's actual in-progress files there, and never
+touching real library files) — backend script covering folders/add, multi-XML
+detection + resolution, Process Queue (validation rejection + success + queue
+auto-empty), Process All with increment, per-file error isolation; then live in a
+browser (Playwright) covering the picker modal end-to-end against the real
+`Processing` folder listing (confirmed `.cbr` files correctly excluded), focusing a
+file and seeing the cover load in the Image Viewer, both tabs, queueing, Process
+Queue, Process All with increment (confirmed sequential numbering on disk after),
+the multi-XML modal, keyboard navigation, zoom, drag-and-drop reorder, and the
+Admin-page link opening `/editor` in a new tab. No console errors throughout. All
+scratch files and folders deleted afterward; confirmed Tez's real `Processing`
+folder contents untouched.
+
+This closes out `EDITOR_SPEC.md`'s build order (Section 10) — CAPT is now fully
+retired as a separate app.
+

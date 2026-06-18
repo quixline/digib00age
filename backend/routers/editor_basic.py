@@ -17,9 +17,9 @@ from backend.editor.archive_io import (
     get_archive_page_count,
     write_comicinfo_to_cbz,
 )
-from backend.editor.constants import AGE_RATING_OPTIONS, FORMAT_OPTIONS
 from backend.editor.field_merge import build_xml_from_fields
 from backend.editor.genres import load_genres
+from backend.editor.validation import validate_enforced_fields
 from backend.editor.xml_parser import COMICINFO_TAGS, parse_comicinfo_xml
 from backend.models import Issue
 from backend.scanner import scan_single_file
@@ -48,36 +48,6 @@ def _read_original_xml(issue: Issue) -> str | None:
     if not xml_files:
         return None
     return extract_xml_from_archive(issue.file_path, xml_files[0])
-
-
-def _validate_enforced_fields(field_values: dict) -> list[str]:
-    """
-    Hard validation gate per EDITOR_SPEC.md Section 4.4 — Genre/Format/AgeRating
-    must each resolve to enforced values. Mirrored server-side as the source of
-    truth; the popup UI also gates Save client-side so this should rarely fire
-    in normal use.
-    """
-    errors = []
-
-    genre_value = (field_values.get("Genre") or "").strip()
-    genre_names = [g.strip() for g in genre_value.split(",") if g.strip()]
-    enforced_genres = set(load_genres())
-    if not genre_names:
-        errors.append("Genre: at least one value is required")
-    else:
-        for name in genre_names:
-            if name not in enforced_genres:
-                errors.append(f"Genre: '{name}' is not in the enforced list")
-
-    format_value = (field_values.get("Format") or "").strip()
-    if format_value not in FORMAT_OPTIONS:
-        errors.append(f"Format: '{format_value or '(blank)'}' is not in the enforced list")
-
-    rating_value = (field_values.get("AgeRating") or "").strip()
-    if rating_value not in AGE_RATING_OPTIONS:
-        errors.append(f"AgeRating: '{rating_value or '(blank)'}' is not in the enforced list")
-
-    return errors
 
 
 @router.get("/editor/{issue_id}")
@@ -117,7 +87,7 @@ def save_editor_fields(
     raw_fields = payload.get("fields", {})
     field_values = {k: v for k, v in raw_fields.items() if k in COMICINFO_TAGS}
 
-    errors = _validate_enforced_fields(field_values)
+    errors = validate_enforced_fields(field_values)
     if errors:
         raise HTTPException(status_code=422, detail={"errors": errors})
 

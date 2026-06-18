@@ -54,37 +54,20 @@ def get_archive_page_count(archive_path: str) -> int:
         return 0
 
 
-def write_comicinfo_to_cbz(archive_path: str, xml_content: str) -> None:
+def _rebuild_archive(extract_dir: str, archive_path: str) -> None:
     """
-    Write ComicInfo.xml into a CBZ via full archive rebuild (per
-    EDITOR_SPEC.md Section 3.2 — no in-place patching):
-
-    1. Extract the entire archive to a temp directory
-    2. Overwrite ComicInfo.xml in that temp directory
-    3. Flatten to a second temp directory (archive members may be nested;
-       the rebuilt zip stores everything flat at the root, matching CAPT's
-       existing behaviour)
-    4. Rebuild a new zip from the flattened directory
-    5. Replace the original file with the rebuilt one
+    Shared final stage of every archive rewrite (EDITOR_SPEC.md Section 3.2):
+    flatten extract_dir (archive members may be nested; the rebuilt zip
+    stores everything flat at the root, matching CAPT's existing behaviour),
+    rebuild a new zip, and replace the original file with it.
 
     The rebuilt zip is staged in the *same directory* as the original file
     before the final replace, not in the OS temp directory — `os.replace` is
     only atomic within a single filesystem, and the library lives on a
     different drive (L:) than the OS temp dir (C:).
-
-    :raises: on any I/O failure — callers are expected to handle/report it.
     """
-    extract_dir = tempfile.mkdtemp(prefix="cv_editor_unpack_")
     flat_dir = tempfile.mkdtemp(prefix="cv_editor_flat_")
     try:
-        with zipfile.ZipFile(archive_path, "r") as archive:
-            archive.extractall(extract_dir)
-
-        with open(
-            os.path.join(extract_dir, "ComicInfo.xml"), "w", encoding="utf-8"
-        ) as f:
-            f.write(xml_content)
-
         for root, _dirs, files in os.walk(extract_dir):
             for name in files:
                 shutil.copy2(os.path.join(root, name), os.path.join(flat_dir, name))
@@ -94,5 +77,62 @@ def write_comicinfo_to_cbz(archive_path: str, xml_content: str) -> None:
         staged_zip = shutil.make_archive(staging_base, "zip", flat_dir)
         os.replace(staged_zip, archive_path)
     finally:
-        for d in (extract_dir, flat_dir):
-            shutil.rmtree(d, ignore_errors=True)
+        shutil.rmtree(flat_dir, ignore_errors=True)
+
+
+def write_comicinfo_to_cbz(archive_path: str, xml_content: str) -> None:
+    """
+    Write ComicInfo.xml into a CBZ via full archive rebuild — extract,
+    overwrite ComicInfo.xml, rebuild (see _rebuild_archive). No in-place
+    patching.
+
+    :raises: on any I/O failure — callers are expected to handle/report it.
+    """
+    extract_dir = tempfile.mkdtemp(prefix="cv_editor_unpack_")
+    try:
+        with zipfile.ZipFile(archive_path, "r") as archive:
+            archive.extractall(extract_dir)
+
+        with open(
+            os.path.join(extract_dir, "ComicInfo.xml"), "w", encoding="utf-8"
+        ) as f:
+            f.write(xml_content)
+
+        _rebuild_archive(extract_dir, archive_path)
+    finally:
+        shutil.rmtree(extract_dir, ignore_errors=True)
+
+
+def keep_single_xml(archive_path: str, keep_filename: str) -> None:
+    """
+    Resolve a multi-ComicInfo.xml archive (EDITOR_SPEC.md Section 3.5, Full
+    Editor only): delete every *.xml entry except keep_filename, renaming it
+    to ComicInfo.xml if it wasn't already named that, then rebuild.
+
+    :raises: on any I/O failure, or if keep_filename isn't actually in the
+        archive.
+    """
+    extract_dir = tempfile.mkdtemp(prefix="cv_editor_unpack_")
+    try:
+        with zipfile.ZipFile(archive_path, "r") as archive:
+            archive.extractall(extract_dir)
+
+        keep_path = os.path.join(extract_dir, keep_filename)
+        if not os.path.isfile(keep_path):
+            raise FileNotFoundError(f"{keep_filename} not found in archive")
+
+        target_path = os.path.join(extract_dir, "ComicInfo.xml")
+        if os.path.normcase(keep_path) != os.path.normcase(target_path):
+            shutil.move(keep_path, target_path)
+
+        for name in os.listdir(extract_dir):
+            candidate = os.path.join(extract_dir, name)
+            if (
+                name.lower().endswith(".xml")
+                and os.path.normcase(candidate) != os.path.normcase(target_path)
+            ):
+                os.remove(candidate)
+
+        _rebuild_archive(extract_dir, archive_path)
+    finally:
+        shutil.rmtree(extract_dir, ignore_errors=True)

@@ -33,7 +33,7 @@ import pystray
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from backend.config import READER_PORT, EDITOR_PORT  # noqa: E402
+from backend.config import READER_PORT  # noqa: E402
 
 LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tray.log")
 HEALTH_CHECK_INTERVAL = 30  # seconds
@@ -147,7 +147,9 @@ def open_admin(icon=None, item=None):
 
 
 def open_editor(icon=None, item=None):
-    webbrowser.open(f"http://localhost:{EDITOR_PORT}")
+    # Editor is part of the same FastAPI app, no separate process/port
+    # (EDITOR_SPEC.md Section 2) — was http://localhost:{EDITOR_PORT} (8001).
+    webbrowser.open(f"http://localhost:{READER_PORT}/editor")
 
 
 def stop_comicvault(icon, item=None):
