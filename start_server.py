@@ -16,7 +16,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from backend.config import (
-    READER_PORT, EDITOR_PORT,
+    READER_PORT,
     DB_PATH, LIBRARY_ROOT, THUMBNAIL_DIR, THUMBNAIL_SIZE,
     get_config,
 )
@@ -40,7 +40,6 @@ def main():
     print(f"  thumbnail_dir  : {THUMBNAIL_DIR}")
     print(f"  thumbnail_size : {THUMBNAIL_SIZE}px wide")
     print(f"  reader_port    : {READER_PORT}")
-    print(f"  editor_port    : {EDITOR_PORT}")
 
     # Verify library root
     if not os.path.isdir(LIBRARY_ROOT):
