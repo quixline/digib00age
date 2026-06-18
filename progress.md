@@ -303,3 +303,51 @@ the enforced `"One Shot"`, and `"MA15+"` vs the enforced `"Mature"`.
 **Not yet built:** the rest of the Basic Editor (`GET`/`POST /api/editor/{issue_id}`),
 Full Editor.
 
+---
+
+## V2 — Basic Editor Built (2026-06-18)
+
+**Goal:** `EDITOR_SPEC.md` Section 10, build step 4 / Section 6 — the popup editor on
+`/issue/{id}`, end to end (backend endpoints + the popup UI itself).
+
+**Backend** (`backend/routers/editor_basic.py`):
+- `GET /api/editor/{issue_id}` — reads the live XML from the file (not DB columns —
+  the file is the source of truth), returns the editor's field set. `PageCount` is
+  always the live archive image count, not whatever the XML says (Section 4).
+- `POST /api/editor/{issue_id}` — server-side validation gate (Section 4.4: Genre/
+  Format/AgeRating must resolve to enforced values, checked per individual genre so a
+  single bad value among several good ones is caught precisely), then merge + rewrite
+  via the Step 1 core, then `scan_single_file()` in-process — the same function the old
+  `POST /api/scan/file` webhook called, just no longer over HTTP since editor and
+  reader now share one process (Section 6.1).
+
+**Frontend:**
+- `frontend/editor_basic.html` — modal markup fragment (Main/More tabs, fields per
+  Section 4 minus `ScanInformation` and minus Increment Number per 6.2), lazy-fetched
+  and injected into the DOM on first open.
+- `frontend/js/editor_basic.js` — `openEditorModal(issueId, onSaved)`. Genre renders as
+  a checkbox grid (not a native multi-select) sourced from `GET /api/editor/genres`;
+  Format/AgeRating render as `<select>` with a blank placeholder option, options
+  hardcoded to mirror `constants.py` (these two are locked, no server round-trip
+  needed). Save stays disabled until all three enforced fields have a valid selection,
+  re-checked live on every change. An existing-but-invalid value (e.g. a genre no
+  longer in the list) simply has no matching checkbox to pre-check — it's dropped
+  silently rather than blocking unrelated valid fields, matching Section 4.4 exactly.
+- Wired the **already-present** `Edit XML` button on `/issue/{id}` (`app.js`) — it had
+  no handler before this; no new button needed, per Section 6.
+- CSS added to `style.css` (reuses existing design tokens, no new ones introduced).
+
+**Verified two ways:**
+1. Backend, via a temporary DB row pointing at a scratch copy (never a real library
+   file) — GET, POST-with-invalid-fields (422, all 3 expected errors), POST-with-valid
+   fields (200, file rewritten, confirmed via re-GET), and confirmed the in-process
+   rescan updated the DB row without any webhook. Row and scratch file deleted after.
+2. Live in a browser (Playwright, installed to a scratch dir for this check, since no
+   project run-skill or `chromium-cli` existed yet) against the real `/issue/1` page:
+   opened the popup, confirmed Save started enabled (existing values already valid),
+   confirmed all fields populated correctly on both tabs, screenshotted both tabs, no
+   console errors, closed via the X without saving. No real file was touched by this
+   pass — Save was deliberately never clicked.
+
+**Not yet built:** Full Editor, tray app wiring.
+

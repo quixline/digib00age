@@ -1069,6 +1069,8 @@ function buildIssueDetail(data) {
   actions.appendChild(readBtn);
   actions.appendChild(buildStatusToggle(data));
   const editXmlBtn = el('button', 'btn-edit-xml', 'Edit XML');
+  editXmlBtn.type = 'button';
+  editXmlBtn.onclick = () => openEditorModal(data.id, () => initIssue());
   actions.appendChild(editXmlBtn);
   coverCol.appendChild(actions);
 

@@ -1,0 +1,108 @@
+<div id="editorOverlay" class="editor-overlay" hidden>
+  <div class="editor-modal">
+    <div class="editor-modal-header">
+      <h2 class="editor-modal-title">Edit Metadata</h2>
+      <button type="button" class="editor-close-btn" id="editorCloseBtn" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="editor-tabs">
+      <button type="button" class="editor-tab-btn active" data-tab="main">Main</button>
+      <button type="button" class="editor-tab-btn" data-tab="more">More</button>
+    </div>
+
+    <form id="editorForm">
+      <div class="editor-tab-panel" data-panel="main">
+        <div class="editor-field">
+          <label for="ed-series">Series Title</label>
+          <input type="text" id="ed-series" name="Series">
+        </div>
+        <div class="editor-field">
+          <label for="ed-title">Issue Title</label>
+          <input type="text" id="ed-title" name="Title">
+        </div>
+        <div class="editor-field-row">
+          <div class="editor-field">
+            <label for="ed-number">Issue Number</label>
+            <input type="text" id="ed-number" name="Number">
+          </div>
+          <div class="editor-field">
+            <label for="ed-year">Year</label>
+            <input type="text" id="ed-year" name="Year" inputmode="numeric">
+          </div>
+        </div>
+        <div class="editor-field">
+          <label>Genre <span class="editor-required">*</span></label>
+          <div class="editor-genre-grid" id="ed-genre-grid"></div>
+        </div>
+        <div class="editor-field-row">
+          <div class="editor-field">
+            <label for="ed-format">Format <span class="editor-required">*</span></label>
+            <select id="ed-format" name="Format"></select>
+          </div>
+          <div class="editor-field">
+            <label for="ed-agerating">Age Rating <span class="editor-required">*</span></label>
+            <select id="ed-agerating" name="AgeRating"></select>
+          </div>
+        </div>
+        <div class="editor-field editor-field-checkbox">
+          <label><input type="checkbox" id="ed-bw" name="BlackAndWhite"> Black &amp; White</label>
+        </div>
+        <div class="editor-field">
+          <label for="ed-summary">Summary</label>
+          <textarea id="ed-summary" name="Summary" rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="editor-tab-panel" data-panel="more" hidden>
+        <div class="editor-field-row">
+          <div class="editor-field">
+            <label for="ed-count">Count</label>
+            <input type="text" id="ed-count" name="Count">
+          </div>
+          <div class="editor-field">
+            <label for="ed-pagecount">Page Count</label>
+            <input type="text" id="ed-pagecount" name="PageCount">
+          </div>
+        </div>
+        <div class="editor-field">
+          <label for="ed-writer">Writer</label>
+          <input type="text" id="ed-writer" name="Writer">
+        </div>
+        <div class="editor-field">
+          <label for="ed-penciller">Penciller</label>
+          <input type="text" id="ed-penciller" name="Penciller">
+        </div>
+        <div class="editor-field">
+          <label for="ed-publisher">Publisher</label>
+          <input type="text" id="ed-publisher" name="Publisher">
+        </div>
+        <div class="editor-field">
+          <label for="ed-storyarc">Story Arc</label>
+          <input type="text" id="ed-storyarc" name="StoryArc">
+        </div>
+        <div class="editor-field">
+          <label for="ed-language">Language</label>
+          <input type="text" id="ed-language" name="Language" list="ed-language-options">
+          <datalist id="ed-language-options">
+            <option value="English">
+            <option value="French">
+            <option value="Spanish">
+            <option value="German">
+            <option value="Dutch">
+          </datalist>
+        </div>
+        <div class="editor-field">
+          <label for="ed-notes">Notes</label>
+          <input type="text" id="ed-notes" name="Notes">
+        </div>
+      </div>
+
+      <div class="editor-error" id="editorError" hidden></div>
+
+      <div class="editor-actions">
+        <button type="button" class="btn-status-toggle" id="editorCancelBtn">Cancel</button>
+        <button type="submit" class="btn-primary" id="editorSaveBtn" disabled>Save</button>
+      </div>
+    </form>
+  </div>
+</div>
