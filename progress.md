@@ -185,3 +185,34 @@ All six phases are built and have been live-tested end-to-end on real hardware (
 
 No open bugs or pending fixes remain from this build round. ComicVault V1 is closed.
 
+---
+
+## V2 — Migration Setup Complete (2026-06-18)
+
+**Goal:** Stand up `comicvault_v2` as an independent clone of V1, ready for `EDITOR_SPEC.md`
+build work, without touching V1 (`cBook_Server`) in any way.
+
+- Cloned V1's git history (`f20fe67`, `4b405bf`) into `D:\workshop\comicvault_v2`, repointed
+  `origin` to `https://github.com/quixline/comicvault_v2`, pushed both commits.
+- Copied V1's database to `backend/comicvault_v2.db` (a separate file, never the live V1 DB).
+  `config.json` created locally (gitignored, same as V1) pointing `db_path` at the copy;
+  `library_root` intentionally left pointing at the real `L:\Comic Archives` — V2's editor
+  work will operate on real files, only the database is sandboxed.
+- Verified clean startup and a full library scan against the copy (5,429 issues, 0 errors).
+
+**BUG-001 found and fixed during setup:** the scanner's incremental "skip if unchanged"
+logic only generated thumbnails on the new/updated branches, so copying the DB without
+`thumbnails/` (gitignored, assumed regenerable) left every issue's `date_modified`
+matching disk and the scan silently skipped all 5,429 thumbnails — 0 generated despite
+0 errors reported. Fixed in `comicvault_v2/backend/scanner.py` only (V1 unmodified): the
+skip branch now checks whether the issue's thumbnail file actually exists on disk before
+skipping, backfilling it if missing. Verified: deleting one thumbnail and rescanning
+regenerates only that one while the rest of the library stays on the fast skip path
+(~5 seconds for all 5,429 files, unchanged from pre-fix timing). Full writeup in `BUGS.md`.
+Existing missing thumbnails for the copied DB were backfilled via a one-off standalone
+script (not committed) rather than the documented `date_modified`-clear-and-rescan
+approach, after that approach proved extremely slow against the real library — same end
+result, much faster.
+
+V2 is now ready for `EDITOR_SPEC.md` build work to begin.
+

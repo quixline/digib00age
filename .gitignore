@@ -40,8 +40,9 @@ flutter_app/windows/flutter/ephemeral/
 # Local tool config
 .claude/
 
-# Planning docs (not part of the codebase)
-ComicVault_V1_WrapUp_Git_Init.md
+# Planning docs (not part of the codebase) — one-off task instructions, already actioned
+V2_MIGRATION_SETUP.md
+V2_FOLLOWUP_COMMIT_AND_SCANNER_FIX.md
 
 # OS
 .DS_Store
