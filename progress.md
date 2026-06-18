@@ -216,3 +216,43 @@ result, much faster.
 
 V2 is now ready for `EDITOR_SPEC.md` build work to begin.
 
+---
+
+## V2 — Editor Core Built (2026-06-18)
+
+**Goal:** `EDITOR_SPEC.md` Section 10, build step 1 — port CAPT's editing logic into a
+shared, FastAPI-independent `backend/editor/` package. No UI, no routers yet.
+
+- `xml_parser.py` — `parse_comicinfo_xml()` (ported from CAPT, `ScanInformation` dropped
+  per Section 4) and `parse_filename_for_comicinfo()`. The filename-fallback parser
+  reuses the scanner's existing `_parse_filename()` rather than reimplementing it a
+  third time (Section 3.1's explicit instruction), with a thin adapter remapping its
+  lowercase keys to the tag-cased field names the editor uses.
+- `archive_io.py` — CBZ-only read (`find_xml_in_archive`, `extract_xml_from_archive`,
+  `get_archive_page_count`) and write (`write_comicinfo_to_cbz`, full extract → overwrite
+  → flatten → rebuild → replace, no in-place patching, per Section 3.2). The rebuilt zip
+  is staged in the *same directory* as the target file (not the OS temp dir) before the
+  final `os.replace` — `library_root` is on a different drive (L:) than the OS temp dir,
+  and `os.replace` is only atomic within one filesystem.
+- `field_merge.py` — `build_xml_from_fields()`, ported from CAPT's
+  `widgets/xml_editor.py`. Untouched tags preserved verbatim; empty string removes a tag;
+  `None` leaves it alone.
+- `batch.py` — `apply_increment()` (sequential numbering, no collision guardrail, by
+  design per Section 3.4) and `process_files()` (per-file merge + write, collects
+  per-file errors instead of aborting the batch).
+- `constants.py` — locked `FORMAT_OPTIONS` (10) / `AGE_RATING_OPTIONS` (8).
+- `genres.json` + `genres.py` — the editable 21-value starting genre list plus a loader
+  that re-reads the file fresh each call (no caching), since Tez edits it directly.
+- Added `lxml` to `requirements.txt` — required for the tolerant recovery-mode XML
+  parsing Section 3.1 specifies; wasn't previously a ComicVault dependency.
+
+**Verified** via a one-off test script (not committed): read path against a real library
+file (no real file ever modified); filename-fallback parsing; full write-rebuild round
+trip against a scratch copy confirming untouched tags survive, `BlackAndWhite` on/off
+tag semantics match `SPEC.md` Section 9 exactly, page count is unchanged after rebuild,
+and the original real file was untouched throughout; batch increment + multi-file
+processing against two scratch copies. All checks passed.
+
+**Not yet built:** `GET /api/editor/genres` endpoint, pre-migration data-hygiene report,
+Basic Editor, Full Editor — remaining build-order steps in `EDITOR_SPEC.md` Section 10.
+

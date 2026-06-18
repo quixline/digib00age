@@ -4,3 +4,4 @@ sqlalchemy
 pillow
 pystray
 watchdog
+lxml
