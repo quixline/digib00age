@@ -420,6 +420,15 @@ def scan_single_file(file_path: str, db: Session) -> str:
     if existing and existing.date_modified:
         # Compare to the nearest second to avoid float precision issues
         if abs((existing.date_modified - mtime).total_seconds()) < 1:
+            # Unchanged metadata doesn't guarantee the thumbnail file still
+            # exists on disk (e.g. a DB restored/copied without thumbnails/) —
+            # check and backfill it before skipping (BUG-001).
+            thumb_path = config.THUMBNAIL_DIR / f"{existing.id}.jpg"
+            if not thumb_path.exists():
+                thumb = _generate_thumbnail(file_path, existing.id)
+                if thumb:
+                    existing.cover_path = thumb
+                    db.commit()
             return "skipped"
 
     # --- Parse metadata ---

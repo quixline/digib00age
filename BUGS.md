@@ -8,6 +8,12 @@ Add new entries at the top. Mark fixed entries with the date and what was change
 
 ## OPEN
 
+(none currently)
+
+---
+
+## FIXED
+
 ### BUG-001 — Scanner skips thumbnail generation for unchanged-mtime files, even if the thumbnail file is missing
 
 **Found:** 2026-06-18, during V2 migration setup.
@@ -32,22 +38,25 @@ restore, disk recovery, fresh deploy from a DB dump — will hit the same silent
 The scan reports success (0 new, 0 updated, 0 errors) with no indication that cover
 art is missing.
 
-**Proper fix (not yet applied):** The skip-if-unchanged branch should also check
-whether the expected thumbnail file exists on disk, not rely on `date_modified` alone.
-If the thumbnail is missing, generate it even when the DB row is otherwise unchanged.
+**Proper fix (applied 2026-06-18):** The skip-if-unchanged branch in `scan_single_file`
+now checks whether the expected thumbnail file (`{issue.id}.jpg`) exists on disk before
+skipping. If missing, it calls `_generate_thumbnail` and updates `cover_path` even
+though the DB row's metadata is otherwise unchanged — the file still counts as
+"skipped" in scan stats, it just no longer silently leaves a missing thumbnail behind.
 
-**Workaround applied for V2 (does not fix the bug):** Cleared `date_modified` for all
-rows in `comicvault_v2.db` only (V1 untouched), then re-ran the scan so every file was
-treated as updated and thumbnails generated. This is a one-off fix for the copied DB,
-not a fix to `scanner.py` — the underlying logic flaw remains and will recur the next
-time a DB is restored/copied without thumbnails.
+Applied to **V2 only** (`comicvault_v2/backend/scanner.py`). V1's `scanner.py` is
+unmodified — V1 is being kept as-is and is not being changed going forward.
 
-**Status:** Workaround applied to `comicvault_v2.db`. Scanner logic itself still needs
-the proper fix — candidate for EDITOR_SPEC.md build phase or a dedicated small fix
-pass, not blocking current work.
+**Workaround applied for V2's existing data (does not by itself fix the bug):** Cleared
+`date_modified` for all rows in `comicvault_v2.db` only (V1 untouched), then re-ran the
+scan so every file was treated as updated and thumbnails generated. This got V2's
+existing copied DB into a correct state; the scanner fix above is what prevents the
+same gap from recurring on any future DB copy/restore.
 
----
+**Verification:** Deleted one issue's thumbnail file manually, ran a scan — confirmed
+only that issue regenerated its thumbnail while the rest of the library (5,428 other
+issues, unchanged, thumbnails present) was still skipped quickly. Full-library scan
+timing was unaffected by the fix (~5 seconds for all 5,429 files, matching pre-fix
+skip-path timing).
 
-## FIXED
-
-(none yet)
+**Status:** Fixed in V2. V1 retains the original (unfixed) logic by design.
