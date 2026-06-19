@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 from backend.config import get_config, PROJECT_ROOT
 from backend.database import get_db, SessionLocal
-from backend.models import CustomTab, Issue, ReadingProgress
+from backend.models import CustomTab, HomeStrip, Issue, ReadingProgress
 from backend.path_utils import is_under, normalize_path
 
 router = APIRouter(tags=["admin"])
@@ -444,3 +444,205 @@ def admin_browse_directory(path: str = Query(None)):
         raise HTTPException(status_code=500, detail=str(exc))
 
     return {"path": target, "roots": roots, "items": items}
+
+
+# ---------------------------------------------------------------------------
+# Home Page Strips — admin-editable home page strips (HOME_STRIPS_SPEC.md)
+# ---------------------------------------------------------------------------
+
+MAX_NON_DEFAULT_HOME_STRIPS = 5
+HOME_STRIP_FIELD_NAMES = {"genre", "publisher", "writer", "artist", "format", "decade", "year", "rating", "bw"}
+HOME_STRIP_SORT_FIELDS = {"title", "newest", "recent"}
+
+
+def _home_strip_to_dict(strip: HomeStrip) -> dict:
+    return {
+        "id": strip.id,
+        "is_default": strip.is_default,
+        "name": strip.name,
+        "basis_type": strip.basis_type,
+        "field_name": strip.field_name,
+        "field_value": strip.field_value,
+        "folder_path": strip.folder_path,
+        "order_mode": strip.order_mode,
+        "sort_field": strip.sort_field,
+        "visible": strip.visible,
+        "position": strip.position,
+        "created_at": strip.created_at.isoformat() if strip.created_at else None,
+    }
+
+
+def _validate_strip_payload(payload: dict) -> tuple[str | None, dict | None]:
+    """Validates a non-default strip's basis/order fields. Returns (error, warning)."""
+    basis_type = payload.get("basis_type")
+    if basis_type not in ("field", "folder"):
+        return "basis_type must be 'field' or 'folder'", None
+
+    warning = None
+    if basis_type == "field":
+        field_name = payload.get("field_name")
+        field_value = (payload.get("field_value") or "").strip()
+        if field_name not in HOME_STRIP_FIELD_NAMES:
+            return f"field_name must be one of: {', '.join(sorted(HOME_STRIP_FIELD_NAMES))}", None
+        if not field_value:
+            return "field_value is required for a field-based strip", None
+    else:
+        folder_path = (payload.get("folder_path") or "").strip()
+        if not folder_path:
+            return "folder_path is required for a folder-based strip", None
+        warning = _validate_tab_folder(folder_path)
+
+    order_mode = payload.get("order_mode")
+    if order_mode not in ("random", "fixed"):
+        return "order_mode must be 'random' or 'fixed'", None
+    if order_mode == "fixed" and payload.get("sort_field") not in HOME_STRIP_SORT_FIELDS:
+        return f"sort_field must be one of: {', '.join(sorted(HOME_STRIP_SORT_FIELDS))} when order_mode is 'fixed'", None
+
+    return None, warning
+
+
+@router.get("/admin/home-strips")
+def list_home_strips(db: Session = Depends(get_db)):
+    """List all rows (default + added, visible + hidden), in position order."""
+    strips = db.query(HomeStrip).order_by(HomeStrip.position).all()
+    return [_home_strip_to_dict(s) for s in strips]
+
+
+@router.post("/admin/home-strips")
+def create_home_strip(payload: dict = Body(...), db: Session = Depends(get_db)):
+    name = (payload.get("name") or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="name is required")
+
+    error, warning = _validate_strip_payload(payload)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+
+    non_default_count = db.query(func.count(HomeStrip.id)).filter(HomeStrip.is_default == False).scalar()  # noqa: E712
+    if non_default_count >= MAX_NON_DEFAULT_HOME_STRIPS:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Maximum of {MAX_NON_DEFAULT_HOME_STRIPS} added strips already reached — delete one first.",
+        )
+
+    max_position = db.query(func.max(HomeStrip.position)).scalar()
+    basis_type = payload["basis_type"]
+
+    strip = HomeStrip(
+        is_default=False,
+        name=name,
+        basis_type=basis_type,
+        field_name=payload.get("field_name") if basis_type == "field" else None,
+        field_value=(payload.get("field_value") or "").strip() if basis_type == "field" else None,
+        folder_path=normalize_path(payload["folder_path"]) if basis_type == "folder" else None,
+        order_mode=payload.get("order_mode"),
+        sort_field=payload.get("sort_field") if payload.get("order_mode") == "fixed" else None,
+        visible=True,
+        position=(max_position + 1) if max_position is not None else 0,
+    )
+    db.add(strip)
+    db.commit()
+
+    result = _home_strip_to_dict(strip)
+    if warning:
+        result.update(warning)
+    return result
+
+
+@router.patch("/admin/home-strips/reorder")
+def reorder_home_strips(payload: list[dict] = Body(...), db: Session = Depends(get_db)):
+    """Bulk position update: [{id, position}, ...], covering default and
+    added rows together since reordering mixes them freely. Registered
+    before /admin/home-strips/{strip_id} — that route's int(strip_id)
+    conversion would otherwise 422 on the literal path segment "reorder"
+    before this handler is ever reached."""
+    ids = [item["id"] for item in payload]
+    strips = db.query(HomeStrip).filter(HomeStrip.id.in_(ids)).all()
+    strip_map = {s.id: s for s in strips}
+
+    for item in payload:
+        strip = strip_map.get(item["id"])
+        if not strip:
+            raise HTTPException(status_code=404, detail=f"Home strip {item['id']} not found")
+        strip.position = int(item["position"])
+
+    db.commit()
+    return [_home_strip_to_dict(s) for s in db.query(HomeStrip).order_by(HomeStrip.position).all()]
+
+
+@router.patch("/admin/home-strips/{strip_id}")
+def update_home_strip(strip_id: int, payload: dict = Body(...), db: Session = Depends(get_db)):
+    strip = db.query(HomeStrip).filter(HomeStrip.id == strip_id).first()
+    if not strip:
+        raise HTTPException(status_code=404, detail="Home strip not found")
+
+    if strip.is_default:
+        # Default rows: only `position` may ever change.
+        extra_keys = set(payload.keys()) - {"position"}
+        if extra_keys:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Default strips only allow changing position (rejected: {', '.join(sorted(extra_keys))})",
+            )
+        if "position" in payload:
+            strip.position = int(payload["position"])
+        db.commit()
+        return _home_strip_to_dict(strip)
+
+    warning = None
+    if "visible" in payload:
+        strip.visible = bool(payload["visible"])
+    if "position" in payload:
+        strip.position = int(payload["position"])
+
+    basis_keys = {"name", "basis_type", "field_name", "field_value", "folder_path", "order_mode", "sort_field"}
+    if basis_keys & payload.keys():
+        merged = {
+            "basis_type": payload.get("basis_type", strip.basis_type),
+            "field_name": payload.get("field_name", strip.field_name),
+            "field_value": payload.get("field_value", strip.field_value),
+            "folder_path": payload.get("folder_path", strip.folder_path),
+            "order_mode": payload.get("order_mode", strip.order_mode),
+            "sort_field": payload.get("sort_field", strip.sort_field),
+        }
+        error, warning = _validate_strip_payload(merged)
+        if error:
+            raise HTTPException(status_code=400, detail=error)
+
+        if "name" in payload:
+            name = (payload["name"] or "").strip()
+            if not name:
+                raise HTTPException(status_code=400, detail="name cannot be empty")
+            strip.name = name
+
+        strip.basis_type = merged["basis_type"]
+        if merged["basis_type"] == "field":
+            strip.field_name = merged["field_name"]
+            strip.field_value = (merged["field_value"] or "").strip()
+            strip.folder_path = None
+        else:
+            strip.folder_path = normalize_path(merged["folder_path"])
+            strip.field_name = None
+            strip.field_value = None
+        strip.order_mode = merged["order_mode"]
+        strip.sort_field = merged["sort_field"] if merged["order_mode"] == "fixed" else None
+
+    db.commit()
+
+    result = _home_strip_to_dict(strip)
+    if warning:
+        result.update(warning)
+    return result
+
+
+@router.delete("/admin/home-strips/{strip_id}")
+def delete_home_strip(strip_id: int, db: Session = Depends(get_db)):
+    """Hard-deletes a non-default strip's definition only."""
+    strip = db.query(HomeStrip).filter(HomeStrip.id == strip_id).first()
+    if not strip:
+        raise HTTPException(status_code=404, detail="Home strip not found")
+    if strip.is_default:
+        raise HTTPException(status_code=400, detail="Default strips cannot be deleted")
+    db.delete(strip)
+    db.commit()
+    return {"message": "Home strip deleted"}

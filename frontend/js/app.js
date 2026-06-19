@@ -67,6 +67,13 @@ let activeSort      = 'alpha';  // alpha | newest | recent
 let activeGroupBy   = '';       // '' | year | genre | publisher | writer
 let activeSearch    = '';
 
+// 'fieldview'/'folderview' surfaces — transient, opened from a home strip's
+// clickable heading (HOME_STRIPS_SPEC.md 5.2), not part of the persistent nav.
+let viewField       = '';
+let viewFieldValue  = '';
+let viewFolderPath  = '';
+let viewLibraryCache = {};      // cache key (see loadBrowse) -> /api/library response
+
 let viewMode = localStorage.getItem('cv_view_mode') || 'grid';
 
 let currentPage = 1;
@@ -83,8 +90,11 @@ async function initLibrary() {
     // Honour ?surface= so the back button from detail pages returns to the right tab
     const params     = new URLSearchParams(location.search);
     const reqSurface = params.get('surface') || 'home';
-    const VALID      = ['home', 'series', 'singles', 'all', '2000ad'];
+    const VALID      = ['home', 'series', 'singles', 'all', '2000ad', 'fieldview', 'folderview'];
     const known      = VALID.includes(reqSurface) || reqSurface.startsWith('tab-');
+    viewField      = params.get('field') || '';
+    viewFieldValue = params.get('value') || '';
+    viewFolderPath = params.get('folder') || '';
     await switchSurface(known ? reqSurface : 'home');
   } catch (err) {
     console.error('initLibrary failed:', err);
@@ -110,7 +120,12 @@ function bindSurfaceNav() {
 }
 
 function isBrowseSurface(surface) {
-  return ['series', 'singles', 'all'].includes(surface) || surface.startsWith('tab-');
+  return ['series', 'singles', 'all', 'fieldview', 'folderview'].includes(surface)
+    || surface.startsWith('tab-');
+}
+
+function isFlatSurface(surface) {
+  return surface === 'all' || surface.startsWith('tab-') || surface === 'fieldview' || surface === 'folderview';
 }
 
 // Custom Tabs (CUSTOM_TABS_SPEC.md) — admin-managed, folder-scoped tabs,
@@ -192,11 +207,6 @@ async function loadHome() {
     const stripsData = await apiFetch('/home/strips', ctrl.signal);
     clearTimeout(timerId);
 
-    // Continue-reading strip is optional; fire separately so it can't block.
-    apiFetch('/reading/continue')
-      .then(renderContinueStrip)
-      .catch(() => {});
-
     homeStrips.innerHTML = '';
     for (const strip of stripsData.strips) {
       if (!strip.items || !strip.items.length) continue;
@@ -215,9 +225,28 @@ async function loadHome() {
   }
 }
 
+function stripViewAllHref(strip) {
+  // Defaults (basis_type 'builtin') don't get a listing page in this round —
+  // HOME_STRIPS_SPEC.md only requires this for admin-added field/folder strips.
+  if (strip.basis_type === 'field') {
+    return `/?surface=fieldview&field=${encodeURIComponent(strip.field_name)}&value=${encodeURIComponent(strip.field_value)}`;
+  }
+  if (strip.basis_type === 'folder') {
+    return `/?surface=folderview&folder=${encodeURIComponent(strip.folder_path)}`;
+  }
+  return null;
+}
+
 function buildHomeStrip(strip) {
   const section = el('div', 'home-strip');
-  section.appendChild(el('p', 'section-label', strip.title));
+  const viewAllHref = stripViewAllHref(strip);
+  if (viewAllHref) {
+    const heading = el('a', 'section-label section-label--link', strip.title);
+    heading.href = viewAllHref;
+    section.appendChild(heading);
+  } else {
+    section.appendChild(el('p', 'section-label', strip.title));
+  }
 
   const track    = el('div', 'strip-track');
   const btnLeft  = el('button', 'strip-arrow strip-arrow--left');
@@ -290,49 +319,6 @@ function buildStripCard(item) {
   return card;
 }
 
-// ── Continue reading ──────────────────────────────────────────────────────────
-
-function renderContinueStrip(items) {
-  if (!items || !items.length) return;
-  const section = document.getElementById('continueSection');
-  const strip   = document.getElementById('continueStrip');
-  strip.innerHTML = '';   // clear on re-render
-  section.hidden = false;
-
-  for (const item of items) {
-    const pct = (item.page_count && item.page_count > 0)
-      ? Math.min(100, Math.round((item.current_page / item.page_count) * 100))
-      : 0;
-
-    const card = el('a', 'continue-card');
-    card.href  = `/issue/${item.id}`;
-    card.title = `${item.series}${item.number ? ' #' + item.number : ''}`;
-
-    const img = el('img');
-    img.src     = item.cover_path;
-    img.alt     = item.series;
-    img.loading = 'lazy';
-    img.onerror = () => { img.style.visibility = 'hidden'; };
-
-    const info     = el('div', 'continue-info');
-    const title    = el('div', 'continue-title', item.series);
-    const pageLabel = item.page_count
-      ? `p.${item.current_page + 1} / ${item.page_count}`
-      : `p.${item.current_page + 1}`;
-    const sub = el('div', 'continue-sub',
-      item.number ? `#${item.number} · ${pageLabel}` : pageLabel
-    );
-    const track = el('div', 'progress-track');
-    const fill  = el('div', 'progress-fill');
-    fill.style.width = `${pct}%`;
-    track.appendChild(fill);
-
-    info.append(title, sub, track);
-    card.append(img, info);
-    strip.appendChild(card);
-  }
-}
-
 // ══════════════════════════════════════════════════════════════════════════════
 //  BROWSE SURFACES (Series / Singles / All)
 // ══════════════════════════════════════════════════════════════════════════════
@@ -370,6 +356,22 @@ async function loadBrowse() {
         grid.innerHTML =
           '<div class="empty-state"><div class="empty-icon">⚠️</div>' +
           '<p>This tab is no longer available.</p></div>';
+        return;
+      }
+    }
+  } else if (activeSurface === 'fieldview' || activeSurface === 'folderview') {
+    const cacheKey = activeSurface === 'fieldview' ? `field:${viewField}:${viewFieldValue}` : `folder:${viewFolderPath}`;
+    if (!viewLibraryCache[cacheKey]) {
+      grid.innerHTML = '<div class="loading-state">Loading…</div>';
+      const qs = activeSurface === 'fieldview'
+        ? `field=${encodeURIComponent(viewField)}&value=${encodeURIComponent(viewFieldValue)}`
+        : `folder_path=${encodeURIComponent(viewFolderPath)}`;
+      try {
+        viewLibraryCache[cacheKey] = await apiFetch(`/library?${qs}`);
+      } catch (err) {
+        grid.innerHTML =
+          '<div class="empty-state"><div class="empty-icon">⚠️</div>' +
+          '<p>This view is no longer available.</p></div>';
         return;
       }
     }
@@ -419,6 +421,11 @@ function getFilteredLibrary() {
     // Custom tab — already folder-scoped server-side; flat like 'all' (no
     // format_group split), per CUSTOM_TABS_SPEC.md 5.3.
     pool = tabLibraryCache[activeSurface.slice(4)] || [];
+  } else if (activeSurface === 'fieldview' || activeSurface === 'folderview') {
+    // Home strip "view all" — already field/folder-scoped server-side,
+    // flat like 'all', per HOME_STRIPS_SPEC.md 5.2.
+    const cacheKey = activeSurface === 'fieldview' ? `field:${viewField}:${viewFieldValue}` : `folder:${viewFolderPath}`;
+    pool = viewLibraryCache[cacheKey] || [];
   } else {
     pool = allLibrary;
     if (activeSurface === 'series')  pool = pool.filter(s => s.format_group === 'Series');
@@ -510,14 +517,15 @@ function _renderBrowsePage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   currentPage      = Math.min(currentPage, totalPages);
 
-  // All surface (and custom tabs, which are flat like All) show grand total
-  // of individual comics (spec 20.1 / 20.3). Series and Singles show card count.
-  const isFlatSurface = activeSurface === 'all' || activeSurface.startsWith('tab-');
-  const displayCount = isFlatSurface
+  // All surface (and custom tabs / strip "view all" pages, flat like All)
+  // show grand total of individual comics (spec 20.1 / 20.3). Series and
+  // Singles show card count.
+  const flat = isFlatSurface(activeSurface);
+  const displayCount = flat
     ? filtered.reduce((sum, s) => sum + (s.issue_count || 1), 0)
     : filtered.length;
   const countSuffix = { series: 'Series', singles: 'Titles', all: 'Titles' };
-  const suffix = isFlatSurface ? 'Titles' : (countSuffix[activeSurface] || '');
+  const suffix = flat ? 'Titles' : (countSuffix[activeSurface] || '');
   countEl.textContent = suffix
     ? `${displayCount.toLocaleString()} ${suffix}`
     : displayCount.toLocaleString();

@@ -132,6 +132,67 @@
               </div>
             </div>
           </div>
+
+          <!-- ── Home Page Strips (HOME_STRIPS_SPEC.md) ──────────────────── -->
+          <div class="admin-subsection">
+            <h3 class="admin-subsection-heading">Home Page Strips</h3>
+            <p class="admin-card-hint">
+              Reorder with the arrows — Continue Reading, Recently Added, Random Unread
+              and Random Genre are defaults and can't be edited or removed, only moved.
+              Up to 5 added strips, each based on one field+value or one folder.
+            </p>
+            <div class="admin-card">
+              <div class="folder-list" id="hsStripList"></div>
+              <div class="ct-add-form">
+                <input type="text" class="admin-input" id="hsNameInput" placeholder="Strip name" />
+
+                <div class="hs-basis-row">
+                  <label class="hs-radio"><input type="radio" name="hsBasis" value="field" checked> Field</label>
+                  <label class="hs-radio"><input type="radio" name="hsBasis" value="folder"> Folder</label>
+                </div>
+
+                <div class="ct-path-row" id="hsFieldRow">
+                  <select class="admin-select" id="hsFieldNameSelect">
+                    <option value="">Field…</option>
+                    <option value="genre">Genre</option>
+                    <option value="publisher">Publisher</option>
+                    <option value="writer">Writer</option>
+                    <option value="artist">Artist</option>
+                    <option value="format">Format</option>
+                    <option value="decade">Decade</option>
+                    <option value="year">Year</option>
+                    <option value="rating">Rating</option>
+                    <option value="bw">Black &amp; White</option>
+                  </select>
+                  <select class="admin-select" id="hsFieldValueSelect">
+                    <option value="">Value…</option>
+                  </select>
+                </div>
+
+                <div class="ct-path-row" id="hsFolderRow" hidden>
+                  <input type="text" class="admin-input" id="hsFolderInput" placeholder="Folder path" />
+                  <button type="button" class="btn-admin-action" id="hsBrowseBtn">Browse…</button>
+                </div>
+
+                <div class="hs-basis-row">
+                  <select class="admin-select" id="hsOrderModeSelect">
+                    <option value="random">Random</option>
+                    <option value="fixed">Fixed</option>
+                  </select>
+                  <select class="admin-select" id="hsSortFieldSelect" hidden>
+                    <option value="title">Title</option>
+                    <option value="newest">Newest</option>
+                    <option value="recent">Recent</option>
+                  </select>
+                </div>
+
+                <div class="ct-add-actions">
+                  <button type="button" class="btn-primary" id="hsAddBtn">Add Strip</button>
+                  <span class="admin-hint" id="hsCapHint" hidden>5 strips already added — delete one first.</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </fieldset>
       </div>
     </section>

@@ -124,3 +124,23 @@ class CustomTab(Base):
 
     def __repr__(self):
         return f"<CustomTab id={self.id} name={self.name!r} visible={self.visible}>"
+
+
+class HomeStrip(Base):
+    __tablename__ = "home_strips"
+
+    id           = Column(Integer, primary_key=True, autoincrement=True)
+    is_default   = Column(Boolean, nullable=False)                 # true for the 4 seeded rows — locks all but `position`
+    name         = Column(Text, nullable=False)
+    basis_type   = Column(Text, nullable=False)                    # 'builtin' | 'field' | 'folder'
+    field_name   = Column(Text, nullable=True)                     # set only when basis_type == 'field'
+    field_value  = Column(Text, nullable=True)                     # set only when basis_type == 'field'
+    folder_path  = Column(Text, nullable=True)                     # set only when basis_type == 'folder'
+    order_mode   = Column(Text, nullable=True)                     # 'random' | 'fixed' — n/a for 'builtin'
+    sort_field   = Column(Text, nullable=True)                     # 'title' | 'newest' | 'recent' — only when order_mode == 'fixed'
+    visible      = Column(Boolean, default=True, nullable=False)   # ignored for is_default rows (always shown)
+    position     = Column(Integer, nullable=False)
+    created_at   = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<HomeStrip id={self.id} name={self.name!r} basis={self.basis_type!r} pos={self.position}>"

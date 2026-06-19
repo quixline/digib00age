@@ -602,3 +602,95 @@ never the live V1 DB — consistent with V2's existing testing convention):
 This closes out `CUSTOM_TABS_SPEC.md`'s build order (Section 7). Next v2.1 feature is
 `HOME_STRIPS_SPEC.md` (editable home page strips) — planning only so far, not started.
 
+---
+
+## V2.1 — Home Strips Built (2026-06-19)
+
+**Goal:** `HOME_STRIPS_SPEC.md` — admin-editable home page strips (second of four
+planned v2.1 features). Per `CLAUDE.md` (added this session — see its own change-log
+note), V2.1 is no longer "paused"; this is the documented active focus.
+
+**Backend:**
+- `HomeStrip` model + `home_strips` table (`models.py`); seeded idempotently inside
+  `init_db()` (`database.py`) with the 4 default rows (Continue Reading, Recently
+  Added, Random Unread, Random Genre, `position` 0–3) — same no-formal-migration
+  convention as the rest of this codebase.
+- `backend/path_utils.py` gained `matches_field()` (the 9 filter dimensions — genre,
+  publisher, writer, artist, format, decade, year, rating, bw), moved there from a
+  one-off copy in `library.py` so `home.py` could share the exact same logic rather
+  than a second copy of a 9-branch dispatcher — the one piece of this build judged
+  risky enough to duplicate that it got pulled into the existing shared-helpers module
+  instead.
+- CRUD + bulk reorder endpoints in `admin.py` (`GET`/`POST`/`PATCH`/`DELETE
+  /api/admin/home-strips`, `PATCH /api/admin/home-strips/reorder`), mirroring Custom
+  Tabs' pattern closely: same default-row lockout (only `position` editable), same
+  hard-delete-with-no-filesystem-effect, same cap pattern (5 non-default strips here
+  vs. 4 visible tabs there). **Route-ordering gotcha caught before it shipped:** the
+  static `/reorder` path was originally registered after the dynamic `/{strip_id}`
+  route — FastAPI would have tried `int("reorder")` first and 422'd before ever
+  reaching the reorder handler. Fixed by registering `/reorder` first.
+- `GET /api/home/strips` (`home.py`) extended to resolve all three basis types in
+  `position` order: `builtin` (existing per-strip logic, including Continue Reading's
+  query, ported in rather than calling the standalone endpoint — see Change Log decision
+  in `HOME_STRIPS_SPEC.md`), `field`, and `folder`. Continue Reading is pinned first
+  whenever it has any matching issues, overriding stored `position` for every row, per
+  spec 4.4 — verified by deliberately reordering it mid-list and confirming render order
+  didn't move.
+- New `GET /api/browse/years` endpoint — Year is one of the spec's 9 field dimensions
+  but had no server-side value-list source before (the web UI only ever derived it
+  client-side from the full library payload).
+- `GET /api/library` gained generic `field`/`value` and `folder_path` query params
+  (alongside the existing `tab_id`) so a home strip's "view all" link can be served by
+  the same endpoint Custom Tabs already uses, rather than a new one.
+
+**Frontend:**
+- Continue Reading's dedicated `continueSection`/`continueStrip` markup and
+  `renderContinueStrip()` removed from `index.html`/`app.js` — it now arrives as the
+  first entry in the unified `/api/home/strips` response and renders through the same
+  `buildHomeStrip()`/`buildStripCard()` path as every other strip (which already
+  supported a progress bar for partially-read items, so this is a no-visible-regression
+  removal, not just a refactor). Associated now-dead CSS (`.continue-section`,
+  `.continue-card`, `.continue-info/-title/-sub`, `.progress-track/-fill`) removed too.
+- Two new transient browse surfaces, `fieldview` and `folderview`
+  (`?surface=fieldview&field=&value=` / `?surface=folderview&folder=`), opened only via
+  a strip's clickable heading — not part of the persistent nav. Reuse the exact same
+  filter/sort/grouping/pagination pipeline as Series/Singles/All/Custom-Tabs by sourcing
+  `getFilteredLibrary()`'s pool from a new `viewLibraryCache`, fetched via the new
+  `GET /api/library` params above. Added strips' headings render as real links
+  (`stripViewAllHref()`); default strips' headings stay plain text — see
+  `HOME_STRIPS_SPEC.md`'s Change Log for why that gap is deliberate, not an oversight.
+- Admin page: new "Home Page Strips" subsection inside the same locked Advanced
+  Settings fieldset as Custom Tabs. List shows up/down reorder arrows (per Tez's choice
+  over drag-and-drop), a "Default" badge + no edit/delete controls for the 4 fixed rows,
+  and for added rows a basis summary, Visible/Hidden toggle, and Delete (same `confirm()`
+  wording convention as Custom Tabs). Add form: basis-type radio (Field/Folder), a field
+  dropdown whose second "value" dropdown populates live from the matching `/browse/*`
+  endpoint (B&W special-cased to a fixed Yes/No, no server round-trip), or the same
+  shared folder-picker modal Custom Tabs uses — generalized to take a target input id
+  (`openCtPicker(targetInputId)`) so both features' "Browse…" buttons could reuse one
+  modal instead of two near-identical copies. Order mode (Random/Fixed + sort field)
+  rounds out the form. "Add Strip" disables at the 5-strip cap with an inline hint.
+
+**Verified** end-to-end with curl and a live Playwright browser session (scratch temp
+dir, not committed) against the real `comicvault_v2.db` (sandboxed dev DB, same
+convention as every prior session) — backend: full CRUD, the reorder route-ordering
+fix (confirmed `/reorder` no longer 422s), the 409 cap at 6 non-default strips,
+default-row lockout (name-change and delete both rejected with clear errors),
+Continue Reading's pin-first behaviour surviving a deliberate position reorder.
+Browser: admin add/reorder/hide/delete for both field- and folder-based strips
+(including the shared picker modal), cap-hint and disabled Add button at 5, home page
+rendering strips in order with the dynamic Random Genre title still working, clicking
+an added strip's heading landing on the correct `fieldview`/`folderview` surface with
+counts matching direct API calls (490 Titles / 190 Titles, spot-checked). No
+console/page errors in any pass. All test rows deleted and `home_strips` positions
+restored to 0–3 after — table confirmed back to exactly the 4 seeded defaults; WAL
+checkpointed into the main DB file before finishing.
+
+**Flagged, not fixed this session:** `BUG-003` (dead duplicate `GET /api/reading/continue`
+route in `progress.py`, shadowed by `library.py`'s copy) — found while tracing Continue
+Reading's query, logged in `BUGS.md`, out of scope for this build.
+
+This closes out `HOME_STRIPS_SPEC.md`'s build order (Section 7). Remaining v2.1 work
+(taskbar app changes, mobile reader changes) is tracked in `v2_1-main-new-features.md`
+and not started.
+

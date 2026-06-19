@@ -25,9 +25,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadCustomTabs();
   document.getElementById('ctAddBtn').addEventListener('click', addCustomTab);
-  document.getElementById('ctBrowseBtn').addEventListener('click', openCtPicker);
+  document.getElementById('ctBrowseBtn').addEventListener('click', () => openCtPicker('ctPathInput'));
   document.getElementById('ctPickerCloseBtn').addEventListener('click', closeCtPicker);
   document.getElementById('ctPickerSelectBtn').addEventListener('click', selectCtPickerFolder);
+
+  loadHomeStrips();
+  document.getElementById('hsAddBtn').addEventListener('click', addHomeStrip);
+  document.getElementById('hsBrowseBtn').addEventListener('click', () => openCtPicker('hsFolderInput'));
+  document.querySelectorAll('input[name="hsBasis"]').forEach(r => r.addEventListener('change', updateHsBasisRows));
+  document.getElementById('hsFieldNameSelect').addEventListener('change', updateHsFieldValueOptions);
+  document.getElementById('hsOrderModeSelect').addEventListener('change', updateHsOrderModeRow);
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -519,8 +526,11 @@ async function addCustomTab() {
   }
 }
 
-// ── Custom Tabs — folder picker modal ───────────────────────────────────────────
-function openCtPicker() {
+// ── Shared folder picker modal — used by both Custom Tabs and Home Strips ──────
+let ctPickerTargetInputId = 'ctPathInput';
+
+function openCtPicker(targetInputId) {
+  ctPickerTargetInputId = targetInputId || 'ctPathInput';
   document.getElementById('ctPickerOverlay').hidden = false;
   loadCtPickerDir(ctPickerPath);
 }
@@ -609,8 +619,276 @@ function renderCtPickerTree(items) {
 }
 
 function selectCtPickerFolder() {
-  document.getElementById('ctPathInput').value = ctPickerPath || '';
+  document.getElementById(ctPickerTargetInputId).value = ctPickerPath || '';
   closeCtPicker();
+}
+
+// ── Home Page Strips (HOME_STRIPS_SPEC.md) ──────────────────────────────────────
+const MAX_NON_DEFAULT_HOME_STRIPS = 5;
+const HS_FIELD_LABELS = {
+  genre: 'Genre', publisher: 'Publisher', writer: 'Writer', artist: 'Artist',
+  format: 'Format', decade: 'Decade', year: 'Year', rating: 'Rating', bw: 'Black & White',
+};
+const HS_FIELD_ENDPOINTS = {
+  genre:     { url: '/browse/genres',     key: 'genre' },
+  publisher: { url: '/browse/publishers', key: 'publisher' },
+  writer:    { url: '/browse/writers',    key: 'writer' },
+  artist:    { url: '/browse/artists',    key: 'artist' },
+  format:    { url: '/browse/formats',    key: 'format' },
+  decade:    { url: '/browse/decades',    key: 'decade' },
+  year:      { url: '/browse/years',      key: 'year' },
+  rating:    { url: '/browse/ratings',    key: 'rating' },
+};
+let homeStrips = [];
+
+async function loadHomeStrips() {
+  try {
+    const r = await fetch(`${API}/admin/home-strips`);
+    if (!r.ok) throw new Error(r.statusText);
+    homeStrips = await r.json();
+  } catch (_) {
+    homeStrips = [];
+  }
+  renderHomeStrips();
+}
+
+function renderHomeStrips() {
+  const list = document.getElementById('hsStripList');
+  list.innerHTML = '';
+
+  homeStrips.forEach((strip, index) => {
+    list.appendChild(makeHomeStripRow(strip, index === 0, index === homeStrips.length - 1));
+  });
+
+  const nonDefaultCount = homeStrips.filter(s => !s.is_default).length;
+  const atCap = nonDefaultCount >= MAX_NON_DEFAULT_HOME_STRIPS;
+  document.getElementById('hsAddBtn').disabled = atCap;
+  document.getElementById('hsCapHint').hidden = !atCap;
+}
+
+function hsBasisSummary(strip) {
+  if (strip.basis_type === 'builtin') return strip.name === 'Continue Reading' ? 'pinned first when active' : 'default';
+  if (strip.basis_type === 'field') return `${HS_FIELD_LABELS[strip.field_name] || strip.field_name}: ${strip.field_value}`;
+  return strip.folder_path;
+}
+
+function makeHomeStripRow(strip, isFirst, isLast) {
+  const row = document.createElement('div');
+  row.className = 'ct-tab-row';
+
+  const arrows = document.createElement('div');
+  arrows.className = 'hs-reorder-arrows';
+  const upBtn = document.createElement('button');
+  upBtn.type = 'button';
+  upBtn.className = 'hs-arrow-btn';
+  upBtn.textContent = '▲';
+  upBtn.disabled = isFirst;
+  upBtn.addEventListener('click', () => moveHomeStrip(strip, -1));
+  const downBtn = document.createElement('button');
+  downBtn.type = 'button';
+  downBtn.className = 'hs-arrow-btn';
+  downBtn.textContent = '▼';
+  downBtn.disabled = isLast;
+  downBtn.addEventListener('click', () => moveHomeStrip(strip, 1));
+  arrows.append(upBtn, downBtn);
+
+  const info = document.createElement('div');
+  info.className = 'ct-tab-info';
+  const nameLine = document.createElement('div');
+  nameLine.className = 'ct-tab-name';
+  nameLine.append(document.createTextNode(strip.name));
+  if (strip.is_default) {
+    const badge = document.createElement('span');
+    badge.className = 'ct-hidden-badge';
+    badge.textContent = 'Default';
+    nameLine.appendChild(badge);
+  } else if (!strip.visible) {
+    const badge = document.createElement('span');
+    badge.className = 'ct-hidden-badge';
+    badge.textContent = 'Hidden';
+    nameLine.appendChild(badge);
+  }
+  const summaryLine = document.createElement('div');
+  summaryLine.className = 'ct-tab-path';
+  summaryLine.textContent = hsBasisSummary(strip);
+  info.append(nameLine, summaryLine);
+
+  row.append(arrows, info);
+
+  if (!strip.is_default) {
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = `ct-visible-toggle${strip.visible ? ' is-visible' : ''}`;
+    toggleBtn.textContent = strip.visible ? 'Visible' : 'Hidden';
+    toggleBtn.addEventListener('click', () => toggleHomeStripVisible(strip));
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'folder-remove-btn';
+    delBtn.textContent = 'Delete';
+    delBtn.addEventListener('click', () => deleteHomeStrip(strip));
+
+    row.append(toggleBtn, delBtn);
+  }
+
+  return row;
+}
+
+async function moveHomeStrip(strip, direction) {
+  const index = homeStrips.findIndex(s => s.id === strip.id);
+  const swapIndex = index + direction;
+  if (swapIndex < 0 || swapIndex >= homeStrips.length) return;
+
+  const other = homeStrips[swapIndex];
+  const payload = [
+    { id: strip.id, position: other.position },
+    { id: other.id, position: strip.position },
+  ];
+  try {
+    const r = await fetch(`${API}/admin/home-strips/reorder`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      showToast(d.detail || 'Reorder failed', true);
+      return;
+    }
+    await loadHomeStrips();
+  } catch (e) {
+    showToast('Reorder failed: ' + e.message, true);
+  }
+}
+
+async function toggleHomeStripVisible(strip) {
+  try {
+    const r = await fetch(`${API}/admin/home-strips/${strip.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visible: !strip.visible }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      showToast(d.detail || 'Could not update strip', true);
+      return;
+    }
+    await loadHomeStrips();
+  } catch (e) {
+    showToast('Could not update strip: ' + e.message, true);
+  }
+}
+
+async function deleteHomeStrip(strip) {
+  const ok = confirm(
+    `Delete strip "${strip.name}"?\n\n` +
+    `This only removes the strip definition — it will not touch any comic files or library data.`
+  );
+  if (!ok) return;
+  try {
+    const r = await fetch(`${API}/admin/home-strips/${strip.id}`, { method: 'DELETE' });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      showToast(d.detail || 'Delete failed', true);
+      return;
+    }
+    showToast('Strip deleted');
+    await loadHomeStrips();
+  } catch (e) {
+    showToast('Delete failed: ' + e.message, true);
+  }
+}
+
+function hsBasisType() {
+  const checked = document.querySelector('input[name="hsBasis"]:checked');
+  return checked ? checked.value : 'field';
+}
+
+function updateHsBasisRows() {
+  const basis = hsBasisType();
+  document.getElementById('hsFieldRow').hidden = basis !== 'field';
+  document.getElementById('hsFolderRow').hidden = basis !== 'folder';
+}
+
+async function updateHsFieldValueOptions() {
+  const fieldName = document.getElementById('hsFieldNameSelect').value;
+  const valueSelect = document.getElementById('hsFieldValueSelect');
+  valueSelect.innerHTML = '<option value="">Value…</option>';
+  if (!fieldName) return;
+
+  if (fieldName === 'bw') {
+    valueSelect.add(new Option('Yes', 'yes'));
+    valueSelect.add(new Option('No', 'no'));
+    return;
+  }
+
+  const endpoint = HS_FIELD_ENDPOINTS[fieldName];
+  if (!endpoint) return;
+  try {
+    const r = await fetch(`${API}${endpoint.url}`);
+    const rows = await r.json();
+    for (const row of rows) {
+      const val = String(row[endpoint.key]);
+      valueSelect.add(new Option(val, val));
+    }
+  } catch (_) {
+    // Leave the placeholder-only dropdown — add will fail validation server-side if used.
+  }
+}
+
+function updateHsOrderModeRow() {
+  document.getElementById('hsSortFieldSelect').hidden = document.getElementById('hsOrderModeSelect').value !== 'fixed';
+}
+
+async function addHomeStrip() {
+  const nameInput = document.getElementById('hsNameInput');
+  const name = nameInput.value.trim();
+  if (!name) {
+    showToast('Strip name is required', true);
+    return;
+  }
+
+  const basisType = hsBasisType();
+  const orderMode = document.getElementById('hsOrderModeSelect').value;
+  const payload = { name, basis_type: basisType, order_mode: orderMode };
+
+  if (basisType === 'field') {
+    payload.field_name = document.getElementById('hsFieldNameSelect').value;
+    payload.field_value = document.getElementById('hsFieldValueSelect').value;
+    if (!payload.field_name || !payload.field_value) {
+      showToast('Pick a field and a value', true);
+      return;
+    }
+  } else {
+    payload.folder_path = document.getElementById('hsFolderInput').value.trim();
+    if (!payload.folder_path) {
+      showToast('Folder path is required', true);
+      return;
+    }
+  }
+  if (orderMode === 'fixed') {
+    payload.sort_field = document.getElementById('hsSortFieldSelect').value;
+  }
+
+  try {
+    const r = await fetch(`${API}/admin/home-strips`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      showToast(d.detail || 'Could not add strip', true);
+      return;
+    }
+    if (d.warning) showToast(d.warning, true);
+    else showToast('Strip added');
+    nameInput.value = '';
+    document.getElementById('hsFolderInput').value = '';
+    document.getElementById('hsFieldNameSelect').value = '';
+    document.getElementById('hsFieldValueSelect').innerHTML = '<option value="">Value…</option>';
+    await loadHomeStrips();
+  } catch (e) {
+    showToast('Could not add strip: ' + e.message, true);
+  }
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────

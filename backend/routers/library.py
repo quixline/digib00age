@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models import CustomTab, Issue, IssueGenre, ReadingProgress
-from backend.path_utils import is_under
+from backend.path_utils import is_under, matches_field
 
 router = APIRouter(tags=["library"])
 
@@ -108,21 +108,25 @@ def _series_cover_issue(series_name: str, db: Session) -> Issue | None:
 def get_library(
     group: Optional[str] = Query(None, description="Filter by 'Series' or 'Singles'"),
     tab_id: Optional[int] = Query(None, description="Filter to a custom tab's folder_path"),
+    folder_path: Optional[str] = Query(None, description="Filter to an ad-hoc folder (e.g. a home strip's 'view all' link)"),
+    field: Optional[str] = Query(None, description="One of: genre, publisher, writer, artist, format, decade, year, rating, bw"),
+    value: Optional[str] = Query(None, description="Value to match for `field`"),
     db: Session = Depends(get_db),
 ):
     """
     Returns one entry per unique series name, with cover, issue count,
-    and unread count. Optionally filtered by format_group, or by a custom
-    tab's folder (CUSTOM_TABS_SPEC.md) — issues are filtered by file_path
-    BEFORE the per-series groupby below, so a series whose issues span both
-    inside and outside the tab's folder shows counts scoped to the in-folder
-    issues only (intended behaviour for a folder-scoped tab).
+    and unread count. Optionally filtered by format_group, by a custom
+    tab's folder (CUSTOM_TABS_SPEC.md), by an ad-hoc folder_path, or by a
+    single field+value (HOME_STRIPS_SPEC.md's field-based strips) — issues
+    are filtered by file_path/field BEFORE the per-series groupby below, so
+    a series spanning both sides of the filter shows counts scoped to the
+    matching issues only (intended for folder/field-scoped views).
     """
     query = db.query(Issue).filter(Issue.missing == False)
     if group:
         query = query.filter(Issue.format_group == group)
 
-    tab_folder = None
+    tab_folder = folder_path
     if tab_id is not None:
         tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
         if not tab:
@@ -132,6 +136,8 @@ def get_library(
     all_issues = query.all()
     if tab_folder:
         all_issues = [i for i in all_issues if is_under(i.file_path, tab_folder)]
+    if field and value is not None:
+        all_issues = [i for i in all_issues if matches_field(i, field, value)]
 
     # Group by series name
     series_map: dict[str, list[Issue]] = {}
@@ -536,6 +542,28 @@ def browse_decades(db: Session = Depends(get_db)):
         {"decade": d, "issue_count": c}
         for d, c in sorted(decade_map.items())
     ]
+
+
+# ---------------------------------------------------------------------------
+# GET /api/browse/years
+# ---------------------------------------------------------------------------
+
+@router.get("/browse/years")
+def browse_years(db: Session = Depends(get_db)):
+    """
+    Distinct years with issue counts — the web UI's own Year filter dropdown
+    derives this client-side from /api/library, but HOME_STRIPS_SPEC.md's
+    field-based strips need a server-side source the same way the other 8
+    filter dimensions already have one.
+    """
+    rows = (
+        db.query(Issue.year, func.count(Issue.id).label("issue_count"))
+        .filter(Issue.missing == False, Issue.year != None)
+        .group_by(Issue.year)
+        .order_by(Issue.year.desc())
+        .all()
+    )
+    return [{"year": r.year, "issue_count": r.issue_count} for r in rows]
 
 
 # ---------------------------------------------------------------------------

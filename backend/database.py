@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
 
 from backend.config import DB_PATH
-from backend.models import Base
+from backend.models import Base, HomeStrip
 
 
 def _get_engine():
@@ -41,7 +41,27 @@ _PERF_INDEXES = [
     "CREATE INDEX IF NOT EXISTS ix_issues_year          ON issues (year)",
     "CREATE INDEX IF NOT EXISTS ix_rp_status            ON reading_progress (status)",
     "CREATE INDEX IF NOT EXISTS ix_custom_tabs_visible  ON custom_tabs (visible, created_at)",
+    "CREATE INDEX IF NOT EXISTS ix_home_strips_position ON home_strips (position)",
 ]
+
+# Seeded once, per HOME_STRIPS_SPEC.md Section 2 — name is also the lookup key
+# `home.py` uses to dispatch each builtin row to its existing strip logic.
+_DEFAULT_HOME_STRIPS = ["Continue Reading", "Recently Added", "Random Unread", "Random Genre"]
+
+
+def _seed_default_home_strips():
+    with SessionLocal() as session:
+        if session.query(HomeStrip).filter(HomeStrip.is_default == True).first():  # noqa: E712
+            return
+        for position, name in enumerate(_DEFAULT_HOME_STRIPS):
+            session.add(HomeStrip(
+                is_default=True,
+                name=name,
+                basis_type="builtin",
+                visible=True,
+                position=position,
+            ))
+        session.commit()
 
 
 def init_db():
@@ -52,6 +72,7 @@ def init_db():
         for ddl in _PERF_INDEXES:
             conn.execute(text(ddl))
         conn.commit()
+    _seed_default_home_strips()
 
 
 def get_db() -> Generator[Session, None, None]:
