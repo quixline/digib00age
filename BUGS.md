@@ -6,7 +6,53 @@ Add new entries at the top. Mark fixed entries with the date and what was change
 
 ---
 
-## OPEN
+## FIXED
+
+### BUG-004 — Tray app shows "Start ComicVault at login" ticked but server doesn't start on login; manual Start also fails
+
+**Found:** 2026-06-19, first login after an OS restart following the prior session's
+tray app changes (split Stop/Start, add Close, dark menu, login autostart toggle —
+commit `6fc1840`). That session's testing was done but the OS restart + fresh login
+happened afterward, outside the tested window.
+
+**What happened:** Tray app started automatically at login as expected, and the
+"Start ComicVault at login" menu item correctly showed as ticked. However the backend
+server subprocess kept exiting immediately. Manually invoking Start from the tray menu
+also failed — not a tray-app or autostart bug at all.
+
+**Root cause — not in ComicVault's code.** `tray/reader_stdout.log` showed the actual
+uvicorn error on every restart attempt:
+`ERROR: [Errno 13] ... [winerror 10013] an attempt was made to access a socket in a
+way forbidden by its access permissions` when binding `0.0.0.0:8000`.
+`netsh interface ipv4 show excludedportrange protocol=tcp` confirmed port 8000 fell
+inside a Windows TCP port-exclusion range (`7981–8080`) — `netstat` showed nothing
+actually listening on 8000, i.e. Windows itself was refusing the bind, not a
+competing process. `hns`/`vmms`(Hyper-V)/`WSL Service` were all running on this
+machine; WSL2/Hyper-V's networking stack reserves blocks of TCP ports for NAT at
+boot, and on this particular boot the reserved block happened to swallow port 8000.
+This explains why manual Start also failed: it's an OS-level bind refusal, independent
+of how the process is launched.
+
+**Fix applied this session:** Restarted the `winnat` service (`net stop winnat` /
+`net start winnat`) to force Windows to recompute its port-exclusion ranges. Confirmed
+8000 was no longer excluded afterward, and the tray app's own health-check loop
+(30s interval) picked this up on its next retry without any further action — log
+shows `Reader server is up.` at 18:46:28, `netstat` confirmed `0.0.0.0:8000 LISTENING`,
+and `GET /api/admin/stats` returned 200.
+
+**Not a recurring code defect, but a recurring environmental risk:** any future
+reboot can reproduce this if WSL2/Hyper-V's networking service happens to claim a
+range overlapping port 8000 again. There is no permanent code-level fix being applied
+in this session (would require either changing ComicVault's port to one outside
+commonly-claimed ranges, or scripting a winnat restart into the startup sequence —
+neither attempted here; flagging as a possible `ROADMAP.md` item rather than doing it
+under this bug ticket).
+
+**Status:** Resolved for this session by restarting `winnat`. Tray app and
+`start_server.py` both behaved correctly throughout — no code changes were needed or
+made.
+
+---
 
 ### BUG-003 — Dead duplicate route: `GET /api/reading/continue` defined twice
 

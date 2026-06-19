@@ -777,3 +777,41 @@ this session.
 This closes the first of the two remaining v2.1 items. Mobile reader changes (tracked
 in `v2_1-main-new-features.md`) are not started.
 
+---
+
+## Session — 2026-06-19: BUG-004, server failed to start after OS restart
+
+**Goal:** Investigate why, on first login after the OS restart that followed the prior
+tray-app session's testing, the server didn't start automatically (despite "Start
+ComicVault at login" showing correctly ticked) and manual "Start Server" from the tray
+menu also did nothing.
+
+**Found:** Not a tray-app or autostart bug. `tray/reader_stdout.log` showed uvicorn
+itself failing on every launch attempt with `[WinError 10013] an attempt was made to
+access a socket in a way forbidden by its access permissions` when binding
+`0.0.0.0:8000`. `netsh interface ipv4 show excludedportrange protocol=tcp` confirmed
+port 8000 fell inside a Windows-reserved TCP exclusion range (`7981–8080`) at the time;
+`netstat` showed no process actually holding 8000, i.e. Windows itself was refusing
+the bind. `hns`, `vmms` (Hyper-V), and the WSL Service were all running on this
+machine — this is the known behaviour where WSL2/Hyper-V's networking stack reserves
+blocks of TCP ports for NAT at boot, and this particular boot's reserved block
+happened to overlap port 8000.
+
+**Fix applied:** Restarted the `winnat` service (`net stop winnat` / `net start
+winnat`) to force Windows to recompute its exclusion ranges. Confirmed port 8000 was
+no longer excluded afterward. No manual restart of the tray app or server was even
+needed — the tray app's existing 30-second health-check loop picked the now-available
+port up on its own next retry (`tray.log`: "Reader server is up." at 18:46:28).
+Confirmed `netstat` showed `0.0.0.0:8000 LISTENING` and `GET /api/admin/stats`
+returned `200`.
+
+**No code changes made.** `tray_app.py` and `start_server.py` both behaved exactly as
+designed throughout (correct retry/health-check behaviour is in fact what self-healed
+this once the OS-level block cleared) — logged as BUG-004 in `BUGS.md` for the record,
+since "manual Start also failing" is a legitimate first-impression of a code bug and
+worth having the real (environmental) explanation on file. Flagged as a possible
+future `ROADMAP.md` item: either move ComicVault off port 8000 to a range Windows
+doesn't commonly reserve for Hyper-V/WSL NAT, or have `start.bat`/the tray app
+proactively restart `winnat` before launching — neither done in this session, since
+the immediate goal was just to get the server back up and find the real cause.
+
