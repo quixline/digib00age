@@ -1,11 +1,12 @@
 # Config (machine-specific, contains real library path)
 config.json
 
-# Database
-backend/comicvault.db
-backend/comicvault.db-wal
-backend/comicvault.db-shm
-backend/*.db.backup*
+# Database — glob (not a fixed filename) so it survives renames like the
+# V1 comicvault.db -> V2 comicvault_v2.db clone, and covers dated backups
+# (comicvault_backup_*.db) from POST /api/admin/backup
+backend/*.db
+backend/*.db-wal
+backend/*.db-shm
 
 # Generated thumbnails
 backend/thumbnails/
@@ -39,6 +40,7 @@ flutter_app/windows/flutter/ephemeral/
 
 # Local tool config
 .claude/
+CLAUDE.md
 
 # Planning docs (not part of the codebase) — one-off task instructions, already actioned
 V2_MIGRATION_SETUP.md
