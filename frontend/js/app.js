@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let allLibrary  = [];           // raw /api/library response (cached)
 let filtersReady = false;       // filter dropdowns populated
+let tabLibraryCache = {};       // custom tab id (string) -> /api/library?tab_id=… response
 
 // Active filter state
 let activeSurface   = 'home';   // home | series | singles | all | 2000ad
@@ -78,11 +79,13 @@ async function initLibrary() {
     bindSurfaceNav();
     bindFilterEvents();
     bindSearchEvents();
+    await loadCustomTabsNav();
     // Honour ?surface= so the back button from detail pages returns to the right tab
     const params     = new URLSearchParams(location.search);
     const reqSurface = params.get('surface') || 'home';
     const VALID      = ['home', 'series', 'singles', 'all', '2000ad'];
-    await switchSurface(VALID.includes(reqSurface) ? reqSurface : 'home');
+    const known      = VALID.includes(reqSurface) || reqSurface.startsWith('tab-');
+    await switchSurface(known ? reqSurface : 'home');
   } catch (err) {
     console.error('initLibrary failed:', err);
     const homeStrips = document.getElementById('homeStrips');
@@ -98,13 +101,54 @@ async function initLibrary() {
 // ── Surface navigation ────────────────────────────────────────────────────────
 
 function bindSurfaceNav() {
-  document.querySelectorAll('.surface-btn').forEach(btn => {
-    btn.addEventListener('click', () => switchSurface(btn.dataset.surface));
+  // Delegated (rather than bound per-button) so custom-tab buttons injected
+  // later by loadCustomTabsNav() work without a second bind pass.
+  document.querySelector('.surface-nav').addEventListener('click', (e) => {
+    const btn = e.target.closest('.surface-btn');
+    if (btn) switchSurface(btn.dataset.surface);
   });
+}
+
+function isBrowseSurface(surface) {
+  return ['series', 'singles', 'all'].includes(surface) || surface.startsWith('tab-');
+}
+
+// Custom Tabs (CUSTOM_TABS_SPEC.md) — admin-managed, folder-scoped tabs,
+// appended after the fixed nav so they render last (Home, All, Singles,
+// Series, 2000 AD, then visible custom tabs in created_at order).
+async function loadCustomTabsNav() {
+  try {
+    const nav = await apiFetch('/nav/config');
+    const container = document.querySelector('.surface-nav');
+    const names = {};
+    for (const tab of nav.custom_tabs || []) {
+      const btn = el('button', 'surface-btn', tab.name);
+      btn.dataset.surface = `tab-${tab.id}`;
+      btn.setAttribute('role', 'tab');
+      btn.setAttribute('aria-selected', 'false');
+      container.appendChild(btn);
+      names[`tab-${tab.id}`] = tab.name;
+    }
+    // Cached so series.html/issue.html (separate page loads) can label a
+    // "from=tab-N" back link with the tab's actual name instead of "Library".
+    sessionStorage.setItem('cv_custom_tab_names', JSON.stringify(names));
+  } catch (_) {
+    // Fixed-tab nav still works if this fails; not fatal.
+  }
+}
+
+function customTabLabel(from) {
+  try {
+    const names = JSON.parse(sessionStorage.getItem('cv_custom_tab_names') || '{}');
+    return names[from] || null;
+  } catch (_) {
+    return null;
+  }
 }
 
 async function switchSurface(surface) {
   activeSurface = surface;
+  const isBrowse = isBrowseSurface(surface);
 
   // Update tab state
   document.querySelectorAll('.surface-btn').forEach(b => {
@@ -114,13 +158,13 @@ async function switchSurface(surface) {
 
   // Show/hide major views
   document.getElementById('homeView').hidden   = surface !== 'home';
-  document.getElementById('browseView').hidden = !['series','singles','all'].includes(surface);
+  document.getElementById('browseView').hidden = !isBrowse;
   document.getElementById('adView').hidden     = surface !== '2000ad';
-  document.getElementById('searchWrap').hidden = !['series','singles','all'].includes(surface);
+  document.getElementById('searchWrap').hidden = !isBrowse;
 
   if (surface === 'home') {
     await loadHome();
-  } else if (['series','singles','all'].includes(surface)) {
+  } else if (isBrowse) {
     // Clear search when switching surface
     const input = document.getElementById('searchInput');
     if (input) { input.value = ''; activeSearch = ''; }
@@ -294,12 +338,17 @@ function renderContinueStrip(items) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function loadBrowse() {
+  const grid = document.getElementById('coverGrid');
+
   if (!allLibrary.length) {
-    document.getElementById('coverGrid').innerHTML = '<div class="loading-state">Loading…</div>';
+    // Fetched regardless of surface — filter dropdown options (populated
+    // below) are global across the whole library, same as the existing
+    // Series/Singles/All surfaces.
+    grid.innerHTML = '<div class="loading-state">Loading…</div>';
     try {
       allLibrary = await apiFetch('/library');
     } catch (err) {
-      document.getElementById('coverGrid').innerHTML =
+      grid.innerHTML =
         '<div class="empty-state"><div class="empty-icon">⚠️</div>' +
         '<p>Could not reach the server. Is it running?</p></div>';
       return;
@@ -309,6 +358,21 @@ async function loadBrowse() {
   if (!filtersReady) {
     await populateFilterDropdowns();
     filtersReady = true;
+  }
+
+  if (activeSurface.startsWith('tab-')) {
+    const tabId = activeSurface.slice(4);
+    if (!tabLibraryCache[tabId]) {
+      grid.innerHTML = '<div class="loading-state">Loading…</div>';
+      try {
+        tabLibraryCache[tabId] = await apiFetch(`/library?tab_id=${tabId}`);
+      } catch (err) {
+        grid.innerHTML =
+          '<div class="empty-state"><div class="empty-icon">⚠️</div>' +
+          '<p>This tab is no longer available.</p></div>';
+        return;
+      }
+    }
   }
 
   renderBrowse();
@@ -349,12 +413,18 @@ async function populateFilterDropdowns() {
 // ── Filter + sort + render ────────────────────────────────────────────────────
 
 function getFilteredLibrary() {
-  let pool = allLibrary;
+  let pool;
 
-  // Surface pool
-  if (activeSurface === 'series')  pool = pool.filter(s => s.format_group === 'Series');
-  if (activeSurface === 'singles') pool = pool.filter(s => s.format_group === 'Singles');
-  // 'all' = both
+  if (activeSurface.startsWith('tab-')) {
+    // Custom tab — already folder-scoped server-side; flat like 'all' (no
+    // format_group split), per CUSTOM_TABS_SPEC.md 5.3.
+    pool = tabLibraryCache[activeSurface.slice(4)] || [];
+  } else {
+    pool = allLibrary;
+    if (activeSurface === 'series')  pool = pool.filter(s => s.format_group === 'Series');
+    if (activeSurface === 'singles') pool = pool.filter(s => s.format_group === 'Singles');
+    // 'all' = both
+  }
 
   // Inline search
   if (activeSearch) {
@@ -440,13 +510,14 @@ function _renderBrowsePage() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   currentPage      = Math.min(currentPage, totalPages);
 
-  // All surface shows grand total of individual comics (spec 20.1 / 20.3)
-  // Series and Singles show card count. All gets "Titles" label.
-  const displayCount = activeSurface === 'all'
+  // All surface (and custom tabs, which are flat like All) show grand total
+  // of individual comics (spec 20.1 / 20.3). Series and Singles show card count.
+  const isFlatSurface = activeSurface === 'all' || activeSurface.startsWith('tab-');
+  const displayCount = isFlatSurface
     ? filtered.reduce((sum, s) => sum + (s.issue_count || 1), 0)
     : filtered.length;
   const countSuffix = { series: 'Series', singles: 'Titles', all: 'Titles' };
-  const suffix = countSuffix[activeSurface] || '';
+  const suffix = isFlatSurface ? 'Titles' : (countSuffix[activeSurface] || '');
   countEl.textContent = suffix
     ? `${displayCount.toLocaleString()} ${suffix}`
     : displayCount.toLocaleString();
@@ -861,7 +932,7 @@ function buildSeriesHeader(data) {
   // Top row: back link + mark-all-read
   const _from    = new URLSearchParams(location.search).get('from') || '';
   const _LABELS  = { home: 'Home', series: 'Series', singles: 'Singles', all: 'All' };
-  const _label   = _LABELS[_from] || 'Library';
+  const _label   = _LABELS[_from] || customTabLabel(_from) || 'Library';
   const _backHref = (_from && _from !== 'home') ? `/?surface=${_from}` : '/';
 
   const topRow = el('div', 'series-hero-top');
@@ -1030,7 +1101,7 @@ async function initIssue() {
     const backLink = document.getElementById('backLink');
     if (data.format_group === 'Singles') {
       backLink.href        = (from && from !== 'home') ? `/?surface=${from}` : '/';
-      backLink.textContent = `← ${LABELS[from] || 'Library'}`;
+      backLink.textContent = `← ${LABELS[from] || customTabLabel(from) || 'Library'}`;
     } else {
       backLink.href        = `/series/${data.id}${from ? `?from=${from}` : ''}`;
       backLink.textContent = `← ${data.series}`;

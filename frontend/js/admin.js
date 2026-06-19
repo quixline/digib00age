@@ -22,6 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('newExcludeInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') addExclude();
   });
+
+  loadCustomTabs();
+  document.getElementById('ctAddBtn').addEventListener('click', addCustomTab);
+  document.getElementById('ctBrowseBtn').addEventListener('click', openCtPicker);
+  document.getElementById('ctPickerCloseBtn').addEventListener('click', closeCtPicker);
+  document.getElementById('ctPickerSelectBtn').addEventListener('click', selectCtPickerFolder);
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -374,6 +380,237 @@ function toggleAdvanced() {
 async function saveAdvanced() {
   const val = document.getElementById('readerLocationInput').value.trim();
   await patchConfig({ library_root: val });
+}
+
+// ── Custom Tabs (CUSTOM_TABS_SPEC.md) ───────────────────────────────────────────
+const MAX_VISIBLE_CUSTOM_TABS = 4;
+let customTabs  = [];
+let ctPickerPath = null;
+let ctPickerRoots = [];
+
+async function loadCustomTabs() {
+  try {
+    const r = await fetch(`${API}/admin/custom-tabs`);
+    if (!r.ok) throw new Error(r.statusText);
+    customTabs = await r.json();
+  } catch (_) {
+    customTabs = [];
+  }
+  renderCustomTabs();
+}
+
+function renderCustomTabs() {
+  const list = document.getElementById('ctTabList');
+  list.innerHTML = '';
+
+  if (!customTabs.length) {
+    list.innerHTML = '<p class="admin-empty-hint">No custom tabs yet.</p>';
+  } else {
+    for (const tab of customTabs) {
+      list.appendChild(makeCustomTabRow(tab));
+    }
+  }
+
+  const visibleCount = customTabs.filter(t => t.visible).length;
+  const atCap   = visibleCount >= MAX_VISIBLE_CUSTOM_TABS;
+  document.getElementById('ctAddBtn').disabled  = atCap;
+  document.getElementById('ctCapHint').hidden    = !atCap;
+}
+
+function makeCustomTabRow(tab) {
+  const row = document.createElement('div');
+  row.className = 'ct-tab-row';
+
+  const info = document.createElement('div');
+  info.className = 'ct-tab-info';
+  const nameLine = document.createElement('div');
+  nameLine.className = 'ct-tab-name';
+  nameLine.append(document.createTextNode(tab.name));
+  if (!tab.visible) {
+    const badge = document.createElement('span');
+    badge.className = 'ct-hidden-badge';
+    badge.textContent = 'Hidden';
+    nameLine.appendChild(badge);
+  }
+  const pathLine = document.createElement('div');
+  pathLine.className = 'ct-tab-path';
+  pathLine.textContent = tab.folder_path;
+  info.append(nameLine, pathLine);
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = `ct-visible-toggle${tab.visible ? ' is-visible' : ''}`;
+  toggleBtn.textContent = tab.visible ? 'Visible' : 'Hidden';
+  toggleBtn.addEventListener('click', () => toggleCustomTabVisible(tab));
+
+  const delBtn = document.createElement('button');
+  delBtn.className = 'folder-remove-btn';
+  delBtn.textContent = 'Delete';
+  delBtn.addEventListener('click', () => deleteCustomTab(tab));
+
+  row.append(info, toggleBtn, delBtn);
+  return row;
+}
+
+async function toggleCustomTabVisible(tab) {
+  try {
+    const r = await fetch(`${API}/admin/custom-tabs/${tab.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ visible: !tab.visible }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      showToast(d.detail || 'Could not update tab', true);
+      return;
+    }
+    await loadCustomTabs();
+  } catch (e) {
+    showToast('Could not update tab: ' + e.message, true);
+  }
+}
+
+async function deleteCustomTab(tab) {
+  const ok = confirm(
+    `Delete tab "${tab.name}"?\n\n` +
+    `This only removes the tab definition — it will not touch any comic files or library data.`
+  );
+  if (!ok) return;
+  try {
+    const r = await fetch(`${API}/admin/custom-tabs/${tab.id}`, { method: 'DELETE' });
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      showToast(d.detail || 'Delete failed', true);
+      return;
+    }
+    showToast('Tab deleted');
+    await loadCustomTabs();
+  } catch (e) {
+    showToast('Delete failed: ' + e.message, true);
+  }
+}
+
+async function addCustomTab() {
+  const nameInput = document.getElementById('ctNameInput');
+  const pathInput = document.getElementById('ctPathInput');
+  const name = nameInput.value.trim();
+  const folder_path = pathInput.value.trim();
+  if (!name || !folder_path) {
+    showToast('Name and folder path are both required', true);
+    return;
+  }
+  try {
+    const r = await fetch(`${API}/admin/custom-tabs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, folder_path }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      showToast(d.detail || 'Could not add tab', true);
+      return;
+    }
+    if (d.warning) showToast(d.warning, true);
+    else showToast('Tab added');
+    nameInput.value = '';
+    pathInput.value = '';
+    await loadCustomTabs();
+  } catch (e) {
+    showToast('Could not add tab: ' + e.message, true);
+  }
+}
+
+// ── Custom Tabs — folder picker modal ───────────────────────────────────────────
+function openCtPicker() {
+  document.getElementById('ctPickerOverlay').hidden = false;
+  loadCtPickerDir(ctPickerPath);
+}
+
+function closeCtPicker() {
+  document.getElementById('ctPickerOverlay').hidden = true;
+}
+
+async function loadCtPickerDir(path) {
+  const url = path ? `${API}/admin/browse?path=${encodeURIComponent(path)}` : `${API}/admin/browse`;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
+    const data = await r.json();
+    ctPickerPath  = data.path;
+    ctPickerRoots = data.roots || [];
+    renderCtPickerRoots();
+    renderCtPickerBreadcrumb(data.path);
+    renderCtPickerTree(data.items || []);
+  } catch (e) {
+    showToast('Could not browse: ' + e.message, true);
+  }
+}
+
+function renderCtPickerRoots() {
+  const wrap = document.getElementById('ctPickerRoots');
+  wrap.innerHTML = '';
+  if (ctPickerRoots.length <= 1) return;
+  for (const root of ctPickerRoots) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-admin-action';
+    btn.textContent = root;
+    btn.addEventListener('click', () => loadCtPickerDir(root));
+    wrap.appendChild(btn);
+  }
+}
+
+function renderCtPickerBreadcrumb(path) {
+  const breadcrumb = document.getElementById('ctPickerBreadcrumb');
+  const parts = path.split('\\').filter(Boolean);
+  let accumulated = '';
+  breadcrumb.innerHTML = '';
+  parts.forEach((part, index) => {
+    accumulated += (index === 0 ? '' : '\\') + part;
+    const isLast = index === parts.length - 1;
+    if (isLast) {
+      const span = document.createElement('span');
+      span.textContent = part;
+      breadcrumb.appendChild(span);
+    } else {
+      const link = document.createElement('a');
+      link.href = '#';
+      link.textContent = part;
+      const target = accumulated;
+      link.onclick = (e) => { e.preventDefault(); loadCtPickerDir(target); };
+      breadcrumb.appendChild(link);
+    }
+    if (!isLast) breadcrumb.appendChild(document.createTextNode(' \\ '));
+  });
+}
+
+function renderCtPickerTree(items) {
+  const tree = document.getElementById('ctPickerTree');
+  tree.innerHTML = '';
+
+  if (!items.length) {
+    const empty = document.createElement('div');
+    empty.className = 'fe-picker-empty';
+    empty.textContent = 'No subfolders.';
+    tree.appendChild(empty);
+    return;
+  }
+
+  items.sort((a, b) => a.name.localeCompare(b.name));
+  for (const item of items) {
+    const row = document.createElement('div');
+    row.className = 'fe-picker-item folder';
+    const name = document.createElement('span');
+    name.className = 'fe-picker-item-name';
+    name.textContent = item.name;
+    row.appendChild(name);
+    row.addEventListener('click', () => loadCtPickerDir(item.path));
+    tree.appendChild(row);
+  }
+}
+
+function selectCtPickerFolder() {
+  document.getElementById('ctPathInput').value = ctPickerPath || '';
+  closeCtPicker();
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────

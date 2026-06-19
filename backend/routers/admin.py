@@ -10,17 +10,19 @@ POST /api/admin/backup       Copy comicvault.db to dated backup file
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from backend.config import get_config, PROJECT_ROOT
 from backend.database import get_db, SessionLocal
-from backend.models import Issue, ReadingProgress
+from backend.models import CustomTab, Issue, ReadingProgress
+from backend.path_utils import is_under, normalize_path
 
 router = APIRouter(tags=["admin"])
 
@@ -269,3 +271,176 @@ def backup_database():
         "backup_file": str(backup_path),
         "size_bytes": backup_path.stat().st_size,
     }
+
+
+# ---------------------------------------------------------------------------
+# Custom Tabs — admin-managed, folder-scoped library tabs (CUSTOM_TABS_SPEC.md)
+# ---------------------------------------------------------------------------
+
+MAX_VISIBLE_CUSTOM_TABS = 4
+
+
+def _read_config_fresh() -> dict:
+    """
+    Reads config.json directly from disk, bypassing get_config()'s lru_cache.
+    library_roots written by POST /admin/config must be honoured immediately
+    for tab folder validation — get_config()/config.LIBRARY_ROOT are cached
+    at import time and would otherwise silently validate against stale roots
+    until the process restarts.
+    """
+    config_path = PROJECT_ROOT / "config.json"
+    with open(config_path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _configured_library_roots() -> list[str]:
+    cfg = _read_config_fresh()
+    root = cfg.get("library_root", "")
+    return cfg.get("library_roots", [root] if root else [])
+
+
+def _custom_tab_to_dict(tab: CustomTab) -> dict:
+    return {
+        "id": tab.id,
+        "name": tab.name,
+        "folder_path": tab.folder_path,
+        "visible": tab.visible,
+        "created_at": tab.created_at.isoformat() if tab.created_at else None,
+    }
+
+
+def _validate_tab_folder(folder_path: str) -> dict | None:
+    """Validates folder_path exists; returns a warning dict (or None) if it
+    falls outside every configured library root, or wraps one entirely."""
+    if not os.path.isdir(folder_path):
+        raise HTTPException(status_code=400, detail=f"Folder not found: {folder_path}")
+
+    roots = _configured_library_roots()
+    if not roots:
+        return {"warning": "No library roots are configured — tab content cannot be validated."}
+
+    under_any  = any(is_under(folder_path, root) for root in roots)
+    wraps_root = any(is_under(root, folder_path) for root in roots)
+
+    if not under_any:
+        return {"warning": "This folder is outside all configured library roots — "
+                            "the tab will show 0 issues unless it overlaps a scanned location."}
+    if wraps_root:
+        return {"warning": "This folder contains an entire library root — "
+                            "the tab will show the same content as 'All'."}
+    return None
+
+
+@router.get("/admin/custom-tabs")
+def list_custom_tabs(db: Session = Depends(get_db)):
+    """List all stored tabs (visible and hidden), creation order."""
+    tabs = db.query(CustomTab).order_by(CustomTab.created_at).all()
+    return [_custom_tab_to_dict(t) for t in tabs]
+
+
+@router.post("/admin/custom-tabs")
+def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
+    name = (payload.get("name") or "").strip()
+    folder_path = (payload.get("folder_path") or "").strip()
+    if not name or not folder_path:
+        raise HTTPException(status_code=400, detail="name and folder_path are required")
+
+    warning = _validate_tab_folder(folder_path)
+
+    visible_count = db.query(func.count(CustomTab.id)).filter(CustomTab.visible == True).scalar()  # noqa: E712
+    if visible_count >= MAX_VISIBLE_CUSTOM_TABS:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
+        )
+
+    tab = CustomTab(name=name, folder_path=normalize_path(folder_path), visible=True)
+    db.add(tab)
+    db.commit()
+
+    result = _custom_tab_to_dict(tab)
+    if warning:
+        result.update(warning)
+    return result
+
+
+@router.patch("/admin/custom-tabs/{tab_id}")
+def update_custom_tab(tab_id: int, payload: dict = Body(...), db: Session = Depends(get_db)):
+    tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
+    if not tab:
+        raise HTTPException(status_code=404, detail="Custom tab not found")
+
+    warning = None
+
+    if "name" in payload:
+        name = (payload["name"] or "").strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="name cannot be empty")
+        tab.name = name
+
+    if "folder_path" in payload:
+        folder_path = (payload["folder_path"] or "").strip()
+        if not folder_path:
+            raise HTTPException(status_code=400, detail="folder_path cannot be empty")
+        warning = _validate_tab_folder(folder_path)
+        tab.folder_path = normalize_path(folder_path)
+
+    if "visible" in payload:
+        new_visible = bool(payload["visible"])
+        if new_visible and not tab.visible:
+            visible_count = db.query(func.count(CustomTab.id)).filter(CustomTab.visible == True).scalar()  # noqa: E712
+            if visible_count >= MAX_VISIBLE_CUSTOM_TABS:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
+                )
+        tab.visible = new_visible
+
+    db.commit()
+
+    result = _custom_tab_to_dict(tab)
+    if warning:
+        result.update(warning)
+    return result
+
+
+@router.delete("/admin/custom-tabs/{tab_id}")
+def delete_custom_tab(tab_id: int, db: Session = Depends(get_db)):
+    """Hard-deletes the tab definition only — no file-system side effects."""
+    tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
+    if not tab:
+        raise HTTPException(status_code=404, detail="Custom tab not found")
+    db.delete(tab)
+    db.commit()
+    return {"message": "Custom tab deleted"}
+
+
+@router.get("/admin/browse")
+def admin_browse_directory(path: str = Query(None)):
+    """
+    Folder-only directory listing for the Custom Tabs folder picker.
+    Scoped to ALL configured library_roots (plural) — distinct from
+    /editor/full/browse, which is file/XML-oriented and scoped to a single root.
+    """
+    roots = _configured_library_roots()
+    if not roots:
+        raise HTTPException(status_code=400, detail="No library roots configured")
+
+    target = path or roots[0]
+
+    if not any(is_under(target, root) for root in roots):
+        raise HTTPException(status_code=403, detail="Path is outside all configured library roots")
+
+    if not os.path.isdir(target):
+        raise HTTPException(status_code=404, detail="Directory not found")
+
+    items = []
+    try:
+        for name in sorted(os.listdir(target), key=str.lower):
+            full_path = os.path.join(target, name)
+            if os.path.isdir(full_path):
+                items.append({"name": name, "path": full_path})
+    except (OSError, PermissionError) as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    return {"path": target, "roots": roots, "items": items}

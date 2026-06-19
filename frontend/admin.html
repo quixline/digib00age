@@ -108,11 +108,51 @@
           <div class="admin-field-actions">
             <button class="btn-primary" id="saveAdvancedBtn">Save Advanced Settings</button>
           </div>
+
+          <!-- ── Custom Tabs (CUSTOM_TABS_SPEC.md) ───────────────────────── -->
+          <div class="admin-subsection">
+            <h3 class="admin-subsection-heading">Custom Tabs</h3>
+            <p class="admin-card-hint">
+              Folder-scoped library tabs shown in the home page nav. Up to 4 can be
+              visible at once — hide one to add another. Deleting only removes the
+              tab definition; comic files are never touched.
+            </p>
+            <div class="admin-card">
+              <div class="folder-list" id="ctTabList"></div>
+              <div class="ct-add-form">
+                <input type="text" class="admin-input" id="ctNameInput" placeholder="Tab name" />
+                <div class="ct-path-row">
+                  <input type="text" class="admin-input" id="ctPathInput" placeholder="Folder path" />
+                  <button type="button" class="btn-admin-action" id="ctBrowseBtn">Browse…</button>
+                </div>
+                <div class="ct-add-actions">
+                  <button type="button" class="btn-primary" id="ctAddBtn">Add Tab</button>
+                  <span class="admin-hint" id="ctCapHint" hidden>4 tabs already visible — hide one first.</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </fieldset>
       </div>
     </section>
 
   </main>
+
+  <!-- ── Custom Tab folder picker modal ──────────────────────────────────── -->
+  <div id="ctPickerOverlay" class="editor-overlay" hidden>
+    <div class="editor-modal fe-picker-modal">
+      <div class="editor-modal-header">
+        <h2 class="editor-modal-title">Choose Folder</h2>
+        <button type="button" class="editor-close-btn" id="ctPickerCloseBtn" aria-label="Close">&times;</button>
+      </div>
+      <div class="fe-picker-breadcrumb" id="ctPickerBreadcrumb"></div>
+      <div class="fe-picker-controls" id="ctPickerRoots"></div>
+      <div class="fe-picker-tree" id="ctPickerTree"></div>
+      <div class="editor-actions">
+        <button type="button" class="btn-primary" id="ctPickerSelectBtn">Select This Folder</button>
+      </div>
+    </div>
+  </div>
 
   <script src="/static/js/admin.js"></script>
 </body>

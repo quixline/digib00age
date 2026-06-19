@@ -40,6 +40,7 @@ _PERF_INDEXES = [
     "CREATE INDEX IF NOT EXISTS ix_issues_series        ON issues (series)",
     "CREATE INDEX IF NOT EXISTS ix_issues_year          ON issues (year)",
     "CREATE INDEX IF NOT EXISTS ix_rp_status            ON reading_progress (status)",
+    "CREATE INDEX IF NOT EXISTS ix_custom_tabs_visible  ON custom_tabs (visible, created_at)",
 ]
 
 

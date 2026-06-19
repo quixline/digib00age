@@ -21,7 +21,8 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend.models import Issue, IssueGenre, ReadingProgress
+from backend.models import CustomTab, Issue, IssueGenre, ReadingProgress
+from backend.path_utils import is_under
 
 router = APIRouter(tags=["library"])
 
@@ -106,17 +107,31 @@ def _series_cover_issue(series_name: str, db: Session) -> Issue | None:
 @router.get("/library")
 def get_library(
     group: Optional[str] = Query(None, description="Filter by 'Series' or 'Singles'"),
+    tab_id: Optional[int] = Query(None, description="Filter to a custom tab's folder_path"),
     db: Session = Depends(get_db),
 ):
     """
     Returns one entry per unique series name, with cover, issue count,
-    and unread count. Optionally filtered by format_group.
+    and unread count. Optionally filtered by format_group, or by a custom
+    tab's folder (CUSTOM_TABS_SPEC.md) — issues are filtered by file_path
+    BEFORE the per-series groupby below, so a series whose issues span both
+    inside and outside the tab's folder shows counts scoped to the in-folder
+    issues only (intended behaviour for a folder-scoped tab).
     """
     query = db.query(Issue).filter(Issue.missing == False)
     if group:
         query = query.filter(Issue.format_group == group)
 
+    tab_folder = None
+    if tab_id is not None:
+        tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
+        if not tab:
+            raise HTTPException(status_code=404, detail="Custom tab not found")
+        tab_folder = tab.folder_path
+
     all_issues = query.all()
+    if tab_folder:
+        all_issues = [i for i in all_issues if is_under(i.file_path, tab_folder)]
 
     # Group by series name
     series_map: dict[str, list[Issue]] = {}

@@ -460,3 +460,145 @@ working: tray app's Metadata Editor menu item, the Genre checkbox-grid design ch
 Tez is continuing manual testing; further bugs/design changes will be logged as they
 come up.
 
+---
+
+## V2 — Startup Failure Found and Fixed (2026-06-18)
+
+**Symptom:** Tez reported that after closing a session and rebooting, the editor was
+unreachable from a second device on the network (library still visible), and that it had
+also stopped working on the PC itself, with the tray icon back to referencing port 8001.
+
+**Two compounding root causes found:**
+- The Windows Startup shortcut (`%APPDATA%\...\Startup\ComicVault.lnk`) had never been
+  repointed during the V1→V2 migration — it still targeted `D:\workshop\cBook_Server\start.bat`.
+  After the reboot it launched V1's tray app/server instead of V2's, explaining the
+  `:8001` tray reference and the missing `/editor` route (V1 has no editor route at all).
+- Independently, `start_server.py` still imported `EDITOR_PORT` from `backend/config.py`,
+  which the BUG-002 commit (`5b1b11c`, previous entry above) had deleted as dead code
+  without checking this remaining caller — so V2's reader server crashed with an
+  `ImportError` on every single startup attempt since that commit, regardless of the
+  shortcut issue.
+
+**Fixed:** stopped the wrongly-running V1 processes, repointed the Startup shortcut to
+`comicvault_v2\start.bat`, removed the stale `EDITOR_PORT` import/print from
+`start_server.py` (commit `7e49d35`), and confirmed `/api/admin/stats` (returning
+`comicvault_v2.db` as `db_path`) and `/editor` both return 200 after a clean restart.
+
+---
+
+## V2 — Full Editor / Basic Editor UI Polish (2026-06-18)
+
+A round of small layout fixes from live use on both the desktop PC (primary editing
+machine) and Tez's laptop (smaller screen). Committed as `cc772ba`.
+
+**Full Editor (`editor_full.html`/`.js`, `style.css`):**
+- Image Viewer column narrowed in two passes (`460px → 368px`) and the loaded page image
+  capped at 80% of the frame width — both the card and the image now shrink together
+  (an intermediate version capped only the inner frame/image while the card stayed
+  full-width, which read as "the width is off" and was corrected).
+- `.fe-layout` reworked so the XML Editor column is now the flexible (`1fr`) track, with
+  File Management and Image Viewer as the two fixed-width tracks — needed once the Genre
+  grid went to 5 columns and started horizontal-scrolling inside the old fixed-width
+  Editor column.
+- Genre grid (`#fe-genre-grid`) — 3 columns, then 5 columns.
+- Increment Number checkbox relabelled "Increment #" and moved into the Issue
+  Number/Year row (between them), via a new scoped `.fe-number-row` (auto-sized columns,
+  packed left) replacing the shared 2-column `.editor-field-row` for just this row —
+  fixes an oversized gap that appeared when the row still used `1fr` tracks sized for two
+  wide fields now holding three narrow ones.
+- Year field pushed to the row's right edge (`margin-left: auto`) once Increment # was
+  sitting directly against it.
+- Zoom in/out buttons split into their own `.fe-viewer-controls` row below Prev/Next.
+- Increment #/B&W checkbox label font matched to the other field labels, scoped to
+  `#feForm` only so Basic Editor's checkbox labels are unaffected.
+
+**Basic Editor (`editor_basic.html`/`.js`, `style.css`):**
+- Popup width increased (`520px → 720px`) to fit a multi-column genre grid without
+  horizontal scroll.
+- Genre grid (`#ed-genre-grid`) — 3 columns, then 4 columns once the wider popup was
+  confirmed. `min-width: 0` + `overflow-wrap: anywhere` added on the genre items so
+  longer names (e.g. "Non-Fiction") wrap inside their column instead of forcing the grid
+  wider.
+- B&W checkbox moved onto the same row as Format/Age Rating (after Age Rating), via a
+  scoped `.ed-format-row`. Format/AgeRating `<select>` width capped at 150px then
+  widened to 200px once Tez confirmed the cramped version was only an issue on the
+  laptop's smaller screen — the desktop PC is the primary editing machine and has the
+  room.
+- "Black & White" label briefly shortened to "B&W" then reverted back to the full label
+  once the row had room for it.
+
+**Also found (not a real bug):** edits to `editor_basic.html` appeared not to take effect
+in an already-open browser tab — caused by `editor_basic.js`'s `ensureEditorLoaded()`
+caching the fetched HTML fragment in the `editorReady` promise for the life of the page.
+A full page reload (not just reopening the popup) picks up markup changes.
+
+**Web UI home nav (`index.html`):** surface tab order changed to Home, All, Singles,
+Series, 2000 AD (previously Home, Series, Singles, All, 2000 AD).
+
+---
+
+## V2.1 — Custom Tabs Built (2026-06-19)
+
+**Goal:** `CUSTOM_TABS_SPEC.md` — admin-managed, folder-scoped library tabs. First of
+four planned v2.1 features (the other three — editable home strips, taskbar app
+changes, mobile reader changes — remain untouched; `HOME_STRIPS_SPEC.md` is a planning
+doc only, no code written for it).
+
+This session picked up build steps 1–4 (backend: `custom_tabs` table/model, CRUD +
+folder-validation endpoints in `routers/admin.py`, `tab_id` filtering on
+`GET /api/library` in `routers/library.py`, `GET /api/nav/config` in `routers/home.py`,
+shared `path_utils.py` prefix-matching helpers) that had already been written in an
+earlier, interrupted session but never logged or finished. Completed steps 5–7:
+
+**Frontend — home page nav + browse (`app.js`):**
+- `loadCustomTabsNav()` fetches `/api/nav/config` on every library page load and
+  appends a `.surface-btn` per visible tab after the fixed nav (Home, All, Singles,
+  Series, 2000 AD), in `created_at` order — matching the nav bar's existing static
+  order exactly since custom tabs are always last.
+- `bindSurfaceNav()` switched from per-button listeners to event delegation on
+  `.surface-nav`, since custom-tab buttons are injected after the initial bind.
+- Tab surfaces (`data-surface="tab-{id}"`) reuse the existing Series/Singles/All
+  browse pipeline wholesale, per spec 5.3: `getFilteredLibrary()` sources from a new
+  `tabLibraryCache[id]` (fetched via `/api/library?tab_id={id}`, separate from the
+  global `allLibrary` used for filter-dropdown options) and skips the format_group
+  split — flat like All. Count display reuses All's "Titles / grand total of
+  individual comics" rule for tab surfaces too.
+- `?surface=tab-{id}` deep links (used by the existing singles/series back-link
+  mechanism) work the same way `?surface=all` etc. already did.
+- **Small enhancement beyond the spec's text:** the existing back-link label logic on
+  `series.html`/`issue.html` only knew the four fixed surface names and fell back to
+  generic "Library" for anything else — which would've made every custom-tab back
+  link say "← Library" instead of the tab's name (navigation itself was never broken,
+  just the label). Fixed by caching `tab-{id} → name` in `sessionStorage` from
+  `loadCustomTabsNav()` and reading it as a fallback in both label lookups.
+
+**Admin page (`admin.html`/`admin.js`):** new "Custom Tabs" subsection inside the
+existing locked Advanced Settings fieldset (same unlock gating, native `<fieldset
+disabled>` covers the new buttons/inputs automatically). Tab list shows name, path,
+a Visible/Hidden toggle button, and Delete (browser `confirm()`, explicit that it only
+removes the tab definition). Add form has a manual path input plus a "Browse…" button
+opening a folder-only picker modal reusing the Full Editor's existing
+`.editor-overlay`/`.editor-modal`/`.fe-picker-*` CSS classes against the new
+`GET /api/admin/browse` endpoint (multi-root aware — shows a root-switcher row when
+more than one `library_root` is configured, though only one is configured currently).
+"Add Tab" disables at the 4-visible cap with an inline hint, per spec.
+
+**Verified** end-to-end with Playwright (installed to a scratch temp dir, not
+committed) against the live dev server and the real `comicvault_v2.db` (sandboxed,
+never the live V1 DB — consistent with V2's existing testing convention):
+- Backend via curl: create/list/patch/delete, the 409 cap at 5 visible tabs, a hidden
+  tab freeing a slot, both folder-validation warnings (outside all roots / wraps an
+  entire root), and 400 on a nonexistent folder.
+- Browser: unlocking Advanced Settings reveals the section; add via the folder picker
+  (breadcrumb navigation, click-to-descend, "Select This Folder"); hide/show toggle
+  updates the row and the home nav immediately; cap-hint and disabled Add button at
+  4 visible; clicking a tab in nav loads the correct folder-scoped subset (spot-checked
+  counts against direct `/api/library?tab_id=` calls); opening an issue/series from a
+  tab and navigating back returns to the tab with the correct label; delete removes
+  the tab and nav entry with no file-system side effects. No console/page errors in
+  any pass. All test tab rows deleted after each run — `custom_tabs` table confirmed
+  empty at the end; WAL checkpointed into the main DB file before finishing.
+
+This closes out `CUSTOM_TABS_SPEC.md`'s build order (Section 7). Next v2.1 feature is
+`HOME_STRIPS_SPEC.md` (editable home page strips) — planning only so far, not started.
+

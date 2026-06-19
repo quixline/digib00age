@@ -13,7 +13,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend.models import Issue, IssueGenre, ReadingProgress
+from backend.models import CustomTab, Issue, IssueGenre, ReadingProgress
 
 router = APIRouter(tags=["home"])
 
@@ -161,6 +161,22 @@ def get_home_strips(db: Session = Depends(get_db)):
             },
         ]
     }
+
+
+# ---------------------------------------------------------------------------
+# GET /api/nav/config
+# ---------------------------------------------------------------------------
+
+@router.get("/nav/config")
+def get_nav_config(db: Session = Depends(get_db)):
+    """Visible custom tabs (CUSTOM_TABS_SPEC.md), creation order, for dynamic nav rendering."""
+    tabs = (
+        db.query(CustomTab)
+        .filter(CustomTab.visible == True)  # noqa: E712
+        .order_by(CustomTab.created_at)
+        .all()
+    )
+    return {"custom_tabs": [{"id": t.id, "name": t.name} for t in tabs]}
 
 
 # ---------------------------------------------------------------------------

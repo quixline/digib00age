@@ -111,3 +111,16 @@ class ReadingProgress(Base):
     def __repr__(self):
         return (f"<ReadingProgress issue_id={self.issue_id} "
                 f"status={self.status!r} page={self.current_page}>")
+
+
+class CustomTab(Base):
+    __tablename__ = "custom_tabs"
+
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    name        = Column(Text, nullable=False)
+    folder_path = Column(Text, nullable=False)          # stored normalized — see backend.path_utils
+    visible     = Column(Boolean, default=True, nullable=False)
+    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    def __repr__(self):
+        return f"<CustomTab id={self.id} name={self.name!r} visible={self.visible}>"
