@@ -3,5 +3,6 @@ uvicorn[standard]
 sqlalchemy
 pillow
 pystray
+pywin32
 watchdog
 lxml

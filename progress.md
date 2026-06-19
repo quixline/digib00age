@@ -694,3 +694,86 @@ This closes out `HOME_STRIPS_SPEC.md`'s build order (Section 7). Remaining v2.1 
 (taskbar app changes, mobile reader changes) is tracked in `v2_1-main-new-features.md`
 and not started.
 
+---
+
+## V2.1 — Tray App Menu Redesign (2026-06-19)
+
+**Goal:** Taskbar app changes — the first of the two remaining items flagged above.
+Split the old single "Stop ComicVault" action into independent server start/stop
+controls, add a self-service autostart toggle, and a dark-themed menu.
+
+**`tray/tray_app.py` changes:**
+- New module-level `manually_stopped` flag (alongside the existing `state_lock`/
+  `reader_process`/`reader_status`/`stop_event`). `health_check_loop()`'s auto-restart
+  branch now checks it before restarting a dead reader process — without this, a
+  deliberate "Stop Server" would get silently undone by the next 30s health-check tick.
+- `stop_comicvault` (terminate reader + `icon.stop()`, both at once) replaced with four
+  functions: `_terminate_reader_process()` (the shared terminate/10s-grace/kill logic),
+  `stop_server()` (reader only, tray keeps running, sets `manually_stopped`),
+  `start_server()` (no-ops if a live process already exists, otherwise clears the flag
+  and relaunches — runs `wait_for_startup()` in a thread so the menu callback doesn't
+  block the message-pump for up to 15s), and `close_app()` (stops the reader, then
+  `icon.stop()` — the old combined behaviour, renamed).
+- `is_autostart_enabled()`/`toggle_autostart()` — the checkable "Start ComicVault at
+  login" item. Checked state is just `os.path.exists()` on the Startup shortcut path,
+  no new config.json key. Toggling creates/removes the `.lnk` via `pywin32`
+  (`win32com.client`, imported lazily inside the function so a missing `pywin32`
+  degrades to a logged failure rather than crashing tray startup).
+- `_enable_dark_menu_support()` — one `ctypes` call to the undocumented
+  `SetPreferredAppMode` export (ordinal 135, `uxtheme.dll`), run once at the top of
+  `main()` before any window/menu is created. Makes the native popup menu follow
+  Windows' own dark/light personalization setting; can't force dark independent of it.
+- `build_menu()` rebuilt: Open Library / Admin / Metadata Editor / separator / Start
+  ComicVault at login (checkable) / separator / Stop Server / Start Server / Close.
+
+**Investigated and corrected before relying on the checkable item being safe:** the
+existing `build_menu()` comment claimed `icon.update_menu()` is "never called after
+startup," citing the 2026-06-17 menu-corruption bug (a background-thread timer
+rebuilding the native menu while it was open, corrupting the command-ID → callback
+mapping so clicking "Admin" could fire "Open Library"). Reading the installed
+`pystray` package directly (`_base.py`'s `_handler`, `_win32.py`'s `_create_menu`)
+showed this claim was broader than the actual fix: pystray wraps **every** menu item
+callback in its own `update_menu()` call already, and always has — it's safe because
+it runs on the message-pump thread strictly after the native `TrackPopupMenuEx` popup
+has already closed (a blocking call), so there's never a concurrently-open menu to
+corrupt. The real, narrower rule from the 2026-06-17 fix: never call `update_menu()`
+from a **background thread** (`health_check_loop`, `update_icon_loop`) — calling it via
+a menu item's own click handler is exactly what was already happening for Open
+Library/Admin/Editor the whole time. This means the checkable autostart item's
+checkmark updates correctly with zero extra code. Comment in `build_menu()` corrected
+to state the narrower rule. `SPEC.md`'s change log also updated with this finding.
+
+**`requirements.txt`:** added `pywin32` (new dependency, for the autostart shortcut).
+
+**Verified:**
+- Module import + isolated function tests (no tray UI, no Playwright — this is a
+  desktop Windows app): `is_autostart_enabled()` correctly read the real, pre-existing
+  shortcut (confirmed `True`); `_enable_dark_menu_support()` ran without raising on
+  this machine. `toggle_autostart()`'s create/remove logic tested against a throwaway
+  temp path (not the real shortcut) — confirmed it creates a `.lnk` with the exact same
+  `TargetPath`/`WorkingDirectory`/`WindowStyle` as the real, already-working shortcut,
+  then removes it cleanly; confirmed the real shortcut was untouched throughout.
+  `stop_server()` tested against a real spawned dummy subprocess — confirmed it
+  terminates the process and sets `manually_stopped`/`reader_status` correctly; the
+  `start_server()` no-op guard condition verified against a still-running dummy process.
+- Full real launch: `python tray/tray_app.py` started cleanly end-to-end (real
+  `start_reader()` spawning real `start_server.py`, port 8000 confirmed responding,
+  `tray.log` showing the expected startup sequence, no traceback in console output).
+  Manually killing the tray process without going through `close_app()` left the reader
+  subprocess running (had to be killed separately) — confirms Windows does NOT clean up
+  child processes when a parent exits, which is exactly why `close_app()` (and
+  `stop_server()`) explicitly terminate the reader themselves rather than relying on
+  process-tree cleanup.
+- WAL checkpointed into the main DB file after testing.
+
+**Not verifiable by me — needs a manual pass on the real machine** (clicking an actual
+tray icon menu isn't something Playwright or any other tool here can drive): the
+checkable item's visual checkmark updating immediately after a click, the dark-theme
+appearance against both Windows light and dark mode, the 35-second health-check
+non-restart window after a manual "Stop Server", and a reboot test of the new
+self-service autostart toggle. Full manual checklist is in the approved plan file from
+this session.
+
+This closes the first of the two remaining v2.1 items. Mobile reader changes (tracked
+in `v2_1-main-new-features.md`) are not started.
+

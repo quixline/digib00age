@@ -71,23 +71,36 @@ The reader rescans that single file and updates the DB immediately.
 ## 3. System Tray App
 
 **File:** `tray/tray_app.py`
-**Library:** `pystray` + `Pillow`
+**Library:** `pystray` + `Pillow` (+ `pywin32` for the autostart shortcut, 2026-06-19)
+
+> **Status (2026-06-19):** this section now reflects the live build. See the change
+> log for the 2026-06-17 deviations (menu instead of a popup window, no separate
+> editor subprocess) and the 2026-06-19 menu redesign below.
 
 ### Behaviour
-- Starts automatically on Windows login (shortcut in `shell:startup` for V1)
 - No window on startup — sits silently in system tray
-- Left-click on tray icon opens a small popup window with:
-  - Status indicator (green dot = both servers running)
-  - **Open Library** button → `webbrowser.open("http://localhost:8000")`
-  - **Admin** button → `webbrowser.open("http://localhost:8000/admin")`
-  - **Metadata Editor** button → `webbrowser.open("http://localhost:8001")`
-  - **Stop ComicVault** → gracefully kills both subprocesses, removes tray icon
-- Health check every 30 seconds — restarts a server if it has died
+- Either click opens a native right-click-style context menu (not a custom popup
+  window — see 2026-06-17 change log entry) with:
+  - **Open Library** → `webbrowser.open("http://localhost:8000")`
+  - **Admin** → `webbrowser.open("http://localhost:8000/admin")`
+  - **Metadata Editor** → `webbrowser.open("http://localhost:8000/editor")` (same
+    FastAPI app, no separate process/port — see `EDITOR_SPEC.md` Section 2)
+  - **Start ComicVault at login** (checkable) → creates/removes the Windows Startup
+    shortcut; checked state reflects whether the shortcut currently exists
+  - **Stop Server** → stops the reader subprocess only; the tray app keeps running
+  - **Start Server** → restarts the reader subprocess; no-op if already running
+  - **Close** → stops the reader subprocess, then exits the tray app
+- Status (starting/running/stopped) is shown only via the tray icon's coloured dot
+  (yellow/green/red) — not via menu text, to avoid corrupting the native menu's
+  command-ID → callback mapping (see 2026-06-17 change log entry)
+- Context menu follows Windows' own "Apps use dark mode" setting (2026-06-19) — it
+  cannot force dark independent of that OS setting
+- Health check every 30 seconds — restarts the reader if it has died, unless it was
+  stopped deliberately via "Stop Server"/"Close"
 
 ### Startup sequence
-1. Launch FastAPI reader as subprocess on port 8000
-2. Launch Flask editor as subprocess on port 8001
-3. Sit in tray, show green status when both ports respond
+1. Launch FastAPI reader as a subprocess on port 8000
+2. Sit in tray, show green status once the port responds
 
 ---
 
@@ -473,20 +486,26 @@ Flask is used by the existing editor app — managed separately.
 
 ---
 
-## 14. Windows Startup (V1)
+## 14. Windows Startup
 
-Place a shortcut to `start.bat` in the Windows Startup folder:
+A shortcut named `ComicVault.lnk`, targeting `start.bat`, in the Windows Startup folder:
 ```
 %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
 ```
 
-`start.bat` simply runs:
+`start.bat`:
 ```bat
 @echo off
+cd /d "%~dp0"
 pythonw tray\tray_app.py
 ```
 
-The tray app then launches both servers as subprocesses and sits in the system tray.
+The tray app then launches the reader server as a subprocess and sits in the system tray.
+
+**(2026-06-19) Self-service toggle:** the tray menu's checkable "Start ComicVault at
+login" item creates/removes this shortcut directly — no manual creation needed
+anymore. The shortcut's own existence on disk is the source of truth for whether the
+checkbox shows checked; there's no separate config flag to fall out of sync.
 
 ---
 
@@ -872,3 +891,5 @@ Recorded so they aren't mistaken for code changes:
 | 2026-06-18 | **This file (`SPEC.md`) now lives in `comicvault_v2`, a separate cloned repo** (`D:\workshop\comicvault_v2`, history carried over from this V1 repo, remote repointed to `quixline/comicvault_v2`). **This entry, and all entries below it, apply to V2 only — V1's own copy of this file and its `cBook_Server/backend/scanner.py` are unmodified.** Found and fixed BUG-001 during V2's migration setup: Section 6's incremental scan rule ("File unchanged | Skip") didn't account for a thumbnail file being missing on disk despite unchanged `date_modified` — relevant because V2 was set up from a **copy** of this DB without copying `thumbnails/` (per Section 6's "Cover / thumbnail generation" rule, assumed regenerable on next scan, which it wasn't, until fixed). Scanner's skip branch now also checks thumbnail existence before skipping. Full detail in `comicvault_v2/BUGS.md` and `progress.md`. | One-time V2 environment setup, prerequisite to `EDITOR_SPEC.md` build work. Recorded here because it's a real defect in the scanner logic this file documents (Section 6), not just a migration footnote. |
 | 2026-06-18 | **V2 found completely unreachable after a reboot** — root-caused to two compounding issues, neither a deviation from this spec's content: (1) the machine's Windows Startup shortcut had never been repointed from the old V1 repo (`cBook_Server`) during the V2 migration, so a reboot launched V1 instead of V2; (2) `start_server.py` still imported `EDITOR_PORT` after the BUG-002 commit deleted it from `backend/config.py`, crashing the reader server with an `ImportError` on every startup since. Both fixed (commit `7e49d35`); full root-cause writeup in `progress.md`. | Recorded here as a pointer since it looked like a regression in this spec's startup/process behaviour (Sections 3, 14) before the real cause — an unrelated stale shortcut plus an incomplete dead-code cleanup — was found. |
 | 2026-06-18 | **Home page surface tab order changed** (Section 20.1) — `frontend/index.html`'s nav now reads Home, All, Singles, Series, 2000 AD (previously Home, Series, Singles, All, 2000 AD). Order only; the four surfaces and their behaviour are unchanged. | Tez's preferred browsing order, requested directly during live use. |
+| 2026-06-19 | **Tray app menu redesign** (Section 3) — "Stop ComicVault" (stopped the reader and exited the tray app together) split into three actions: **Stop Server** (reader only, tray keeps running), **Start Server** (restarts it, no-op if already running), and **Close** (stops the reader, then exits — the old combined behaviour, renamed). A new `manually_stopped` flag in `tray_app.py` stops the existing 30s health-check loop from auto-restarting a server that was stopped on purpose. Also added: a checkable **Start ComicVault at login** menu item (Section 14 — creates/removes the Startup shortcut directly, no more manual one-time setup), and dark-menu support following Windows' own theme setting (new `pywin32` dependency for the shortcut, small `ctypes`/`uxtheme` call for the theme — both additive, no architecture change). | Tez wanted independent start/stop of the reader without relaunching the whole tray app, plus self-service autostart management. |
+| 2026-06-19 | **Corrected understanding of the 2026-06-17 menu-corruption bug fix**, found while verifying the new checkable autostart item was safe to add: `icon.update_menu()` is not "never called after startup" as the original fix's comment claimed — pystray wraps every menu item's callback in its own `update_menu()` call already (verified by reading `pystray/_base.py`/`_win32.py` directly), and this has always fired safely after every click since it runs on the message-pump thread only after the native popup has already closed. The actual bug came specifically from a **background thread** calling `update_menu()` on a timer, racing with the menu being open concurrently. `tray_app.py`'s `build_menu()` comment corrected accordingly. | Needed to confirm the new checkable item wouldn't reintroduce the original bug before relying on it; the original fix's own description of its mechanism turned out to be broader than necessary. |

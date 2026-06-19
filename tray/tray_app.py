@@ -8,17 +8,22 @@ Run from the project root:
 Tray icon (left or right click) shows a menu with:
     - Open Library
     - Admin
-    - Metadata Editor   (opens the URL only — does not launch/manage that process)
-    - Stop ComicVault
+    - Metadata Editor               (opens the URL only — does not launch/manage that process)
+    - Start ComicVault at login     (checkable — creates/removes the Windows Startup shortcut)
+    - Stop Server                   (stops the reader subprocess only; tray keeps running)
+    - Start Server                  (restarts it; no-op if already running)
+    - Close                         (stops the reader, then exits the tray app)
 
 Reader status (starting/running/stopped) is shown via the tray icon's
 coloured dot (yellow/green/red), not via the menu text — see build_menu()
 for why the menu label is intentionally static.
 
 A background thread checks the reader server every 30 seconds and restarts
-it if the process has died.
+it if the process has died — unless it was stopped deliberately via "Stop
+Server"/"Close" (see `manually_stopped`).
 """
 
+import ctypes
 import os
 import socket
 import subprocess
@@ -39,9 +44,15 @@ LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tray.log")
 HEALTH_CHECK_INTERVAL = 30  # seconds
 STARTUP_WAIT_TIMEOUT = 15  # seconds to wait for the port to open after launch
 
+STARTUP_SHORTCUT_PATH = os.path.join(
+    os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "ComicVault.lnk"
+)
+START_BAT_PATH = os.path.join(PROJECT_ROOT, "start.bat")
+
 state_lock = threading.Lock()
 reader_process = None
 reader_status = "starting"  # "starting" | "running" | "stopped"
+manually_stopped = False    # True after "Stop Server"/"Close" — suppresses health-check auto-restart
 stop_event = threading.Event()
 
 
@@ -100,9 +111,13 @@ def health_check_loop():
     while not stop_event.wait(HEALTH_CHECK_INTERVAL):
         with state_lock:
             proc = reader_process
+            stopped_deliberately = manually_stopped
         if proc is None:
             continue
         if proc.poll() is not None:
+            if stopped_deliberately:
+                # Don't fight a deliberate "Stop Server"/"Close" by auto-restarting.
+                continue
             log(f"Reader process exited (code {proc.returncode}). Restarting.")
             with state_lock:
                 reader_status = "starting"
@@ -152,9 +167,8 @@ def open_editor(icon=None, item=None):
     webbrowser.open(f"http://localhost:{READER_PORT}/editor")
 
 
-def stop_comicvault(icon, item=None):
-    log("Stop requested from tray menu.")
-    stop_event.set()
+def _terminate_reader_process():
+    """Shared terminate/grace-period/kill logic for Stop Server and Close."""
     with state_lock:
         proc = reader_process
     if proc is not None and proc.poll() is None:
@@ -163,19 +177,91 @@ def stop_comicvault(icon, item=None):
             proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
             proc.kill()
+
+
+def stop_server(icon=None, item=None):
+    """Stops the reader subprocess only. The tray app keeps running."""
+    global manually_stopped, reader_status
+    log("Stop Server requested from tray menu.")
+    with state_lock:
+        manually_stopped = True
+        reader_status = "stopped"
+    _terminate_reader_process()
+
+
+def start_server(icon=None, item=None):
+    """Restarts the reader subprocess. No-op if it's already running."""
+    global manually_stopped, reader_status
+    log("Start Server requested from tray menu.")
+    with state_lock:
+        proc = reader_process
+        if proc is not None and proc.poll() is None:
+            log("Start Server: reader is already running, ignoring.")
+            return
+        manually_stopped = False
+        reader_status = "starting"
+    start_reader()
+    threading.Thread(target=wait_for_startup, daemon=True).start()
+
+
+def close_app(icon, item=None):
+    """Stops the reader subprocess, then exits the tray app entirely."""
+    global manually_stopped
+    log("Close requested from tray menu.")
+    stop_event.set()
+    with state_lock:
+        manually_stopped = True
+    _terminate_reader_process()
     icon.stop()
+
+
+def is_autostart_enabled(item=None):
+    return os.path.exists(STARTUP_SHORTCUT_PATH)
+
+
+def toggle_autostart(icon=None, item=None):
+    """Creates or removes the Windows Startup shortcut. The shortcut's own
+    existence is the source of truth for the menu checkbox — no config.json
+    flag to keep in sync."""
+    if os.path.exists(STARTUP_SHORTCUT_PATH):
+        try:
+            os.remove(STARTUP_SHORTCUT_PATH)
+            log("Autostart disabled (shortcut removed).")
+        except OSError as e:
+            log(f"Failed to remove autostart shortcut: {e}")
+    else:
+        try:
+            import win32com.client  # imported lazily: a missing pywin32 shouldn't crash tray startup
+            shell = win32com.client.Dispatch("WScript.Shell")
+            shortcut = shell.CreateShortCut(STARTUP_SHORTCUT_PATH)
+            shortcut.TargetPath = START_BAT_PATH
+            shortcut.WorkingDirectory = PROJECT_ROOT
+            shortcut.WindowStyle = 7  # minimized
+            shortcut.save()
+            log("Autostart enabled (shortcut created).")
+        except Exception as e:
+            log(f"Failed to create autostart shortcut: {e}")
 
 
 def build_menu():
     # Status is conveyed only via the tray icon's coloured dot (see
     # make_icon_image / update_icon_loop), not via a live-updating menu label.
-    # pystray's Windows backend caches one native menu handle and only
-    # rebuilds it when icon.update_menu() runs; calling that on a timer raced
-    # with the user having the context menu open and corrupted the native
-    # menu's command-ID -> callback mapping, so a click on "Admin" could
-    # actually fire "Open Library"'s callback. Swapping icon.icon does not
-    # touch the menu handle at all, so it carries no such risk. See SPEC.md
-    # change log 2026-06-17 (Admin link opening Home).
+    #
+    # pystray wraps every menu item callback in a try/finally that calls
+    # icon.update_menu() (pystray/_base.py _handler) — this has always fired
+    # after every click on every item, including the original Open Library/
+    # Admin/Editor items, with no issue, because it runs on the message-pump
+    # thread strictly after the native TrackPopupMenuEx popup has already
+    # closed (it's a blocking call) — there's no menu open to corrupt at that
+    # point. The bug fixed 2026-06-17 (a click on "Admin" firing "Open
+    # Library") came specifically from a *periodic background thread*
+    # calling icon.update_menu() on a timer, which could race with the menu
+    # being open concurrently. The real rule is: never call update_menu()
+    # from a background thread (update_icon_loop, health_check_loop) — not
+    # "never call it at all." This is why "Start ComicVault at login" below
+    # can safely be a checkable item: its checkmark updates correctly on the
+    # very next click with no extra code, since pystray already rebuilds the
+    # menu after every click via the mechanism above.
     return pystray.Menu(
         pystray.MenuItem("ComicVault", None, enabled=False),
         pystray.Menu.SEPARATOR,
@@ -183,7 +269,11 @@ def build_menu():
         pystray.MenuItem("Admin", open_admin),
         pystray.MenuItem("Metadata Editor", open_editor),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Stop ComicVault", stop_comicvault),
+        pystray.MenuItem("Start ComicVault at login", toggle_autostart, checked=is_autostart_enabled),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Stop Server", stop_server),
+        pystray.MenuItem("Start Server", start_server),
+        pystray.MenuItem("Close", close_app),
     )
 
 
@@ -197,7 +287,26 @@ def update_icon_loop(icon):
             last_status = status
 
 
+def _enable_dark_menu_support():
+    """
+    Makes the native popup menu follow Windows' own "Apps use dark mode"
+    setting, via the undocumented SetPreferredAppMode export (ordinal 135,
+    no public name) in uxtheme.dll. Must run before any window/menu HWND is
+    created. This cannot force a dark menu on a system set to light mode —
+    it only stops the app being forced light when the OS itself is dark.
+    """
+    try:
+        uxtheme = ctypes.WinDLL("uxtheme.dll")
+        set_preferred_app_mode = uxtheme[135]
+        set_preferred_app_mode.argtypes = [ctypes.c_int]
+        set_preferred_app_mode(1)  # 1 = AllowDark
+    except Exception as e:
+        log(f"Dark menu mode not applied (non-fatal): {e}")
+
+
 def main():
+    _enable_dark_menu_support()
+
     log("=" * 40)
     log("ComicVault tray app starting.")
 
