@@ -6,9 +6,11 @@
 > feature (v2.1). Record any deviations at the bottom of this file (Change Log), same
 > convention as `SPEC.md` and `EDITOR_SPEC.md`.
 >
-> **Status:** Planning complete. Not yet built. This is the first v2.1 feature being
-> tackled; the other three (editable home strips, taskbar app changes, mobile reader
-> changes) are tracked separately in `v2_1-main-new-features.md` and are not in scope here.
+> **Status:** Built and verified (2026-06-19) — see `progress.md` "V2.1 — Custom Tabs
+> Built (2026-06-19)" for the build log. This was the first v2.1 feature tackled; the
+> others (editable home strips — see `HOME_STRIPS_SPEC.md`, taskbar app changes, mobile
+> reader changes) are tracked in `comicvault-changes.md`, which supersedes the
+> now-removed `v2_1-main-new-features.md`.
 
 ---
 

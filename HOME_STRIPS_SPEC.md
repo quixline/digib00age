@@ -6,8 +6,10 @@
 > Home Page Strips feature (v2.1). Record any deviations at the bottom of this file
 > (Change Log), same convention as `SPEC.md`, `EDITOR_SPEC.md`, and `CUSTOM_TABS_SPEC.md`.
 >
-> **Status:** Planning complete. Not yet built. This is the second v2.1 feature tackled
-> (after Custom Tabs). Taskbar app changes and mobile reader changes remain, tracked in
+> **Status:** Built and verified (2026-06-19) — see `progress.md` "V2.1 — Home Strips
+> Built (2026-06-19)" for the build log. This was the second v2.1 feature tackled
+> (after `CUSTOM_TABS_SPEC.md`). Taskbar app changes and mobile reader changes are
+> tracked in `comicvault-changes.md`, which supersedes the now-removed
 > `v2_1-main-new-features.md`.
 
 ---

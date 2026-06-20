@@ -847,9 +847,13 @@ Recorded so they aren't mistaken for code changes:
 
 ### 20.14 Deferred to V2 (Noted, Not Built)
 
+> Corrected 2026-06-20 (doc-map cleanup session): two items below were built and
+> removed from this list — generalised custom tabs shipped as `CUSTOM_TABS_SPEC.md`
+> (2026-06-19), and home-page strips shipped as `HOME_STRIPS_SPEC.md` (2026-06-19).
+> See `CHANGELOG.md` / `progress.md` for build logs, `ROADMAP.md` for what's still
+> actually deferred.
+
 - Multiple scan locations across drives, with per-folder exclude (would have made the 2000 AD split clean).
-- User-defined custom tabs/sections in admin (the generalised version of the hard-coded 2000 AD tab).
-- Home-page strips editable / reorderable / addable; admin control for random-refresh timing.
 - Series-level overview field (needs XML + DB + editor changes).
 - Advanced Search page (if inline filter+search proves insufficient).
 

@@ -815,3 +815,136 @@ doesn't commonly reserve for Hyper-V/WSL NAT, or have `start.bat`/the tray app
 proactively restart `winnat` before launching — neither done in this session, since
 the immediate goal was just to get the server back up and find the real cause.
 
+---
+
+## Session — 2026-06-20: Tier 4 Item 1 — Genre/Format admin editor
+
+**Goal:** First item in the new `comicvault-changes.md` build queue — make Format an
+admin-editable, file-backed list alongside the existing Genre mechanism, and surface
+add/remove for both in the Admin page. Reverses `EDITOR_SPEC.md` Section 4.2's
+"Format = locked constant" decision.
+
+**Found while planning:** the backlog's framing assumed Genre already had admin
+add/remove UI — it didn't. `genres.json` existed and was served via `GET
+/api/editor/genres`, but the only way to edit it was hand-editing the file; no Admin
+page control existed. So this session built add/remove UI for **both** lists, not
+just ported Format onto an existing Genre mechanism.
+
+**Built:**
+- `backend/editor/editable_lists.py` — shared load/add/remove logic for both lists
+  (trim, case-insensitive duplicate check, blocks removing the last remaining value).
+  `genres.py` and `formats.py` are now thin wrappers over this, keeping their existing
+  public function names so nothing importing `load_genres()` had to change.
+- `backend/editor/formats.json` + `formats.py` — new editable list, seeded with the
+  original 10 `FORMAT_OPTIONS` values. `FORMAT_OPTIONS` removed from `constants.py`
+  (only `AGE_RATING_OPTIONS` remains locked there); `validation.py` and the one-time
+  `migration_report.py` script switched to call `load_formats()`.
+- New endpoints in `editor_basic.py`: `POST/DELETE /api/editor/genres[/{name}]` and the
+  same pair for `/api/editor/formats`. Mirrors the existing `GET` endpoints; removal of
+  the last remaining value 400s with a clear message.
+- Admin page: new "Genre List" / "Format List" subsections (`admin.html`/`admin.js`),
+  mirroring the existing Custom Tabs list+add-form pattern. Each row shows the value's
+  current issue count (from `/api/browse/genres`/`/formats`, already existing
+  endpoints); deleting a value in use shows a confirm dialog stating the count; the
+  Delete button is disabled outright when only one value remains (backend already
+  blocks it — this just avoids a round-trip to be told no).
+- `editor_basic.js`/`editor_full.js`: Format dropdown now fetches `/api/editor/formats`
+  live instead of a hardcoded array, same pattern Genre already used.
+- `EDITOR_SPEC.md` Sections 4.1/4.2 updated — 4.2 reframed from "locked, hardcoded" to
+  "enforced, backend-served, editable list" with a dated deviation note; 4.1 updated to
+  mention the new Admin-page add/remove endpoints alongside direct file editing.
+
+**Bug caught during verification:** the shared save function originally opened
+`genres.json`/`formats.json` in plain text mode, which on Windows silently translates
+`\n` to `\r\n` on write — round-tripping a file through add+remove was rewriting every
+line ending from LF to CRLF even though content was unchanged. Fixed by opening with
+`newline=''` in `editable_lists.py`. Caught by diffing the file against a pre-test
+backup after an add/remove cycle, byte-for-byte, not just by checking JSON content
+matched.
+
+**Verified:**
+- Backend: exercised every new endpoint live against the running server — add,
+  duplicate-rejected (400), delete (clean and confirm-dialog paths), last-item-blocked
+  (400), confirmed via diff that `genres.json`/`formats.json` round-tripped
+  byte-identical to a pre-test backup after every add+remove cycle.
+- Admin UI: drove the live Admin page with a throwaway Playwright/Chromium instance
+  (no existing Node tooling in this repo, so installed to a scratch temp dir, not the
+  project) — added and deleted a throwaway value in both lists, confirmed toasts, zero
+  console errors; triggered the confirm dialog on a real in-use genre ("Crime", 529
+  issues) and dismissed it, confirming cancel leaves the list untouched.
+- Editor: opened the Basic Editor on a real issue (id 4318), confirmed the Format
+  `<select>` populated from the live endpoint and pre-selected the issue's existing
+  value ("Graphic Novel"), closed without saving.
+- Confirmed `genres.json` and `formats.json` are git-clean (no diff) after the session
+  — only code/doc files changed. Scratch Playwright install and temp backups removed
+  afterward.
+
+**Not yet done:** Tier 5's manual Genre additions (Anthology, Comic, Omnibus) are now
+unblocked by this but were intentionally left for Tez to do by hand through the new
+Admin UI, per the backlog's own sequencing — not part of this session's scope.
+
+---
+
+## Session — 2026-06-20: Doc-map cleanup — create missing docs, fix stale ones
+
+**Goal:** `CLAUDE.md` Section 2's doc map listed `CHANGELOG.md`, `DECISIONS.md`,
+`INDEX.md`, `README.md`, `ROADMAP.md`, and `TESTING.md` as "to be created." In
+practice `README.md` already existed but was stale (written for V1, before the editor
+was integrated); the other five genuinely didn't exist. Create the five missing docs,
+bring `README.md` current, and fix related staleness found while auditing the doc map.
+
+**Found while auditing, beyond README.md:**
+- `CUSTOM_TABS_SPEC.md` and `HOME_STRIPS_SPEC.md` both still had a status header
+  reading "Planning complete. Not yet built," even though both shipped (commits
+  `b37b494`, `b52771d`). Both also pointed to `v2_1-main-new-features.md` for
+  taskbar/mobile-reader tracking — that file no longer exists; the tracking is in
+  `comicvault-changes.md` now, which itself had two of the same dangling references.
+- `SPEC.md` Section 20.14's "Deferred to V2" list still included Custom Tabs and Home
+  Strips as not-built.
+- `BUGS.md` had two `## FIXED` headings (a duplicate/misplaced one), with BUG-003 (an
+  explicitly *not*-fixed bug) sitting under the first one. Confirmed with Tez: this
+  was a filing mistake, not intentional — BUG-003 is genuinely open.
+
+**Built:**
+- `CHANGELOG.md` — newest-first one-line index into `progress.md`'s session headers.
+- `DECISIONS.md` — rationale log for non-obvious calls (editor sync mechanism
+  evolution, Format's locked→editable reversal, Home Strips' total-vs-visible cap,
+  Genre/Format delete-confirm behaviour, and four V1-era architecture calls).
+- `ROADMAP.md` — active build queue (Tier 4 items 2-3, Tiers 1-3/5), Mobile Reader
+  (paused indefinitely), the corrected SPEC.md §20.14 list, the installer, and the two
+  known issues (BUG-004 environmental risk, BUG-003 open bug).
+- `INDEX.md` — one-page map: active/authoritative docs, the new reference docs, and a
+  "historical only" bucket for the one-time migration/investigation docs.
+- `TESTING.md` — standing verification runbook, codifying two patterns established
+  this week: byte-for-byte diff-against-backup for file-writing changes (this is how
+  the LF→CRLF bug got caught in the previous session), and scratch-Playwright-in-
+  temp-dir for UI verification in a repo with no Node tooling checked in.
+- `README.md` — full rewrite: removed the "separate metadata editor" claim (false
+  since 2026-06-18), corrected run instructions to `start_server.py`, current V1/V2
+  status, pointers to `INDEX.md` instead of duplicating content.
+
+**Fixed:**
+- `CUSTOM_TABS_SPEC.md` / `HOME_STRIPS_SPEC.md` status headers corrected to "Built and
+  verified," dangling file reference repointed to `comicvault-changes.md`.
+- `SPEC.md` §20.14 — removed the two now-built items, added a correction note pointing
+  to `CHANGELOG.md`/`ROADMAP.md`.
+- `comicvault-changes.md` — removed its own two dangling `v2_1-main-new-features.md`
+  citations (the content was already inline; the file just doesn't exist).
+- `BUGS.md` — split into `## OPEN` (BUG-003, moved here) and one `## FIXED` section
+  (BUG-004, BUG-002, BUG-001) — removed the duplicate heading. No bug body text
+  changed, confirmed by reading the full file after the edit.
+- `CLAUDE.md` §2 — flipped the doc-map status column from "to be created" to "exists"
+  for all six docs, per the file's own rule that drift should be corrected, not left
+  silent.
+
+**Verified:**
+- `grep -rn "v2_1-main-new-features"` across all `.md` files — remaining hits are only
+  explanatory ("now-removed...") or inside `progress.md`'s own historical entries
+  (left untouched, since that log is append-only and was accurate at the time it was
+  written). No live dangling references remain.
+- Confirmed every doc path named in the new `INDEX.md` actually exists on disk.
+- Re-read `BUGS.md` in full after editing to confirm both bugs' body text is
+  byte-identical to before, only the headings moved.
+
+**No app code changed this session** — documentation only.
+
