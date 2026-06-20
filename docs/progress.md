@@ -948,3 +948,56 @@ bring `README.md` current, and fix related staleness found while auditing the do
 
 **No app code changed this session** — documentation only.
 
+---
+
+## Session — 2026-06-20: Junction `docs/` to Google Drive for Claude Cowork access
+
+**Goal:** Tez wants Claude Cowork (connected via Google Drive) to read and write
+ComicVault's project docs directly for extra planning assistance. Most docs from the
+session above got moved out of the git repo to a Drive-synced folder
+(`C:\Users\tezdr\My Drive (quixlinedesign@gmail.com)\Dev_Folders\Workshop\comicvault_v2\
+project_docs`) for this purpose, which broke git tracking for 13 files (`git status`
+showed them as deleted from the working tree). Tez wanted git tracking and `git push`
+restored without giving up Drive/Cowork access.
+
+**Solution (supplied by Tez, technically verified before applying):** a Windows
+directory junction at `D:\workshop\comicvault_v2\docs` pointing at the real Drive
+folder. `mklink`/`New-Item -ItemType Junction` needs no admin elevation (only
+symbolic links do); junctions work across drive letters for local NTFS folders, and
+the Drive folder was confirmed to be a real local folder, not a virtual placeholder.
+Git for Windows walks junctions transparently when scanning the working tree, so
+`git add docs/` tracks the real file content normally — no symlink-blob special
+casing. Because both paths point at the same physical files (not a copy), there's no
+sync mechanism needed: an edit made through Drive shows up immediately as a normal
+working-tree change in the repo.
+
+**Verified before committing:**
+- Created the junction, confirmed `docs/` lists the same 16 files as the Drive folder.
+- Appended a throwaway line to `docs/TESTING.md` via the real Drive path directly,
+  confirmed `git status` in the repo showed it as a working-tree change with zero
+  delay — proved the core premise concretely, not just by reasoning about it. Reverted
+  the test line and confirmed the file diffed byte-identical to the last commit
+  afterward.
+- Confirmed `git check-ignore` still correctly excludes the three historical files
+  inside `docs/` (`V2_MIGRATION_SETUP.md`, `V2_FOLLOWUP_COMMIT_AND_SCANNER_FIX.md`,
+  `pre_migration_report.csv`) — existing `.gitignore` patterns have no leading slash,
+  so they match by basename at any depth, no `.gitignore` changes needed.
+- `git add docs/` plus the old paths showed clean renames (`R`) for all 13 files, not
+  unexpected delete+add pairs.
+
+**Fixed:**
+- `CLAUDE.md` §2 — added a note explaining the junction and why it exists, prefixed
+  every doc-map table entry except `README.md` with `docs/`, updated the close-of-
+  session checklist (§4) and doc-update-threshold (§5) prose references to match.
+- `README.md` — same `docs/` prefix updates to its doc cross-references.
+- Resolved a `CHANGELOG.md` duplication that emerged mid-session (briefly existed both
+  at the repo root and in the Drive folder) — Tez deleted the root copy, so
+  `docs/CHANGELOG.md` is the only copy going forward.
+
+**Cleanup:** removed `location-change-soloution.txt` (Tez's scratch note proposing the
+junction fix) from the repo root — content fully captured here and in `CLAUDE.md`.
+
+**Not committed/pushed without separate confirmation** — per standing instruction,
+even though this session continues straight from one where push was already approved;
+this is a distinct, structurally significant change.
+

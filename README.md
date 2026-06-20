@@ -3,7 +3,9 @@
 A personal, local comic book server for a single user on a home network. Serves a CBZ
 collection with metadata read from embedded `ComicInfo.xml`.
 
-Start here, then see `INDEX.md` for the full doc map.
+Start here, then see `docs/INDEX.md` for the full doc map. (`docs/` is a directory
+junction into a Google Drive-synced folder, used for Claude Cowork planning access —
+see `CLAUDE.md` Section 2.)
 
 ## Architecture
 
@@ -23,7 +25,7 @@ FastAPI app:
 - **Full Editor** — batch tagging of new comics before they enter the library, at
   `/editor`
 
-See `EDITOR_SPEC.md` for the full editor design.
+See `docs/EDITOR_SPEC.md` for the full editor design.
 
 ## Running it
 
@@ -43,9 +45,9 @@ Python dependencies are in `requirements.txt` (`pip install -r requirements.txt`
 ## Status
 
 V1 is complete. V2 is active — editor integration, Custom Tabs, Home Strips, and a
-Genre/Format admin editor have all shipped; see `CHANGELOG.md` for the dated list and
-`comicvault-changes.md` for what's queued next. No installer yet — setup is manual
-(`config.json` + `start.bat`); not currently prioritized, see `ROADMAP.md`.
+Genre/Format admin editor have all shipped; see `docs/CHANGELOG.md` for the dated list
+and `docs/comicvault-changes.md` for what's queued next. No installer yet — setup is
+manual (`config.json` + `start.bat`); not currently prioritized, see `docs/ROADMAP.md`.
 
-See `SPEC.md` for the full V1 technical specification and `INDEX.md` for the complete
-doc map (what governs what, and the authority order between docs).
+See `docs/SPEC.md` for the full V1 technical specification and `docs/INDEX.md` for the
+complete doc map (what governs what, and the authority order between docs).
