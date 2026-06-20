@@ -7,7 +7,8 @@ Save client-side, so this should rarely fire in normal use — it's the
 server-side source of truth.
 """
 
-from backend.editor.constants import AGE_RATING_OPTIONS, FORMAT_OPTIONS
+from backend.editor.constants import AGE_RATING_OPTIONS
+from backend.editor.formats import load_formats
 from backend.editor.genres import load_genres
 
 
@@ -25,7 +26,7 @@ def validate_enforced_fields(field_values: dict) -> list[str]:
                 errors.append(f"Genre: '{name}' is not in the enforced list")
 
     format_value = (field_values.get("Format") or "").strip()
-    if format_value not in FORMAT_OPTIONS:
+    if format_value not in load_formats():
         errors.append(f"Format: '{format_value or '(blank)'}' is not in the enforced list")
 
     rating_value = (field_values.get("AgeRating") or "").strip()

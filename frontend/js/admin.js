@@ -35,6 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('input[name="hsBasis"]').forEach(r => r.addEventListener('change', updateHsBasisRows));
   document.getElementById('hsFieldNameSelect').addEventListener('change', updateHsFieldValueOptions);
   document.getElementById('hsOrderModeSelect').addEventListener('change', updateHsOrderModeRow);
+
+  loadGenreList();
+  document.getElementById('genreAddBtn').addEventListener('click', addGenre);
+  document.getElementById('genreNameInput').addEventListener('keydown', e => { if (e.key === 'Enter') addGenre(); });
+
+  loadFormatList();
+  document.getElementById('formatAddBtn').addEventListener('click', addFormat);
+  document.getElementById('formatNameInput').addEventListener('keydown', e => { if (e.key === 'Enter') addFormat(); });
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -890,6 +898,125 @@ async function addHomeStrip() {
     showToast('Could not add strip: ' + e.message, true);
   }
 }
+
+// ── Genre / Format editable lists (comicvault-changes.md Tier 4 Item 1) ───────
+// Same shape for both kinds — 'genres' uses /api/browse/genres + 'genre' as the
+// count-row key, 'formats' uses /api/browse/formats + 'format'.
+
+async function loadEditableValueList(kind) {
+  const countKey = kind === 'genres' ? 'genre' : 'format';
+  let names = [];
+  let counts = {};
+  try {
+    names = await fetch(`${API}/editor/${kind}`).then(r => r.json());
+  } catch (_) {
+    names = [];
+  }
+  try {
+    const rows = await fetch(`${API}/browse/${kind}`).then(r => r.json());
+    for (const row of rows) counts[row[countKey]] = row.issue_count;
+  } catch (_) {
+    counts = {};
+  }
+  return names.map(name => ({ name, count: counts[name] || 0 }));
+}
+
+function renderEditableValueList(containerId, items, kind) {
+  const list = document.getElementById(containerId);
+  list.innerHTML = '';
+
+  if (!items.length) {
+    list.innerHTML = '<p class="admin-empty-hint">No values yet.</p>';
+    return;
+  }
+
+  for (const item of items) {
+    const row = document.createElement('div');
+    row.className = 'ct-tab-row';
+
+    const info = document.createElement('div');
+    info.className = 'ct-tab-info';
+    const nameLine = document.createElement('div');
+    nameLine.className = 'ct-tab-name';
+    nameLine.append(document.createTextNode(item.name));
+    const badge = document.createElement('span');
+    badge.className = 'ct-hidden-badge';
+    badge.textContent = item.count === 1 ? '1 issue' : `${item.count} issues`;
+    nameLine.appendChild(badge);
+    info.appendChild(nameLine);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'folder-remove-btn';
+    delBtn.textContent = 'Delete';
+    delBtn.disabled = items.length <= 1;
+    delBtn.title = items.length <= 1 ? 'At least one value must remain' : '';
+    delBtn.addEventListener('click', () => deleteEditableValue(kind, item.name, item.count));
+
+    row.append(info, delBtn);
+    list.appendChild(row);
+  }
+}
+
+async function loadGenreList() {
+  renderEditableValueList('genreList', await loadEditableValueList('genres'), 'genres');
+}
+
+async function loadFormatList() {
+  renderEditableValueList('formatList', await loadEditableValueList('formats'), 'formats');
+}
+
+async function deleteEditableValue(kind, name, count) {
+  const label = kind === 'genres' ? 'genre' : 'format';
+  if (count > 0) {
+    const ok = confirm(
+      `"${name}" is used by ${count} issue${count === 1 ? '' : 's'} — remove it from the ${label} list anyway?\n\n` +
+      `Existing issues keep their current value; this only removes "${name}" from future selection.`
+    );
+    if (!ok) return;
+  }
+  try {
+    const r = await fetch(`${API}/editor/${kind}/${encodeURIComponent(name)}`, { method: 'DELETE' });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      showToast(d.detail || 'Delete failed', true);
+      return;
+    }
+    showToast(`${label[0].toUpperCase()}${label.slice(1)} removed`);
+    await (kind === 'genres' ? loadGenreList() : loadFormatList());
+  } catch (e) {
+    showToast('Delete failed: ' + e.message, true);
+  }
+}
+
+async function addEditableValue(kind, inputId) {
+  const input = document.getElementById(inputId);
+  const name = input.value.trim();
+  const label = kind === 'genres' ? 'Genre' : 'Format';
+  if (!name) {
+    showToast(`${label} name is required`, true);
+    return;
+  }
+  try {
+    const r = await fetch(`${API}/editor/${kind}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      showToast(d.detail || `Could not add ${label.toLowerCase()}`, true);
+      return;
+    }
+    showToast(`${label} added`);
+    input.value = '';
+    await (kind === 'genres' ? loadGenreList() : loadFormatList());
+  } catch (e) {
+    showToast(`Could not add ${label.toLowerCase()}: ` + e.message, true);
+  }
+}
+
+function addGenre() { addEditableValue('genres', 'genreNameInput'); }
+function addFormat() { addEditableValue('formats', 'formatNameInput'); }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
 function showToast(msg, isError = false) {

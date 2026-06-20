@@ -18,7 +18,8 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from backend.editor.constants import FORMAT_OPTIONS, AGE_RATING_OPTIONS
+from backend.editor.constants import AGE_RATING_OPTIONS
+from backend.editor.formats import load_formats
 from backend.editor.genres import load_genres
 from backend.models import Issue
 
@@ -30,7 +31,7 @@ def generate_report(db: Session) -> list[dict]:
     longer on disk — nothing to edit).
     """
     enforced_genres = set(load_genres())
-    enforced_formats = set(FORMAT_OPTIONS)
+    enforced_formats = set(load_formats())
     enforced_ratings = set(AGE_RATING_OPTIONS)
 
     rows = []

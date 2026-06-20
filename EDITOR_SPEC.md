@@ -213,22 +213,35 @@ preserved-on-write only, same as ComicVault's issue-detail display rule (`SPEC.m
   investigation report (CAPT's existing "dropdown" was actually free-text-with-suggestions
   and never enforced anything).
 - List is **not hardcoded** — served from `backend/editor/genres.json`, a flat array Tez can
-  edit directly at any time as the library is worked through. New endpoint: `GET
-  /api/editor/genres`. Both Basic and Full editors call this same endpoint, so they can never
-  drift out of sync with each other.
+  edit directly at any time as the library is worked through, or via the Admin page (added
+  2026-06-20, `comicvault-changes.md` Tier 4 Item 1): `GET/POST /api/editor/genres`, `DELETE
+  /api/editor/genres/{name}` (blocked if it's the last remaining value). Both Basic and Full
+  editors call the `GET` endpoint, so they can never drift out of sync with each other.
 - Starting list (21 values, from `xml-editor-design-and-function.md`, open to addition):
   Crime, Superhero, Sci-Fi, Western, War, Action, Adventure, Romance, Biography, Suspense,
   Cyberpunk, Comedy, Art, Fantasy, Horror, Fiction, Mystery, Thriller, Non-Fiction, Drama,
   Historical.
 
-### 4.2 Format — enforced, hardcoded, locked
-- **Fully enforced select-only dropdown.** Locked, hardcoded backend constant — confirmed
-  final, no editing mechanism needed.
-- List (10 values): Graphic Novel, Series, One Shot, Anthology, Art Book, Limited Series,
-  Special, Trade Paper Back, Annual, Other.
+### 4.2 Format — enforced, backend-served, editable list
+> **Deviation, 2026-06-20 (`comicvault-changes.md` Tier 4 Item 1):** this section
+> originally locked Format as a hardcoded constant with "no editing mechanism
+> needed." That decision is reversed — Format is now admin-editable, same
+> mechanism as Genre (4.1 below), surfaced in the Admin page alongside Genre.
+> The list contents and the Section 20.12 routing behaviour are unchanged; only
+> the editing mechanism changed.
+- **Fully enforced select-only dropdown.** No free text, no escape hatch.
+- List is **not hardcoded** — served from `backend/editor/formats.json`, a flat array
+  editable via the Admin page (or directly, same as Genre). New endpoints: `GET/POST
+  /api/editor/formats`, `DELETE /api/editor/formats/{name}` (blocked if it's the last
+  remaining value). Both Basic and Full editors call the `GET` endpoint, so they can
+  never drift out of sync with each other.
+- Starting list (10 values, unchanged from the original locked set): Graphic Novel,
+  Series, One Shot, Anthology, Art Book, Limited Series, Special, Trade Paper Back,
+  Annual, Other.
 - This list also governs the Section 20.12 singles-routing rule already defined in `SPEC.md`:
   `Series` or `Limited Series` → series page; everything else → issue page; folder as
-  fallback where Format is blank. Confirmed unchanged against this exact list.
+  fallback where Format is blank. Unchanged by this deviation — routing reads the per-issue
+  DB value, not the editable list, so it's unaffected by additions/removals to the list.
 
 ### 4.3 AgeRating — enforced, hardcoded, locked
 - **Fully enforced select-only dropdown.** Locked, hardcoded backend constant.

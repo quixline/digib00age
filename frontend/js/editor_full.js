@@ -2,10 +2,6 @@
 // Full Editor toolbox: pre-library batch metadata editing. EDITOR_SPEC.md Section 5.
 // Self-contained — no dependency on app.js.
 
-const FORMAT_OPTIONS = [
-  'Graphic Novel', 'Series', 'One Shot', 'Anthology', 'Art Book',
-  'Limited Series', 'Special', 'Trade Paper Back', 'Annual', 'Other',
-];
 const AGE_RATING_OPTIONS = [
   'Everyone', 'Early Childhood', 'Everyone 10+', 'PG', 'Adult', 'Teen', 'Teen+', 'Mature',
 ];
@@ -30,6 +26,7 @@ let multiXmlFileId = null;
 document.addEventListener('DOMContentLoaded', async () => {
   populateStaticSelects();
   await loadGenreOptions();
+  await loadFormatOptions();
   wireFileManagement();
   wireQueue();
   wireXmlEditor();
@@ -48,8 +45,15 @@ function populateStaticSelects() {
     for (const v of values) html += `<option value="${esc(v)}">${esc(v)}</option>`;
     return html;
   };
-  document.getElementById('fe-format').innerHTML = optionsHtml(FORMAT_OPTIONS, '-- Select Format --');
   document.getElementById('fe-agerating').innerHTML = optionsHtml(AGE_RATING_OPTIONS, '-- Select Rating --');
+}
+
+async function loadFormatOptions() {
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const formats = await fetch('/api/editor/formats').then((r) => r.json());
+  let html = `<option value="">-- Select Format --</option>`;
+  for (const v of formats) html += `<option value="${esc(v)}">${esc(v)}</option>`;
+  document.getElementById('fe-format').innerHTML = html;
 }
 
 async function loadGenreOptions() {
@@ -384,8 +388,9 @@ function populateForm(fields) {
 
   document.getElementById('fe-bw').checked = fields.BlackAndWhite === 'on';
 
+  // No matching <option> for a stale/removed Format leaves the select unselected, i.e. blank.
   const formatSelect = document.getElementById('fe-format');
-  formatSelect.value = FORMAT_OPTIONS.includes(fields.Format) ? fields.Format : '';
+  formatSelect.value = fields.Format || '';
 
   const ratingSelect = document.getElementById('fe-agerating');
   ratingSelect.value = AGE_RATING_OPTIONS.includes(fields.AgeRating) ? fields.AgeRating : '';

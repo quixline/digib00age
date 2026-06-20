@@ -2,13 +2,9 @@
 // Basic Editor popup: single-issue metadata edit, opened from /issue/{id}.
 // EDITOR_SPEC.md Section 6.
 
-// Locked, hardcoded lists — mirrors backend/editor/constants.py exactly.
-// (Genre is different: it's editable, so it's always fetched from the
-// server — see loadGenreOptions.)
-const FORMAT_OPTIONS = [
-  'Graphic Novel', 'Series', 'One Shot', 'Anthology', 'Art Book',
-  'Limited Series', 'Special', 'Trade Paper Back', 'Annual', 'Other',
-];
+// AgeRating is locked, hardcoded — mirrors backend/editor/constants.py exactly.
+// Genre and Format are both editable lists, always fetched from the server —
+// see populateStaticSelects below.
 const AGE_RATING_OPTIONS = [
   'Everyone', 'Early Childhood', 'Everyone 10+', 'PG', 'Adult', 'Teen', 'Teen+', 'Mature',
 ];
@@ -63,7 +59,8 @@ async function populateStaticSelects() {
   const formatSelect = document.getElementById('ed-format');
   const ratingSelect = document.getElementById('ed-agerating');
 
-  formatSelect.innerHTML = optionsHtml(FORMAT_OPTIONS, '-- Select Format --');
+  const formatOptions = await fetch('/api/editor/formats').then((r) => r.json());
+  formatSelect.innerHTML = optionsHtml(formatOptions, '-- Select Format --');
   ratingSelect.innerHTML = optionsHtml(AGE_RATING_OPTIONS, '-- Select Rating --');
 
   genreOptionsCache = await fetch('/api/editor/genres').then((r) => r.json());
@@ -138,8 +135,10 @@ async function openEditorModal(issueId, onSaved) {
 
   document.getElementById('ed-bw').checked = fields.BlackAndWhite === 'on';
 
+  // Section 4.4 — assigning a value with no matching <option> (a stale/removed
+  // Format) leaves the select unselected, i.e. blank, same as the genre/rating gate below.
   const formatSelect = document.getElementById('ed-format');
-  formatSelect.value = FORMAT_OPTIONS.includes(fields.Format) ? fields.Format : '';
+  formatSelect.value = fields.Format || '';
 
   const ratingSelect = document.getElementById('ed-agerating');
   ratingSelect.value = AGE_RATING_OPTIONS.includes(fields.AgeRating) ? fields.AgeRating : '';

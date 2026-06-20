@@ -1,8 +1,13 @@
 """
 ComicVault — Editor (Basic) Router
-GET  /api/editor/genres        Editable genre list — shared by Basic and Full editor UIs
-GET  /api/editor/{issue_id}    Load current field values for the popup (live from the file)
-POST /api/editor/{issue_id}    Save field values, rewrite the archive, rescan in-process
+GET    /api/editor/genres          Editable genre list — shared by Basic and Full editor UIs
+POST   /api/editor/genres          Add a genre (Admin page) — Tier 4 Item 1, comicvault-changes.md
+DELETE /api/editor/genres/{name}   Remove a genre (Admin page); blocked if it's the last one
+GET    /api/editor/formats         Editable format list — same mechanism as genres
+POST   /api/editor/formats         Add a format (Admin page)
+DELETE /api/editor/formats/{name}  Remove a format (Admin page); blocked if it's the last one
+GET    /api/editor/{issue_id}      Load current field values for the popup (live from the file)
+POST   /api/editor/{issue_id}      Save field values, rewrite the archive, rescan in-process
 """
 
 import os
@@ -18,7 +23,8 @@ from backend.editor.archive_io import (
     write_comicinfo_to_cbz,
 )
 from backend.editor.field_merge import build_xml_from_fields
-from backend.editor.genres import load_genres
+from backend.editor.formats import add_format, load_formats, remove_format
+from backend.editor.genres import add_genre, load_genres, remove_genre
 from backend.editor.validation import validate_enforced_fields
 from backend.editor.xml_parser import COMICINFO_TAGS, parse_comicinfo_xml
 from backend.models import Issue
@@ -29,9 +35,56 @@ router = APIRouter(tags=["editor"])
 
 @router.get("/editor/genres")
 def get_genres():
-    """Current genre list, read fresh from genres.json on every call (no caching) —
-    EDITOR_SPEC.md Section 4.1, Tez edits the file directly."""
+    """Current genre list, read fresh from genres.json on every call (no caching)."""
     return load_genres()
+
+
+@router.post("/editor/genres")
+def post_genre(payload: dict = Body(...)):
+    """Add a genre to the editable list (Admin page)."""
+    try:
+        return add_genre(payload.get("name", ""))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/editor/genres/{name}")
+def delete_genre(name: str):
+    """Remove a genre from the editable list. Blocked if it's the last remaining value.
+    Existing issues tagged with it are not touched (no cascade) — the Admin UI is
+    expected to confirm with the user first when the issue count is non-zero (counts
+    come from GET /api/browse/genres, fetched before this call)."""
+    try:
+        return remove_genre(name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/editor/formats")
+def get_formats():
+    """Current format list, read fresh from formats.json on every call (no caching)."""
+    return load_formats()
+
+
+@router.post("/editor/formats")
+def post_format(payload: dict = Body(...)):
+    """Add a format to the editable list (Admin page)."""
+    try:
+        return add_format(payload.get("name", ""))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/editor/formats/{name}")
+def delete_format(name: str):
+    """Remove a format from the editable list. Blocked if it's the last remaining value.
+    Existing issues with this Format value are not touched (no cascade) — the Admin UI
+    is expected to confirm with the user first when the issue count is non-zero (counts
+    come from GET /api/browse/formats, fetched before this call)."""
+    try:
+        return remove_format(name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 def _load_issue_or_404(issue_id: int, db: Session) -> Issue:
