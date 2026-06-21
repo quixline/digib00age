@@ -167,6 +167,17 @@ fails silently rather than being surfaced.
 - **Full Editor only.** Not needed in the Basic editor — it operates exclusively on files
   already in ComicVault's library, which by definition went through this check (or simply
   never had the problem) on their way in.
+> **Correction, 2026-06-20 (`DECISIONS.md` — "ComicInfo.xml is the sole source of
+> truth when MetronInfo.xml also exists"):** the line below claiming "the existing
+> library is already known to be clean" is **false** — confirmed via `thanksgiving.cbz`
+> and `tales of ruination.cbz`, both already scanned into the library with both
+> ComicInfo.xml and MetronInfo.xml present. The scanner does not get multi-XML
+> detection logic added (that remains correct, and is unchanged below) — instead,
+> **ComicInfo.xml is the sole authoritative source wherever multiple XML files
+> exist**, MetronInfo.xml is ignored. Already-affected library files are being
+> identified and cleaned up via a one-off script run outside this project, not a
+> ComicVault feature.
+
 - Confirmed out of scope: ComicVault's library *scanner* does not get equivalent detection
   logic. This is treated as purely a pre-library intake concern; the existing library is
   already known to be clean, and the scanner's behaviour on this point is left as-is.
@@ -535,4 +546,5 @@ they aren't lost:
 | 2026-06-18 | Build steps 1–4 (editor core, genres endpoint, pre-migration report, Basic Editor) completed against the **pre-revision** Section 5 — none of that work is affected by this file's Section 5.1/3.5 corrections above, since Basic Editor never had a file-picker concern (it always operated on a known `issue_id` from the DB) and Full Editor (the only section touched by the revision) had not been started yet. Full detail per step in `progress.md`. | Confirming no rework needed before continuing to Full Editor under the corrected spec. |
 | 2026-06-18 | Build steps 5–6 complete: Full Editor (`editor_full.py` + `editor_full.html`/`.js`, path-based picker, multi-XML detection/resolution, queue + batch processing with increment, image viewer) and tray app/Admin page wiring to `/editor`. `archive_io.py` gained a shared `_rebuild_archive()` helper and `keep_single_xml()`; validation logic extracted to a new shared `validation.py` so Basic and Full Editor enforce Genre/Format/AgeRating identically. Full detail in `progress.md`. This closes out Section 10 — CAPT is fully retired. | Completes the build round this spec exists to plan. |
 | 2026-06-18 | `start_server.py` crash fixed (commit `7e49d35`) — it still imported `EDITOR_PORT` after Section 2's "no port 8001" decision led to that constant being deleted from `backend/config.py` as dead code; the import was missed, crashing the reader server with an `ImportError` on every startup since. No spec content changed, recorded here since it's a direct regression from this section's port-removal decision. Full root-cause writeup (including an unrelated stale Windows Startup shortcut found at the same time) in `progress.md`. | Found while diagnosing a reported "editor inaccessible after reboot." |
+| 2026-06-20 | Corrected §3.5's "library already known to be clean" assumption — `thanksgiving.cbz`/`tales of ruination.cbz` found already in the library with both ComicInfo.xml and MetronInfo.xml present. ComicInfo.xml confirmed as sole authoritative source wherever both exist; scanner still gets no new detection logic, cleanup handled via an external one-off script instead. | Discovered during live testing of the Full Editor's multi-XML side-by-side picker against a real already-scanned file; see `DECISIONS.md`. |
 | 2026-06-18 | **Full Editor (Section 5.2) and Basic Editor (Section 6.2) layout polish from live use**, committed as `cc772ba`: Image Viewer column narrowed and its preview image capped smaller; `.fe-layout` reworked so the XML Editor column is the flexible track instead of File Management/Image Viewer; Genre grid column counts changed (Full Editor settled on 5 columns, Basic Editor on 4 with the popup widened to 720px to fit); Increment Number checkbox relabelled "Increment #" and moved into the Issue Number/Year row; zoom controls moved to their own row below Prev/Next; B&W checkbox moved onto the Format/Age Rating row in Basic Editor. None of these change the field sets, validation rules, or behaviour defined in Sections 3–6 — layout/wording only. Full before/after detail in `progress.md`. | Tez's live-use feedback across both the desktop PC (primary editing machine) and a laptop with a smaller screen. |
