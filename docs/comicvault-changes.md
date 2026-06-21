@@ -35,12 +35,18 @@ brief — there's no fixed "done" point from here, just an ordered queue.
   what shipped and how it was checked (Genre didn't actually have admin UI before this
   either, so both lists got add/remove built, not just Format).
 
-**2. Multi-select + Favorites/Rating** — medium, additive
+**2. Multi-select + Favorites/Rating** — medium, additive — **done, 2026-06-21**
 - Long-press to select a card, further short clicks add more cards to the selection.
 - Bulk actions on the selection: Read/Unread, Add to Favorites, Rate (1–5).
 - "Read selected" (from the original notes) is part of this.
-- New DB fields: `favorites`, `personal_rating` — purely additive, no migration of
-  existing data needed.
+- New DB fields: `favorites`, `personal_rating` — additive, but turned out to need a
+  small one-time `ALTER TABLE` migration after all (see `DECISIONS.md` — `create_all()`
+  only creates missing tables, not missing columns on an existing one).
+- Scope confirmed before building: multi-select only on cards/rows that map 1:1 to a
+  single issue (Singles, series-detail rows, 2000 AD prog cards) — not series-aggregate
+  cards. Favorites has no dedicated browse tab yet (deferred, see `ROADMAP.md`).
+- Built and verified — see `progress.md` "Session — 2026-06-21: Tier 4 Item 2" for
+  what shipped and how it was checked.
 
 **3. Writer/Artist entity dedup + search/link UI** — largest, highest-risk, build last
 - Dedupe people into real entities (one "Alan Moore" row regardless of how many
@@ -80,9 +86,6 @@ momentum, defer the schema-changing + real-data-migration item until last.)*
 - Home page search bar; unify search behaviour/copy with the All tab — "Search All"
   (home + All tab), "Search Singles", "Search Series"
 - Card size control — 10% / 25% / 50% / 100% (library view, not admin-only)
-- Home Strips: "Auto Saved" confirmation message after reorder/visibility-toggle
-  actions (replaces the originally-proposed manual "Save Strips" button — Strips
-  already save immediately per `HOME_STRIPS_SPEC.md`, this just makes that visible)
 
 ## Tier 5 — Manual/non-dev tasks
 - Genre additions: Anthology, Comic, Omnibus — do this once item 1 above ships, as a
@@ -111,3 +114,4 @@ momentum, defer the schema-changing + real-data-migration item until last.)*
 | Date | Change | Reason |
 |---|---|---|
 | 2026-06-20 | Doc created from raw `comicvault-changes.txt`, conflicts resolved, sequencing agreed (1→2→3) | Initial planning pass, end of session |
+| 2026-06-21 | Tier 4 Item 2 (Multi-select + Favorites/Rating) built and verified | See `progress.md` "Session — 2026-06-21: Tier 4 Item 2" |

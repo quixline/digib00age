@@ -344,6 +344,8 @@ def get_2000ad_year(year: int, db: Session = Depends(get_db)):
                 "missing": iss.missing,
                 "read_status": prog_map[iss.id].status if iss.id in prog_map else "unread",
                 "current_page": prog_map[iss.id].current_page if iss.id in prog_map else 0,
+                "favorites": iss.favorites,
+                "personal_rating": iss.personal_rating,
             }
             for iss in issues_sorted
         ],

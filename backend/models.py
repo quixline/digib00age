@@ -56,6 +56,10 @@ class Issue(Base):
     black_and_white = Column(Boolean, default=False, nullable=False)
     manga           = Column(Text, default="No", nullable=False)  # "No"/"Yes"/"YesAndRightToLeft"
 
+    # Personal engagement — user-set, independent of file metadata
+    favorites       = Column(Boolean, default=False, nullable=False)
+    personal_rating = Column(Integer, nullable=True)        # 1-5, NULL = not rated
+
     # Counts
     page_count      = Column(Integer, nullable=True)        # from XML; verified vs actual image count
     count           = Column(Integer, nullable=True)        # total issues in series if known

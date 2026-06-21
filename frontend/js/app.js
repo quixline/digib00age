@@ -29,6 +29,214 @@ function debounce(fn, ms) {
   return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+//  MULTI-SELECT — long-press to select, short tap to add more
+//  Only attached to elements that map 1:1 to a single issue (Singles cards,
+//  series-detail issue rows, 2000 AD prog cards) — never series-aggregate
+//  cards, where a bulk action's meaning would be ambiguous.
+// ══════════════════════════════════════════════════════════════════════════════
+
+const LONG_PRESS_MS         = 500;
+const PRESS_MOVE_TOLERANCE  = 10;  // px — a drag/scroll cancels the long-press
+
+let selectionActive = false;
+const selectedIds   = new Map();   // issue id -> true
+
+function makeSelectable(element, issueId) {
+  element.dataset.issueId = issueId;
+
+  let pressTimer     = null;
+  let longPressFired = false;
+  let startX = 0, startY = 0;
+
+  const clearPress = () => { clearTimeout(pressTimer); pressTimer = null; };
+
+  element.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;  // ignore right/middle click
+    longPressFired = false;
+    startX = e.clientX; startY = e.clientY;
+    clearPress();
+    pressTimer = setTimeout(() => {
+      longPressFired = true;
+      if (!selectionActive) enterSelectionMode(issueId);
+      else toggleSelected(issueId);
+    }, LONG_PRESS_MS);
+  });
+
+  element.addEventListener('pointermove', (e) => {
+    if (!pressTimer) return;
+    if (Math.abs(e.clientX - startX) > PRESS_MOVE_TOLERANCE ||
+        Math.abs(e.clientY - startY) > PRESS_MOVE_TOLERANCE) {
+      clearPress();
+    }
+  });
+
+  element.addEventListener('pointerup', (e) => {
+    const firedLongPress = longPressFired;
+    clearPress();
+    if (selectionActive) {
+      e.preventDefault();
+      if (!firedLongPress) toggleSelected(issueId);  // short tap while already selecting
+    }
+    // else: plain short tap, no long-press — let the <a href> navigate normally
+  });
+
+  element.addEventListener('pointercancel', clearPress);
+}
+
+// Suppress navigation for any click landing on a selectable element while
+// selection mode is active. A delegated capture-phase listener is more
+// reliable than preventDefault() in the pointerup handler alone, since some
+// browsers still dispatch a synthetic click afterward.
+document.addEventListener('click', (e) => {
+  if (selectionActive && e.target.closest('[data-issue-id]')) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}, true);
+
+function enterSelectionMode(firstId) {
+  selectionActive = true;
+  showSelectionToolbar();
+  toggleSelected(firstId);
+}
+
+function exitSelectionMode() {
+  if (!selectionActive && selectedIds.size === 0) return;
+  selectionActive = false;
+  for (const id of selectedIds.keys()) {
+    const node = document.querySelector(`[data-issue-id="${id}"]`);
+    if (node) node.classList.remove('selected');
+  }
+  selectedIds.clear();
+  hideSelectionToolbar();
+}
+
+function toggleSelected(id) {
+  if (selectedIds.has(id)) selectedIds.delete(id);
+  else selectedIds.set(id, true);
+
+  const node = document.querySelector(`[data-issue-id="${id}"]`);
+  if (node) node.classList.toggle('selected', selectedIds.has(id));
+
+  if (selectedIds.size === 0) exitSelectionMode();
+  else updateSelectionToolbar();
+}
+
+function ensureSelectionToolbar() {
+  let bar = document.getElementById('selectionToolbar');
+  if (bar) return bar;
+
+  bar = el('div', 'selection-toolbar');
+  bar.id = 'selectionToolbar';
+  bar.hidden = true;
+
+  const count = el('span', 'selection-count');
+  count.id = 'selectionCount';
+  bar.appendChild(count);
+
+  const actions = el('div', 'selection-actions');
+  const mkBtn = (id, label, handler) => {
+    const b = el('button', 'selection-action-btn', label);
+    b.id   = id;
+    b.type = 'button';
+    b.addEventListener('click', handler);
+    actions.appendChild(b);
+    return b;
+  };
+  mkBtn('selMarkRead',   'Mark Read',
+    () => runBulkAction('/progress/bulk/mark-read',   {}, ids => applyReadStateToDom(ids, 'read')));
+  mkBtn('selMarkUnread', 'Mark Unread',
+    () => runBulkAction('/progress/bulk/mark-unread', {}, ids => applyReadStateToDom(ids, 'unread')));
+  mkBtn('selFavorite',   '★ Favorite',
+    () => runBulkAction('/progress/bulk/favorite',    {}, ids => applyFavoriteToDom(ids, true)));
+
+  const rateWrap = el('div', 'selection-rate');
+  for (let i = 1; i <= 5; i++) {
+    const star = el('button', 'rating-star', '★');
+    star.type  = 'button';
+    star.title = `Rate ${i}`;
+    star.addEventListener('click', () => runBulkAction('/progress/bulk/rate', { rating: i }));
+    rateWrap.appendChild(star);
+  }
+  actions.appendChild(rateWrap);
+  bar.appendChild(actions);
+
+  const endWrap    = el('div', 'selection-toolbar-end');
+  const cancelBtn  = el('button', 'selection-cancel-btn', 'Cancel');
+  cancelBtn.id     = 'selCancel';
+  cancelBtn.type   = 'button';
+  cancelBtn.addEventListener('click', () => exitSelectionMode());
+  const doneBtn    = el('button', 'selection-done-btn', 'Done');
+  doneBtn.id       = 'selDone';
+  doneBtn.type     = 'button';
+  doneBtn.addEventListener('click', () => exitSelectionMode());
+  endWrap.append(cancelBtn, doneBtn);
+  bar.appendChild(endWrap);
+
+  document.body.appendChild(bar);
+  return bar;
+}
+
+function showSelectionToolbar() {
+  ensureSelectionToolbar().hidden = false;
+  updateSelectionToolbar();
+}
+
+function hideSelectionToolbar() {
+  const bar = document.getElementById('selectionToolbar');
+  if (bar) bar.hidden = true;
+}
+
+function updateSelectionToolbar() {
+  const countEl = document.getElementById('selectionCount');
+  if (countEl) countEl.textContent = `${selectedIds.size} selected`;
+}
+
+async function runBulkAction(path, extraBody, applyFn) {
+  const ids = Array.from(selectedIds.keys());
+  if (!ids.length) return;
+  try {
+    await fetch(`${API}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ issue_ids: ids, ...extraBody }),
+    });
+    if (applyFn) applyFn(ids);
+  } catch (_) {
+    // Best-effort — selection still clears; a reload reflects true server state.
+  }
+  exitSelectionMode();
+}
+
+// Targeted DOM + cache updates so the grid doesn't need a full refetch after
+// a bulk action — mirrors the existing single-issue buildStatusButton pattern.
+function applyReadStateToDom(ids, status) {
+  for (const id of ids) {
+    const node = document.querySelector(`[data-issue-id="${id}"]`);
+    if (node) {
+      node.classList.remove('state-read', 'state-reading', 'state-unread', 'state-part-read');
+      node.classList.add(status === 'read' ? 'state-read' : 'state-unread');
+    }
+    // Singles cards in the browse grid: series_anchor_id IS the issue id —
+    // patch the cached aggregate counts so the status-pill filter stays correct.
+    const lib = allLibrary.find(s => s.series_anchor_id === id);
+    if (lib) {
+      if (status === 'read') { lib.read_count = lib.issue_count; lib.unread_count = 0; lib.reading_count = 0; }
+      else                   { lib.read_count = 0; lib.unread_count = lib.issue_count; lib.reading_count = 0; }
+    }
+  }
+}
+
+function applyFavoriteToDom(ids, value) {
+  for (const id of ids) {
+    const node = document.querySelector(`[data-issue-id="${id}"]`);
+    if (node) node.classList.toggle('is-favorite', value);
+    const lib = allLibrary.find(s => s.series_anchor_id === id);
+    if (lib) lib.favorites = value;
+  }
+}
+
 // ── Page dispatch ─────────────────────────────────────────────────────────────
 // Defer to DOMContentLoaded so the full DOM is guaranteed to be available
 // before any getElementById / querySelectorAll calls fire.
@@ -162,6 +370,7 @@ function customTabLabel(from) {
 }
 
 async function switchSurface(surface) {
+  exitSelectionMode();
   activeSurface = surface;
   const isBrowse = isBrowseSurface(surface);
 
@@ -508,6 +717,7 @@ function renderBrowse() {
 }
 
 function _renderBrowsePage() {
+  exitSelectionMode();
   const grid    = document.getElementById('coverGrid');
   const countEl = document.getElementById('browseCount');
   const clearBtn= document.getElementById('filterClear');
@@ -627,8 +837,12 @@ function buildCoverCard(s) {
     : `/series/${s.series_anchor_id}${from}`;
   const state    = seriesReadState(s);
 
-  const card = el('a', `cover-card ${state}`);
+  const card = el('a', `cover-card ${state}${s.favorites ? ' is-favorite' : ''}`);
   card.href  = href;
+
+  // Multi-select only on single-issue cards (Singles) — series-aggregate
+  // cards stay click-to-navigate only (Tier 4 Item 2 scope decision).
+  if (isSingle) makeSelectable(card, s.series_anchor_id);
 
   const wrap = el('div', 'cover-img-wrap');
   const img  = el('img');
@@ -843,8 +1057,9 @@ function buildAdProgCard(issue) {
               : issue.read_status === 'reading'  ? 'state-part-read'
               : 'state-unread';
 
-  const card = el('a', `cover-card ${state}${issue.missing ? ' missing' : ''}`);
+  const card = el('a', `cover-card ${state}${issue.missing ? ' missing' : ''}${issue.favorites ? ' is-favorite' : ''}`);
   card.href  = `/issue/${issue.id}`;
+  makeSelectable(card, issue.id);
 
   const wrap = el('div', 'cover-img-wrap');
   const img  = el('img');
@@ -871,6 +1086,7 @@ function buildAdProgCard(issue) {
 }
 
 async function load2000ADYear(year) {
+  exitSelectionMode();
   document.getElementById('adYearGrid').hidden   = true;
   document.getElementById('adYearDetail').hidden = false;
   document.getElementById('adYearContent').innerHTML = '<div class="loading-state">Loading…</div>';
@@ -990,9 +1206,11 @@ function buildIssueList(data, from) {
 function buildIssueRow(issue, from) {
   const readState = issue.read_status === 'read'    ? 'state-read'
                   : issue.read_status === 'reading' ? 'state-reading' : '';
-  const cls = ['issue-row', issue.missing ? 'missing' : '', readState].filter(Boolean).join(' ');
+  const cls = ['issue-row', issue.missing ? 'missing' : '', readState, issue.favorites ? 'is-favorite' : '']
+    .filter(Boolean).join(' ');
   const row = el('a', cls);
   row.href  = `/issue/${issue.id}${from ? `?from=${from}` : ''}`;
+  makeSelectable(row, issue.id);
 
   // Thumbnail
   const thumb = el('div', 'issue-thumb');
@@ -1147,6 +1365,8 @@ function buildIssueDetail(data) {
   readBtn.title = 'Open in ComicVault app';
   actions.appendChild(readBtn);
   actions.appendChild(buildStatusToggle(data));
+  actions.appendChild(buildFavoriteToggle(data));
+  actions.appendChild(buildRatingControl(data));
   const editXmlBtn = el('button', 'btn-edit-xml', 'Edit XML');
   editXmlBtn.type = 'button';
   editXmlBtn.onclick = () => openEditorModal(data.id, () => initIssue());
@@ -1272,6 +1492,67 @@ function buildStatusToggle(data) {
   });
 
   return btn;
+}
+
+// ── Favorite toggle + star rating (standalone, independent of multi-select) ───
+// Both reuse the same bulk endpoints with a 1-item issue_ids list — one code
+// path for multi-select and single-issue use, no separate endpoints needed.
+
+function buildFavoriteToggle(data) {
+  const btn = el('button', 'btn-favorite-toggle');
+
+  function sync() {
+    btn.textContent = data.favorites ? '★ Favorited' : '☆ Add to Favorites';
+    btn.classList.toggle('is-favorite', !!data.favorites);
+  }
+  sync();
+
+  btn.addEventListener('click', async () => {
+    const endpoint = data.favorites ? '/api/progress/bulk/unfavorite' : '/api/progress/bulk/favorite';
+    try {
+      await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ issue_ids: [data.id] }),
+      });
+      data.favorites = !data.favorites;
+      sync();
+    } catch (_) {}
+  });
+
+  return btn;
+}
+
+function buildRatingControl(data) {
+  const wrap = el('div', 'rating-control');
+
+  function sync() {
+    wrap.querySelectorAll('.rating-star').forEach(s => {
+      s.classList.toggle('is-filled', Number(s.dataset.value) <= (data.personal_rating || 0));
+    });
+  }
+
+  for (let i = 1; i <= 5; i++) {
+    const star = el('button', 'rating-star', '★');
+    star.type = 'button';
+    star.dataset.value = i;
+    star.title = `Rate ${i}`;
+    star.addEventListener('click', async () => {
+      try {
+        await fetch('/api/progress/bulk/rate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ issue_ids: [data.id], rating: i }),
+        });
+        data.personal_rating = i;
+        sync();
+      } catch (_) {}
+    });
+    wrap.appendChild(star);
+  }
+  sync();
+
+  return wrap;
 }
 
 // ── CSV block (characters, teams, locations) ──────────────────────────────────

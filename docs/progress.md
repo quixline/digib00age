@@ -1001,3 +1001,114 @@ junction fix) from the repo root — content fully captured here and in `CLAUDE.
 even though this session continues straight from one where push was already approved;
 this is a distinct, structurally significant change.
 
+---
+
+## Follow-up — Tray App Manual Verification (2026-06-20)
+
+Tez confirmed that all items flagged as "needs a manual pass on the real machine" in the
+"V2.1 — Tray App Menu Redesign (2026-06-19)" session entry were completed and passed with
+no issues:
+
+- Checkable "Start ComicVault at login" item: visual checkmark updates immediately on click.
+- Dark-theme menu appearance: correct against both Windows light and dark mode.
+- 35-second health-check non-restart window after a manual "Stop Server": confirmed.
+- Reboot test of the self-service autostart toggle: confirmed.
+
+No issues found. Tray app menu redesign is fully closed.
+
+---
+
+## Session — 2026-06-21: Tier 4 Item 2 — Multi-select + Favorites/Rating
+
+**Goal:** Build `comicvault-changes.md` Tier 4 Item 2 — long-press a card to select it,
+tap more cards to add to the selection, then bulk-apply Read/Unread, Add to Favorites,
+or a 1–5 star Rating. New additive `favorites`/`personal_rating` Issue fields. Scope
+confirmed with Tez before building: multi-select only on cards/rows that map 1:1 to a
+single issue (Singles surface, Singles-type cards on All, series-detail issue rows,
+2000 AD prog cards) — never on series-aggregate cards. Floating bottom toolbar for the
+bulk actions. Issue detail page also gets its own standalone favorite-toggle + star
+control, independent of multi-select.
+
+**Schema risk found and fixed before writing any endpoint code:** the backlog doc's
+"purely additive, no migration needed" assumption (based on the CustomTab/HomeStrip
+precedent) doesn't hold here — those were whole new *tables*, and SQLAlchemy's
+`create_all()` only creates missing tables, it never adds columns to a table that
+already exists. Proved this empirically with a throwaway SQLite file before touching
+real code (column absent from `PRAGMA table_info` both before and after `create_all()`
+re-ran with the column added to the model). Fixed by adding `_add_missing_issue_columns()`
+to `backend/database.py`'s `init_db()` — a one-time, idempotent `ALTER TABLE` per
+missing column. Verified against a **scratch copy of the real ~5,500-row
+`comicvault_v2.db`** (not just a synthetic test) — columns appeared correctly, default
+values landed as expected (`favorites=0`, `personal_rating=NULL`), all 5,429 rows
+intact, real file's mtime unchanged afterward.
+
+**Backend (`backend/models.py`, `backend/routers/progress.py`, `backend/routers/library.py`,
+`backend/routers/home.py`):**
+- `Issue.favorites` (Boolean, default False) and `Issue.personal_rating` (Integer,
+  nullable) added.
+- Five new bulk endpoints in `progress.py`: `POST /api/progress/bulk/mark-read`,
+  `bulk/mark-unread`, `bulk/favorite`, `bulk/unfavorite`, `bulk/rate` — all take
+  `{issue_ids: [...]}` (`rate` also takes `rating`, Pydantic-validated 1–5). Missing/
+  unknown ids are silently skipped rather than 404ing the whole batch (no ordering
+  invariant to protect here, unlike `admin.py`'s home-strip reorder). Extracted
+  `_get_or_create_progress()` out of the existing `update_progress()` so the bulk
+  read/unread path doesn't duplicate the upsert-or-create logic.
+- **Bug caught during this session's own endpoint testing, before it ever reached the
+  frontend:** `POST /api/progress/bulk/mark-read` initially 422'd — Starlette matches
+  path templates in registration order, and the pre-existing
+  `/progress/{issue_id}/mark-read` route (registered first) matched `bulk/mark-read`
+  too, with `issue_id="bulk"` failing int parsing. Fixed by moving the new bulk routes
+  above the single-issue mark-read/mark-unread routes in the file. Re-verified by curl
+  against the scratch server afterward — both the new bulk routes and the pre-existing
+  single-issue routes work correctly.
+- `favorites`/`personal_rating` added to all four response payloads that needed them:
+  `_issue_to_dict()` (issue detail), `get_series()`'s inline dict (series detail page),
+  `get_library()`'s inline dict (browse grid), and `home.py`'s `get_2000ad_year()`
+  inline dict (2000 AD prog cards). `GET /api/search` was deliberately left alone —
+  confirmed the web UI's search box filters client-side over already-loaded
+  `/api/library` data and never calls that endpoint.
+
+**Frontend (`frontend/js/app.js`, `frontend/css/style.css`):**
+- `makeSelectable(element, issueId)` — shared long-press (Pointer Events,
+  ~500ms threshold, cancels on >10px drag) + tap-to-add logic, attached to
+  `buildCoverCard()` only when `format_group === 'Singles'`, and unconditionally to
+  `buildIssueRow()` and `buildAdProgCard()`. A delegated capture-phase `click` listener
+  suppresses navigation on selectable elements while selection mode is active (more
+  reliable across browsers than relying on `pointerup`'s `preventDefault()` alone).
+  `exitSelectionMode()` called defensively at the top of `switchSurface()`,
+  `_renderBrowsePage()`, and `load2000ADYear()` so a re-rendered grid never holds
+  stale selected-element references.
+- Floating bottom toolbar built once via `ensureSelectionToolbar()` (vanilla DOM,
+  matching the existing `el()` pattern) and appended to `document.body` — not static
+  markup in `index.html`/`series.html`, since the same toolbar needs to work on both
+  pages without duplicating HTML.
+- Issue detail page: `buildFavoriteToggle()` + `buildRatingControl()` added next to
+  the existing `buildStatusToggle()`, reusing the bulk endpoints with a 1-item
+  `issue_ids` list rather than adding separate single-issue endpoints.
+- Favorite badge on cards/rows is pure CSS (`.is-favorite::before { content: '★' }`)
+  — no DOM node management needed. Personal rating has no card-level visual (per the
+  confirmed scope — only the issue detail page shows the star rating).
+
+**Verified** (per CLAUDE.md §6 — scratch DB, no real `Processing` folder touch):
+installed `playwright` + Chromium one-off (not added to `requirements.txt` — a
+dev-only verification tool, consistent with the project's previous ad-hoc Playwright
+use noted in `TESTING.md`). Ran the actual FastAPI app against a scratch copy of the
+real DB on a throwaway port, then a 25-check Playwright script covering: long-press →
+toolbar appears → tap-to-add → bulk Mark Read → card state updates and backend
+confirms via a follow-up `GET /api/issue/{id}`; the critical scope-boundary regression
+— a **Series-aggregate card does not enter selection mode** on long-press and a plain
+click still navigates normally; the same long-press/Cancel/Done flow on a series-
+detail issue row and a 2000 AD prog card; standalone favorite-toggle + star-rating on
+the issue detail page, both surviving a page reload; zero console/page errors
+throughout. All 25 checks passed. Confirmed the real `comicvault_v2.db` was untouched
+throughout (unchanged mtime, no new columns, 5,429 rows) and removed all scratch
+artifacts (`scratch_test/` directory, including the scratch DB copy and verification
+script) afterward.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `SPEC.md` §7 (schema) and new §20.15
+(multi-select scope boundary, documented as a standing rule for future surface work,
+plus the create_all/migration correction); `ROADMAP.md` (moved this item out of the
+active queue, added the deferred Favorites browse surface as a named follow-up);
+`DECISIONS.md` (the create_all column-migration correction, and bulk-endpoint-vs-
+client-loop choice); `comicvault-changes.md` (Item 2 marked done).
+

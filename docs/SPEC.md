@@ -252,6 +252,8 @@ elif "Series" in file_path:
 | `missing` | BOOLEAN DEFAULT FALSE | True if file no longer found on disk |
 | `date_added` | DATETIME | When first scanned |
 | `date_modified` | DATETIME | File system modified date — used to detect changes |
+| `favorites` | BOOLEAN DEFAULT FALSE | User-set, independent of file metadata. Added Tier 4 Item 2 (2026-06-21) — `create_all()` doesn't add columns to an already-existing table, so `database.py`'s `init_db()` runs a one-time manual `ALTER TABLE` for this and `personal_rating` (see §21 change log) |
+| `personal_rating` | INTEGER | 1–5, NULL = not rated. Same Tier 4 Item 2 addition as `favorites` |
 
 ### `issue_genres` table (junction)
 
@@ -857,6 +859,29 @@ Recorded so they aren't mistaken for code changes:
 - Series-level overview field (needs XML + DB + editor changes).
 - Advanced Search page (if inline filter+search proves insufficient).
 
+### 20.15 Multi-select Scope Boundary (Tier 4 Item 2, 2026-06-21)
+
+Long-press-to-select and the bulk Read/Unread/Favorite/Rate toolbar (`comicvault-
+changes.md` Tier 4 Item 2) only attach to elements that map **1:1 to a single issue**:
+
+- Singles surface cards, and Singles-type cards on the All surface (`buildCoverCard()`,
+  gated on `format_group === 'Singles'`).
+- Series-detail issue rows (`buildIssueRow()`).
+- 2000 AD prog cards (`buildAdProgCard()`).
+
+**Series-aggregate cards (Series surface, series-type cards on All) are deliberately
+excluded** — a card there represents many issues, and a bulk action's meaning (mark
+read? favorite? rate?) would be ambiguous across all of them. Clicking/long-pressing a
+series-aggregate card stays a plain navigation, unchanged from before this feature.
+Any future surface or card type added to a browse view needs to make the same call
+explicitly — don't assume multi-select should "just work" on a new card type without
+deciding what a bulk action means for it first.
+
+Favorites has **no dedicated browse surface yet** — a favorite badge renders on
+eligible cards/rows when set, and the issue detail page shows favorite state + a 1–5
+star rating, but there's no "Favorites" tab. See `ROADMAP.md` for that as a deferred
+follow-up.
+
 ---
 
 ## 21. Change Log
@@ -895,5 +920,6 @@ Recorded so they aren't mistaken for code changes:
 | 2026-06-18 | **This file (`SPEC.md`) now lives in `comicvault_v2`, a separate cloned repo** (`D:\workshop\comicvault_v2`, history carried over from this V1 repo, remote repointed to `quixline/comicvault_v2`). **This entry, and all entries below it, apply to V2 only — V1's own copy of this file and its `cBook_Server/backend/scanner.py` are unmodified.** Found and fixed BUG-001 during V2's migration setup: Section 6's incremental scan rule ("File unchanged | Skip") didn't account for a thumbnail file being missing on disk despite unchanged `date_modified` — relevant because V2 was set up from a **copy** of this DB without copying `thumbnails/` (per Section 6's "Cover / thumbnail generation" rule, assumed regenerable on next scan, which it wasn't, until fixed). Scanner's skip branch now also checks thumbnail existence before skipping. Full detail in `comicvault_v2/BUGS.md` and `progress.md`. | One-time V2 environment setup, prerequisite to `EDITOR_SPEC.md` build work. Recorded here because it's a real defect in the scanner logic this file documents (Section 6), not just a migration footnote. |
 | 2026-06-18 | **V2 found completely unreachable after a reboot** — root-caused to two compounding issues, neither a deviation from this spec's content: (1) the machine's Windows Startup shortcut had never been repointed from the old V1 repo (`cBook_Server`) during the V2 migration, so a reboot launched V1 instead of V2; (2) `start_server.py` still imported `EDITOR_PORT` after the BUG-002 commit deleted it from `backend/config.py`, crashing the reader server with an `ImportError` on every startup since. Both fixed (commit `7e49d35`); full root-cause writeup in `progress.md`. | Recorded here as a pointer since it looked like a regression in this spec's startup/process behaviour (Sections 3, 14) before the real cause — an unrelated stale shortcut plus an incomplete dead-code cleanup — was found. |
 | 2026-06-18 | **Home page surface tab order changed** (Section 20.1) — `frontend/index.html`'s nav now reads Home, All, Singles, Series, 2000 AD (previously Home, Series, Singles, All, 2000 AD). Order only; the four surfaces and their behaviour are unchanged. | Tez's preferred browsing order, requested directly during live use. |
+| 2026-06-21 | **Tier 4 Item 2 — Multi-select + Favorites/Rating built.** `issues` table gained `favorites`/`personal_rating` (Section 7). Found that `create_all()` doesn't add columns to an already-existing table (only new tables) — added a one-time manual `ALTER TABLE` step to `database.py`'s `init_db()`, verified against a scratch copy of the real ~5,500-row DB before relying on it (see `DECISIONS.md`). New bulk endpoints in `progress.py`: `POST /api/progress/bulk/{mark-read,mark-unread,favorite,unfavorite,rate}`, all accepting `{issue_ids: [...]}` (plus `rating` for `/rate`). Registered *before* the existing `/progress/{issue_id}/mark-read` route — Starlette matches path templates in registration order, and `/progress/bulk/mark-read` would otherwise have matched `{issue_id}/mark-read` first with `issue_id="bulk"`, 422ing (caught live during this session's own endpoint testing). Frontend: long-press (Pointer Events, ~500ms) enters selection mode, short taps add more; a floating bottom toolbar drives the bulk actions. Scope boundary documented in Section 20.15. Issue detail page also got standalone favorite-toggle + star-rating controls (reuse the same bulk endpoints with a 1-item id list — no separate single-issue endpoints). | `comicvault-changes.md` Tier 4 Item 2. |
 | 2026-06-19 | **Tray app menu redesign** (Section 3) — "Stop ComicVault" (stopped the reader and exited the tray app together) split into three actions: **Stop Server** (reader only, tray keeps running), **Start Server** (restarts it, no-op if already running), and **Close** (stops the reader, then exits — the old combined behaviour, renamed). A new `manually_stopped` flag in `tray_app.py` stops the existing 30s health-check loop from auto-restarting a server that was stopped on purpose. Also added: a checkable **Start ComicVault at login** menu item (Section 14 — creates/removes the Startup shortcut directly, no more manual one-time setup), and dark-menu support following Windows' own theme setting (new `pywin32` dependency for the shortcut, small `ctypes`/`uxtheme` call for the theme — both additive, no architecture change). | Tez wanted independent start/stop of the reader without relaunching the whole tray app, plus self-service autostart management. |
 | 2026-06-19 | **Corrected understanding of the 2026-06-17 menu-corruption bug fix**, found while verifying the new checkable autostart item was safe to add: `icon.update_menu()` is not "never called after startup" as the original fix's comment claimed — pystray wraps every menu item's callback in its own `update_menu()` call already (verified by reading `pystray/_base.py`/`_win32.py` directly), and this has always fired safely after every click since it runs on the message-pump thread only after the native popup has already closed. The actual bug came specifically from a **background thread** calling `update_menu()` on a timer, racing with the menu being open concurrently. `tray_app.py`'s `build_menu()` comment corrected accordingly. | Needed to confirm the new checkable item wouldn't reintroduce the original bug before relying on it; the original fix's own description of its mechanism turned out to be broader than necessary. |

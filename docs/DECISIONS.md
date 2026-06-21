@@ -6,6 +6,83 @@ specs and aren't repeated. Newest first.
 
 ---
 
+### `create_all()` doesn't add columns to an existing table — additive-schema assumption corrected
+**Decided:** 2026-06-21, building Tier 4 Item 2 (Multi-select + Favorites/Rating).
+**Why:** `comicvault-changes.md` assumed the new `favorites`/`personal_rating` Issue
+fields would need "no migration of existing data" the same way CustomTab/HomeStrip
+didn't — but those were whole new *tables*, and SQLAlchemy's `Base.metadata.create_all()`
+only creates tables that don't exist yet; it never diffs columns on a table that's
+already there. Proved this with a throwaway SQLite file before writing any real code
+(column stayed absent from `PRAGMA table_info` after `create_all()` re-ran with the
+column added to the model). This is the first time this project's "additive fields
+need no migration" assumption didn't hold — first real additive *column* on an
+existing table, as opposed to a new table. Fixed with a small idempotent
+`ALTER TABLE` step in `init_db()`, verified against a scratch copy of the real
+~5,500-row DB before trusting it.
+**Where:** `backend/database.py` `_add_missing_issue_columns()`, `SPEC.md` §7 / §21.
+
+### Bulk endpoints over a client-side fetch loop, for the multi-select toolbar
+**Decided:** 2026-06-21, building Tier 4 Item 2.
+**Why:** The series-detail page's existing "Mark all read" button (`markAllRead()`)
+loops `Promise.allSettled()` over one `fetch()` per issue — fine for that button's
+existing scope, but a multi-select bulk action could cover many more cards at once, so
+N round-trips don't scale the same way. Built real bulk endpoints
+(`POST /api/progress/bulk/...`) instead, following the existing
+`PATCH /api/admin/home-strips/reorder` pattern (fetch all matching rows in one query,
+loop, single `db.commit()`). `markAllRead()` itself was left untouched — a separate,
+already-shipped feature, not retrofitted to the new endpoints.
+**Where:** `backend/routers/progress.py` bulk endpoints, `frontend/js/app.js`
+`runBulkAction()`.
+
+### Auto-save confirmation message — dropped, deferred to admin redesign
+**Decided:** 2026-06-20, reconciling `comicvault-changes.md` against `DECISIONS.md`.
+**Why:** Originally planned for both Custom Tabs and Home Strips admin sections
+(UI-consistency assumption — three sections, three buttons — not a functional need;
+both already auto-save on every action, confirmed by direct testing). Purely
+cosmetic, and the whole admin area is slated for a redesign once remaining
+functionality work is done — adding a one-off message now would likely be redone
+anyway. Deferred to that redesign rather than tracked as a standalone backlog item.
+**Where:** `comicvault-changes.md` Tier 3 (item removed), `CUSTOM_TABS_SPEC.md` /
+`HOME_STRIPS_SPEC.md` admin sections (future redesign).
+
+### ComicInfo.xml is the sole source of truth when MetronInfo.xml also exists
+**Decided:** 2026-06-20, discovered via `thanksgiving.cbz` / `tales of ruination.cbz`
+already being in the library with both XML schemas present.
+**Why:** The editor (`EDITOR_SPEC.md` §3.1/3.5) only ever reads/writes ComicInfo.xml —
+it was never designed to reconcile two metadata schemas. Originally assumed to be rare
+pre-library debris and folded into the Full Editor's existing multi-XML detection as a
+test case; turned out to affect files **already scanned into the library**, where
+`EDITOR_SPEC.md` §3.5 explicitly assumed "the existing library is already known to be
+clean." That assumption is now known to be false. Rather than build dual-schema
+reconciliation, ComicInfo.xml is confirmed as the single authoritative source —
+matches the editor's existing scope exactly, no new logic needed. MetronInfo.xml is
+treated as stale/ignorable wherever both exist. Confirmed working as designed for new
+intake (Full Editor's side-by-side picker already lets Tez choose per-file before a
+comic ever reaches the DB) — the gap was only ever already-scanned library files.
+Cleanup of those handled via a one-off script run outside this project, not a
+ComicVault feature (script should be report-first/dry-run, only act where ComicInfo.xml
+is actually present and valid, to avoid stripping the only metadata source from a file
+that happens to only have MetronInfo.xml).
+**Where:** `EDITOR_SPEC.md` §3.5 (assumption correction below), cleanup via external
+script — no project code changes.
+
+### Writer/Artist: people table + search/link, not an enforced dropdown
+**Decided:** sequencing/design confirmed across multiple sessions, formalized in
+`comicvault-changes.md` Tier 4 Item 3.
+**Why:** Genre/Format got the dropdown fix because each issue carries one short,
+single value from a small fixed vocabulary. Writer/Artist are different on two counts:
+(1) they're multi-value per issue — anthology titles (2000 AD, etc.) credit many
+contributors on one issue, so a dropdown can't represent "this issue's credits" as a
+single selectable value the way Genre/Format can; (2) even a fully deduplicated list of
+individual names would be too long to be a usable dropdown — it's a search problem, not
+a selection-from-a-short-list problem. Both issues point to the same fix: a real people
+table (solves duplicate-name data integrity, e.g. spelling variants of the same person)
+plus search + click-through linking (solves the UI volume problem), same pattern as the
+clickable Genre tags on `/issue/{id}`. Sequenced last because it requires a one-time
+migration/merge pass across ~5,500 real issues — highest risk item in the backlog,
+needs its own short spec before any code is written.
+**Where:** `comicvault-changes.md` Tier 4 Item 3.
+
 ### Genre/Format admin-list deletion: confirm-with-count, hard-block on emptying the list
 **Decided:** 2026-06-20, building the Genre/Format admin editor (`comicvault-changes.md`
 Tier 4 Item 1).

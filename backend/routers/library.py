@@ -64,6 +64,8 @@ def _issue_to_dict(issue: Issue, progress: ReadingProgress | None) -> dict:
         "language": issue.language,
         "black_and_white": issue.black_and_white,
         "manga": issue.manga,
+        "favorites": issue.favorites,
+        "personal_rating": issue.personal_rating,
         "page_count": issue.page_count,
         "count": issue.count,
         "genres": [g.genre_name for g in issue.genres],
@@ -193,6 +195,8 @@ def get_library(
             "age_ratings": age_ratings,
             "has_bw": has_bw,
             "series_anchor_id": cover_issue.id,
+            "favorites": cover_issue.favorites,
+            "personal_rating": cover_issue.personal_rating,
         })
 
     return result
@@ -260,6 +264,8 @@ def get_series(issue_id: int, db: Session = Depends(get_db)):
             "current_page": prog.current_page if prog else 0,
             "page_count": iss.page_count,
             "summary": iss.summary,
+            "favorites": iss.favorites,
+            "personal_rating": iss.personal_rating,
         })
 
     # Cover issue for series header

@@ -9,9 +9,6 @@ queue.
 
 ## Active build queue (not paused — see `comicvault-changes.md` for detail)
 
-- **Tier 4 Item 2 — Multi-select + Favorites/Rating.** Long-press to select cards,
-  bulk Read/Unread/Favorite/Rate actions. New DB fields (`favorites`,
-  `personal_rating`), purely additive.
 - **Tier 4 Item 3 — Writer/Artist entity dedup + search/link.** Largest, highest-risk
   item — replaces raw CSV writer/artist fields with a people table + junction tables,
   needs a one-time migration/merge pass across ~5,500 real issues. **Needs its own
@@ -38,6 +35,11 @@ queue.
 ---
 
 ## Deferred to a future version (not started, no committed timeline)
+
+- **Favorites browse surface/tab.** Tier 4 Item 2 (Multi-select + Favorites/Rating,
+  shipped 2026-06-21) added the `favorites` field, a card/row badge, and an issue-
+  detail toggle, but no dedicated "Favorites" tab to browse just favorited issues —
+  explicitly deferred at build time, not an oversight. See `SPEC.md` §20.15.
 
 From `SPEC.md` §20.14, corrected 2026-06-20 (two items in the original list — custom
 tabs and home strips — have since shipped; removed from here, see `CHANGELOG.md`):

@@ -413,6 +413,28 @@ ul { list-style: none; }
 }
 .cover-card:hover { transform: translateY(-3px); border-color: var(--accent); }
 
+/* Multi-select (single-issue cards only — see Tier 4 Item 2) */
+.cover-card.selected,
+.issue-row.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.cover-card.selected { transform: translateY(-3px); }
+
+/* Favorite badge — small star, opposite corner from the unread badge */
+.cover-card.is-favorite .cover-img-wrap::before,
+.issue-row.is-favorite .issue-thumb::before {
+  content: '★';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  color: #f0c419;
+  font-size: 13px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  z-index: 1;
+}
+.issue-row.is-favorite .issue-thumb { position: relative; }
+
 /* Read-state card colours */
 
 /* Fully read — flat dark-green tint, same as before */
@@ -954,6 +976,37 @@ ul { list-style: none; }
   border-color: var(--green);
   color: var(--green);
 }
+.btn-favorite-toggle {
+  display: block;
+  text-align: center;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.btn-favorite-toggle:hover { border-color: #f0c419; color: var(--text); }
+.btn-favorite-toggle.is-favorite {
+  border-color: #f0c419;
+  color: #f0c419;
+}
+.rating-control {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 0;
+}
+.rating-control .rating-star {
+  font-size: 18px;
+  line-height: 1;
+  color: var(--surface-3);
+  transition: color 0.15s, transform 0.1s;
+}
+.rating-control .rating-star:hover { transform: scale(1.15); }
+.rating-control .rating-star.is-filled { color: #f0c419; }
 .btn-edit-xml {
   display: block;
   text-align: center;
@@ -1515,6 +1568,72 @@ ul { list-style: none; }
   transform: translateX(-50%) translateY(0);
 }
 .admin-toast--error { border-color: #e05050; color: #ff7070; }
+
+/* Multi-select bulk-action toolbar (Tier 4 Item 2) */
+.selection-toolbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 12px 20px;
+  background: var(--surface-3);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
+}
+.selection-toolbar[hidden] { display: none; }
+.selection-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-right: auto;
+}
+.selection-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.selection-action-btn {
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.selection-action-btn:hover { border-color: var(--accent); color: var(--text); }
+.selection-rate {
+  display: flex;
+  gap: 2px;
+  padding: 0 4px;
+}
+.selection-rate .rating-star {
+  font-size: 16px;
+  color: var(--surface-3);
+  transition: color 0.15s, transform 0.1s;
+}
+.selection-rate .rating-star:hover { color: #f0c419; transform: scale(1.15); }
+.selection-toolbar-end {
+  display: flex;
+  gap: 8px;
+}
+.selection-cancel-btn,
+.selection-done-btn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+}
+.selection-cancel-btn { background: transparent; color: var(--text-3); }
+.selection-done-btn   { background: var(--accent); color: #000; border-color: var(--accent); }
 
 /* ── Pagination ───────────────────────────────────────────────────────────── */
 .pagination {

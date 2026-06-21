@@ -49,6 +49,24 @@ class ProgressUpdate(BaseModel):
 # POST /api/progress/{issue_id}
 # ---------------------------------------------------------------------------
 
+def _get_or_create_progress(issue_id: int, db: Session) -> ReadingProgress:
+    """Find an issue's ReadingProgress row, or create a default one. Shared
+    by the single-issue and bulk mark-read/unread paths."""
+    progress = (
+        db.query(ReadingProgress)
+        .filter(ReadingProgress.issue_id == issue_id)
+        .first()
+    )
+    if not progress:
+        progress = ReadingProgress(
+            issue_id=issue_id,
+            status="unread",
+            current_page=0,
+        )
+        db.add(progress)
+    return progress
+
+
 @router.post("/progress/{issue_id}")
 def update_progress(
     issue_id: int,
@@ -70,19 +88,7 @@ def update_progress(
     if not issue:
         raise HTTPException(status_code=404, detail="Issue not found")
 
-    progress = (
-        db.query(ReadingProgress)
-        .filter(ReadingProgress.issue_id == issue_id)
-        .first()
-    )
-
-    if not progress:
-        progress = ReadingProgress(
-            issue_id=issue_id,
-            status="unread",
-            current_page=0,
-        )
-        db.add(progress)
+    progress = _get_or_create_progress(issue_id, db)
 
     # Apply updates
     if body.current_page is not None:
@@ -107,6 +113,82 @@ def update_progress(
         "current_page": progress.current_page,
         "last_read_at": progress.last_read_at.isoformat(),
     }
+
+
+# ---------------------------------------------------------------------------
+# Bulk endpoints — multi-select Read/Unread/Favorite/Rate
+# Registered before the /progress/{issue_id}/mark-read /mark-unread routes
+# below: Starlette matches path templates in registration order, and
+# "/progress/bulk/mark-read" would otherwise match "/progress/{issue_id}/mark-read"
+# first (with "bulk" parsed as issue_id) since both are two path segments.
+#
+# Missing/unknown issue ids in the list are silently skipped (no 404) —
+# unlike admin.py's home-strip reorder, there's no ordering invariant to
+# protect here, so a soft no-op is friendlier than failing the whole batch.
+# ---------------------------------------------------------------------------
+
+class BulkIssueIds(BaseModel):
+    issue_ids: list[int]
+
+
+class BulkRating(BaseModel):
+    issue_ids: list[int]
+    rating: int   # 1-5
+
+    @field_validator("rating")
+    @classmethod
+    def validate_rating(cls, v):
+        if not 1 <= v <= 5:
+            raise ValueError("rating must be between 1 and 5")
+        return v
+
+
+@router.post("/progress/bulk/mark-read")
+def bulk_mark_read(body: BulkIssueIds, db: Session = Depends(get_db)):
+    for issue_id in body.issue_ids:
+        progress = _get_or_create_progress(issue_id, db)
+        progress.status = "read"
+        progress.last_read_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"updated": body.issue_ids}
+
+
+@router.post("/progress/bulk/mark-unread")
+def bulk_mark_unread(body: BulkIssueIds, db: Session = Depends(get_db)):
+    for issue_id in body.issue_ids:
+        progress = _get_or_create_progress(issue_id, db)
+        progress.status = "unread"
+        progress.current_page = 0
+        progress.last_read_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"updated": body.issue_ids}
+
+
+@router.post("/progress/bulk/favorite")
+def bulk_add_favorite(body: BulkIssueIds, db: Session = Depends(get_db)):
+    issues = db.query(Issue).filter(Issue.id.in_(body.issue_ids)).all()
+    for issue in issues:
+        issue.favorites = True
+    db.commit()
+    return {"updated": [i.id for i in issues]}
+
+
+@router.post("/progress/bulk/unfavorite")
+def bulk_remove_favorite(body: BulkIssueIds, db: Session = Depends(get_db)):
+    issues = db.query(Issue).filter(Issue.id.in_(body.issue_ids)).all()
+    for issue in issues:
+        issue.favorites = False
+    db.commit()
+    return {"updated": [i.id for i in issues]}
+
+
+@router.post("/progress/bulk/rate")
+def bulk_set_rating(body: BulkRating, db: Session = Depends(get_db)):
+    issues = db.query(Issue).filter(Issue.id.in_(body.issue_ids)).all()
+    for issue in issues:
+        issue.personal_rating = body.rating
+    db.commit()
+    return {"updated": [i.id for i in issues]}
 
 
 # ---------------------------------------------------------------------------

@@ -7,6 +7,11 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-21** — Tier 4 Item 2: Multi-select + Favorites/Rating built (long-press
+  card selection, bulk Read/Unread/Favorite/Rate toolbar, new `favorites`/
+  `personal_rating` Issue fields, standalone favorite/rating controls on the issue
+  detail page). → `progress.md` "Session — 2026-06-21: Tier 4 Item 2 — Multi-select +
+  Favorites/Rating"
 - **2026-06-20** — Tier 4 Item 1: Genre/Format admin editor built (Format reversed
   from locked constant to admin-editable list; both Genre and Format got add/remove
   UI in Admin, neither had one before). → `progress.md` "Session — 2026-06-20: Tier 4

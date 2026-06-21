@@ -64,10 +64,26 @@ def _seed_default_home_strips():
         session.commit()
 
 
+def _add_missing_issue_columns():
+    """
+    create_all() only creates missing *tables* — it never adds columns to a
+    table that already exists. New additive Issue columns need a manual
+    ALTER TABLE here, run once per missing column (idempotent).
+    """
+    with engine.connect() as conn:
+        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(issues)"))}
+        if "favorites" not in cols:
+            conn.execute(text("ALTER TABLE issues ADD COLUMN favorites BOOLEAN NOT NULL DEFAULT 0"))
+        if "personal_rating" not in cols:
+            conn.execute(text("ALTER TABLE issues ADD COLUMN personal_rating INTEGER"))
+        conn.commit()
+
+
 def init_db():
     """Create all tables and performance indexes if they don't already exist."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     Base.metadata.create_all(bind=engine)
+    _add_missing_issue_columns()
     with engine.connect() as conn:
         for ddl in _PERF_INDEXES:
             conn.execute(text(ddl))
