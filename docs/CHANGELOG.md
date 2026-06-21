@@ -7,6 +7,10 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-21** — Tier 1 bug fix: Admin's Back link now uses real browser
+  history (`history.back()`) with a label derived from where the user came
+  from, instead of a hardcoded link to `/`. → `progress.md` "Session —
+  2026-06-21: Tier 1 — Back button inconsistency (fix)"
 - **2026-06-21** — Tier 4 Item 3 (Session C, frontend): clickable Writer/Artist
   credit links on `/issue/{id}`, dropdowns removed, editor fuzzy warn-on-save.
   Tier 4 Item 3 now fully complete. An incident during testing modified a real

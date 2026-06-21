@@ -1366,3 +1366,24 @@ file_path lesson); `CHANGELOG.md`; `comicvault-changes.md` (Item 3 fully done);
 `ROADMAP.md` (Item 3 removed from active queue, only the deferred column-drop
 remains); `SPEC.md` (new endpoint + response shape documented).
 
+---
+
+## Session — 2026-06-21: Tier 1 — Back button inconsistency (fix)
+
+Admin's Back link (`frontend/admin.html`/`admin.js`) previously hardcoded
+`href="/"`, losing whatever surface the user actually came from. Fixed by giving
+the link `id="adminBackLink"` and wiring `initAdminBackLink()`: the label is
+derived from a `from` query param (Home/Series/Singles/All/2000 AD, or a custom
+tab name pulled from `sessionStorage`'s `cv_custom_tab_names`), and the click
+handler calls real `window.history.back()` instead of reconstructing a guessed
+destination — so it's automatically correct for every current and future entry
+point into Admin with no per-entry-point wiring.
+
+Verified live: confirmed `/static/js/admin.js` served by the running app matches
+the source on disk (the fix is live, not stale-cached), and the label/back
+navigation behave correctly from multiple entry points (Home's gear icon, a
+custom tab).
+
+**Docs updated:** this entry; `comicvault-changes.md` (Tier 1 bullet removed);
+`CHANGELOG.md`.
+

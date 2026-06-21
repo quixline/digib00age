@@ -83,8 +83,6 @@ momentum, defer the schema-changing + real-data-migration item until last.)*
 ---
 
 ## Tier 1 — Bugs (ride along with whichever session is running)
-- **Back button inconsistency** — db+surfaces related, previously "fixed," odd
-  behaviour resurfaced. Needs reproduction steps before Claude Code can take it on.
 - **List view "Read" row unreadable** — grey text on green background. Copy grid
   view's white/bold styling across to list view.
 

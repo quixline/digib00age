@@ -4,8 +4,45 @@ const API = '/api';
 let scanPollInterval = null;
 let _config = { library_roots: [], scan_exclude: [], library_root: '' };
 
+// ── Back link (Tier 1 back-button fix) ──────────────────────────────────────────
+// Same LABELS vocabulary as app.js's issue/series back links (duplicated, not
+// shared — admin.html doesn't load app.js). Navigation uses the real browser
+// history.back() rather than reconstructing a guessed destination, so it's
+// automatically correct for every entry point into Admin (Home's gear icon,
+// Guide's separate one, anything added later) with no per-entry-point wiring.
+const ADMIN_BACK_LABELS = { home: 'Home', series: 'Series', singles: 'Singles', all: 'All', '2000ad': '2000 AD' };
+
+function adminCustomTabLabel(from) {
+  try {
+    const names = JSON.parse(sessionStorage.getItem('cv_custom_tab_names') || '{}');
+    return names[from] || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function initAdminBackLink() {
+  const backLink = document.getElementById('adminBackLink');
+  if (!backLink) return;
+
+  const from = new URLSearchParams(location.search).get('from') || '';
+  const label = ADMIN_BACK_LABELS[from] || adminCustomTabLabel(from) || 'Library';
+  backLink.textContent = `← ${label}`;
+
+  backLink.addEventListener('click', (e) => {
+    if (window.history.length > 1) {
+      e.preventDefault();
+      window.history.back();
+    }
+    // else: no prior page in this tab's history (bookmark/direct nav/fresh tab) —
+    // let the default href="/" proceed, same as a real back button would have
+    // nothing useful to do either.
+  });
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  initAdminBackLink();
   loadStats();
   loadConfig();
   initPagination();
