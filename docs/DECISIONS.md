@@ -6,6 +6,44 @@ specs and aren't repeated. Newest first.
 
 ---
 
+### Live working-tree edits must stop the running server first, on high-risk sessions
+**Decided:** 2026-06-21, during Tier 4 Item 3 (Writer/Artist dedup).
+**Why:** Editing `backend/models.py`/`database.py`/`scanner.py` directly in the live
+repo, while the actual running ComicVault server was up, let that server pick up the
+new code on its own restart (unrelated to anything this session did) and write real
+data via not-yet-fully-verified logic — breaking an explicit "this session never
+touches the real DB" agreement. The scratch-DB isolation built into this session's
+own test scripts protected nothing about the live, already-running process, which
+reads shared source files off disk independent of any session's intentions. Tez's
+call: for the rest of high-risk sessions like this one, stop the live server before
+touching shared source files, rather than the more involved option of isolating the
+work in a separate git worktree.
+**Where:** Full incident account in `progress.md` "Session — 2026-06-21: Tier 4 Item
+3". No code change — a working-practice decision for future sessions.
+
+### One shared `role`-column junction table, not 6 per-role tables, for credit entities
+**Decided:** 2026-06-21, building Tier 4 Item 3 (Writer/Artist dedup).
+**Why:** `IssueGenre`'s per-field pattern (one junction table, denormalized string
+value) doesn't fit people — a Person needs one stable id referenceable across all 6
+credit roles (someone can be writer on one issue, colorist on another), which a
+6-table split would multiply migration/sync/query code six-fold for no benefit. One
+`IssueCredit` table with a `role` column serves both "browse by person across all
+roles" (the click-through use case) and "filter by a specific role" equally well.
+**Where:** `backend/models.py` `Person`/`IssueCredit`.
+
+### Old raw CSV credit columns kept temporarily after the Writer/Artist migration
+**Decided:** 2026-06-21, building Tier 4 Item 3.
+**Why:** Dropping `Issue.writer`/`penciller`/etc. immediately (matching exactly how
+Genre has no raw column at all) would be a one-way door on a 5,429-row production
+table — if the new `people`/`issue_credits` data turns out subtly wrong after the
+fact, the original raw strings are gone and the only recovery path is a full DB
+restore. Keeping the columns inert for one release cycle costs nothing but a little
+schema clutter and gives a free, instant cross-check path if anything's ever found
+wrong. Drop them in a separate later session once the new system has run for real
+with no issues found.
+**Where:** `backend/models.py` (`Issue`'s 6 credit columns, now unused by read
+paths once Session C lands), `backend/scanner.py` `_apply_metadata()`.
+
 ### `create_all()` doesn't add columns to an existing table — additive-schema assumption corrected
 **Decided:** 2026-06-21, building Tier 4 Item 2 (Multi-select + Favorites/Rating).
 **Why:** `comicvault-changes.md` assumed the new `favorites`/`personal_rating` Issue

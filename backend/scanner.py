@@ -5,8 +5,12 @@ Rules:
 - Incremental only: INSERT new, UPDATE changed, FLAG missing — never DELETE
 - Thumbnail generated on first scan, regenerated if file changes
 - format_group detected from folder path ("Series" or "Singles"), never from XML
-- Genres are the only multi-value field stored in a junction table
-- All other credit/list fields stored as raw CSV strings
+- Genres and the 6 credit roles (writer/penciller/inker/colorist/letterer/
+  cover_artist) are split into junction tables (IssueGenre, IssueCredit) —
+  credit rows resolve to a deduped Person entity (Tier 4 Item 3). The raw CSV
+  Issue columns for credits are kept temporarily as a rollback safety net
+  (see DECISIONS.md) but are no longer the source of truth once Session C lands.
+- Characters/Teams/Locations remain raw CSV strings — not in scope for this dedup.
 """
 
 import logging
@@ -23,7 +27,7 @@ from PIL import Image
 from sqlalchemy.orm import Session
 
 from backend import config
-from backend.models import Issue, IssueGenre, ReadingProgress
+from backend.models import Issue, IssueCredit, IssueGenre, Person, ReadingProgress
 
 logger = logging.getLogger(__name__)
 
@@ -107,12 +111,40 @@ def _language(element: Optional[ET.Element]) -> Optional[str]:
     return _text(element, "Language") or _text(element, "LanguageISO")
 
 
-def _genres(element: Optional[ET.Element]) -> list[str]:
-    """Split <Genre> CSV into a list of stripped, non-empty strings."""
-    raw = _text(element, "Genre")
+def _split_csv(element: Optional[ET.Element], tag: str) -> list[str]:
+    """
+    Split a CSV child tag into a list of stripped, non-empty, deduplicated
+    strings (order preserved). Dedup matters because real ComicInfo.xml files
+    in this library do contain a literal repeated name within one field (e.g.
+    Penciller = "Chris Shehan, Maan House, Chris Shehan, Maan House", found in
+    175 issues across Penciller/Inker) — without it, a junction-table insert
+    keyed on (issue_id, value) hits a UniqueConstraint violation.
+    """
+    raw = _text(element, tag)
     if not raw:
         return []
-    return [g.strip() for g in raw.split(",") if g.strip()]
+    return list(dict.fromkeys(s.strip() for s in raw.split(",") if s.strip()))
+
+
+def _genres(element: Optional[ET.Element]) -> list[str]:
+    """Split <Genre> CSV into a list of stripped, non-empty strings."""
+    return _split_csv(element, "Genre")
+
+
+# Credit role -> ComicInfo.xml tag name, in the same order as the raw Issue columns
+_CREDIT_TAGS = {
+    "writer": "Writer",
+    "penciller": "Penciller",
+    "inker": "Inker",
+    "colorist": "Colorist",
+    "letterer": "Letterer",
+    "cover_artist": "CoverArtist",
+}
+
+
+def _credits(element: Optional[ET.Element]) -> dict[str, list[str]]:
+    """Split each of the 6 credit CSV tags into per-role lists of names."""
+    return {role: _split_csv(element, tag) for role, tag in _CREDIT_TAGS.items()}
 
 
 # ---------------------------------------------------------------------------
@@ -288,6 +320,7 @@ def _parse_cbz(file_path: str) -> tuple[dict, str]:
             "page_count": None,
             "count": None,
             "genres": [],
+            "credits": {role: [] for role in _CREDIT_TAGS},
         }, "filename"
 
     # --- Full XML parse ---
@@ -335,6 +368,7 @@ def _parse_cbz(file_path: str) -> tuple[dict, str]:
         "page_count": page_count,
         "count": _int(root_el, "Count"),
         "genres": _genres(root_el),
+        "credits": _credits(root_el),
     }, "xml"
 
 
@@ -382,6 +416,27 @@ def _sync_genres(db: Session, issue: Issue, genre_list: list[str]):
     # Insert new
     for genre_name in genre_list:
         db.add(IssueGenre(issue_id=issue.id, genre_name=genre_name))
+
+
+def _sync_credits(db: Session, issue: Issue, credits: dict[str, list[str]]):
+    """
+    Replace the issue's credit rows with the current parsed lists (Tier 4 Item
+    3) — same delete-then-reinsert shape as _sync_genres, except each name
+    resolves to a stable Person row (get-or-create by exact name) instead of a
+    denormalized string, since a person needs one id referenceable across all
+    six roles.
+    """
+    for c in list(issue.credits):
+        db.delete(c)
+    db.flush()
+    for role, names in credits.items():
+        for name in names:
+            person = db.query(Person).filter(Person.name == name).first()
+            if person is None:
+                person = Person(name=name)
+                db.add(person)
+                db.flush()
+            db.add(IssueCredit(issue_id=issue.id, person_id=person.id, role=role))
 
 
 def _ensure_progress(db: Session, issue: Issue):
@@ -445,6 +500,7 @@ def scan_single_file(file_path: str, db: Session) -> str:
         _apply_metadata(existing, meta, source, file_path, mtime)
         db.flush()
         _sync_genres(db, existing, meta["genres"])
+        _sync_credits(db, existing, meta["credits"])
         thumb = _generate_thumbnail(file_path, existing.id)
         if thumb:
             existing.cover_path = thumb
@@ -458,6 +514,7 @@ def scan_single_file(file_path: str, db: Session) -> str:
         db.add(issue)
         db.flush()
         _sync_genres(db, issue, meta["genres"])
+        _sync_credits(db, issue, meta["credits"])
         _ensure_progress(db, issue)
         thumb = _generate_thumbnail(file_path, issue.id)
         if thumb:

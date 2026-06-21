@@ -30,6 +30,40 @@ session convention rather than absorbing an unrelated cleanup into this session'
 
 ## FIXED
 
+### BUG-006 — CSV-splitting helpers didn't dedupe a literal repeated name within one field
+
+**Found:** 2026-06-21, while scratch-testing the Tier 4 Item 3 migration (Writer/
+Artist entity dedup) against a copy of the real DB, before the real run.
+
+**Where:** `backend/scanner.py`, `_split_csv()` (used by both `_genres()` and the
+new `_credits()`/`_sync_credits()` added for Item 3).
+
+**What happened:** Some real `ComicInfo.xml` Penciller/Inker fields contain a
+literal repeated name, e.g. `"Chris Shehan, Maan House, Chris Shehan, Maan House"` —
+175 issues affected (114 penciller + 61 inker) across the real library. Splitting
+this CSV without deduplicating produced two identical entries, which crashed the new
+Person/IssueCredit migration with a `UniqueConstraint` violation on
+`(issue_id, person_id, role)` the moment it hit the first affected issue.
+
+**Impact before the fix:** would have crashed `scan_single_file()`'s credit-sync on
+any of these 175 issues going forward, not just the one-time migration — same
+crash risk existed latently in `_sync_genres()`'s composite-PK insert for Genre,
+just never triggered (zero real issues currently have a duplicated Genre value).
+
+**Fix:** `_split_csv()` now deduplicates (order-preserving, via `dict.fromkeys`)
+after stripping. Fixes both the credit-sync path and defensively covers Genre's
+identical latent vulnerability. `backend/migrate_people.py`'s own independent
+CSV-splitting (it doesn't go through `scanner._split_csv`, which operates on XML
+elements, not arbitrary DB-stored strings) got the same fix applied separately,
+including a second dedup pass *after* resolving through the merge-decision map,
+since two different raw names can collide onto the same canonical name post-merge.
+
+**Status:** Fixed in `scanner.py` and (separately) `migrate_people.py` before the
+real migration ran. Verified by re-running the migration against the same 175
+affected issues afterward with no errors.
+
+---
+
 ### BUG-005 — New bulk progress endpoint swallowed by an existing route's path pattern
 
 **Found:** 2026-06-21, while live-testing the new bulk endpoints for Tier 4 Item 2

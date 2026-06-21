@@ -42,6 +42,9 @@ _PERF_INDEXES = [
     "CREATE INDEX IF NOT EXISTS ix_rp_status            ON reading_progress (status)",
     "CREATE INDEX IF NOT EXISTS ix_custom_tabs_visible  ON custom_tabs (visible, created_at)",
     "CREATE INDEX IF NOT EXISTS ix_home_strips_position ON home_strips (position)",
+    "CREATE INDEX IF NOT EXISTS ix_issue_credits_person ON issue_credits (person_id)",
+    "CREATE INDEX IF NOT EXISTS ix_issue_credits_issue  ON issue_credits (issue_id)",
+    "CREATE INDEX IF NOT EXISTS ix_issue_credits_role   ON issue_credits (role)",
 ]
 
 # Seeded once, per HOME_STRIPS_SPEC.md Section 2 — name is also the lookup key

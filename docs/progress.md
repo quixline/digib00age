@@ -1112,3 +1112,145 @@ active queue, added the deferred Favorites browse surface as a named follow-up);
 `DECISIONS.md` (the create_all column-migration correction, and bulk-endpoint-vs-
 client-loop choice); `comicvault-changes.md` (Item 2 marked done).
 
+---
+
+## Session — 2026-06-21: Tier 4 Item 3 — Writer/Artist Entity Dedup (backend + real migration)
+
+**Goal:** Tier 4 Item 3, the largest and explicitly highest-risk item in the backlog
+— dedupe people into real entities (one "Alan Moore" row regardless of how many
+issues credit him), replacing the raw-CSV writer/penciller/inker/colorist/letterer/
+cover_artist Issue fields with a `people` + `issue_credits` junction-table design,
+plus a one-time review/merge pass across the real ~5,429-issue library. Tez asked
+for no ride-alongs and extra care, and the session was explicitly staged: Session A
+(schema, scanner, migration script, candidate detection, review UI — scratch-only)
+was meant to end with a checkpoint before anything touched the real DB, with Session
+B (real run) requiring a separate go-ahead. In practice, after Tez finished
+reviewing the candidates same-day, the two were collapsed into one sitting — see
+below for why that was safe to do, and for a real incident in between that delayed it.
+
+**Correction to the backlog doc, found before building:** "same pattern as the new
+Genre links on `/issue/{id}`" doesn't apply — verified directly that pattern doesn't
+exist yet (genre tags are still plain non-clickable spans, a separate not-yet-built
+Tier 2 item). Not built as part of this session (no ride-alongs); Item 3's eventual
+click-through UI will need its own mechanism.
+
+**Real data sampled before designing anything** (read-only queries against the live
+DB): 3,739 distinct individual names across all 6 credit roles after splitting the
+raw CSV fields (which store *multiple* names per issue, e.g. "Al Ewing, Alan Grant,
+Pat Mills" — exactly like Genre before it was split). Only 5 exact-normalization
+collisions found — far cleaner than the backlog doc feared — which justified a
+candidate-detection-and-review approach instead of a full manual pass over thousands
+of names.
+
+**Schema (`backend/models.py`):** one `Person` table (id, name unique, created_at) +
+one shared `IssueCredit` junction table with a `role` column (not 6 per-role tables
+mirroring `IssueGenre`'s pattern) — a person needs one stable id referenceable across
+all 6 roles (someone can be writer on one issue, colorist on another), which a
+6-table split would multiply migration/sync code six-fold for no benefit. Both new
+tables; `create_all()` handles them with no manual `ALTER TABLE` needed (unlike Item
+2's case of adding columns to an *existing* table). Old raw CSV columns kept for now
+as a rollback safety net (decided with Tez) — to be dropped in a later session.
+
+**Scanner integration (`backend/scanner.py`):** new `_sync_credits()` mirrors the
+existing `_sync_genres()` delete-then-reinsert pattern, with get-or-create-by-
+exact-name Person lookup. Generalized `_genres()`'s CSV-splitting into a shared
+`_split_csv()` helper, reused for all 6 credit tags. Confirmed via direct code read
+that `scan_single_file()` is the *only* place Issue credit data is ever written, for
+both full scans and every single-issue editor save (editor routers never touch the
+DB directly — they rewrite the CBZ's XML and call `scan_single_file()` in-process) —
+so this one function is the only code path needing a change for ongoing correctness.
+
+**Real bug found and fixed during scratch testing, before the real run:**
+`_split_csv()`/`_sync_credits()` didn't dedupe a literal repeated name within one
+CSV field. Real data has this — 175 issues (114 penciller + 61 inker) have a field
+like `"Chris Shehan, Maan House, Chris Shehan, Maan House"` — which crashed the
+migration on every one of them with a UniqueConstraint violation. Fixed by
+deduplicating (order-preserving) at the CSV-split layer, which also defensively
+covers Genre's identical latent vulnerability (zero real instances today, but the
+same crash risk existed there too, just never triggered).
+
+**Candidate-duplicate detection + review (one-time, throwaway tooling):**
+`backend/migrate_people.py` ran two passes globally across all 6 roles combined —
+exact-normalization (5 pairs) and a `difflib`-fuzzy pass bucketed by surname token
+to avoid an O(n²) scan over 3,738 names — producing 76 candidate pairs. Reviewed via
+a small standalone throwaway FastAPI app (`backend/people_review_app.py`, isolated
+from the main app, never registered in `main.py`) showing each pair with issue-count/
+role/sample-series context. **Result: 35 confirmed merges, 41 correctly kept
+separate** — including a genuine deliberate-disambiguation pair the detection
+correctly surfaced rather than auto-merging, `"Matt Smith (UK)"`/`"Matt Smith (US)"`.
+Full merge list recorded below for the permanent record (the working JSON file was
+scratch tooling, deleted after the real run):
+
+Merges applied (other spelling → canonical): A.L. Kaplan→A. L. Kaplan, Ande Parks→
+Andre Parks, Benito J. Cereno→Benito Cereno, Charles M. Schulz→Charles Schulz,
+Christopher→Tom Christopher, Cynthia von Buhler→Cynthia Von Buhler, Devmayla
+Pramanik→Dev Pramanik, George C. Romero→George A. Romero, H.P. Lovecraft→H. P.
+Lovecraft, J. R. R. Tolkien→J R R Tolkien, J.M. DeMatteis→J.M DeMatteis, JD Faith→
+J.D. Faith, Jake Lynch→Jay Lynch, Jed Alexander→J Alexander, Jim Alexander→J
+Alexander, Joana Lafuente→Joana LaFuente, John K. Snyder III→John K Snyder III,
+Jonathan Howard→John Howard, Joshua George→Josh George, Kel Mcdonald→Kel McDonald,
+Kevin Laporte→Kevin LaPorte, Kristian Rossi→Christian Rossi, Mikaël Ross→Mikael
+Ross, Patrricio Delpeche→Patricio Delpeche, Rob Harrington→Robert Harrington, Robin
+Taylor→Rob Taylor, Shof Coker→Shofela Coker, Stewart Moore→Stuart Moore, Stéphane
+Levallois→Stephane Levallois, Thomas J. Campbell→Thomas Campbell, Tiernan
+Trevallion→Tiernen Trevallion, Tommi Parrish→Tom Parrish, VOFAN→Vofan, Wiliam Roy→
+William Roy, Will Simpson→William Simpson.
+
+**Incident during the build — full account, not minimized:** while editing
+`backend/models.py`/`database.py`/`scanner.py` directly in the live working tree,
+the live, continuously-running ComicVault reader server (managed by `tray_app.py`,
+up since before this session) restarted at some point for an unrelated reason and
+picked up the new code from disk, ran `init_db()` against the **real**
+`comicvault_v2.db`, and a real editor save / rescan on 2 issues (`Harold and Purple
+Crayon`, `Dishonored: The Dunwall Archives`) wrote 3 real `Person` rows and 4
+`IssueCredit` rows via the new (at that point only scratch-tested) `_sync_credits()`
+— directly breaking the explicit "Session A never touches the real DB" boundary
+agreed with Tez. Root cause: the scratch-only isolation built into this session's
+own test scripts (overriding `DB_PATH` before importing `backend.database`)
+protected nothing about the *live, already-running* server, which reads shared
+source files directly off disk independent of anything a session does. Caught via a
+routine post-task mtime/table-existence check (not by the live app surfacing an
+error) and reported to Tez immediately and in full, including admitting a permission-
+system block on a follow-up read that I respected rather than working around.
+
+**Resolution, per Tez's explicit decisions:** (1) leave the 7 stray rows as-is —
+inert today, and the real migration's per-issue delete-then-reinsert would overwrite
+the affected issues' credits anyway; (2) for the rest of this session, stop the live
+server before touching shared source files, rather than the more involved option of
+moving the work into an isolated git worktree; (3) since the merge review was already
+done, collapse Session A/B into one sitting rather than deferring the real run.
+`git stash` safely shelved the in-progress edits while Tez stopped the server via the
+tray app, then the stash was restored once confirmed down (verified independently via
+`Get-NetTCPConnection` before proceeding, not just taken on trust).
+
+**Real run:** backed up `comicvault_v2.db` to a timestamped copy
+(`comicvault_v2.backup_pre_people_migration_20260621_150534.db`, gitignored
+alongside the main DB) immediately before running. Migration ran against the real DB
+— 3,702 Person rows, 34,425 IssueCredit rows (one less Person / 3 fewer credits than
+the scratch dry-run's 3,703/34,428, fully explained by the 2 issues legitimately
+re-scanned during the incident window, after the scratch snapshot was taken — not a
+migration bug, confirmed by checking `date_modified`). Spot-checked "John Wagner"
+resolves to exactly one Person with exactly 1,547 writer credits, matching the live
+substring count sampled before any code was written. Re-ran the migration a second
+time against the real DB — identical counts, confirming idempotency for real, not
+just on scratch. Confirmed `issues` table itself fully intact (5,429 rows, all 6 raw
+credit columns still present, `PRAGMA integrity_check` → `ok`).
+
+**Cleanup:** stopped the throwaway review-UI server, deleted `scratch_test/`,
+`backend/migrate_people.py`, and `backend/people_review_app.py` (one-time tooling,
+purpose complete, decisions captured here permanently). DB backup file kept
+(gitignored, the actual rollback mechanism if ever needed).
+
+**Remaining (a future session, not started):** frontend — remove the Writer/Artist
+filter dropdowns, build the click-through UI on `/issue/{id}` (credited names become
+links to a filtered issue list, reusing the existing `fieldview` surface plumbing),
+update `matches_field()`/`/browse/writers`/`/browse/artists` to resolve against
+`person_id` instead of raw string equality, and wire the editor's fuzzy warn-on-save
+for Writer/Penciller. Dropping the old raw CSV columns is deferred further still,
+until the frontend work has shipped and run for real with no issues found.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `comicvault-changes.md` (Item 3 marked
+backend-done/frontend-remaining); `BUGS.md` (the `_split_csv` duplicate-name defect);
+`DECISIONS.md` (junction-table shape, old-columns-kept-temporarily, the live-server-
+isolation lesson).
+

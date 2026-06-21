@@ -48,17 +48,30 @@ brief — there's no fixed "done" point from here, just an ordered queue.
 - Built and verified — see `progress.md` "Session — 2026-06-21: Tier 4 Item 2" for
   what shipped and how it was checked.
 
-**3. Writer/Artist entity dedup + search/link UI** — largest, highest-risk, build last
+**3. Writer/Artist entity dedup + search/link UI** — largest, highest-risk —
+**backend + real migration done, 2026-06-21; frontend UI remaining**
 - Dedupe people into real entities (one "Alan Moore" row regardless of how many
   issues credit him) — replaces today's raw-CSV writer/artist fields with a people
   table + junction tables.
 - Drop the long Writer/Artist filter dropdowns entirely; replace with search +
-  click-through linking, same pattern as the new Genre links on `/issue/{id}`
-  (click a name → see every issue they're credited on).
-- **Needs a one-time migration/merge pass** across the real ~5,500-issue library —
-  likely a review/confirm UI rather than a blind auto-merge script, since name
-  matching (spelling variants, initials, etc.) will have edge cases. This is the
-  step that needs its own short spec before Claude Code touches it.
+  click-through linking. **Correction found during build:** the backlog's "same
+  pattern as the new Genre links on `/issue/{id}`" doesn't apply — that Tier 2 item
+  isn't built yet either (genre tags are still plain non-clickable spans). Item 3's
+  click-through is its own new mechanism, just reusing existing `fieldview` plumbing
+  for the target page.
+- **One-time migration/merge pass — done.** 76 candidate duplicate pairs detected
+  (exact-normalization + fuzzy matching) out of 3,738 distinct names across all 6
+  credit roles; reviewed and decided one-by-one via a temporary admin page (35
+  confirmed merges, 41 correctly kept separate, including a deliberate
+  disambiguation pair, "Matt Smith (UK)"/"Matt Smith (US)"). Migration ran for real
+  against `comicvault_v2.db` on 2026-06-21 — see `progress.md` "Session —
+  2026-06-21: Tier 4 Item 3" for the full build, the incident encountered, and how
+  it was resolved.
+- **Remaining (a future session):** frontend — remove the Writer/Artist dropdowns,
+  build the click-through UI on `/issue/{id}`, wire the editor's fuzzy warn-on-save.
+  Old raw CSV credit columns on `Issue` are kept for now as a rollback safety net,
+  to be dropped in a later session once the new system has run for real with no
+  issues found.
 
 *(Reasoning for this order, for reference: smallest/lowest-risk first to keep
 momentum, defer the schema-changing + real-data-migration item until last.)*
@@ -87,7 +100,7 @@ momentum, defer the schema-changing + real-data-migration item until last.)*
   (home + All tab), "Search Singles", "Search Series"
 - Card size control — 10% / 25% / 50% / 100% (library view, not admin-only)
 
-## Tier 5 — Manual/non-dev tasks
+## Tier 5 — Manual/non-dev tasks **These are either completed or deferred and can be ignored** 21/6/2026 Tez
 - Genre additions: Anthology, Comic, Omnibus — do this once item 1 above ships, as a
   manual edit through the new admin editor, not a separate feature
 - Logo + .ico needed
@@ -115,3 +128,4 @@ momentum, defer the schema-changing + real-data-migration item until last.)*
 |---|---|---|
 | 2026-06-20 | Doc created from raw `comicvault-changes.txt`, conflicts resolved, sequencing agreed (1→2→3) | Initial planning pass, end of session |
 | 2026-06-21 | Tier 4 Item 2 (Multi-select + Favorites/Rating) built and verified | See `progress.md` "Session — 2026-06-21: Tier 4 Item 2" |
+| 2026-06-21 | Tier 4 Item 3 (Writer/Artist dedup) backend + real migration done; frontend UI deferred | See `progress.md` "Session — 2026-06-21: Tier 4 Item 3" |

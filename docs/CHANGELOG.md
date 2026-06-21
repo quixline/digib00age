@@ -7,6 +7,11 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-21** — Tier 4 Item 3 (backend + real migration): Writer/Artist entity
+  dedup — new `people`/`issue_credits` tables, scanner integration, candidate-
+  duplicate detection (76 pairs, 35 confirmed merges), real migration run against
+  the live library. Frontend click-through UI deferred to a later session. →
+  `progress.md` "Session — 2026-06-21: Tier 4 Item 3"
 - **2026-06-21** — Tier 4 Item 2: Multi-select + Favorites/Rating built (long-press
   card selection, bulk Read/Unread/Favorite/Rate toolbar, new `favorites`/
   `personal_rating` Issue fields, standalone favorite/rating controls on the issue

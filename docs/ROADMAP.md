@@ -9,10 +9,14 @@ queue.
 
 ## Active build queue (not paused — see `comicvault-changes.md` for detail)
 
-- **Tier 4 Item 3 — Writer/Artist entity dedup + search/link.** Largest, highest-risk
-  item — replaces raw CSV writer/artist fields with a people table + junction tables,
-  needs a one-time migration/merge pass across ~5,500 real issues. **Needs its own
-  short spec before any code is written** — sequenced last on purpose.
+- **Tier 4 Item 3 — Writer/Artist entity dedup + search/link, frontend remaining.**
+  Backend (`people`/`issue_credits` tables, scanner integration) and the real
+  migration across the live ~5,429-issue library are done (2026-06-21, see
+  `progress.md`). Remaining: remove the Writer/Artist filter dropdowns, build the
+  click-through UI on `/issue/{id}`, wire the editor's fuzzy warn-on-save, update
+  `matches_field()`/`/browse/writers`/`/browse/artists` to resolve against
+  `person_id`. Old raw CSV credit columns on `Issue` stay until this ships and runs
+  clean for a release cycle.
 - **Tier 1 (ride-along bugs):** back button inconsistency (needs repro steps), list
   view "Read" row unreadable (grey-on-green).
 - **Tier 2 (ride-along cosmetic):** clickable genre tags on `/issue/{id}`, "Clear"

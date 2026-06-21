@@ -79,6 +79,8 @@ class Issue(Base):
                                    cascade="all, delete-orphan")
     progress        = relationship("ReadingProgress", back_populates="issue",
                                    uselist=False, cascade="all, delete-orphan")
+    credits         = relationship("IssueCredit", back_populates="issue",
+                                   cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<Issue id={self.id} series={self.series!r} number={self.number!r}>"
@@ -98,6 +100,53 @@ class IssueGenre(Base):
 
     def __repr__(self):
         return f"<IssueGenre issue_id={self.issue_id} genre={self.genre_name!r}>"
+
+
+class Person(Base):
+    """
+    A deduped credit entity (Tier 4 Item 3) — one row per real person regardless
+    of how many issues/roles credit them. Replaces the raw-CSV writer/penciller/
+    inker/colorist/letterer/cover_artist Issue columns for filtering/display once
+    Session C lands; those columns stay in place as a rollback safety net for one
+    release cycle (see DECISIONS.md).
+    """
+    __tablename__ = "people"
+
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    name        = Column(Text, nullable=False, unique=True)
+    created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    credits     = relationship("IssueCredit", back_populates="person",
+                               cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<Person id={self.id} name={self.name!r}>"
+
+
+class IssueCredit(Base):
+    """
+    Junction table linking an Issue to a Person for one credited role. One shared
+    table with a `role` column (not 6 per-role tables, unlike IssueGenre's
+    per-field pattern) — a Person needs one stable id referenceable across all
+    six roles, e.g. someone credited as both writer and colorist.
+    """
+    __tablename__ = "issue_credits"
+    __table_args__ = (
+        UniqueConstraint("issue_id", "person_id", "role", name="uq_issue_credit"),
+    )
+
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    issue_id    = Column(Integer, ForeignKey("issues.id", ondelete="CASCADE"),
+                         nullable=False)
+    person_id   = Column(Integer, ForeignKey("people.id", ondelete="CASCADE"),
+                         nullable=False)
+    role        = Column(Text, nullable=False)  # writer|penciller|inker|colorist|letterer|cover_artist
+
+    issue       = relationship("Issue", back_populates="credits")
+    person      = relationship("Person", back_populates="credits")
+
+    def __repr__(self):
+        return f"<IssueCredit issue_id={self.issue_id} person_id={self.person_id} role={self.role!r}>"
 
 
 class ReadingProgress(Base):
