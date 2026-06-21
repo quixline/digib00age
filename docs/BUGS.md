@@ -30,6 +30,37 @@ session convention rather than absorbing an unrelated cleanup into this session'
 
 ## FIXED
 
+### BUG-005 — New bulk progress endpoint swallowed by an existing route's path pattern
+
+**Found:** 2026-06-21, while live-testing the new bulk endpoints for Tier 4 Item 2
+(Multi-select + Favorites/Rating) against a scratch copy of the real DB, before the
+frontend ever touched them.
+
+**Where:** `backend/routers/progress.py` — the new `POST /api/progress/bulk/mark-read`
+was registered *after* the existing `POST /api/progress/{issue_id}/mark-read`.
+
+**What happened:** Both routes are two path segments after `/progress/`. Starlette
+matches registered path templates in order and returns the first structural match
+regardless of whether type conversion succeeds — `/progress/bulk/mark-read` matched
+`/progress/{issue_id}/mark-read` first, with `issue_id` bound to the string `"bulk"`,
+which failed `int` parsing and returned a 422 instead of ever reaching the new bulk
+endpoint. Same collision applied to `bulk/mark-unread` against
+`{issue_id}/mark-unread`. (`bulk/favorite`, `bulk/unfavorite`, `bulk/rate` were
+unaffected — no existing route shares that suffix.)
+
+**Fix:** Moved the new bulk route registrations (and their `BulkIssueIds`/`BulkRating`
+request models) above the existing `/progress/{issue_id}/mark-read` /
+`/mark-unread` routes in the same file, with a comment explaining why the ordering
+matters. Re-verified both the new bulk routes and the pre-existing single-issue routes
+work correctly via curl against the scratch server afterward.
+
+**Status:** Fixed in `progress.py`. General hazard worth remembering for any future
+route added under an existing `{param}/...` path: a new literal-segment route needs to
+be registered *before* a parameterized route it could collide with, not just given a
+different-looking name.
+
+---
+
 ### BUG-004 — Tray app shows "Start ComicVault at login" ticked but server doesn't start on login; manual Start also fails
 
 **Found:** 2026-06-19, first login after an OS restart following the prior session's
