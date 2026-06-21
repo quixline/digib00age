@@ -25,15 +25,19 @@ def is_under(child: str, parent: str) -> bool:
 
 
 def matches_field(issue: Issue, field_name: str, field_value: str) -> bool:
-    """One of: genre, publisher, writer, artist, format, decade, year, rating, bw."""
+    """
+    One of: genre, publisher, writer, artist, format, decade, year, rating, bw.
+    writer/artist: field_value is a Person.id (Tier 4 Item 3) — resolved against
+    the issue_credits junction, not the old raw-CSV columns.
+    """
     if field_name == "genre":
         return any(g.genre_name == field_value for g in issue.genres)
     if field_name == "publisher":
         return issue.publisher == field_value
     if field_name == "writer":
-        return issue.writer == field_value
+        return any(c.role == "writer" and c.person_id == int(field_value) for c in issue.credits)
     if field_name == "artist":
-        return issue.penciller == field_value
+        return any(c.role == "penciller" and c.person_id == int(field_value) for c in issue.credits)
     if field_name == "format":
         return issue.format == field_value
     if field_name == "rating":

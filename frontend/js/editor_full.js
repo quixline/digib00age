@@ -270,12 +270,44 @@ async function clearQueue() {
   updateActionButtonStates();
 }
 
+// Non-blocking save-time check against existing deduped people (Tier 4 Item
+// 3) — splits a Writer/Penciller CSV value, checks each name against
+// /api/people/fuzzy-match, and lets the user swap in the close existing
+// match or keep what they typed. Never prevents queueing/processing either way.
+async function warnOnFuzzyCredits(fields) {
+  for (const [role, label] of [['Writer', 'writer'], ['Penciller', 'artist']]) {
+    const raw = fields[role];
+    if (!raw) continue;
+    const names = raw.split(',').map((s) => s.trim()).filter(Boolean);
+    const resolved = [];
+    for (const name of names) {
+      try {
+        const res = await fetch(`/api/people/fuzzy-match?name=${encodeURIComponent(name)}`);
+        const data = await res.json();
+        if (data.closest_match) {
+          const useExisting = confirm(
+            `"${name}" is close to an existing ${label}: "${data.closest_match.name}".\n\n` +
+            `OK = use "${data.closest_match.name}" instead\nCancel = save "${name}" as typed`
+          );
+          resolved.push(useExisting ? data.closest_match.name : name);
+        } else {
+          resolved.push(name);
+        }
+      } catch (_) {
+        resolved.push(name);  // best-effort — a network hiccup never blocks the save
+      }
+    }
+    fields[role] = resolved.join(', ');
+  }
+  return fields;
+}
+
 async function addCurrentToQueue() {
   if (!focusedFileId) {
     showError('Select a loaded file first.');
     return;
   }
-  const fields = collectFormFields();
+  const fields = await warnOnFuzzyCredits(collectFormFields());
   const res = await fetch('/api/editor/full/queue/add', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -308,7 +340,7 @@ async function processBatch(mode) {
 
   const payload = { mode, increment_enabled: incrementEnabled, start_issue_no: startIssueNo };
   if (mode === 'all') {
-    payload.fields = collectFormFields();
+    payload.fields = await warnOnFuzzyCredits(collectFormFields());
     payload.file_ids = loadedFiles.map((f) => f.id);
   }
 

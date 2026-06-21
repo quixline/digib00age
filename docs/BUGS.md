@@ -8,6 +8,38 @@ Add new entries at the top. Mark fixed entries with the date and what was change
 
 ## OPEN
 
+### BUG-007 — Basic Editor's multi-line textarea fields (Summary) round-trip with doubled line breaks on every save
+
+**Found:** 2026-06-21, incidentally — while verifying Tier 4 Item 3's editor fuzzy-
+warn-on-save feature against a real issue (`2000AD #011 (1977)`), saving the form
+(which submits every field, not just the one being tested) revealed that the
+`Summary` field's blank lines double on every save: a single blank line between
+paragraphs (`\n\n` in the original XML) becomes a doubled blank line (`\n\n\n\n`,
+confirmed on-disk as literal `\r\r\n` sequences) after going through the Basic
+Editor's save flow once. Re-saving again would presumably double it further each
+time.
+
+**Where:** `frontend/js/editor_basic.js` `onEditorSubmit()` (collects the `<textarea>`
+value via `FormData`) → `backend/editor/field_merge.py` `build_xml_from_fields()`
+(merges it into the XML). Not yet root-caused precisely — likely the browser's
+textarea-to-FormData line-ending normalization (`\n` → `\r\n`) combined with
+`field_merge.py` independently adding its own line separator when writing the
+`<Summary>` tag, compounding on each save.
+
+**Impact:** Any issue whose Summary is edited and saved through the Basic Editor
+gets visually-doubled blank lines in its description, worsening on repeated saves.
+Purely cosmetic (doesn't affect parsing — `_text()` still extracts the full string
+correctly either way) but degrades readability over time. Pre-existing — unrelated
+to Tier 4 Item 3, not introduced by it, just exposed by testing that happened to
+touch a real issue. Not fixed in this session (out of scope for Item 3's no-ride-
+alongs framing) — flagging per session convention.
+
+**Not fixed.** A future session should: confirm the exact mechanism (check whether
+`field_merge.py` adds `\r\n` on top of an already-`\r\n`-converted textarea value),
+then normalize line endings once, consistently, rather than compounding them.
+
+---
+
 ### BUG-003 — Dead duplicate route: `GET /api/reading/continue` defined twice
 
 **Found:** 2026-06-19, while building the Home Strips feature (`HOME_STRIPS_SPEC.md`)

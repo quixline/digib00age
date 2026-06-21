@@ -49,7 +49,7 @@ brief — there's no fixed "done" point from here, just an ordered queue.
   what shipped and how it was checked.
 
 **3. Writer/Artist entity dedup + search/link UI** — largest, highest-risk —
-**backend + real migration done, 2026-06-21; frontend UI remaining**
+**done, 2026-06-21**
 - Dedupe people into real entities (one "Alan Moore" row regardless of how many
   issues credit him) — replaces today's raw-CSV writer/artist fields with a people
   table + junction tables.
@@ -64,14 +64,18 @@ brief — there's no fixed "done" point from here, just an ordered queue.
   credit roles; reviewed and decided one-by-one via a temporary admin page (35
   confirmed merges, 41 correctly kept separate, including a deliberate
   disambiguation pair, "Matt Smith (UK)"/"Matt Smith (US)"). Migration ran for real
-  against `comicvault_v2.db` on 2026-06-21 — see `progress.md` "Session —
-  2026-06-21: Tier 4 Item 3" for the full build, the incident encountered, and how
-  it was resolved.
-- **Remaining (a future session):** frontend — remove the Writer/Artist dropdowns,
-  build the click-through UI on `/issue/{id}`, wire the editor's fuzzy warn-on-save.
-  Old raw CSV credit columns on `Issue` are kept for now as a rollback safety net,
-  to be dropped in a later session once the new system has run for real with no
-  issues found.
+  against `comicvault_v2.db` on 2026-06-21.
+- **Frontend — done.** Writer/Artist dropdowns removed; credited names on
+  `/issue/{id}` are now clickable links to a filtered issue list; editor warns
+  (non-blocking) on save if a typed Writer/Penciller name is close to an existing
+  one. See `progress.md` "Session — 2026-06-21: Tier 4 Item 3" and "...— Session C"
+  for the full build, an incident encountered during editor-save testing (a real
+  CBZ's metadata was briefly modified, then fully restored and verified — no data
+  lost), and a separate, pre-existing, unrelated bug found as a side effect
+  (BUG-007, Basic Editor Summary field line-break doubling — logged, not fixed).
+- **Remaining (a later, separate session):** drop the old raw CSV credit columns on
+  `Issue` — kept for now as a rollback safety net, once the new system has run for
+  real with no issues found over a release cycle.
 
 *(Reasoning for this order, for reference: smallest/lowest-risk first to keep
 momentum, defer the schema-changing + real-data-migration item until last.)*
@@ -129,3 +133,4 @@ momentum, defer the schema-changing + real-data-migration item until last.)*
 | 2026-06-20 | Doc created from raw `comicvault-changes.txt`, conflicts resolved, sequencing agreed (1→2→3) | Initial planning pass, end of session |
 | 2026-06-21 | Tier 4 Item 2 (Multi-select + Favorites/Rating) built and verified | See `progress.md` "Session — 2026-06-21: Tier 4 Item 2" |
 | 2026-06-21 | Tier 4 Item 3 (Writer/Artist dedup) backend + real migration done; frontend UI deferred | See `progress.md` "Session — 2026-06-21: Tier 4 Item 3" |
+| 2026-06-21 | Tier 4 Item 3 frontend (Session C) done — item fully complete. Editor-save testing incident (real CBZ briefly modified, fully restored) and an unrelated bug found (BUG-007) | See `progress.md` "Session — 2026-06-21: Tier 4 Item 3 — Session C" |

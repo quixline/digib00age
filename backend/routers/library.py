@@ -11,17 +11,19 @@ GET /api/browse/arcs
 GET /api/browse/formats
 GET /api/reading/continue
 GET /api/reading/unread
+GET /api/people/fuzzy-match  Closest existing Person to a typed name (editor warn-on-save)
 """
 
 from __future__ import annotations
 
+import difflib
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend.models import CustomTab, Issue, IssueGenre, ReadingProgress
+from backend.models import CustomTab, Issue, IssueCredit, IssueGenre, Person, ReadingProgress
 from backend.path_utils import is_under, matches_field
 
 router = APIRouter(tags=["library"])
@@ -33,6 +35,18 @@ router = APIRouter(tags=["library"])
 
 def _progress_for(issue_id: int, db: Session) -> ReadingProgress | None:
     return db.query(ReadingProgress).filter(ReadingProgress.issue_id == issue_id).first()
+
+
+def _credited_people(issue: Issue, role: str) -> list[dict]:
+    """
+    {person_id, name} per person credited on `issue` for `role` (Tier 4 Item 3) —
+    feeds the issue detail page's clickable Writer/Artist credit links. Only
+    writer/penciller are surfaced anywhere in the UI today (Section 20.8).
+    """
+    return [
+        {"person_id": c.person_id, "name": c.person.name}
+        for c in issue.credits if c.role == role
+    ]
 
 
 def _issue_to_dict(issue: Issue, progress: ReadingProgress | None) -> dict:
@@ -53,6 +67,8 @@ def _issue_to_dict(issue: Issue, progress: ReadingProgress | None) -> dict:
         "story_arc_number": issue.story_arc_number,
         "writer": issue.writer,
         "penciller": issue.penciller,
+        "writers": _credited_people(issue, "writer"),
+        "pencillers": _credited_people(issue, "penciller"),
         "inker": issue.inker,
         "colorist": issue.colorist,
         "letterer": issue.letterer,
@@ -496,17 +512,26 @@ def reading_continue(db: Session = Depends(get_db)):
 # GET /api/browse/writers
 # ---------------------------------------------------------------------------
 
-@router.get("/browse/writers")
-def browse_writers(db: Session = Depends(get_db)):
-    """Distinct writer values with series counts."""
+def _browse_people(role: str, db: Session) -> list[dict]:
+    """Deduped people credited in `role`, with series counts (Tier 4 Item 3 —
+    was grouped by raw CSV blob before; one comma-joined multi-name string
+    used to show up as a single dropdown option)."""
     rows = (
-        db.query(Issue.writer, func.count(func.distinct(Issue.series)).label("series_count"))
-        .filter(Issue.missing == False, Issue.writer != None, Issue.writer != "")
-        .group_by(Issue.writer)
-        .order_by(Issue.writer)
+        db.query(Person.id, Person.name, func.count(func.distinct(Issue.series)).label("series_count"))
+        .join(IssueCredit, IssueCredit.person_id == Person.id)
+        .join(Issue, Issue.id == IssueCredit.issue_id)
+        .filter(IssueCredit.role == role, Issue.missing == False)
+        .group_by(Person.id, Person.name)
+        .order_by(Person.name)
         .all()
     )
-    return [{"writer": r.writer, "series_count": r.series_count} for r in rows]
+    return [{"person_id": r.id, "name": r.name, "series_count": r.series_count} for r in rows]
+
+
+@router.get("/browse/writers")
+def browse_writers(db: Session = Depends(get_db)):
+    """Distinct writers (deduped people, Tier 4 Item 3) with series counts."""
+    return _browse_people("writer", db)
 
 
 # ---------------------------------------------------------------------------
@@ -515,15 +540,44 @@ def browse_writers(db: Session = Depends(get_db)):
 
 @router.get("/browse/artists")
 def browse_artists(db: Session = Depends(get_db)):
-    """Distinct penciller (Artist) values with series counts."""
-    rows = (
-        db.query(Issue.penciller, func.count(func.distinct(Issue.series)).label("series_count"))
-        .filter(Issue.missing == False, Issue.penciller != None, Issue.penciller != "")
-        .group_by(Issue.penciller)
-        .order_by(Issue.penciller)
-        .all()
-    )
-    return [{"artist": r.penciller, "series_count": r.series_count} for r in rows]
+    """Distinct artists/pencillers (deduped people, Tier 4 Item 3) with series counts."""
+    return _browse_people("penciller", db)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/people/fuzzy-match — editor save-time warn-on-save (Tier 4 Item 3)
+# ---------------------------------------------------------------------------
+
+@router.get("/people/fuzzy-match")
+def people_fuzzy_match(
+    name: str = Query(..., min_length=1),
+    threshold: float = Query(0.82),
+    db: Session = Depends(get_db),
+):
+    """
+    Closest existing Person to `name`, for the editor's non-blocking save-time
+    warning — same fuzzy-match approach as the one-time migration's candidate-
+    duplicate detection (backend/migrate_people.py, now removed). Returns null
+    if `name` already matches an existing person exactly (nothing to warn
+    about) or nothing is close enough.
+    """
+    typed = name.strip()
+    if not typed:
+        return {"closest_match": None}
+
+    best = None
+    best_ratio = 0.0
+    for person_id, person_name in db.query(Person.id, Person.name).all():
+        if person_name == typed:
+            return {"closest_match": None}
+        ratio = difflib.SequenceMatcher(None, typed.lower(), person_name.lower()).ratio()
+        if ratio > best_ratio:
+            best_ratio = ratio
+            best = (person_id, person_name)
+
+    if best and best_ratio >= threshold:
+        return {"closest_match": {"person_id": best[0], "name": best[1], "similarity": round(best_ratio, 3)}}
+    return {"closest_match": None}
 
 
 # ---------------------------------------------------------------------------

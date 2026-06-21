@@ -6,6 +6,32 @@ specs and aren't repeated. Newest first.
 
 ---
 
+### A scratch DB copy's `file_path` values still point at real, shared files — and ids aren't stable across separate scratch copies
+**Decided:** 2026-06-21, during Tier 4 Item 3 Session C verification.
+**Why:** Two related mistakes compounded into a real incident. (1) A "scratch DB" is
+a disposable copy of the *metadata*, but every `Issue.file_path` inside it still
+points at the one real, physical CBZ file on disk — there's only one copy of the
+actual library. Testing any feature that *writes to the file* (the metadata editor's
+save, specifically) through a scratch DB copy is therefore not actually scratch-safe
+the way testing a DB-only feature is — it needs a genuinely fake, disposable CBZ
+file with its own throwaway DB row instead. (2) Separately and compoundingly: this
+session had already learned, and written down, that Person/Issue ids aren't stable
+across different scratch-copy/migration runs — only names are — but a Playwright
+test was built using a *remembered* issue id from an earlier scratch copy in the
+same session, without re-querying what that id actually pointed to in the *current*
+copy. It pointed at a different real file than assumed. Caught immediately via the
+discrepancy between "no file changed" (checked the wrong filename) and the DB
+showing a real update; root-caused by building a true fake-CBZ fixture and
+reproducing the save cleanly, which also definitively proved the actual code path
+has no bug — the mistake was entirely in how the test was constructed, not in the
+feature being tested. Full incident account in `progress.md` "Session — 2026-06-21:
+Tier 4 Item 3 — Session C".
+**Where:** No code change — a testing-practice decision. Going forward: any test
+that exercises a file-writing endpoint (the editor's save, archive rebuild, etc.)
+uses a dedicated fake CBZ + throwaway DB row, never a real `file_path` borrowed from
+a copied DB, scratch or otherwise. Always re-query an id's actual identity in the
+copy being tested against, rather than reusing one remembered from a different copy.
+
 ### Live working-tree edits must stop the running server first, on high-risk sessions
 **Decided:** 2026-06-21, during Tier 4 Item 3 (Writer/Artist dedup).
 **Why:** Editing `backend/models.py`/`database.py`/`scanner.py` directly in the live

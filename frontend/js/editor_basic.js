@@ -165,6 +165,38 @@ function closeEditorModal() {
   currentOnSaved = null;
 }
 
+// Non-blocking save-time check against existing deduped people (Tier 4 Item
+// 3) — splits a Writer/Penciller CSV value, checks each name against
+// /api/people/fuzzy-match, and lets the user swap in the close existing
+// match or keep what they typed. Never prevents the save either way.
+async function warnOnFuzzyCredits(fields) {
+  for (const [role, label] of [['Writer', 'writer'], ['Penciller', 'artist']]) {
+    const raw = fields[role];
+    if (!raw) continue;
+    const names = raw.split(',').map(s => s.trim()).filter(Boolean);
+    const resolved = [];
+    for (const name of names) {
+      try {
+        const res = await fetch(`/api/people/fuzzy-match?name=${encodeURIComponent(name)}`);
+        const data = await res.json();
+        if (data.closest_match) {
+          const useExisting = confirm(
+            `"${name}" is close to an existing ${label}: "${data.closest_match.name}".\n\n` +
+            `OK = use "${data.closest_match.name}" instead\nCancel = save "${name}" as typed`
+          );
+          resolved.push(useExisting ? data.closest_match.name : name);
+        } else {
+          resolved.push(name);
+        }
+      } catch (_) {
+        resolved.push(name);  // best-effort — a network hiccup never blocks the save
+      }
+    }
+    fields[role] = resolved.join(', ');
+  }
+  return fields;
+}
+
 async function onEditorSubmit(e) {
   e.preventDefault();
 
@@ -172,7 +204,7 @@ async function onEditorSubmit(e) {
   const formData = new FormData(form);
   const genreNames = formData.getAll('Genre');
 
-  const fields = {
+  let fields = {
     Series: formData.get('Series') || '',
     Title: formData.get('Title') || '',
     Number: formData.get('Number') || '',
@@ -191,6 +223,8 @@ async function onEditorSubmit(e) {
     Language: formData.get('Language') || '',
     Notes: formData.get('Notes') || '',
   };
+
+  fields = await warnOnFuzzyCredits(fields);
 
   const saveBtn = document.getElementById('editorSaveBtn');
   const errorBox = document.getElementById('editorError');

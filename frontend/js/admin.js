@@ -637,17 +637,42 @@ const HS_FIELD_LABELS = {
   genre: 'Genre', publisher: 'Publisher', writer: 'Writer', artist: 'Artist',
   format: 'Format', decade: 'Decade', year: 'Year', rating: 'Rating', bw: 'Black & White',
 };
+// `key` is the dropdown's display label source; `valueKey` (when different
+// from `key`) is what actually gets stored as field_value. writer/artist
+// store a Person.id (Tier 4 Item 3) but display the person's name.
 const HS_FIELD_ENDPOINTS = {
   genre:     { url: '/browse/genres',     key: 'genre' },
   publisher: { url: '/browse/publishers', key: 'publisher' },
-  writer:    { url: '/browse/writers',    key: 'writer' },
-  artist:    { url: '/browse/artists',    key: 'artist' },
+  writer:    { url: '/browse/writers',    key: 'name', valueKey: 'person_id' },
+  artist:    { url: '/browse/artists',    key: 'name', valueKey: 'person_id' },
   format:    { url: '/browse/formats',    key: 'format' },
   decade:    { url: '/browse/decades',    key: 'decade' },
   year:      { url: '/browse/years',      key: 'year' },
   rating:    { url: '/browse/ratings',    key: 'rating' },
 };
 let homeStrips = [];
+
+// Writer/Artist field strips store a Person.id as field_value (Tier 4 Item 3)
+// — this resolves it back to a display name for hsBasisSummary(). Only
+// fetched if a strip actually needs it (cheap today since no real strip
+// uses writer/artist yet, but no reason to fetch ~4,000 names otherwise).
+let hsPersonNameCache = null;  // {writer: {id: name}, artist: {id: name}}
+
+async function ensureHsPersonNameCache() {
+  if (hsPersonNameCache) return hsPersonNameCache;
+  hsPersonNameCache = { writer: {}, artist: {} };
+  try {
+    const [writers, artists] = await Promise.all([
+      fetch(`${API}/browse/writers`).then(r => r.json()),
+      fetch(`${API}/browse/artists`).then(r => r.json()),
+    ]);
+    for (const w of writers) hsPersonNameCache.writer[w.person_id] = w.name;
+    for (const a of artists) hsPersonNameCache.artist[a.person_id] = a.name;
+  } catch (_) {
+    // Leave cache empty — hsBasisSummary falls back to showing the raw id.
+  }
+  return hsPersonNameCache;
+}
 
 async function loadHomeStrips() {
   try {
@@ -657,6 +682,8 @@ async function loadHomeStrips() {
   } catch (_) {
     homeStrips = [];
   }
+  const needsPersonNames = homeStrips.some(s => s.field_name === 'writer' || s.field_name === 'artist');
+  if (needsPersonNames) await ensureHsPersonNameCache();
   renderHomeStrips();
 }
 
@@ -676,7 +703,17 @@ function renderHomeStrips() {
 
 function hsBasisSummary(strip) {
   if (strip.basis_type === 'builtin') return strip.name === 'Continue Reading' ? 'pinned first when active' : 'default';
-  if (strip.basis_type === 'field') return `${HS_FIELD_LABELS[strip.field_name] || strip.field_name}: ${strip.field_value}`;
+  if (strip.basis_type === 'field') {
+    const label = HS_FIELD_LABELS[strip.field_name] || strip.field_name;
+    // writer/artist field_value is a Person.id (Tier 4 Item 3) — show the
+    // name if the cache has loaded it, otherwise fall back to the raw id.
+    let value = strip.field_value;
+    if (strip.field_name === 'writer' || strip.field_name === 'artist') {
+      const name = hsPersonNameCache && hsPersonNameCache[strip.field_name][strip.field_value];
+      value = name || `#${strip.field_value}`;
+    }
+    return `${label}: ${value}`;
+  }
   return strip.folder_path;
 }
 
@@ -834,8 +871,9 @@ async function updateHsFieldValueOptions() {
     const r = await fetch(`${API}${endpoint.url}`);
     const rows = await r.json();
     for (const row of rows) {
-      const val = String(row[endpoint.key]);
-      valueSelect.add(new Option(val, val));
+      const label = String(row[endpoint.key]);
+      const val   = String(row[endpoint.valueKey || endpoint.key]);
+      valueSelect.add(new Option(label, val));
     }
   } catch (_) {
     // Leave the placeholder-only dropdown — add will fail validation server-side if used.

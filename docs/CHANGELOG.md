@@ -7,6 +7,12 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-21** — Tier 4 Item 3 (Session C, frontend): clickable Writer/Artist
+  credit links on `/issue/{id}`, dropdowns removed, editor fuzzy warn-on-save.
+  Tier 4 Item 3 now fully complete. An incident during testing modified a real
+  CBZ's metadata; fully restored and verified, full account + a newly-found
+  unrelated bug (BUG-007) in `progress.md`/`BUGS.md`. → `progress.md` "Session —
+  2026-06-21: Tier 4 Item 3 — Session C"
 - **2026-06-21** — Tier 4 Item 3 (backend + real migration): Writer/Artist entity
   dedup — new `people`/`issue_credits` tables, scanner integration, candidate-
   duplicate detection (76 pairs, 35 confirmed merges), real migration run against

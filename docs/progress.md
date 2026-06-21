@@ -1254,3 +1254,115 @@ backend-done/frontend-remaining); `BUGS.md` (the `_split_csv` duplicate-name def
 `DECISIONS.md` (junction-table shape, old-columns-kept-temporarily, the live-server-
 isolation lesson).
 
+---
+
+## Session — 2026-06-21: Tier 4 Item 3 — Session C (frontend + editor warn-on-save)
+
+**Goal:** finish Tier 4 Item 3 — the frontend half deferred from the backend+migration
+session above. Server stopped before any shared source-file edits this time (per
+the decision from the prior session's incident), restarted by Tez partway through to
+spot-check, stopped again before resuming.
+
+**Built:**
+- `backend/path_utils.py` `matches_field()` — `writer`/`artist` now resolve against
+  `Person.id` via `issue_credits`, not raw string equality against the old columns.
+- `backend/routers/library.py` — `/browse/writers`/`/browse/artists` rewritten to
+  group by deduped `Person` (fixes the exact bug Item 3 exists to solve: a 5-person
+  comma-joined string no longer shows up as one dropdown option). `_issue_to_dict()`
+  gained `writers`/`pencillers` arrays (`{person_id, name}` per credited person) for
+  the new clickable links. New `GET /api/people/fuzzy-match` — closest existing
+  `Person` to a typed name, `difflib`-based, same approach as the one-time
+  migration's candidate-detection pass, for the editor's save-time warning.
+- `frontend/js/app.js` `buildIssueDetail()` — Writer/Artist credits are now `<a>`
+  links to `/?surface=fieldview&field=writer&value=<person_id>`, reusing the
+  existing `fieldview` plumbing (built for Home Strips, repurposed here) rather than
+  inventing new routing. Removed the `writerFilter`/`artistFilter` dropdowns and all
+  their state/population/filtering/binding code; `frontend/index.html` had the two
+  `<select>` elements removed. (Found and left alone: the backlog's referenced
+  "Genre links on `/issue/{id}`" precedent doesn't actually exist yet — genre tags
+  are still plain spans, a separate not-yet-built Tier 2 item — so this click-through
+  is Item 3's own new mechanism, not a reuse of an existing one.)
+- `frontend/js/admin.js` — found and fixed a real second consumer of
+  `/browse/writers`/`/browse/artists` while exploring the field-filter mechanism:
+  the Home Strips builder's field-value picker, which stores the picked value
+  verbatim as `HomeStrip.field_value`. Since that value is now a `person_id`, not a
+  display string, the picker (`HS_FIELD_ENDPOINTS`, `updateHsFieldValueOptions()`)
+  needed a separate label-vs-stored-value split, and `hsBasisSummary()` needed a
+  small lazy id→name cache so an admin-created Writer/Artist strip doesn't show a
+  raw id in its summary line. Zero real strips use writer/artist today, so this is
+  forward-looking correctness, not a live bug fix.
+- `frontend/js/editor_basic.js` / `editor_full.js` — non-blocking save-time fuzzy
+  warning for Writer/Penciller (Decision 3 from the backend session): typing a name
+  close to but not exactly matching an existing `Person` shows a native `confirm()`
+  ("Did you mean 'X'? You typed 'Y'.") before the save proceeds; either choice still
+  saves, nothing is blocked.
+
+**Verified (scratch DB + scratch server, port 8099, real server stopped throughout
+code edits):** a 10-check Playwright pass covering clickable credit links, correct
+fieldview filtering (John Wagner → exactly his 13 series), both dropdowns gone,
+`/browse/writers` shape, zero console errors. Separately confirmed the admin Home
+Strips picker shows names with `person_id` values underneath. All passed.
+
+### Incident: a real production file was modified during editor-save testing
+
+Verifying the editor's fuzzy-warn dialog meant actually clicking Save in the Basic
+Editor — and that endpoint rewrites the real CBZ archive, not just the DB. The first
+attempt used `/issue/89`, assuming (from memory of an *earlier* scratch copy several
+hours earlier in this same session) that it was `2000AD #009`. It wasn't — ids are
+not stable across different scratch-DB/migration runs, a lesson this session had
+*already* learned and written down once, then failed to re-apply rigorously here.
+Issue 89 in the *current* scratch copy was actually `2000AD #011 (1977).cbz`, a real
+file on `L:\`. The save succeeded exactly as designed (no bug in the feature), so it
+correctly rewrote that real file's `Writer` tag to the test value — and because the
+Basic Editor's save submits the *entire* form, not just the field being tested, it
+also rewrote `Summary`, incidentally exposing a separate, pre-existing, unrelated
+defect (BUG-007 — multi-line textarea fields round-trip with doubled line breaks).
+
+Checked the wrong filename ("#009") afterward and saw no change, wrongly concluding
+the real file was safe. The actual safety check — re-querying issue 89's real
+`file_path` in the current copy — wasn't done until directly asked to investigate
+further by building a true fake-CBZ fixture (a disposable comic with its own
+throwaway DB row, in `scratch_test/fake_library/`, never touching any real path).
+That fake-fixture test reproduced the save cleanly and proved the actual code has no
+bug whatsoever — confirming the entire incident was a test-construction mistake, not
+a defect in anything built this session.
+
+**Restoration, done with Tez's explicit go-ahead:** the original `Writer` value
+(`"Gerry Finley-Day, John Wagner, Kelvin Gosnell, Roy Preston, Tom Tully"`) and
+`Summary` value were both still intact in the morning's pre-migration DB backup
+(`comicvault_v2.backup_pre_people_migration_20260621_150534.db` — neither field is
+touched by the people migration itself). Restored via the app's own
+`write_comicinfo_to_cbz()`, surgically replacing only the two affected tags in the
+*current* on-disk XML (confirmed via a line-by-line diff before writing that nothing
+else would change), then ran a normal rescan to resync the real DB. Verified
+afterward with a full field-by-field comparison of the real DB's row against the
+backup: **zero differences** (excluding `date_modified`, which legitimately reflects
+the resync). `PRAGMA integrity_check` → `ok`, issue count still 5,429.
+
+**Lesson, recorded in `DECISIONS.md`:** a "scratch DB" copy is only actually scratch-
+safe for DB-only features. Every `Issue.file_path` inside any copy — scratch or
+real — still points at the one physical file on disk. Any test that exercises a
+file-*writing* endpoint needs a genuinely fake, disposable file with its own
+throwaway DB row, never a real path borrowed from a copied DB. Also: re-derived
+identities (ids) don't carry over between separate scratch copies — re-query, don't
+remember.
+
+**New bug found, not fixed (out of scope, pre-existing, unrelated to Item 3):**
+BUG-007 — Basic Editor's Summary field (and likely any multi-line textarea field)
+gains doubled blank lines on every save. Logged in `BUGS.md`, left open for a future
+session.
+
+**Cleanup:** scratch server stopped, `scratch_test/` (scratch DB copy, fake CBZ
+fixture, verification scripts) removed entirely. The real-DB backup from the prior
+session is kept — it's the actual rollback mechanism, not scratch tooling, and it's
+exactly what made today's restoration possible with full confidence.
+
+**Tier 4 Item 3 is now fully complete** — backend, one-time migration, and frontend
+all shipped. Only the deferred cleanup (dropping the old raw CSV credit columns,
+after a release cycle with no issues found) remains, tracked in `ROADMAP.md`.
+
+**Docs updated:** this entry; `BUGS.md` (BUG-007); `DECISIONS.md` (the scratch-DB/
+file_path lesson); `CHANGELOG.md`; `comicvault-changes.md` (Item 3 fully done);
+`ROADMAP.md` (Item 3 removed from active queue, only the deferred column-drop
+remains); `SPEC.md` (new endpoint + response shape documented).
+

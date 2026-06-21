@@ -264,8 +264,6 @@ let activeSurface   = 'home';   // home | series | singles | all | 2000ad
 let activeStatus    = '';       // '' | unread | reading | read
 let activeGenre     = '';
 let activePublisher = '';
-let activeWriter    = '';
-let activeArtist    = '';
 let activeFormat    = '';
 let activeDecade    = '';
 let activeYear      = '';
@@ -606,8 +604,6 @@ async function populateFilterDropdowns() {
   const publishers = [...new Set(allLibrary.map(s => s.publisher).filter(Boolean))].sort();
   const years      = [...new Set(allLibrary.map(s => s.year).filter(Boolean))].sort((a,b) => b-a);
   const decades    = [...new Set(years.map(y => Math.floor(y/10)*10))].sort((a,b) => b-a);
-  const writers    = [...new Set(allLibrary.flatMap(s => s.writers  || []))].sort();
-  const artists    = [...new Set(allLibrary.flatMap(s => s.artists  || []))].sort();
   const formats    = [...new Set(allLibrary.flatMap(s => s.formats  || []))].sort();
   const ratings    = [...new Set(allLibrary.flatMap(s => s.age_ratings || []))].sort();
 
@@ -615,8 +611,6 @@ async function populateFilterDropdowns() {
   addOpts('publisherFilter', publishers, null);
   addOpts('yearFilter',      years,      null);
   addOpts('decadeFilter',    decades,    d => `${d}s`);
-  addOpts('writerFilter',    writers,    null);
-  addOpts('artistFilter',    artists,    null);
   addOpts('formatFilter',    formats,    null);
   addOpts('ratingFilter',    ratings,    null);
 }
@@ -661,8 +655,6 @@ function getFilteredLibrary() {
   // Dropdowns
   if (activeGenre)     pool = pool.filter(s => (s.genres     || []).includes(activeGenre));
   if (activePublisher) pool = pool.filter(s => s.publisher === activePublisher);
-  if (activeWriter)    pool = pool.filter(s => (s.writers    || []).includes(activeWriter));
-  if (activeArtist)    pool = pool.filter(s => (s.artists    || []).includes(activeArtist));
   if (activeFormat)    pool = pool.filter(s => (s.formats    || []).includes(activeFormat));
   if (activeRating)    pool = pool.filter(s => (s.age_ratings|| []).includes(activeRating));
   if (activeDecade)    pool = pool.filter(s => s.year && Math.floor(s.year/10)*10 === parseInt(activeDecade));
@@ -688,15 +680,15 @@ function getFilteredLibrary() {
 
 function hasActiveFilters() {
   return activeSearch || activeStatus || activeGenre || activePublisher ||
-    activeWriter || activeArtist || activeFormat || activeDecade ||
+    activeFormat || activeDecade ||
     activeYear || activeRating || activeBW;
 }
 
 function clearAllFilters() {
-  activeStatus = activeGenre = activePublisher = activeWriter = activeArtist =
+  activeStatus = activeGenre = activePublisher =
     activeFormat = activeDecade = activeYear = activeRating = activeBW = activeSearch = '';
 
-  ['genreFilter','publisherFilter','writerFilter','artistFilter',
+  ['genreFilter','publisherFilter',
    'formatFilter','decadeFilter','yearFilter','ratingFilter','bwFilter'].forEach(id => {
     const el_ = document.getElementById(id);
     if (el_) { el_.value = ''; el_.classList.remove('active'); }
@@ -950,8 +942,6 @@ function bindFilterEvents() {
 
   bindSelect('genreFilter',     v => activeGenre     = v);
   bindSelect('publisherFilter', v => activePublisher = v);
-  bindSelect('writerFilter',    v => activeWriter    = v);
-  bindSelect('artistFilter',    v => activeArtist    = v);
   bindSelect('formatFilter',    v => activeFormat    = v);
   bindSelect('decadeFilter',    v => activeDecade    = v);
   bindSelect('yearFilter',      v => activeYear      = v);
@@ -1425,19 +1415,28 @@ function buildIssueDetail(data) {
     metaCol.appendChild(sec);
   }
 
-  // Credits — Writer and Artist (penciller) only; remaining fields stored in DB but not displayed
+  // Credits — Writer and Artist (penciller) only; remaining fields stored in DB but not displayed.
+  // Each name links to a filtered list of every issue they're credited on
+  // (Tier 4 Item 3 — reuses the existing fieldview surface plumbing).
   const creditFields = [
-    ['Writer', data.writer],
-    ['Artist', data.penciller],
-  ].filter(([, v]) => v);
+    ['Writer', 'writer', data.writers],
+    ['Artist', 'artist', data.pencillers],
+  ].filter(([, , people]) => people && people.length);
 
   if (creditFields.length) {
     const sec = el('div', 'meta-section');
     sec.appendChild(el('p', 'meta-label', 'Credits'));
     const grid = el('div', 'credits-grid');
-    for (const [label, value] of creditFields) {
+    for (const [label, fieldName, people] of creditFields) {
       grid.appendChild(el('span', 'credit-label', label));
-      grid.appendChild(el('span', 'credit-value', value));
+      const valueCell = el('span', 'credit-value');
+      people.forEach((person, idx) => {
+        if (idx > 0) valueCell.appendChild(document.createTextNode(', '));
+        const link = el('a', 'credit-link', person.name);
+        link.href = `/?surface=fieldview&field=${fieldName}&value=${person.person_id}`;
+        valueCell.appendChild(link);
+      });
+      grid.appendChild(valueCell);
     }
     sec.appendChild(grid);
     metaCol.appendChild(sec);

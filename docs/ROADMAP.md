@@ -9,14 +9,9 @@ queue.
 
 ## Active build queue (not paused — see `comicvault-changes.md` for detail)
 
-- **Tier 4 Item 3 — Writer/Artist entity dedup + search/link, frontend remaining.**
-  Backend (`people`/`issue_credits` tables, scanner integration) and the real
-  migration across the live ~5,429-issue library are done (2026-06-21, see
-  `progress.md`). Remaining: remove the Writer/Artist filter dropdowns, build the
-  click-through UI on `/issue/{id}`, wire the editor's fuzzy warn-on-save, update
-  `matches_field()`/`/browse/writers`/`/browse/artists` to resolve against
-  `person_id`. Old raw CSV credit columns on `Issue` stay until this ships and runs
-  clean for a release cycle.
+All three Tier 4 items are now complete (2026-06-21). No big item is currently
+driving a session — the remaining active queue is ride-along-only:
+
 - **Tier 1 (ride-along bugs):** back button inconsistency (needs repro steps), list
   view "Read" row unreadable (grey-on-green).
 - **Tier 2 (ride-along cosmetic):** clickable genre tags on `/issue/{id}`, "Clear"
@@ -44,6 +39,14 @@ queue.
   shipped 2026-06-21) added the `favorites` field, a card/row badge, and an issue-
   detail toggle, but no dedicated "Favorites" tab to browse just favorited issues —
   explicitly deferred at build time, not an oversight. See `SPEC.md` §20.15.
+- **Drop the old raw CSV credit columns on `Issue`.** Tier 4 Item 3 (Writer/Artist
+  dedup, shipped 2026-06-21) kept `writer`/`penciller`/`inker`/`colorist`/`letterer`/
+  `cover_artist` as an inert rollback safety net rather than dropping them
+  immediately. Drop them in a dedicated later session once the `people`/
+  `issue_credits` system has run for real with no issues found over a release cycle.
+- **BUG-007 — Basic Editor Summary field line-break doubling.** Found 2026-06-21 as
+  a side effect of Item 3's editor-save testing; pre-existing, unrelated to Item 3.
+  Not fixed. See `BUGS.md`.
 
 From `SPEC.md` §20.14, corrected 2026-06-20 (two items in the original list — custom
 tabs and home strips — have since shipped; removed from here, see `CHANGELOG.md`):
