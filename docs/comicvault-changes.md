@@ -102,12 +102,6 @@ momentum, defer the schema-changing + real-data-migration item until last.)*
   (home + All tab), "Search Singles", "Search Series"
 - Card size control — 10% / 25% / 50% / 100% (library view, not admin-only)
 
-## Tier 5 — Manual/non-dev tasks **These are either completed or deferred and can be ignored** 21/6/2026 Tez
-- Genre additions: Anthology, Comic, Omnibus — do this once item 1 above ships, as a
-  manual edit through the new admin editor, not a separate feature
-- Logo + .ico needed
-- Check the YouTube AI video re: draw.io skill / visual app-mapping (personal note)
-
 ---
 
 ## Decisions log (resolved this session)
