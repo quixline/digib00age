@@ -1387,3 +1387,48 @@ custom tab).
 **Docs updated:** this entry; `comicvault-changes.md` (Tier 1 bullet removed);
 `CHANGELOG.md`.
 
+---
+
+## Session — 2026-06-22: Tier 1 — Back button inconsistency (full fix)
+
+The fix above only covered Admin. **Root cause of the gap: the session that did
+this work was terminated by an error before it reached the Issue and Series
+detail pages**, which had the exact same "guessed destination" problem — it
+just went unnoticed at the time because the close-of-session checklist never
+ran to catch it.
+
+Confirmed by Tez via a real repro: from Home, clicking into a random genre's
+issue (e.g. "To Drink and to Eat" #1) landed on the issue page, and Back showed
+the series name and routed to `/series/{id}` — not back to Home, where the user
+actually came from. Root cause in `app.js`:
+- `initIssue()` hardcoded the back link to `/series/{id}` (named `Series`
+  issues) or a `from`-param-guessed surface (`Singles`), never real history.
+- `buildSeriesHeader()` did the same `from`-param guess, with no `history.back()`
+  call at all — a plain anchor `href`.
+
+Fixed both the same way as Admin: literal `← Back` label, click handler calls
+`window.history.back()` when `window.history.length > 1`, falls back to `href="/"`
+otherwise (Tez's choice — always Home on no-history, not the old guessed
+destination). Admin's label was also simplified from the dynamic surface name to
+plain `← Back`, so all three back links now look and behave identically.
+
+Cleanup: the `from`-param label/destination logic this replaced — `LABELS`/
+`_LABELS` objects, `customTabLabel()`, and the `cv_custom_tab_names`
+`sessionStorage` cache that fed it — had no other callers once removed, so they
+were deleted rather than left as dead code. The `from` query param itself is
+still generated and threaded through some link hrefs elsewhere (e.g. home →
+issue/series links); that plumbing is now inert for back-link purposes but
+harmless, and wasn't chased further since it's outside this bug's scope.
+
+Verified: confirmed via the running server that `/static/js/app.js` and
+`/static/js/admin.js` no longer contain the removed label logic, and that
+`/issue/1`'s served page carries the new `← Back` default text. Full interactive
+click-through (Home → genre → issue → Back; series page Back; Admin Back; the
+no-history direct-link case) needs a real browser to confirm end-to-end — no
+browser automation tool was available this session, so that step is left for
+Tez to confirm live.
+
+**Docs updated:** this entry; `comicvault-changes.md` (Change Log correction
+row added, superseding the 2026-06-21 row rather than rewriting it);
+`CHANGELOG.md`.
+

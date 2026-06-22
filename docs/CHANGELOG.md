@@ -7,6 +7,12 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-22** — Tier 1 bug fix, corrected: the 2026-06-21 Admin-only fix
+  below was incomplete — Issue and Series detail pages had the same guessed-
+  destination problem, missed because the prior session was terminated by an
+  error before it got there. All three back links now use real
+  `history.back()` with a plain "Back" label. → `progress.md` "Session —
+  2026-06-22: Tier 1 — Back button inconsistency (full fix)"
 - **2026-06-21** — Tier 1 bug fix: Admin's Back link now uses real browser
   history (`history.back()`) with a label derived from where the user came
   from, instead of a hardcoded link to `/`. → `progress.md` "Session —

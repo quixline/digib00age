@@ -341,29 +341,15 @@ async function loadCustomTabsNav() {
   try {
     const nav = await apiFetch('/nav/config');
     const container = document.querySelector('.surface-nav');
-    const names = {};
     for (const tab of nav.custom_tabs || []) {
       const btn = el('button', 'surface-btn', tab.name);
       btn.dataset.surface = `tab-${tab.id}`;
       btn.setAttribute('role', 'tab');
       btn.setAttribute('aria-selected', 'false');
       container.appendChild(btn);
-      names[`tab-${tab.id}`] = tab.name;
     }
-    // Cached so series.html/issue.html (separate page loads) can label a
-    // "from=tab-N" back link with the tab's actual name instead of "Library".
-    sessionStorage.setItem('cv_custom_tab_names', JSON.stringify(names));
   } catch (_) {
     // Fixed-tab nav still works if this fails; not fatal.
-  }
-}
-
-function customTabLabel(from) {
-  try {
-    const names = JSON.parse(sessionStorage.getItem('cv_custom_tab_names') || '{}');
-    return names[from] || null;
-  } catch (_) {
-    return null;
   }
 }
 
@@ -1144,14 +1130,17 @@ function buildSeriesHeader(data) {
   const hero = el('div', 'series-hero');
 
   // Top row: back link + mark-all-read
-  const _from    = new URLSearchParams(location.search).get('from') || '';
-  const _LABELS  = { home: 'Home', series: 'Series', singles: 'Singles', all: 'All' };
-  const _label   = _LABELS[_from] || customTabLabel(_from) || 'Library';
-  const _backHref = (_from && _from !== 'home') ? `/?surface=${_from}` : '/';
-
+  // Real browser history, not a guessed destination — see initIssue()'s
+  // matching back link for why this replaced the old from-param logic.
   const topRow = el('div', 'series-hero-top');
-  const backLink = el('a', 'btn-primary', `← ${_label}`);
-  backLink.href = _backHref;
+  const backLink = el('a', 'btn-primary', '← Back');
+  backLink.href = '/';
+  backLink.addEventListener('click', (e) => {
+    if (window.history.length > 1) {
+      e.preventDefault();
+      window.history.back();
+    }
+  });
   topRow.appendChild(backLink);
 
   const markBtn = el('button', 'btn-primary series-mark-btn', 'Mark all read');
@@ -1303,8 +1292,6 @@ async function markAllRead(issues) {
 
 async function initIssue() {
   const issueId = window.location.pathname.replace(/^\/issue\//, '');
-  const from    = new URLSearchParams(location.search).get('from') || '';
-  const LABELS  = { home: 'Home', series: 'Series', singles: 'Singles', all: 'All' };
   const content = document.getElementById('issueContent');
 
   try {
@@ -1313,15 +1300,17 @@ async function initIssue() {
     const numSuffix = data.number ? ` #${data.number}` : '';
     document.title = `${data.series}${numSuffix} — ComicVault`;
 
-    // Back link: singles return to source surface; series issues return to series page
+    // Back link: real browser history, not a guessed destination — see series
+    // header's matching comment for why this replaced the old from-param logic.
     const backLink = document.getElementById('backLink');
-    if (data.format_group === 'Singles') {
-      backLink.href        = (from && from !== 'home') ? `/?surface=${from}` : '/';
-      backLink.textContent = `← ${LABELS[from] || customTabLabel(from) || 'Library'}`;
-    } else {
-      backLink.href        = `/series/${data.id}${from ? `?from=${from}` : ''}`;
-      backLink.textContent = `← ${data.series}`;
-    }
+    backLink.href        = '/';
+    backLink.textContent = '← Back';
+    backLink.addEventListener('click', (e) => {
+      if (window.history.length > 1) {
+        e.preventDefault();
+        window.history.back();
+      }
+    });
 
     content.innerHTML = '';
     content.appendChild(buildIssueDetail(data));
