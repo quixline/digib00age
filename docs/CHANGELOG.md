@@ -7,6 +7,13 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-22** — Tier 1 bug fix, second correction: the 2000 AD Years page's
+  "All Years" button had the same labeling inconsistency, missed by a silent
+  (unflagged) scoping judgment during the prior fix. Label changed to "Back";
+  click behavior intentionally left as its existing in-page toggle, not real
+  history, since year selection never pushes a history entry. → `progress.md`
+  "Session — 2026-06-22: Tier 1 — Back button inconsistency (2000 AD Years
+  page)"
 - **2026-06-22** — Tier 1 bug fix, corrected: the 2026-06-21 Admin-only fix
   below was incomplete — Issue and Series detail pages had the same guessed-
   destination problem, missed because the prior session was terminated by an

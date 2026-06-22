@@ -1432,3 +1432,35 @@ Tez to confirm live.
 row added, superseding the 2026-06-21 row rather than rewriting it);
 `CHANGELOG.md`.
 
+---
+
+## Session — 2026-06-22: Tier 1 — Back button inconsistency (2000 AD Years page)
+
+Tez found a third instance: the 2000 AD Years page's "← All Years" button
+(`adBackBtn` in `index.html`, click handler in `app.js`'s `load2000ADYear()`)
+had the same inconsistent labeling as the other three before today's fix.
+
+**Root cause of the miss is a process gap, not a search gap.** This button was
+in the grep results during the earlier sweep — it just got silently judged out
+of scope (it's a `<button>` toggling two `<div>`'s `hidden` state within the
+same page load, not an `<a>` doing real page navigation) and that judgment call
+was never surfaced to Tez to confirm or override.
+
+**Fix:** label changed to `← Back` for visual/textual consistency with the
+other three. **Behavior deliberately left unchanged** — selecting a year never
+pushes a browser history entry (no URL change, pure client-side state), so
+wiring this to `window.history.back()` would jump out of the 2000 AD tab
+entirely (back to whatever page preceded it) rather than return to the year
+grid. Tez confirmed: keep the existing toggle-based click handler, label-only
+change. Confirmed live via the running server that `/` now serves `← Back` for
+this button.
+
+**Process note for future sweeps:** when grepping for a UI pattern across the
+codebase, surface every match found to Tez with a one-line note on why each
+either is or isn't in scope, rather than filtering silently — so a wrong
+judgment call gets caught immediately instead of resurfacing as a separate bug
+report later.
+
+**Docs updated:** this entry; `comicvault-changes.md` (second Change Log
+correction row); `CHANGELOG.md`.
+
