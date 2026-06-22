@@ -1464,3 +1464,33 @@ report later.
 **Docs updated:** this entry; `comicvault-changes.md` (second Change Log
 correction row); `CHANGELOG.md`.
 
+
+---
+
+## Session — 2026-06-22: Tier 1 — List view read-state text colour
+
+Tez reported list view's read-state cards looked clashing/hard to read
+compared to grid view. Took two misfires to land on the right spot:
+
+1. First attempt edited `.status-btn.read` and `.issue-row` text colours in
+   `style.css` — that's the series-detail issue-row markup (`buildIssueRow()`
+   in `app.js`), not the All-tab list view Tez meant. Reverted in full once
+   the mismatch was clear from a screenshot of `/series/15?from=series`.
+2. Correct location: the All tab's list view is `buildCoverCard()` rendered
+   inside `#coverGrid.list-view` (CSS at `style.css` ~line 317 onward, "List
+   view override — spec 20.5"). Grid view's read/part-read cards already
+   override `--text-3`'s dim grey to white for `.cover-title`,
+   `.cover-count`, `.cover-year` (style.css ~line 464). The list-view-only
+   fields — `.list-genres`, `.list-pub-writer`, `.list-summary` — were never
+   added to that override block, so they stayed dim grey on the green/black
+   read-state backgrounds while everything else went white/bold.
+
+**Fix:** added `.list-genres` / `.list-pub-writer` / `.list-summary` to the
+existing `state-read`/`state-part-read` text-colour override in `style.css`,
+same `rgba(255, 255, 255, 0.82)` value already used for `.cover-count`/
+`.cover-year`.
+
+**Verified:** Tez confirmed live in-browser on the All tab, list view.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `comicvault-changes.md` (Tier 1
+bullet removed, since it's now resolved).

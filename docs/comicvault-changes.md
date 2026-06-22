@@ -83,8 +83,7 @@ momentum, defer the schema-changing + real-data-migration item until last.)*
 ---
 
 ## Tier 1 — Bugs (ride along with whichever session is running)
-- **List view "Read" row unreadable** — grey text on green background. Copy grid
-  view's white/bold styling across to list view.
+*(none open)*
 
 ## Tier 2 — Small UI/cosmetic (ride along, no dependencies)
 - Genre tags on `/issue/{id}` → clickable links into All, filtered by that genre
@@ -128,4 +127,5 @@ momentum, defer the schema-changing + real-data-migration item until last.)*
 | 2026-06-21 | Tier 4 Item 3 frontend (Session C) done — item fully complete. Editor-save testing incident (real CBZ briefly modified, fully restored) and an unrelated bug found (BUG-007) | See `progress.md` "Session — 2026-06-21: Tier 4 Item 3 — Session C" |
 | 2026-06-21 | Tier 1 bug fixed — Back button inconsistency. Admin's Back link now uses real browser history with a label derived from where the user came from, instead of a hardcoded link to `/`. Bullet removed from the Tier 1 list above since it's resolved. | See `progress.md` "Session — 2026-06-21: Tier 1 — Back button inconsistency (fix)" |
 | 2026-06-22 | **Correction to the row above:** that fix only covered Admin — the prior session was terminated by an error before Issue/Series detail pages got the same treatment, and this wasn't caught at the time. Both now fixed the same way (real `history.back()`, literal "Back" label, no guessed destination), and Admin's label simplified to plain "Back" to match. Bug is now actually fully resolved. | See `progress.md` "Session — 2026-06-22: Tier 1 — Back button inconsistency (full fix)" |
+| 2026-06-22 | Tier 1 bug fixed — All tab list view, read/part-read cards' `.list-genres`/`.list-pub-writer`/`.list-summary` weren't part of the existing white-text override for read states, so they stayed dim grey while the rest of the card text went white/bold. Added to the override. Bullet removed from Tier 1 above since resolved. | See `progress.md` "Session — 2026-06-22: Tier 1 — List view read-state text colour" |
 | 2026-06-22 | **Second correction:** the 2000 AD Years page's "All Years" button (`adBackBtn`) was also part of this same inconsistency and was missed in both rows above — found during the same sweep but silently judged out of scope instead of being flagged. Label changed to "← Back" to match; click behaviour deliberately left as its existing in-page toggle (not `history.back()`) since selecting a year never pushes browser history, so real back-navigation would jump off the 2000 AD tab entirely rather than return to the year grid. | See `progress.md` "Session — 2026-06-22: Tier 1 — Back button inconsistency (2000 AD Years page)" |

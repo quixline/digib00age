@@ -476,6 +476,14 @@ ul { list-style: none; }
   font-size: 12px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
+.cover-card.state-part-read .list-genres,
+.cover-card.state-part-read .list-pub-writer,
+.cover-card.state-part-read .list-summary,
+.cover-card.state-read      .list-genres,
+.cover-card.state-read      .list-pub-writer,
+.cover-card.state-read      .list-summary {
+  color: rgba(255, 255, 255, 0.82);
+}
 
 .cover-img-wrap {
   position: relative;

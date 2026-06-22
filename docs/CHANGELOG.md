@@ -7,6 +7,12 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-22** — Tier 1 bug fix: All tab, list view — read/part-read cards'
+  list-only fields (`.list-genres`, `.list-pub-writer`, `.list-summary`) stayed
+  dim grey instead of picking up the white-text override grid view's
+  `.cover-title`/`.cover-count`/`.cover-year` already had for those states.
+  Added to the same override block. → `progress.md` "Session — 2026-06-22:
+  Tier 1 — List view read-state text colour"
 - **2026-06-22** — Tier 1 bug fix, second correction: the 2000 AD Years page's
   "All Years" button had the same labeling inconsistency, missed by a silent
   (unflagged) scoping judgment during the prior fix. Label changed to "Back";
