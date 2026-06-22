@@ -823,7 +823,15 @@ Replaces the credits/fields list in Section 11. **Trim to "subtract not add"** �
 
 **Toolbar:** the fixed top menu (20.2) appears on all pages **except** `/issue/{id}`.
 
-### 20.9 2000 AD Section (NEW)
+### 20.9 2000 AD Section (NEW) — REMOVED 2026-06-22, see CUSTOM_TABS_SPEC.md §9
+
+> **Superseded.** This hardcoded section was removed in v2.2, exactly as
+> anticipated by this section's own "removable later if the app ever goes
+> public" note below. Its useful behaviour (browse-by-folder, organised by
+> year) was generalised into Folder View, a new `view_mode` any Custom Tab
+> can use — see `CUSTOM_TABS_SPEC.md` §9 for the current authoritative
+> design, and its Change Log for the build record. Left the text below as
+> historical context for the original design rather than deleting it.
 
 A dedicated **hard-coded** top-level tab for the 2000 AD progs (~2,483 issues, ~half the collection). Removable later if the app ever goes public.
 
@@ -889,7 +897,8 @@ changes.md` Tier 4 Item 2) only attach to elements that map **1:1 to a single is
 - Singles surface cards, and Singles-type cards on the All surface (`buildCoverCard()`,
   gated on `format_group === 'Singles'`).
 - Series-detail issue rows (`buildIssueRow()`).
-- 2000 AD prog cards (`buildAdProgCard()`).
+- Folder View flat file cards (`buildFolderFileCard()` — was `buildAdProgCard()`'s
+  2000 AD prog cards until v2.2 generalised it; see `CUSTOM_TABS_SPEC.md` §9).
 
 **Series-aggregate cards (Series surface, series-type cards on All) are deliberately
 excluded** — a card there represents many issues, and a bulk action's meaning (mark
@@ -975,3 +984,4 @@ per-series aggregate (untouched, out of scope for this item).
 | 2026-06-21 | **Tier 4 Item 2 — Multi-select + Favorites/Rating built.** `issues` table gained `favorites`/`personal_rating` (Section 7). Found that `create_all()` doesn't add columns to an already-existing table (only new tables) — added a one-time manual `ALTER TABLE` step to `database.py`'s `init_db()`, verified against a scratch copy of the real ~5,500-row DB before relying on it (see `DECISIONS.md`). New bulk endpoints in `progress.py`: `POST /api/progress/bulk/{mark-read,mark-unread,favorite,unfavorite,rate}`, all accepting `{issue_ids: [...]}` (plus `rating` for `/rate`). Registered *before* the existing `/progress/{issue_id}/mark-read` route — Starlette matches path templates in registration order, and `/progress/bulk/mark-read` would otherwise have matched `{issue_id}/mark-read` first with `issue_id="bulk"`, 422ing (caught live during this session's own endpoint testing). Frontend: long-press (Pointer Events, ~500ms) enters selection mode, short taps add more; a floating bottom toolbar drives the bulk actions. Scope boundary documented in Section 20.15. Issue detail page also got standalone favorite-toggle + star-rating controls (reuse the same bulk endpoints with a 1-item id list — no separate single-issue endpoints). | `comicvault-changes.md` Tier 4 Item 2. |
 | 2026-06-19 | **Tray app menu redesign** (Section 3) — "Stop ComicVault" (stopped the reader and exited the tray app together) split into three actions: **Stop Server** (reader only, tray keeps running), **Start Server** (restarts it, no-op if already running), and **Close** (stops the reader, then exits — the old combined behaviour, renamed). A new `manually_stopped` flag in `tray_app.py` stops the existing 30s health-check loop from auto-restarting a server that was stopped on purpose. Also added: a checkable **Start ComicVault at login** menu item (Section 14 — creates/removes the Startup shortcut directly, no more manual one-time setup), and dark-menu support following Windows' own theme setting (new `pywin32` dependency for the shortcut, small `ctypes`/`uxtheme` call for the theme — both additive, no architecture change). | Tez wanted independent start/stop of the reader without relaunching the whole tray app, plus self-service autostart management. |
 | 2026-06-19 | **Corrected understanding of the 2026-06-17 menu-corruption bug fix**, found while verifying the new checkable autostart item was safe to add: `icon.update_menu()` is not "never called after startup" as the original fix's comment claimed — pystray wraps every menu item's callback in its own `update_menu()` call already (verified by reading `pystray/_base.py`/`_win32.py` directly), and this has always fired safely after every click since it runs on the message-pump thread only after the native popup has already closed. The actual bug came specifically from a **background thread** calling `update_menu()` on a timer, racing with the menu being open concurrently. `tray_app.py`'s `build_menu()` comment corrected accordingly. | Needed to confirm the new checkable item wouldn't reintroduce the original bug before relying on it; the original fix's own description of its mechanism turned out to be broader than necessary. |
+| 2026-06-22 | **Section 20.9's hardcoded 2000 AD section removed (v2.2)**, exactly as anticipated by that section's own "removable later if the app ever goes public" note. Its behaviour is generalised into Folder View, a new `view_mode` on Custom Tabs — see `CUSTOM_TABS_SPEC.md` §9 (current authoritative design) and `comicvault-changes-v2.2.md` (build record). Section 20.15's multi-select scope bullet updated: `buildAdProgCard()` → `buildFolderFileCard()`. | `comicvault-changes-v2.2.md` Part A — 2000 AD's bespoke view was always meant to come out before the app went public; this was the planned removal, not a regression. |

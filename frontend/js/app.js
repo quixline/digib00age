@@ -32,8 +32,8 @@ function debounce(fn, ms) {
 // ══════════════════════════════════════════════════════════════════════════════
 //  MULTI-SELECT — long-press to select, short tap to add more
 //  Only attached to elements that map 1:1 to a single issue (Singles cards,
-//  series-detail issue rows, 2000 AD prog cards) — never series-aggregate
-//  cards, where a bulk action's meaning would be ambiguous.
+//  series-detail issue rows, Folder View flat file cards) — never series-
+//  aggregate cards, where a bulk action's meaning would be ambiguous.
 // ══════════════════════════════════════════════════════════════════════════════
 
 const LONG_PRESS_MS         = 500;
@@ -260,7 +260,7 @@ let filtersReady = false;       // filter dropdowns populated
 let tabLibraryCache = {};       // custom tab id (string) -> /api/library?tab_id=… response
 
 // Active filter state
-let activeSurface   = 'home';   // home | series | singles | all | 2000ad
+let activeSurface   = 'home';   // home | series | singles | all
 let activeStatus    = '';       // '' | unread | reading | read
 let activeGenre     = '';
 let activePublisher = '';
@@ -279,6 +279,13 @@ let viewField       = '';
 let viewFieldValue  = '';
 let viewFolderPath  = '';
 let viewLibraryCache = {};      // cache key (see loadBrowse) -> /api/library response
+
+// Folder View (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9)
+let tabViewModes        = {};   // custom tab id (string) -> 'flat' | 'folder', from /nav/config
+let viewTabPath         = '';   // relative path within the active folder-view tab
+let folderViewCache     = {};   // cache key `${tabId}:${path}` -> folder-contents response
+let folderViewSearchActive = false;
+let folderViewReturnPath   = '';   // path to restore when search is cleared
 
 let viewMode = localStorage.getItem('cv_view_mode') || 'grid';
 
@@ -306,12 +313,13 @@ async function initLibrary() {
     // Honour ?surface= so the back button from detail pages returns to the right tab
     const params     = new URLSearchParams(location.search);
     const reqSurface = params.get('surface') || 'home';
-    const VALID      = ['home', 'series', 'singles', 'all', '2000ad', 'fieldview', 'folderview'];
+    const VALID      = ['home', 'series', 'singles', 'all', 'fieldview', 'folderview'];
     const known      = VALID.includes(reqSurface) || reqSurface.startsWith('tab-');
     viewField      = params.get('field') || '';
     viewFieldValue = params.get('value') || '';
     viewFolderPath = params.get('folder') || '';
-    await switchSurface(known ? reqSurface : 'home');
+    const reqPath  = params.get('path') || '';
+    await switchSurface(known ? reqSurface : 'home', { fromPopstate: true, path: reqPath });
   } catch (err) {
     console.error('initLibrary failed:', err);
     const homeStrips = document.getElementById('homeStrips');
@@ -346,7 +354,7 @@ function isFlatSurface(surface) {
 
 // Custom Tabs (CUSTOM_TABS_SPEC.md) — admin-managed, folder-scoped tabs,
 // appended after the fixed nav so they render last (Home, All, Singles,
-// Series, 2000 AD, then visible custom tabs in created_at order).
+// Series, then visible custom tabs in created_at order).
 async function loadCustomTabsNav() {
   try {
     const nav = await apiFetch('/nav/config');
@@ -357,16 +365,21 @@ async function loadCustomTabsNav() {
       btn.setAttribute('role', 'tab');
       btn.setAttribute('aria-selected', 'false');
       container.appendChild(btn);
+      tabViewModes[String(tab.id)] = tab.view_mode || 'flat';
     }
   } catch (_) {
     // Fixed-tab nav still works if this fails; not fatal.
   }
 }
 
+function isFolderViewTab(surface) {
+  return surface.startsWith('tab-') && tabViewModes[surface.slice(4)] === 'folder';
+}
+
 // Search copy unified with the All tab — Home's search bar searches the same
 // flat library All does (see redirectHomeSearchToAll()), so it carries the
-// same label. Surfaces not listed here (2000 AD, fieldview/folderview, custom
-// tabs) keep the generic placeholder — out of this backlog item's scope.
+// same label. Surfaces not listed here (fieldview/folderview, custom tabs)
+// keep the generic placeholder — out of this backlog item's scope.
 const SEARCH_PLACEHOLDERS = { home: 'Search All', all: 'Search All', singles: 'Search Singles', series: 'Search Series' };
 
 function updateSearchPlaceholder(surface) {
@@ -374,10 +387,12 @@ function updateSearchPlaceholder(surface) {
   if (input) input.placeholder = SEARCH_PLACEHOLDERS[surface] || 'Search…';
 }
 
-async function switchSurface(surface) {
+async function switchSurface(surface, opts = {}) {
+  const { fromPopstate = false, path = '' } = opts;
   exitSelectionMode();
   activeSurface = surface;
-  const isBrowse = isBrowseSurface(surface);
+  const isBrowse  = isBrowseSurface(surface);
+  const folderTab = isFolderViewTab(surface);
 
   // Update tab state
   document.querySelectorAll('.surface-btn').forEach(b => {
@@ -387,8 +402,8 @@ async function switchSurface(surface) {
 
   // Show/hide major views
   document.getElementById('homeView').hidden   = surface !== 'home';
-  document.getElementById('browseView').hidden = !isBrowse;
-  document.getElementById('adView').hidden     = surface !== '2000ad';
+  document.getElementById('browseView').hidden = !isBrowse || folderTab;
+  document.getElementById('folderView').hidden = !folderTab;
   document.getElementById('searchWrap').hidden = !(isBrowse || surface === 'home');
   updateSearchPlaceholder(surface);
 
@@ -398,16 +413,30 @@ async function switchSurface(surface) {
     if (input) { input.value = ''; activeSearch = ''; }
     document.getElementById('searchClear').style.display = 'none';
     await loadHome();
+  } else if (folderTab) {
+    const input = document.getElementById('searchInput');
+    if (input) { input.value = ''; activeSearch = ''; }
+    document.getElementById('searchClear').style.display = 'none';
+    folderViewSearchActive = false;
+    viewTabPath = path;
+    const tabId = surface.slice(4);
+    if (!fromPopstate) pushFolderViewUrl(surface, path);
+    await renderFolderView(tabId, viewTabPath);
   } else if (isBrowse) {
     // Clear search when switching surface
     const input = document.getElementById('searchInput');
     if (input) { input.value = ''; activeSearch = ''; }
     document.getElementById('searchClear').style.display = 'none';
     await loadBrowse();
-  } else if (surface === '2000ad') {
-    await load2000AD();
   }
 }
+
+window.addEventListener('popstate', () => {
+  const params  = new URLSearchParams(location.search);
+  const surface = params.get('surface') || 'home';
+  const path    = params.get('path') || '';
+  switchSurface(surface, { fromPopstate: true, path });
+});
 
 // Home's search bar has no list of its own to filter (it shows curated
 // strips) — typing a query redirects to the All tab with that query already
@@ -420,7 +449,7 @@ async function redirectHomeSearchToAll(q) {
   });
   document.getElementById('homeView').hidden   = true;
   document.getElementById('browseView').hidden = false;
-  document.getElementById('adView').hidden     = true;
+  document.getElementById('folderView').hidden = true;
   updateSearchPlaceholder('all');
   activeSearch = q;
   await loadBrowse();
@@ -931,6 +960,12 @@ function bindSearchEvents() {
       if (q) redirectHomeSearchToAll(q);
       return;
     }
+    if (isFolderViewTab(activeSurface)) {
+      const tabId = activeSurface.slice(4);
+      if (q) startFolderViewSearch(tabId, q);
+      else clearFolderViewSearch(tabId);
+      return;
+    }
     activeSearch = q;
     renderBrowse();
   }, 260);
@@ -944,6 +979,10 @@ function bindSearchEvents() {
   clearBtn.addEventListener('click', () => {
     input.value            = '';
     clearBtn.style.display = 'none';
+    if (isFolderViewTab(activeSurface)) {
+      clearFolderViewSearch(activeSurface.slice(4));
+      return;
+    }
     activeSearch = '';
     input.focus();
     renderBrowse();
@@ -1020,66 +1059,99 @@ function bindFilterEvents() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  2000 AD SURFACE
+//  FOLDER VIEW (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9)
 // ══════════════════════════════════════════════════════════════════════════════
 
-let adYearsData = null;
+// URL convention: surface=tab-{id}&path=<relative path>. Folder/file drill-down
+// links explicitly pushState (rather than relying on a real <a> navigation the
+// way Issue/Series back-links do) since this SPA never does a real page load
+// on a surface switch — an explicit pushState per drill-down is needed for
+// forward-navigation deep links to work, paired with the popstate listener
+// near switchSurface(). This is a deliberate departure from the simpler
+// history.back()-only pattern used elsewhere.
+function pushFolderViewUrl(surface, path) {
+  const href = `/?surface=${surface}${path ? `&path=${encodeURIComponent(path)}` : ''}`;
+  history.pushState(null, '', href);
+}
 
-async function load2000AD() {
-  // Show year grid, hide detail
-  document.getElementById('adYearGrid').hidden   = false;
-  document.getElementById('adYearDetail').hidden = true;
+function goToFolderPath(tabId, newPath) {
+  viewTabPath = newPath;
+  pushFolderViewUrl(`tab-${tabId}`, newPath);
+  renderFolderView(tabId, newPath);
+}
 
-  if (adYearsData) { render2000ADYears(adYearsData); return; }
+async function renderFolderView(tabId, path) {
+  const grid = document.getElementById('folderGrid');
+  grid.innerHTML = '<div class="loading-state">Loading…</div>';
+  document.getElementById('folderMarkAllBtn').hidden = false;
 
-  document.getElementById('adYearGrid').innerHTML = '<div class="loading-state">Loading…</div>';
+  renderFolderBreadcrumb(tabId, path);
+
+  const cacheKey = `${tabId}:${path}`;
+  let data;
   try {
-    adYearsData = await apiFetch('/2000ad/years');
-    render2000ADYears(adYearsData);
+    if (!folderViewCache[cacheKey]) {
+      folderViewCache[cacheKey] = await apiFetch(`/library/tab/${tabId}/folder?path=${encodeURIComponent(path)}`);
+    }
+    data = folderViewCache[cacheKey];
   } catch (err) {
-    document.getElementById('adYearGrid').innerHTML =
-      '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Could not load 2000 AD data.</p></div>';
+    grid.innerHTML =
+      '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Could not load this folder.</p></div>';
+    return;
   }
-}
 
-function render2000ADYears(years) {
-  const grid = document.getElementById('adYearGrid');
   grid.innerHTML = '';
+  for (const folder of data.folders) grid.appendChild(buildFolderCard(tabId, path, folder));
+  for (const file of data.files) grid.appendChild(buildFolderFileCard(file));
 
-  const frag = document.createDocumentFragment();
-  for (const y of years) {
-    frag.appendChild(buildYearCard(y));
+  if (!data.folders.length && !data.files.length) {
+    grid.appendChild(el('div', 'empty-state', 'This folder is empty.'));
   }
-  grid.appendChild(frag);
+
+  document.getElementById('folderMarkAllBtn').onclick = () => markFolderViewRead(tabId, path);
 }
 
-function buildYearCard(y) {
-  const card = el('div', 'year-card');
-  card.addEventListener('click', () => load2000ADYear(y.year));
+function renderFolderBreadcrumb(tabId, path) {
+  const breadcrumb = document.getElementById('folderBreadcrumb');
+  breadcrumb.innerHTML = '';
 
-  const coverWrap = el('div', 'year-card-cover');
-  if (y.cover_path) {
-    const img = el('img');
-    img.src     = y.cover_path;
-    img.alt     = `${y.year}`;
-    img.loading = 'lazy';
-    img.onerror = () => { img.style.display = 'none'; };
-    coverWrap.appendChild(img);
-  }
-  card.appendChild(coverWrap);
+  const rootLink = el('a', '', 'Root');
+  rootLink.href = '#';
+  rootLink.onclick = (e) => { e.preventDefault(); goToFolderPath(tabId, ''); };
+  breadcrumb.appendChild(rootLink);
 
-  const yearLabel = el('div', 'year-card-year', String(y.year));
-  card.appendChild(yearLabel);
+  const parts = path.split('/').filter(Boolean);
+  let accumulated = '';
+  parts.forEach((part, index) => {
+    accumulated += (index === 0 ? '' : '/') + part;
+    breadcrumb.appendChild(document.createTextNode(' / '));
+    const isLast = index === parts.length - 1;
+    if (isLast) {
+      breadcrumb.appendChild(el('span', '', part));
+    } else {
+      const link = el('a', '', part);
+      link.href = '#';
+      const target = accumulated;
+      link.onclick = (e) => { e.preventDefault(); goToFolderPath(tabId, target); };
+      breadcrumb.appendChild(link);
+    }
+  });
+}
 
-  const range = y.first_prog && y.last_prog
-    ? `#${y.first_prog}–${y.last_prog}`
-    : `${y.issue_count} issues`;
-  card.appendChild(el('div', 'year-card-range', range));
-
+function buildFolderCard(tabId, currentPath, folder) {
+  const card = el('div', 'folder-card');
+  card.appendChild(el('div', 'folder-card-icon', '📁'));
+  card.appendChild(el('div', 'folder-card-name', folder.name));
+  card.appendChild(el('div', 'folder-card-count', `${folder.issue_count} issue${folder.issue_count === 1 ? '' : 's'}`));
+  const newPath = currentPath ? `${currentPath}/${folder.name}` : folder.name;
+  card.addEventListener('click', () => goToFolderPath(tabId, newPath));
   return card;
 }
 
-function buildAdProgCard(issue) {
+// Folder View's flat file card — same shape as the old 2000 AD prog card
+// (cover-card + makeSelectable), generalised with non-2000AD-specific labels
+// so it works for any custom tab's loose files.
+function buildFolderFileCard(issue) {
   const state = issue.read_status === 'read'    ? 'state-read'
               : issue.read_status === 'reading'  ? 'state-part-read'
               : 'state-unread';
@@ -1091,7 +1163,7 @@ function buildAdProgCard(issue) {
   const wrap = el('div', 'cover-img-wrap');
   const img  = el('img');
   img.src     = issue.cover_path;
-  img.alt     = `Prog #${issue.number}`;
+  img.alt     = issue.title || issue.series || '';
   img.loading = 'lazy';
   img.onerror = () => { wrap.innerHTML = '<div class="cover-placeholder">📖</div>'; };
   wrap.appendChild(img);
@@ -1104,46 +1176,59 @@ function buildAdProgCard(issue) {
   }
 
   const info = el('div', 'cover-info');
-  info.appendChild(el('div', 'cover-title', issue.title || `Prog #${issue.number}`));
-  if (issue.number)     info.appendChild(el('div', 'cover-count', `Issue #${issue.number}`));
+  info.appendChild(el('div', 'cover-title', issue.title || issue.series || `#${issue.number}`));
+  if (issue.number)     info.appendChild(el('div', 'cover-count', `#${issue.number}`));
   if (issue.page_count) info.appendChild(el('div', 'cover-count', `${issue.page_count} pages`));
+  if (issue.relative_folder) info.appendChild(el('div', 'folder-result-path', issue.relative_folder));
 
   card.append(wrap, info);
   return card;
 }
 
-async function load2000ADYear(year) {
-  exitSelectionMode();
-  document.getElementById('adYearGrid').hidden   = true;
-  document.getElementById('adYearDetail').hidden = false;
-  document.getElementById('adYearContent').innerHTML = '<div class="loading-state">Loading…</div>';
-
-  document.getElementById('adBackBtn').onclick = () => {
-    document.getElementById('adYearGrid').hidden   = false;
-    document.getElementById('adYearDetail').hidden = true;
-  };
-
+async function markFolderViewRead(tabId, path) {
+  const btn = document.getElementById('folderMarkAllBtn');
+  btn.disabled    = true;
+  btn.textContent = 'Marking…';
   try {
-    const data = await apiFetch(`/2000ad/year/${year}`);
-    const content = document.getElementById('adYearContent');
-    content.innerHTML = '';
-
-    content.appendChild(el('h2', 'ad-year-heading', String(year)));
-
-    const grid = el('div', 'cover-grid');
-    for (const iss of data.issues) grid.appendChild(buildAdProgCard(iss));
-    content.appendChild(grid);
-
-    const markBtn = document.getElementById('adMarkAllBtn');
-    markBtn.disabled    = false;
-    markBtn.textContent = 'Mark all read';
-    markBtn.style.background = '';
-    markBtn.style.color      = '';
-    markBtn.onclick = () => markAllReadAdYear(data.issues, year);
-  } catch (err) {
-    document.getElementById('adYearContent').innerHTML =
-      '<div class="empty-state"><p>Could not load issues for this year.</p></div>';
+    await fetch(`${API}/library/tab/${tabId}/folder/mark-read?path=${encodeURIComponent(path)}`, { method: 'POST' });
+    delete folderViewCache[`${tabId}:${path}`];
+    await renderFolderView(tabId, path);
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Mark all read';
   }
+}
+
+// ── Search mode — swaps the folder grid for flat, depth-agnostic results ──────
+
+async function startFolderViewSearch(tabId, q) {
+  if (!folderViewSearchActive) {
+    folderViewReturnPath = viewTabPath;
+    folderViewSearchActive = true;
+  }
+  document.getElementById('folderMarkAllBtn').hidden = true;
+  document.getElementById('folderBreadcrumb').textContent = `Search results for "${q}"`;
+
+  const resultsGrid = document.getElementById('folderGrid');
+  resultsGrid.innerHTML = '<div class="loading-state">Loading…</div>';
+  try {
+    const data = await apiFetch(`/library/tab/${tabId}/search?q=${encodeURIComponent(q)}`);
+    resultsGrid.innerHTML = '';
+    if (!data.results.length) {
+      resultsGrid.appendChild(el('div', 'empty-state', 'No matches.'));
+      return;
+    }
+    for (const issue of data.results) resultsGrid.appendChild(buildFolderFileCard(issue));
+  } catch (err) {
+    resultsGrid.innerHTML =
+      '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Search failed.</p></div>';
+  }
+}
+
+function clearFolderViewSearch(tabId) {
+  folderViewSearchActive = false;
+  viewTabPath = folderViewReturnPath;
+  renderFolderView(tabId, viewTabPath);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1342,24 +1427,6 @@ async function markAllRead(issues) {
   btn.textContent       = 'All read ✓';
   btn.style.background  = 'var(--green)';
   btn.style.color       = '#000';
-}
-
-async function markAllReadAdYear(issues, year) {
-  const btn = document.getElementById('adMarkAllBtn');
-  btn.disabled    = true;
-  btn.textContent = 'Marking…';
-
-  const unread = issues.filter(i => i.read_status !== 'read');
-  if (!unread.length) {
-    btn.textContent = 'All read ✓';
-    return;
-  }
-
-  await Promise.allSettled(
-    unread.map(i => fetch(`/api/progress/${i.id}/mark-read`, { method: 'POST' }))
-  );
-
-  await load2000ADYear(year);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

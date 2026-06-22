@@ -97,7 +97,7 @@
             <option value="50">50%</option>
             <option value="100">100%</option>
           </select>
-          <span class="admin-hint">Applies to Series, Singles, All, Home strips, and the 2000 AD year picker.</span>
+          <span class="admin-hint">Applies to Series, Singles, All, and Home strips.</span>
         </div>
       </div>
     </section>
@@ -137,6 +137,13 @@
                 <div class="ct-path-row">
                   <input type="text" class="admin-input" id="ctPathInput" placeholder="Folder path" />
                   <button type="button" class="btn-admin-action" id="ctBrowseBtn">Browse…</button>
+                </div>
+                <div class="ct-viewmode-row">
+                  <label class="admin-field-label" for="ctViewModeSelect">View</label>
+                  <select class="admin-select" id="ctViewModeSelect" aria-label="View mode">
+                    <option value="flat">Flat</option>
+                    <option value="folder">Folder View</option>
+                  </select>
                 </div>
                 <div class="ct-add-actions">
                   <button type="button" class="btn-primary" id="ctAddBtn">Add Tab</button>

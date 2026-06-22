@@ -560,53 +560,43 @@ ul { list-style: none; }
   color: var(--text-3);
 }
 
-/* ── 2000 AD year grid ───────────────────────────────────────────────────── */
-#adYearGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
-  gap: 14px;
-  padding: 18px 0 48px;
-}
-.year-card {
+
+/* ── Folder View (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9) ── */
+.folder-view-nav { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.folder-breadcrumb { font-size: 14px; color: var(--text-2); }
+.folder-breadcrumb a { color: var(--text-2); text-decoration: none; }
+.folder-breadcrumb a:hover { color: var(--accent); }
+.folder-breadcrumb span { color: var(--text); font-weight: 600; }
+
+.folder-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  padding: 18px 16px;
   cursor: pointer;
   transition: transform 0.2s, border-color 0.2s;
-}
-.year-card:hover { transform: translateY(-3px); border-color: var(--accent); }
-.year-card-cover {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  justify-content: center;
   aspect-ratio: 2 / 3;
-  background: var(--surface-2);
-  overflow: hidden;
 }
-.year-card-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+.folder-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+.folder-card-icon { font-size: 32px; }
+.folder-card-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  word-break: break-word;
 }
-.year-card-year {
-  font-size: 20px;
-  font-weight: 900;
-  color: var(--accent);
-  padding: 8px 10px 2px;
-  letter-spacing: -0.03em;
-}
-.year-card-range {
+.folder-card-count { font-size: 12px; color: var(--text-3); }
+
+.folder-result-path {
   font-size: 11px;
   color: var(--text-3);
-  padding: 0 10px 8px;
-}
-
-/* 2000 AD year detail heading */
-.ad-year-heading {
-  font-size: clamp(22px, 3vw, 36px);
-  font-weight: 900;
-  color: var(--accent);
-  letter-spacing: -0.03em;
-  padding: 18px 0 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── Search results ──────────────────────────────────────────────────────── */
@@ -668,7 +658,6 @@ ul { list-style: none; }
 
 /* ── Back nav ────────────────────────────────────────────────────────────── */
 .back-nav { padding: 14px 0 0; }
-.ad-year-nav { display: flex; justify-content: space-between; align-items: center; }
 .back-link {
   font-size: 14px;
   color: var(--text-2);
@@ -1480,6 +1469,7 @@ ul { list-style: none; }
 .ct-visible-toggle.is-visible { color: var(--accent); border-color: var(--accent); }
 .ct-add-form { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
 .ct-path-row { display: flex; gap: 8px; }
+.ct-viewmode-row { display: flex; align-items: center; gap: 8px; }
 .ct-add-actions { display: flex; align-items: center; gap: 12px; }
 
 /* Home Page Strips — reorder arrows + basis/order radio rows */

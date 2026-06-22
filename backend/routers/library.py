@@ -12,11 +12,16 @@ GET /api/browse/formats
 GET /api/reading/continue
 GET /api/reading/unread
 GET /api/people/fuzzy-match  Closest existing Person to a typed name (editor warn-on-save)
+GET /api/library/tab/{id}/folder         Folder View browse mode (v2.2)
+POST /api/library/tab/{id}/folder/mark-read  Folder View recursive mark-all-read (v2.2)
+GET /api/library/tab/{id}/search         Folder View search mode (v2.2)
 """
 
 from __future__ import annotations
 
 import difflib
+import os
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_
@@ -24,7 +29,8 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models import CustomTab, Issue, IssueCredit, IssueGenre, Person, ReadingProgress
-from backend.path_utils import is_under, matches_field
+from backend.path_utils import is_under, matches_field, normalize_path
+from backend.routers.progress import _get_or_create_progress
 
 router = APIRouter(tags=["library"])
 
@@ -224,6 +230,135 @@ def _is_numeric(value: str) -> bool:
         return True
     except (ValueError, TypeError):
         return False
+
+
+# ---------------------------------------------------------------------------
+# Folder View (Custom Tabs, v2.2 — CUSTOM_TABS_SPEC.md §9)
+# Recursive folder/file browsing for custom tabs with view_mode='folder'.
+# ---------------------------------------------------------------------------
+
+def _resolve_tab_path(tab: CustomTab, path: str) -> str:
+    """Relative `path` (forward-slash segments) under a tab's folder_path,
+    resolved + validated to not escape the tab's root."""
+    target = normalize_path(os.path.join(tab.folder_path, *path.split("/"))) if path else normalize_path(tab.folder_path)
+    if not is_under(target, tab.folder_path):
+        raise HTTPException(status_code=400, detail="path escapes the tab's root folder")
+    return target
+
+
+@router.get("/library/tab/{tab_id}/folder")
+def get_tab_folder_contents(
+    tab_id: int,
+    path: str = Query("", description="Relative path under the tab's folder_path root"),
+    db: Session = Depends(get_db),
+):
+    """
+    Folder View browse mode: immediate child folders (with recursive issue
+    counts) and immediate child files (issue cards), at one folder level.
+    Single query over the tab's whole subtree, grouped in Python — avoids
+    N+1 per-folder queries.
+    """
+    tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
+    if not tab:
+        raise HTTPException(status_code=404, detail="Custom tab not found")
+
+    target_dir = _resolve_tab_path(tab, path)
+
+    all_issues = db.query(Issue).filter(Issue.missing == False).all()
+    under_target = [i for i in all_issues if is_under(i.file_path, target_dir)]
+
+    direct_files: list[Issue] = []
+    subfolder_counts: dict[str, int] = {}
+    for issue in under_target:
+        issue_dir = normalize_path(os.path.dirname(issue.file_path))
+        if issue_dir == target_dir:
+            direct_files.append(issue)
+            continue
+        rel = os.path.relpath(issue_dir, target_dir)
+        immediate_child = rel.split(os.sep)[0]
+        subfolder_counts[immediate_child] = subfolder_counts.get(immediate_child, 0) + 1
+
+    progress_map = {
+        p.issue_id: p
+        for p in db.query(ReadingProgress)
+        .filter(ReadingProgress.issue_id.in_([i.id for i in direct_files]))
+        .all()
+    }
+
+    folders = [
+        {"name": name, "issue_count": count}
+        for name, count in sorted(subfolder_counts.items(), key=lambda kv: kv[0].lower())
+    ]
+    files = [
+        _issue_to_dict(issue, progress_map.get(issue.id))
+        for issue in sorted(direct_files, key=lambda i: (i.series or "", i.number or ""))
+    ]
+
+    return {"tab_id": tab_id, "path": path, "folders": folders, "files": files}
+
+
+@router.post("/library/tab/{tab_id}/folder/mark-read")
+def mark_tab_folder_read(
+    tab_id: int,
+    path: str = Query(""),
+    db: Session = Depends(get_db),
+):
+    """Recursive mark-all-read scoped to one folder level and everything
+    beneath it — reuses _get_or_create_progress (progress.py), the same
+    upsert logic the single-issue and bulk mark-read endpoints already use."""
+    tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
+    if not tab:
+        raise HTTPException(status_code=404, detail="Custom tab not found")
+
+    target_dir = _resolve_tab_path(tab, path)
+    all_issues = db.query(Issue).filter(Issue.missing == False).all()
+    scoped = [i for i in all_issues if is_under(i.file_path, target_dir)]
+
+    for issue in scoped:
+        progress = _get_or_create_progress(issue.id, db)
+        progress.status = "read"
+        progress.last_read_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"updated": [i.id for i in scoped]}
+
+
+@router.get("/library/tab/{tab_id}/search")
+def search_tab_folder(
+    tab_id: int,
+    q: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+):
+    """
+    Folder View search mode: flat, depth-agnostic results across the tab's
+    whole subtree (regardless of which folder level the user was browsing),
+    each result carrying its folder path. Unlike GET /api/library?tab_id=
+    (series-grouped, built for flat-mode tabs), this returns one entry per
+    issue since Folder View is file-card-oriented, not series-card-oriented.
+    """
+    tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
+    if not tab:
+        raise HTTPException(status_code=404, detail="Custom tab not found")
+
+    pattern = f"%{q}%"
+    issues = (
+        db.query(Issue)
+        .filter(
+            Issue.missing == False,
+            or_(Issue.series.ilike(pattern), Issue.title.ilike(pattern)),
+        )
+        .all()
+    )
+    scoped = [i for i in issues if is_under(i.file_path, tab.folder_path)]
+
+    results = []
+    for issue in sorted(scoped, key=lambda i: (i.series or "", i.number or "")):
+        progress = _progress_for(issue.id, db)
+        d = _issue_to_dict(issue, progress)
+        issue_dir = normalize_path(os.path.dirname(issue.file_path))
+        d["relative_folder"] = os.path.relpath(issue_dir, tab.folder_path)
+        results.append(d)
+
+    return {"tab_id": tab_id, "query": q, "count": len(results), "results": results}
 
 
 # ---------------------------------------------------------------------------

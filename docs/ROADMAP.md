@@ -2,16 +2,17 @@
 
 Paused, deferred, or future work — explicitly out of scope until unblocked or
 prioritized. If a request seems to fall under something listed here, flag it rather
-than building it; `comicvault-changes-2.1.md` (closed 2026-06-22) covered the prior
-active queue — there is no active backlog doc until Tez creates `comicvault-changes-2.2.md`.
+than building it; `comicvault-changes-2.1.md` and `comicvault-changes-v2.2.md` (both
+closed 2026-06-22) covered the prior active queues — there is no active backlog doc
+until Tez creates the next one.
 
 ---
 
 ## Active build queue
 
-`comicvault-changes-2.1.md` is fully closed (Tiers 1–4 all done, 2026-06-22). No big
-item or ride-along queue is currently active — check with Tez for what's next, or
-once `comicvault-changes-2.2.md` exists, that becomes the active reference.
+Both `comicvault-changes-2.1.md` and `comicvault-changes-v2.2.md` are fully closed
+(2026-06-22). No big item or ride-along queue is currently active — check with Tez
+for what's next.
 
 - **Tier 5 (manual, non-dev, still open):** Genre additions (Anthology, Comic,
   Omnibus) via the new admin editor, logo + `.ico`, a personal note to check a
@@ -46,7 +47,8 @@ From `SPEC.md` §20.14, corrected 2026-06-20 (two items in the original list —
 tabs and home strips — have since shipped; removed from here, see `CHANGELOG.md`):
 
 - Multiple scan locations across drives, with per-folder exclude — would allow a clean
-  split for the 2000 AD library section instead of the current path-based fallback.
+  split for folder-scoped custom tabs (e.g. Folder View, shipped v2.2) instead of the
+  current path-based fallback.
 - Series-level overview field — needs a new XML tag + DB column + editor fields;
   per-issue descriptions cover the need for now.
 - Advanced Search page — only worth building if the current inline filter+search

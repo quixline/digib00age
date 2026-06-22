@@ -278,6 +278,7 @@ def backup_database():
 # ---------------------------------------------------------------------------
 
 MAX_VISIBLE_CUSTOM_TABS = 4
+VALID_VIEW_MODES = {"flat", "folder"}
 
 
 def _read_config_fresh() -> dict:
@@ -305,6 +306,7 @@ def _custom_tab_to_dict(tab: CustomTab) -> dict:
         "name": tab.name,
         "folder_path": tab.folder_path,
         "visible": tab.visible,
+        "view_mode": tab.view_mode,
         "created_at": tab.created_at.isoformat() if tab.created_at else None,
     }
 
@@ -342,8 +344,11 @@ def list_custom_tabs(db: Session = Depends(get_db)):
 def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
     name = (payload.get("name") or "").strip()
     folder_path = (payload.get("folder_path") or "").strip()
+    view_mode = (payload.get("view_mode") or "flat").strip()
     if not name or not folder_path:
         raise HTTPException(status_code=400, detail="name and folder_path are required")
+    if view_mode not in VALID_VIEW_MODES:
+        raise HTTPException(status_code=400, detail="view_mode must be 'flat' or 'folder'")
 
     warning = _validate_tab_folder(folder_path)
 
@@ -354,7 +359,7 @@ def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
             detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
         )
 
-    tab = CustomTab(name=name, folder_path=normalize_path(folder_path), visible=True)
+    tab = CustomTab(name=name, folder_path=normalize_path(folder_path), visible=True, view_mode=view_mode)
     db.add(tab)
     db.commit()
 
@@ -395,6 +400,12 @@ def update_custom_tab(tab_id: int, payload: dict = Body(...), db: Session = Depe
                     detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
                 )
         tab.visible = new_visible
+
+    if "view_mode" in payload:
+        view_mode = (payload["view_mode"] or "").strip()
+        if view_mode not in VALID_VIEW_MODES:
+            raise HTTPException(status_code=400, detail="view_mode must be 'flat' or 'folder'")
+        tab.view_mode = view_mode
 
     db.commit()
 

@@ -1,8 +1,6 @@
 """
-ComicVault — Home & 2000 AD Router
+ComicVault — Home Router
 GET /api/home/strips        Home page strips — defaults + admin-added (HOME_STRIPS_SPEC.md)
-GET /api/2000ad/years       Year list with issue counts (series='2000 AD')
-GET /api/2000ad/year/{year} Issue list for one year
 """
 
 from __future__ import annotations
@@ -248,105 +246,6 @@ def get_nav_config(db: Session = Depends(get_db)):
         .order_by(CustomTab.created_at)
         .all()
     )
-    return {"custom_tabs": [{"id": t.id, "name": t.name} for t in tabs]}
+    return {"custom_tabs": [{"id": t.id, "name": t.name, "view_mode": t.view_mode} for t in tabs]}
 
 
-# ---------------------------------------------------------------------------
-# GET /api/2000ad/years
-# ---------------------------------------------------------------------------
-
-@router.get("/2000ad/years")
-def get_2000ad_years(db: Session = Depends(get_db)):
-    """
-    Year list for the 2000 AD prog collection.
-    Each entry: year, issue_count, cover path, first/last prog number.
-    """
-    year_rows = (
-        db.query(Issue.year, func.count(Issue.id).label("issue_count"))
-        .filter(Issue.series == "2000 AD", Issue.missing == False)
-        .group_by(Issue.year)
-        .order_by(Issue.year)
-        .all()
-    )
-
-    result = []
-    for row in year_rows:
-        # Load only the issues for this year (≈52 rows — small)
-        year_issues = (
-            db.query(Issue)
-            .filter(Issue.series == "2000 AD", Issue.year == row.year, Issue.missing == False)
-            .all()
-        )
-        prog_numbers = []
-        cover_issue = year_issues[0] if year_issues else None
-        for iss in year_issues:
-            try:
-                n = int(iss.number)
-                prog_numbers.append(n)
-                if cover_issue is None or n < int(cover_issue.number):
-                    cover_issue = iss
-            except (ValueError, TypeError):
-                pass
-
-        result.append({
-            "year": row.year,
-            "issue_count": row.issue_count,
-            "cover_path": f"/api/cover/{cover_issue.id}" if cover_issue else None,
-            "first_prog": min(prog_numbers) if prog_numbers else None,
-            "last_prog":  max(prog_numbers) if prog_numbers else None,
-        })
-
-    return result
-
-
-# ---------------------------------------------------------------------------
-# GET /api/2000ad/year/{year}
-# ---------------------------------------------------------------------------
-
-@router.get("/2000ad/year/{year}")
-def get_2000ad_year(year: int, db: Session = Depends(get_db)):
-    """All 2000 AD progs for one year in prog-number order, with read status."""
-    issues = (
-        db.query(Issue)
-        .filter(Issue.series == "2000 AD", Issue.year == year, Issue.missing == False)
-        .all()
-    )
-
-    def sort_key(i: Issue):
-        try:
-            return int(i.number)
-        except (ValueError, TypeError):
-            return 9999
-
-    issues_sorted = sorted(issues, key=sort_key)
-
-    issue_ids = [i.id for i in issues_sorted]
-    prog_rows = (
-        db.query(ReadingProgress)
-        .filter(ReadingProgress.issue_id.in_(issue_ids))
-        .all()
-    )
-    prog_map = {p.issue_id: p for p in prog_rows}
-
-    return {
-        "year": year,
-        "issue_count": len(issues_sorted),
-        "issues": [
-            {
-                "id": iss.id,
-                "number": iss.number,
-                "year": iss.year,
-                "title": iss.title,
-                "cover_path": f"/api/cover/{iss.id}",
-                "story_arc": iss.story_arc,
-                "story_arc_number": iss.story_arc_number,
-                "page_count": iss.page_count,
-                "missing": iss.missing,
-                "read_status": prog_map[iss.id].status if iss.id in prog_map else "unread",
-                "current_page": prog_map[iss.id].current_page if iss.id in prog_map else 0,
-                "favorites": iss.favorites,
-                "personal_rating": iss.personal_rating,
-            }
-            for iss in issues_sorted
-        ],
-    }

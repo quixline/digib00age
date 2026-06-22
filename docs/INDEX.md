@@ -15,6 +15,7 @@ within a single doc, a later-dated or higher-numbered section overrides an earli
 | `EDITOR_SPEC.md` | Editor integration (Basic + Full editor) | Built and verified (2026-06-18) |
 | `CUSTOM_TABS_SPEC.md` | Custom Tabs feature | Built and verified (2026-06-19) |
 | `HOME_STRIPS_SPEC.md` | Home Page Strips feature | Built and verified (2026-06-19) |
+| `comicvault-changes-v2.2.md` | v2.2: remove 2000 AD fixed tab + Folder View for Custom Tabs | Closed out 2026-06-22 |
 | `comicvault-changes-2.1.md` | Planning backlog / build queue, 2.1 — closed out 2026-06-22, kept for history | Closed |
 | `BUGS.md` | Live bug/issue register (separate from applied-decision logs) | Active |
 | `progress.md` | Narrative build history, per-session detail and verification notes | Active, append-only |
@@ -22,9 +23,7 @@ within a single doc, a later-dated or higher-numbered section overrides an earli
 `comicvault-changes-2.1.md` (renamed from `comicvault-changes.md` on close-out) itself
 supersedes a now-removed file, `v2_1-main-new-features.md`, that `CUSTOM_TABS_SPEC.md`
 and `HOME_STRIPS_SPEC.md` used to point to — if you find an older reference to either
-filename anywhere, treat it as a typo for `comicvault-changes-2.1.md`. A successor doc,
-`comicvault-changes-2.2.md`, will become the active planning reference once Tez creates
-it — until then, there is no active backlog doc; check with Tez for what's next.
+filename anywhere, treat it as a typo for `comicvault-changes-2.1.md`.
 
 ## Reference docs (this index + the five built alongside it, 2026-06-20)
 

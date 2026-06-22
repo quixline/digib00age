@@ -7,6 +7,16 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-22** — v2.2 shipped: 2000 AD's hardcoded fixed-tab surface fully
+  removed (endpoints, nav button, year-grid UI, all code paths); Custom Tabs
+  gained a `view_mode` (`flat`/`folder`) — Folder View generalises 2000 AD's
+  old year-grid into a reusable per-tab mode with recursive folder/file
+  browsing, real history-backed navigation, depth-agnostic search, and
+  recursive Mark All Read. 2000 AD itself becomes an ordinary Folder View
+  custom tab post-build. `CUSTOM_TABS_SPEC.md` amended (§9); both
+  `comicvault-changes-2.1.md` and `comicvault-changes-v2.2.md` backlogs now
+  closed. → `progress.md` "Session — 2026-06-22: v2.2 — Folder View + 2000 AD
+  removal"
 - **2026-06-22** — Both Tier 3 items done: Home page search bar (copy unified
   with the browse tabs — "Search All"/"Search Singles"/"Search Series"); card
   size control (10%/25%/50%/100%), then reworked into Admin → Pagination and

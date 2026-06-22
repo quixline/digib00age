@@ -173,6 +173,7 @@ class CustomTab(Base):
     name        = Column(Text, nullable=False)
     folder_path = Column(Text, nullable=False)          # stored normalized — see backend.path_utils
     visible     = Column(Boolean, default=True, nullable=False)
+    view_mode   = Column(Text, nullable=False, default="flat")   # 'flat' | 'folder'
     created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     def __repr__(self):

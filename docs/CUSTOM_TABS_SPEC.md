@@ -12,6 +12,13 @@
 > reader changes) were tracked in `comicvault-changes-2.1.md` (closed
 > 2026-06-22, renamed from `comicvault-changes.md`), which supersedes the
 > now-removed `v2_1-main-new-features.md`.
+>
+> **v2.2 update:** Section 1's and Section 6's statements that the hardcoded 2000 AD
+> tab is untouched/out of scope are **superseded** — see §9 below. The 2000 AD fixed
+> surface has been fully removed; its useful behaviour (browse-by-folder, organised by
+> year) is generalised into the new Folder View mode any custom tab can use. Left the
+> original text below as-written rather than editing it, per this doc's own Change Log
+> convention — §9 and the Change Log entry are the record of what changed and why.
 
 ---
 
@@ -191,3 +198,92 @@ layout.
 |---|---|---|
 | 2026-06-19 | Section 5.1's folder picker reuses the Full Editor's picker *CSS* (`.editor-overlay`/`.editor-modal`/`.fe-picker-*`) but not its multi-select checkbox interaction — Custom Tabs only ever needs one folder, so it's click-to-descend-a-folder-row plus a single "Select This Folder" button instead. | A custom tab has exactly one `folder_path`; the editor's checkbox multi-select (built for adding many files/folders to a working set at once) doesn't apply. |
 | 2026-06-19 | Added a small fix beyond the spec's text: cached custom-tab names in `sessionStorage` so the existing issue/series back-link label (previously only aware of the four fixed surface names) shows the tab's actual name instead of falling back to "Library" when navigating from a custom tab. Navigation itself was already correct without this — label only. | Not addressed by the spec; found while verifying the `from=tab-{id}` back-link round trip end to end. |
+| 2026-06-22 | Added `view_mode` (`flat`/`folder`) to `custom_tabs`. Folder View generalises 2000 AD's old hardcoded two-level year-grid into a reusable per-tab mode: recursive folder/file mixed-grid browsing with real history-backed navigation, depth-agnostic search, and recursive Mark All Read. The 2000 AD fixed tab is fully removed; 2000 AD becomes an ordinary custom tab (Folder View) post-build, consuming a normal visible-tab slot. | v2.2 planning — 2000 AD's bespoke view was always meant to be removed before the app went public; Folder View captures the part of its behaviour that was actually useful and makes it available to any custom tab. |
+
+---
+
+## 9. Folder View (v2.2)
+
+### 9.1 View Mode (extends §2 Data Model)
+
+New column on `custom_tabs`:
+
+| Column | Type | Notes |
+|---|---|---|
+| `view_mode` | TEXT NOT NULL DEFAULT 'flat' | `'flat'` (existing v2.1 behaviour, unchanged) or `'folder'` (new) |
+
+Existing rows get `'flat'` via migration default (`_add_missing_custom_tab_columns()`,
+`database.py`, same pattern as `_add_missing_issue_columns()`) — no behaviour change
+for tabs created before this shipped. The Admin "Add Tab" / per-row edit controls
+(§5.1) let an admin choose or change view mode after creation, without recreating
+the tab.
+
+### 9.2 Folder View — Browse mode
+
+At any folder level (starting at the tab's `folder_path` root), render a **mixed
+grid**:
+- Loose files directly in that folder render as flat issue cards — same card shape
+  as the All tab/flat-mode tabs, page count shown.
+- Subfolders render as folder cards, showing a **recursive** issue count (every
+  issue anywhere underneath that folder, not just direct children).
+- A folder with no subfolders left renders as a pure flat file grid (the terminal
+  case — most custom tabs pointed at a normally-structured library folder will hit
+  this immediately, since folder = series/single there).
+
+Clicking a folder card drills into that folder, repeating the same mixed-grid logic
+one level down.
+
+**Navigation uses real browser history**, via the surface convention
+`?surface=tab-{id}&path=<relative-path>` (a deliberate explicit `history.pushState`
+per drill-down, paired with one `popstate` listener — this SPA never does a real page
+load on a surface switch, unlike the simpler `history.back()`-only pattern Issue/
+Series back-links use, which is enough for them since they only ever need to go up
+one level). Back/forward/refresh/bookmark/share-link all land on the exact folder
+level expected. Breadcrumbs derive from the URL's `path` param.
+
+### 9.3 Folder View — Search mode
+
+When a search term is entered inside a Folder View tab, browse mode is replaced
+entirely by flat, depth-agnostic results (`GET /api/library/tab/{id}/search?q=`),
+scoped to the whole tab's folder subtree rather than the current folder level, with
+each result showing its folder path so the user can see where it lives. Clearing the
+search returns to browse mode at whatever folder level was active before the search
+started.
+
+### 9.4 Mark All Read (per folder)
+
+A "Mark all read" action available at any folder level in browse mode, scoped
+**recursively** — it marks every issue anywhere under the current folder as read,
+matching what the folder's displayed issue count represents.
+
+### 9.5 Backend
+
+- `GET /api/library/tab/{id}/folder?path=` — folder-contents endpoint for browse
+  mode: immediate child folders (each with a recursive issue count) and immediate
+  child files (issue cards), at one level. Single query over the tab's whole subtree
+  via `is_under()` (`path_utils.py`), grouped in Python — no N+1.
+- `GET /api/library?tab_id=...` (existing, unchanged) — remains the flat-mode
+  tab's own content query; Folder View does not use it (see search note below).
+- `GET /api/library/tab/{id}/search?q=` — new, file-shaped (via the existing
+  `_issue_to_dict()`) flat search across the tab's whole subtree. Added because the
+  flat-mode endpoint above is series-grouped, not per-file, and Folder View search
+  needs per-file results with folder paths.
+- `POST /api/library/tab/{id}/folder/mark-read?path=` — recursive mark-all-read,
+  reuses `_get_or_create_progress()` (`progress.py`) rather than duplicating the
+  upsert logic.
+
+### 9.6 Frontend
+
+- Folder/file mixed-grid rendering (`renderFolderView()`, `buildFolderCard()`,
+  `buildFolderFileCard()` — the last one is the old 2000 AD prog card's body,
+  generalised with non-2000AD-specific labels).
+- `path`-based history wiring (`pushFolderViewUrl()`, `goToFolderPath()`, one
+  `popstate` listener).
+- Breadcrumb rendering from the active path (`renderFolderBreadcrumb()`).
+- Search-mode toggle wired into the existing inline search bar
+  (`startFolderViewSearch()` / `clearFolderViewSearch()`), scoped to surfaces where
+  `isFolderViewTab(activeSurface)` is true.
+- "Mark all read" button at folder level (`markFolderViewRead()`).
+- Folder View flat file cards plug into the existing multi-select mechanism
+  (`makeSelectable()`) the same way the old 2000 AD prog cards did — no new
+  mechanism needed.

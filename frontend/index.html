@@ -18,7 +18,6 @@
         <button class="surface-btn"        data-surface="all"    role="tab" aria-selected="false">All</button>
         <button class="surface-btn"        data-surface="singles"role="tab" aria-selected="false">Singles</button>
         <button class="surface-btn"        data-surface="series" role="tab" aria-selected="false">Series</button>
-        <button class="surface-btn"        data-surface="2000ad" role="tab" aria-selected="false">2000 AD</button>
       </nav>
 
       <!-- Inline search (shown on Series/Singles/All surfaces) -->
@@ -101,21 +100,14 @@
       <div class="pagination" id="pagination"></div>
     </div>
 
-    <!-- ── 2000 AD SURFACE ──────────────────────────────────────────────── -->
-    <div id="adView" hidden>
-      <!-- Level 1: year grid -->
-      <div id="adYearGrid">
+    <!-- ── FOLDER VIEW (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9) -->
+    <div id="folderView" hidden>
+      <nav class="back-nav folder-view-nav">
+        <div class="folder-breadcrumb" id="folderBreadcrumb"></div>
+        <button class="btn-primary" id="folderMarkAllBtn">Mark all read</button>
+      </nav>
+      <div class="cover-grid" id="folderGrid">
         <div class="loading-state">Loading…</div>
-      </div>
-      <!-- Level 2: year detail (hidden until a year is clicked) -->
-      <div id="adYearDetail" hidden>
-        <nav class="back-nav ad-year-nav">
-          <button class="btn-primary" id="adBackBtn">&#x2190; Back</button>
-          <button class="btn-primary" id="adMarkAllBtn">Mark all read</button>
-        </nav>
-        <div id="adYearContent">
-          <div class="loading-state">Loading…</div>
-        </div>
       </div>
     </div>
 

@@ -82,11 +82,25 @@ def _add_missing_issue_columns():
         conn.commit()
 
 
+def _add_missing_custom_tab_columns():
+    """
+    create_all() only creates missing *tables* — it never adds columns to a
+    table that already exists. The additive CustomTab.view_mode column needs
+    a manual ALTER TABLE here, run once (idempotent).
+    """
+    with engine.connect() as conn:
+        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(custom_tabs)"))}
+        if "view_mode" not in cols:
+            conn.execute(text("ALTER TABLE custom_tabs ADD COLUMN view_mode TEXT NOT NULL DEFAULT 'flat'"))
+        conn.commit()
+
+
 def init_db():
     """Create all tables and performance indexes if they don't already exist."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     Base.metadata.create_all(bind=engine)
     _add_missing_issue_columns()
+    _add_missing_custom_tab_columns()
     with engine.connect() as conn:
         for ddl in _PERF_INDEXES:
             conn.execute(text(ddl))

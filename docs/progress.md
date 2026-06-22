@@ -1653,3 +1653,107 @@ used to be; no console errors on either page.
 `HOME_STRIPS_SPEC.md` updated to the new filename — historical narrative
 entries in `progress.md`/`DECISIONS.md`/`EDITOR_SPEC.md` left as-is, they're
 frozen at the time they were written).
+
+---
+
+## Session — 2026-06-22: v2.2 — Folder View + 2000 AD removal
+
+Built from `docs/comicvault-changes-v2.2.md` (Parts A–D), via the Explore → Plan
+subagent workflow in plan mode (codebase scope: Custom Tabs implementation,
+2000 AD hit-list verification, supporting patterns like `is_under()`, the
+history-back pattern, the migration helper pattern, and multi-select). One open
+gap the planning doc didn't resolve — Folder View's search mode needs flat
+per-file results with folder paths, but the existing flat-mode endpoint is
+series-grouped — was flagged and resolved with Tez before building: added a new
+endpoint rather than overloading the existing one.
+
+**1. `view_mode` column + migration.** `CustomTab.view_mode` (`backend/models.py`),
+default `'flat'`. New `_add_missing_custom_tab_columns()` in `backend/database.py`,
+exact pattern copy of `_add_missing_issue_columns()`, called from `init_db()`.
+Verified against the real DB: column appeared via `PRAGMA table_info`, both
+pre-existing real tabs (`20000ad progs`, `V-ALL`) defaulted to `'flat'`.
+
+**2. Backend Folder View endpoints** (`backend/routers/library.py`):
+- `GET /api/library/tab/{id}/folder?path=` — folder-contents for browse mode.
+  Single query over the tab's whole subtree (via the existing `is_under()`),
+  grouped in Python by `os.path.dirname()` relative to the target dir — no N+1.
+- `POST /api/library/tab/{id}/folder/mark-read?path=` — recursive mark-all-read,
+  reuses `_get_or_create_progress()` from `progress.py` rather than duplicating
+  the upsert.
+- `GET /api/library/tab/{id}/search?q=` — new endpoint (the resolved gap above):
+  flat, file-shaped (`_issue_to_dict()`) results across the tab's whole subtree,
+  each carrying a `relative_folder`.
+- `backend/routers/admin.py`: `view_mode` added to tab create/update, validated
+  against `{'flat', 'folder'}`.
+- `backend/routers/home.py`'s `/nav/config` now also returns each tab's
+  `view_mode` so the frontend knows which tabs are Folder View without an extra
+  round-trip.
+
+**3. Frontend Folder View** (`frontend/js/app.js`, `frontend/index.html`,
+`frontend/css/style.css`): new `#folderView` container (separate from the
+existing `#browseView`, since Folder View's mixed folder/file grid doesn't use
+the All-tab filter bar/pagination). URL convention extends the existing
+`tab-{id}` surface with a `path=` param — `?surface=tab-7&path=1980/Progs` —
+using an explicit `history.pushState()` per drill-down (a deliberate departure
+from the simpler `history.back()`-only pattern Issue/Series back-links use,
+commented in code as such) paired with one `popstate` listener. New
+`buildFolderFileCard()` reuses the old `buildAdProgCard()`'s body (cover-card +
+`makeSelectable()`) almost verbatim, generalised with non-2000AD-specific
+labels — built *before* `buildAdProgCard` was deleted, so Folder View never went
+without a card renderer mid-build. Breadcrumbs, search-mode toggle (swaps to the
+new search endpoint, restores the exact pre-search folder level on clear, not
+the tab root), and a folder-level "Mark all read" button all wired in.
+
+**4. Admin UI** (`frontend/admin.html`, `frontend/js/admin.js`): view-mode
+`<select>` on the Add Tab form and a per-row select on existing tabs (PATCHes
+immediately on change, same pattern as the visible/hidden toggle). Fixed a
+stale hint string at `admin.html` (pagination/card-size scope note still
+mentioned "the 2000 AD year picker").
+
+**5. 2000 AD removal.** Fresh grep before touching anything (per the plan)
+confirmed the planning doc's hit list was accurate, plus one item it missed:
+`frontend/guide.html`'s user guide text still described the old dedicated 2000
+AD view — updated to describe Custom Tabs/Folder View instead. Removed,
+frontend-callers-first: `app.js` functions (`load2000AD`, `render2000ADYears`,
+`buildYearCard`, `load2000ADYear`, `markAllReadAdYear` — `buildAdProgCard` was
+kept, repurposed as `buildFolderFileCard` per step 3), the `adView`
+hidden-toggle/branch in `switchSurface()` and `redirectHomeSearchToAll()`, the
+`'2000ad'` entry in `initLibrary()`'s `VALID` array; `index.html`'s nav button
+and `#adView` block; `style.css`'s `#adYearGrid`/`.year-card*`/`.ad-year-heading`/
+`.ad-year-nav` blocks; `backend/routers/home.py`'s two `/2000ad/*` endpoints
+and module docstring. Final repo-wide grep confirmed zero remaining references
+outside two harmless historical-context code comments and the Flutter app
+(explicitly out of scope per the planning doc).
+
+**6. `CUSTOM_TABS_SPEC.md` amendment.** Appended new §9 "Folder View (v2.2)"
+(non-destructive — new top-level section rather than renumbering existing
+ones) plus a Change Log row. Added a short correction blockquote near the top
+status note rather than editing §1/§6's now-superseded "2000 AD is out of
+scope, untouched" text in place, consistent with this doc's own
+record-deviations-don't-rewrite-history convention.
+
+**Verified** (against a separate test-server instance on port 8002, never the
+live app on port 8000 — confirmed it was never touched): migration; all three
+new endpoints via curl against real data (folder-contents at root and one
+level down, search with correct `relative_folder`, recursive mark-read on the
+real 1978 folder — 48 issues — confirmed via re-fetch, approved by Tez before
+each write); `view_mode` PATCH round-trip; `GET /api/library?tab_id=`
+confirmed unchanged for the real flat-mode tabs. UI click-through via a
+temporary "FolderView Test" tab pointed at the real on-disk 2000 AD folder
+(deleted afterward): mixed folder/file grid at root (50 year folders with
+accurate recursive counts) and a terminal year folder (52 flat files);
+drill-down URL updates and browser back/forward/hard-refresh all land on the
+correct folder level; search returns depth-agnostic results with folder paths
+and restores the exact pre-search folder (not the tab root) on clear;
+mark-all-read via the UI button on the real 1979 folder (52 issues, approved by
+Tez); multi-select wiring confirmed present on file cards; an existing
+flat-mode tab (`20000ad progs`) confirmed unaffected/no regression; Admin UI's
+per-row and Add-form view-mode selects rendered and behaved correctly; no
+console errors anywhere in the flow. 2000 AD's real read-progress data for
+1977/1978/1979 is now marked read as a result of this and the prior Tier 2
+session's testing — left as-is per Tez, not reverted.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `CUSTOM_TABS_SPEC.md` (§9 +
+Change Log row); `comicvault-changes-v2.2.md` (marked closed); `INDEX.md` /
+`ROADMAP.md` (both v2.1 and v2.2 backlog docs now closed, no active backlog
+doc until Tez creates the next one).

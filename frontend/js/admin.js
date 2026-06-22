@@ -499,6 +499,12 @@ function makeCustomTabRow(tab) {
   pathLine.textContent = tab.folder_path;
   info.append(nameLine, pathLine);
 
+  const viewModeSelect = document.createElement('select');
+  viewModeSelect.className = 'ct-viewmode-select admin-select';
+  viewModeSelect.innerHTML = '<option value="flat">Flat</option><option value="folder">Folder View</option>';
+  viewModeSelect.value = tab.view_mode || 'flat';
+  viewModeSelect.addEventListener('change', () => updateCustomTabViewMode(tab, viewModeSelect.value));
+
   const toggleBtn = document.createElement('button');
   toggleBtn.className = `ct-visible-toggle${tab.visible ? ' is-visible' : ''}`;
   toggleBtn.textContent = tab.visible ? 'Visible' : 'Hidden';
@@ -509,8 +515,27 @@ function makeCustomTabRow(tab) {
   delBtn.textContent = 'Delete';
   delBtn.addEventListener('click', () => deleteCustomTab(tab));
 
-  row.append(info, toggleBtn, delBtn);
+  row.append(info, viewModeSelect, toggleBtn, delBtn);
   return row;
+}
+
+async function updateCustomTabViewMode(tab, view_mode) {
+  try {
+    const r = await fetch(`${API}/admin/custom-tabs/${tab.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ view_mode }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      showToast(d.detail || 'Could not update view mode', true);
+      return;
+    }
+    showToast(`View mode set to ${view_mode === 'folder' ? 'Folder View' : 'Flat'}`);
+    await loadCustomTabs();
+  } catch (e) {
+    showToast('Could not update view mode: ' + e.message, true);
+  }
 }
 
 async function toggleCustomTabVisible(tab) {
@@ -554,8 +579,10 @@ async function deleteCustomTab(tab) {
 async function addCustomTab() {
   const nameInput = document.getElementById('ctNameInput');
   const pathInput = document.getElementById('ctPathInput');
+  const viewModeSelect = document.getElementById('ctViewModeSelect');
   const name = nameInput.value.trim();
   const folder_path = pathInput.value.trim();
+  const view_mode = viewModeSelect.value || 'flat';
   if (!name || !folder_path) {
     showToast('Name and folder path are both required', true);
     return;
@@ -564,7 +591,7 @@ async function addCustomTab() {
     const r = await fetch(`${API}/admin/custom-tabs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, folder_path }),
+      body: JSON.stringify({ name, folder_path, view_mode }),
     });
     const d = await r.json();
     if (!r.ok) {
@@ -575,6 +602,7 @@ async function addCustomTab() {
     else showToast('Tab added');
     nameInput.value = '';
     pathInput.value = '';
+    viewModeSelect.value = 'flat';
     await loadCustomTabs();
   } catch (e) {
     showToast('Could not add tab: ' + e.message, true);
