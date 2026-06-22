@@ -73,6 +73,7 @@
           <option value="genre">Genre</option>
           <option value="publisher">Publisher</option>
           <option value="writer">Writer</option>
+          <option value="format">Format</option>
         </select>
 
         <select class="filter-select" id="genreFilter"     aria-label="Genre"><option value="">Genre</option></select>
@@ -108,8 +109,9 @@
       </div>
       <!-- Level 2: year detail (hidden until a year is clicked) -->
       <div id="adYearDetail" hidden>
-        <nav class="back-nav">
+        <nav class="back-nav ad-year-nav">
           <button class="btn-primary" id="adBackBtn">&#x2190; Back</button>
+          <button class="btn-primary" id="adMarkAllBtn">Mark all read</button>
         </nav>
         <div id="adYearContent">
           <div class="loading-state">Loading…</div>

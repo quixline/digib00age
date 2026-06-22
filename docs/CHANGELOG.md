@@ -7,6 +7,13 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-22** — All 9 Tier 2 ride-along items done: clickable genre tags
+  on `/issue/{id}`, restyled "Clear" filter button, Format added to Grouping
+  menu, "Mark all read" on 2000 AD Year page, pagination 25 option, Admin
+  "Save Advanced Settings" renamed to "Save Location" and moved onto the
+  path's row, Scan Now / Clean Up card border states, and an `.admin-main`
+  padding shorthand bug fixed (was overhanging the header by 20px each
+  side). → `progress.md` "Session — 2026-06-22: Tier 2 — full batch"
 - **2026-06-22** — Tier 1 bug fix: All tab, list view — read/part-read cards'
   list-only fields (`.list-genres`, `.list-pub-writer`, `.list-summary`) stayed
   dim grey instead of picking up the white-text override grid view's

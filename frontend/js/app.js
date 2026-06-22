@@ -270,7 +270,7 @@ let activeYear      = '';
 let activeRating    = '';
 let activeBW        = '';       // '' | yes | no
 let activeSort      = 'alpha';  // alpha | newest | recent
-let activeGroupBy   = '';       // '' | year | genre | publisher | writer
+let activeGroupBy   = '';       // '' | year | genre | publisher | writer | format
 let activeSearch    = '';
 
 // 'fieldview'/'folderview' surfaces — transient, opened from a home strip's
@@ -787,6 +787,7 @@ function renderGrouped(grid, items) {
     if (activeGroupBy === 'publisher') key = s.publisher || 'Unknown';
     if (activeGroupBy === 'genre')     key = (s.genres && s.genres[0]) || 'Unknown';
     if (activeGroupBy === 'writer')    key = (s.writers && s.writers[0]) || 'Unknown';
+    if (activeGroupBy === 'format')    key = (s.formats && s.formats[0]) || 'Unknown';
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(s);
   }
@@ -1082,6 +1083,13 @@ async function load2000ADYear(year) {
     const grid = el('div', 'cover-grid');
     for (const iss of data.issues) grid.appendChild(buildAdProgCard(iss));
     content.appendChild(grid);
+
+    const markBtn = document.getElementById('adMarkAllBtn');
+    markBtn.disabled    = false;
+    markBtn.textContent = 'Mark all read';
+    markBtn.style.background = '';
+    markBtn.style.color      = '';
+    markBtn.onclick = () => markAllReadAdYear(data.issues, year);
   } catch (err) {
     document.getElementById('adYearContent').innerHTML =
       '<div class="empty-state"><p>Could not load issues for this year.</p></div>';
@@ -1286,6 +1294,24 @@ async function markAllRead(issues) {
   btn.style.color       = '#000';
 }
 
+async function markAllReadAdYear(issues, year) {
+  const btn = document.getElementById('adMarkAllBtn');
+  btn.disabled    = true;
+  btn.textContent = 'Marking…';
+
+  const unread = issues.filter(i => i.read_status !== 'read');
+  if (!unread.length) {
+    btn.textContent = 'All read ✓';
+    return;
+  }
+
+  await Promise.allSettled(
+    unread.map(i => fetch(`/api/progress/${i.id}/mark-read`, { method: 'POST' }))
+  );
+
+  await load2000ADYear(year);
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 //  ISSUE DETAIL PAGE
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1378,10 +1404,15 @@ function buildIssueDetail(data) {
     metaCol.appendChild(el('p', 'issue-pub-info', pubParts.join(' · ')));
   }
 
-  // Genres
+  // Genres — each tag links to a filtered list of every issue with that genre
+  // (reuses the same fieldview surface plumbing as the Writer/Artist credit links).
   if (data.genres && data.genres.length) {
     const tags = el('div', 'genre-tags');
-    for (const g of data.genres) tags.appendChild(el('span', 'genre-tag', g));
+    for (const g of data.genres) {
+      const link = el('a', 'genre-tag', g);
+      link.href = `/?surface=fieldview&field=genre&value=${encodeURIComponent(g)}`;
+      tags.appendChild(link);
+    }
     metaCol.appendChild(tags);
   }
 

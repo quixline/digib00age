@@ -79,6 +79,7 @@
         <div class="admin-card-label">Results per page</div>
         <div class="pagination-setting-row">
           <select class="admin-select" id="pageSizeSelect" aria-label="Page size">
+            <option value="25">25</option>
             <option value="50">50</option>
             <option value="100">100</option>
             <option value="200">200</option>
@@ -101,12 +102,12 @@
           <div class="admin-field-row">
             <label class="admin-field-label" for="readerLocationInput">Reader Location</label>
             <div class="admin-field-input-wrap">
-              <input type="text" class="admin-input" id="readerLocationInput" placeholder="comicvault://read/" />
+              <div class="admin-field-input-row">
+                <input type="text" class="admin-input" id="readerLocationInput" placeholder="comicvault://read/" />
+                <button class="btn-primary" id="saveAdvancedBtn">Save Location</button>
+              </div>
               <p class="admin-field-hint">No functional effect in V1 — reserved for future reader configuration.</p>
             </div>
-          </div>
-          <div class="admin-field-actions">
-            <button class="btn-primary" id="saveAdvancedBtn">Save Advanced Settings</button>
           </div>
 
           <!-- ── Custom Tabs (CUSTOM_TABS_SPEC.md) ───────────────────────── -->

@@ -13,9 +13,7 @@ All three Tier 4 items are now complete (2026-06-21). No big item is currently
 driving a session — the remaining active queue is ride-along-only:
 
 - **Tier 1 (ride-along bugs):** none open.
-- **Tier 2 (ride-along cosmetic):** clickable genre tags on `/issue/{id}`, "Clear"
-  button styling, Format in the Grouping menu, "mark all read" on the 2000 AD page,
-  admin pagination/styling tweaks (8 items total — see `comicvault-changes.md`).
+- **Tier 2 (ride-along cosmetic):** none open — all 9 items done 2026-06-22.
 - **Tier 3 (ride-along, more design):** home page search bar unification, card size
   control.
 - **Tier 5 (manual, non-dev):** Genre additions (Anthology, Comic, Omnibus) via the

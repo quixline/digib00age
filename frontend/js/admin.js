@@ -165,6 +165,8 @@ function renderScanSection(scanState, missingCount) {
   const mc = missingCount || 0;
   const missingCard = document.createElement('div');
   missingCard.className = 'stat-card scan-now-card';
+  missingCard.id = 'missingRecordsCard';
+  if (mc > 0) missingCard.classList.add('has-pending');
   missingCard.innerHTML = `
     <div class="stat-label">Missing Records</div>
     <div class="stat-value stat-value--md" id="missingCountVal">${mc.toLocaleString()}</div>
@@ -176,10 +178,12 @@ function renderScanSection(scanState, missingCount) {
 }
 
 function showScanProgress() {
-  const btn = document.getElementById('scanNowBtn');
+  const btn  = document.getElementById('scanNowBtn');
   const prog = document.getElementById('scanProgress');
+  const card = document.getElementById('scanNowCard');
   if (btn) { btn.disabled = true; btn.textContent = 'Scanning…'; }
   if (prog) prog.hidden = false;
+  if (card) card.classList.add('is-scanning');
 }
 
 async function doScan() {
@@ -189,8 +193,10 @@ async function doScan() {
     const d = await r.json();
     if (d.running) startScanPoll();
   } catch (e) {
-    const btn = document.getElementById('scanNowBtn');
-    if (btn) { btn.disabled = false; btn.textContent = 'Scan Now'; }
+    const btn  = document.getElementById('scanNowBtn');
+    const card = document.getElementById('scanNowCard');
+    if (btn)  { btn.disabled = false; btn.textContent = 'Scan Now'; }
+    if (card) card.classList.remove('is-scanning');
     showToast('Failed to start scan: ' + e.message, true);
   }
 }
@@ -199,6 +205,7 @@ async function doCleanup() {
   const btn     = document.getElementById('cleanupBtn');
   const countEl = document.getElementById('missingCountVal');
   const result  = document.getElementById('cleanupResult');
+  const card    = document.getElementById('missingRecordsCard');
   btn.disabled = true;
   btn.textContent = 'Cleaning…';
   try {
@@ -207,6 +214,7 @@ async function doCleanup() {
     if (r.ok) {
       if (countEl) countEl.textContent = '0';
       if (result)  result.textContent = `${d.removed} record${d.removed !== 1 ? 's' : ''} removed`;
+      if (card)    card.classList.remove('has-pending');
       showToast(`Removed ${d.removed} missing record${d.removed !== 1 ? 's' : ''}`);
     } else {
       btn.disabled = false;
@@ -247,6 +255,7 @@ function updateScanUI(state) {
   const prog   = document.getElementById('scanProgress');
   const barEl  = document.getElementById('scanBar');
   const textEl = document.getElementById('scanStatusText');
+  const card   = document.getElementById('scanNowCard');
 
   if (!btn) return;
 
@@ -254,6 +263,7 @@ function updateScanUI(state) {
     btn.disabled = true;
     btn.textContent = 'Scanning…';
     if (prog) prog.hidden = false;
+    if (card) card.classList.add('is-scanning');
 
     const pct = state.total_files > 0
       ? Math.round((state.processed_files / state.total_files) * 100)
@@ -263,6 +273,7 @@ function updateScanUI(state) {
   } else {
     btn.disabled = false;
     btn.textContent = 'Scan Now';
+    if (card) card.classList.remove('is-scanning');
     if (barEl) barEl.style.width = '100%';
     if (textEl && state.finished_at) {
       textEl.textContent =

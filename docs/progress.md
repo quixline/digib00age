@@ -1494,3 +1494,97 @@ same `rgba(255, 255, 255, 0.82)` value already used for `.cover-count`/
 
 **Docs updated:** this entry; `CHANGELOG.md`; `comicvault-changes.md` (Tier 1
 bullet removed, since it's now resolved).
+
+---
+
+## Session — 2026-06-22: Tier 2 — full batch
+
+All 9 Tier 2 ride-along items built and verified live, one at a time, each
+confirmed by Tez before moving to the next.
+
+1. **Genre tags clickable on `/issue/{id}`.** Each tag now links to
+   `/?surface=fieldview&field=genre&value=<genre>`, reusing the exact same
+   fieldview plumbing the Tier 4 Item 3 Writer/Artist credit links already
+   use (`field_name == "genre"` was already supported in `matches_field()`,
+   `backend/path_utils.py` — no backend change needed). Series-detail page's
+   own genre tags (`buildSeriesHeader()`) were deliberately left as plain
+   spans — out of scope, the backlog item named `/issue/{id}` specifically.
+
+2. **"Clear" filter button restyled.** Was a bare accent-coloured text link
+   (`.filter-clear`, `style.css`) — now a proper bordered button matching the
+   other filter controls. Click behaviour unchanged (`filterClear` handler
+   untouched).
+
+3. **"Format" added to the Grouping option menu.** New `<option value="format">`
+   in `index.html`'s `#groupBySelect`; `renderGrouped()` in `app.js` groups by
+   `s.formats[0]` the same way it already does for genre/writer.
+
+4. **"Mark all read" added to the 2000 AD Year page.** New button
+   (`#adMarkAllBtn`) next to the existing `← Back` in `#adYearDetail`'s nav
+   row. New `markAllReadAdYear(issues, year)` function — marks every unread
+   prog in the open year via the bulk progress endpoint, then re-fetches and
+   re-renders the year (`load2000ADYear(year)`) so card states refresh from
+   the server rather than hand-patching DOM classes. Verified against 2000 AD
+   1977 (45 issues) — Tez confirmed leaving that test data marked read rather
+   than reverting it.
+
+5. **Admin pagination: 25 added as an option, 50 still default.** One new
+   `<option value="25">` in `admin.html`'s `#pageSizeSelect` — `app.js`'s
+   `pageSize` default and `admin.js`'s `initPagination()` fallback were
+   already `'50'`, untouched.
+
+6. **Admin "Save Advanced Settings" → "Save Location", moved onto the path's
+   row.** Confirmed before renaming that this button only ever patches
+   `library_root` (`saveAdvanced()`, `admin.js`) and that the fieldset around
+   it contains nothing else — unlike Genre/Format (auto-save on every
+   add/remove, no save button at all) and Custom Tabs/Library Folders/Exclude
+   Patterns (also auto-save via immediate `patchConfig()` calls), this was
+   the only setting still behind an explicit save action, and it only does
+   one thing. Safe to rename. Tez additionally asked for the button to sit
+   on the same line as the path input rather than below it — restructured
+   `admin.html`'s field markup into `.admin-field-input-row` (input + button
+   in a flex row, hint text below spanning full width).
+
+7. **Admin: Scan Now card border — white when idle, green while scanning.**
+   New `#scanNowCard` border rules in `style.css`; `is-scanning` class toggled
+   in `admin.js`'s `showScanProgress()`, `updateScanUI()`, and the `doScan()`
+   catch branch. Had to scope the CSS to the `#scanNowCard` id rather than
+   the `.scan-now-card` class, since that class is shared with the Missing
+   Records card. Verified with a real scan (5,429 files, 0 new/changed — i.e.
+   genuinely read-only) — border was green mid-scan, reverted to white on
+   completion.
+
+8. **Admin: Clean Up card border — green when files are pending cleanup.**
+   New `#missingRecordsCard.has-pending` rule; class added when
+   `missingCount > 0` in `renderScanSection()`, removed in `doCleanup()` on
+   success. Library currently has 0 missing records, so this was verified by
+   adding the class via a one-off JS console call (not real data) rather than
+   manufacturing missing files — reverts to normal on next page load.
+
+9. **Admin: dashboard width now aligns with the header.** Root cause:
+   `.admin-main { padding: 24px 0 60px; }` (style.css) used the 4-value
+   shorthand, which zeroes left/right padding — overriding the inherited
+   `.container { padding: 0 20px; }` rule and making Admin's content sit
+   flush to the outer container edge while the header's content (logo, gear
+   icon) stayed inset by the normal 20px. This wasn't caught by initially
+   comparing `.container` bounding boxes (those matched exactly — the bug is
+   inside the box, not the box itself); found once Tez pointed at the actual
+   misaligned elements (logo vs Back button, gear vs Password Reset). Fixed
+   by splitting the shorthand into `padding-top`/`padding-bottom` only.
+   Verified: logo/Back button left edges and gear/Password-Reset right edges
+   are now pixel-identical (`248.5` / `1648.5` respectively at the tested
+   viewport).
+
+**Process note:** browser-side verification kept hitting stale cached
+`app.js`/`admin.js` in the Chrome MCP tab (heuristic HTTP caching — no
+`Cache-Control` header is set on `/static/*`, so Chrome can serve a cached
+script even on a fresh tab/navigation without revalidating). Worked around
+per-check by re-fetching the script with `cache:'reload'` and `eval`-ing it
+into the page; a real hard refresh (Ctrl+Shift+R) or full browser restart
+fixes it for normal use. Not fixed at the server level this session (would
+mean adding explicit `Cache-Control` headers to the static mount) — flagging
+as a possible future `ROADMAP.md` item if it keeps causing confusion during
+manual testing.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `comicvault-changes.md` (Tier 2
+list cleared); `ROADMAP.md` (Tier 2 line updated to none-open).
