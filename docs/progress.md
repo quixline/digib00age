@@ -1757,3 +1757,26 @@ session's testing — left as-is per Tez, not reverted.
 Change Log row); `comicvault-changes-v2.2.md` (marked closed); `INDEX.md` /
 `ROADMAP.md` (both v2.1 and v2.2 backlog docs now closed, no active backlog
 doc until Tez creates the next one).
+
+---
+
+## Session — 2026-06-22: v2.2 — Tez's full manual test pass, follow-up flagged
+
+Tez ran the full manual test pass against the live app, confirming everything
+built in the prior v2.2 session (Folder View + 2000 AD removal) works exactly
+as outlined in `comicvault-changes-v2.2.md` and the technical implementation
+plan that followed.
+
+**One gap found, missed during original scoping:** Folder View's folder cards
+(`CUSTOM_TABS_SPEC.md` §9.2) show a generic folder icon + name + recursive
+issue count only — no cover/representative image from inside the folder.
+Flagged as a follow-up to discuss in the next session (2026-06-23) rather than
+built ad hoc — needs a design conversation on options (e.g. first/representative
+issue's cover, similar to how the now-removed 2000 AD year-grid showed a
+first-prog thumbnail per year, `SPEC.md` §20.9) before any backend/frontend
+work is scoped.
+
+**Docs updated:** this entry; `ROADMAP.md` (new "Follow-up needed (2026-06-23
+session)" section); `CUSTOM_TABS_SPEC.md` §9.2 (known-gap callout, no Change
+Log row yet since nothing shipped — that follows once the design is decided
+and built).

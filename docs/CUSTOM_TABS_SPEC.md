@@ -230,6 +230,12 @@ grid**:
   case — most custom tabs pointed at a normally-structured library folder will hit
   this immediately, since folder = series/single there).
 
+> **Known gap, found 2026-06-22 during Tez's manual test pass — missed during
+> original scoping.** Folder cards currently show only a generic folder icon, the
+> name, and the recursive count — no cover/representative image from inside the
+> folder. Needs a design discussion (options, backend/frontend cost) before
+> building — see `ROADMAP.md` "Follow-up needed (2026-06-23 session)".
+
 Clicking a folder card drills into that folder, repeating the same mixed-grid logic
 one level down.
 

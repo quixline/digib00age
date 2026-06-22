@@ -20,6 +20,19 @@ for what's next.
 
 ---
 
+## Follow-up needed (2026-06-23 session)
+
+- **Folder View folder cards — image options.** Found during Tez's full manual test
+  pass of v2.2 (2026-06-22), missed during original scoping: folder cards in Folder
+  View (`CUSTOM_TABS_SPEC.md` §9.2) currently show a generic folder icon + name +
+  recursive issue count, with no cover/representative image. Needs a design
+  discussion on options for showing an image from the archives inside that folder
+  (e.g. first/representative issue's cover, similar to how the removed 2000 AD
+  year-grid showed a first-prog thumbnail per year — see `SPEC.md` §20.9, superseded)
+  before deciding backend/frontend changes. Not yet scoped — discuss before building.
+
+---
+
 ## Paused indefinitely
 
 - **Mobile Reader changes.** The Flutter reader works as-is (tablet connects, reading
