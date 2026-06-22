@@ -8,8 +8,9 @@
 >
 > **Status:** Built and verified (2026-06-19) — see `progress.md` "V2.1 — Home Strips
 > Built (2026-06-19)" for the build log. This was the second v2.1 feature tackled
-> (after `CUSTOM_TABS_SPEC.md`). Taskbar app changes and mobile reader changes are
-> tracked in `comicvault-changes.md`, which supersedes the now-removed
+> (after `CUSTOM_TABS_SPEC.md`). Taskbar app changes and mobile reader changes
+> were tracked in `comicvault-changes-2.1.md` (closed 2026-06-22, renamed from
+> `comicvault-changes.md`), which supersedes the now-removed
 > `v2_1-main-new-features.md`.
 
 ---

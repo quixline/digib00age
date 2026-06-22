@@ -1,6 +1,10 @@
-# ComicVault — Planning Backlog
-> Replaces `comicvault-changes.txt`. Finalized 2026-06-20. This is the planning
-> reference going forward — work through it top to bottom.
+# ComicVault — Planning Backlog (2.1)
+> Replaces `comicvault-changes.txt`. Finalized 2026-06-20. **Closed out
+> 2026-06-22 — every item in this backlog (Tier 1 through Tier 3) is done.**
+> Renamed from `comicvault-changes.md` to `comicvault-changes-2.1.md` to mark
+> it closed. A successor doc, `comicvault-changes-2.2.md`, will be created
+> separately once the next batch of work is defined — that doc, once it
+> exists, is the active planning reference; this one is kept for history.
 
 ---
 
@@ -89,9 +93,7 @@ momentum, defer the schema-changing + real-data-migration item until last.)*
 *(none open — all 9 items done, 2026-06-22)*
 
 ## Tier 3 — Medium, self-contained (ride along, slightly more design)
-- Home page search bar; unify search behaviour/copy with the All tab — "Search All"
-  (home + All tab), "Search Singles", "Search Series"
-- Card size control — 10% / 25% / 50% / 100% (library view, not admin-only)
+*(none open — both items done, 2026-06-22)*
 
 ---
 
@@ -122,3 +124,4 @@ momentum, defer the schema-changing + real-data-migration item until last.)*
 | 2026-06-22 | Tier 1 bug fixed — All tab list view, read/part-read cards' `.list-genres`/`.list-pub-writer`/`.list-summary` weren't part of the existing white-text override for read states, so they stayed dim grey while the rest of the card text went white/bold. Added to the override. Bullet removed from Tier 1 above since resolved. | See `progress.md` "Session — 2026-06-22: Tier 1 — List view read-state text colour" |
 | 2026-06-22 | **Second correction:** the 2000 AD Years page's "All Years" button (`adBackBtn`) was also part of this same inconsistency and was missed in both rows above — found during the same sweep but silently judged out of scope instead of being flagged. Label changed to "← Back" to match; click behaviour deliberately left as its existing in-page toggle (not `history.back()`) since selecting a year never pushes browser history, so real back-navigation would jump off the 2000 AD tab entirely rather than return to the year grid. | See `progress.md` "Session — 2026-06-22: Tier 1 — Back button inconsistency (2000 AD Years page)" |
 | 2026-06-22 | All 9 Tier 2 items built and verified live, one at a time: clickable genre tags on `/issue/{id}`, "Clear" filter button restyled, Format added to Grouping menu, "Mark all read" added to 2000 AD Year page, pagination 25 option added, "Save Advanced Settings" renamed to "Save Location" and moved onto the same row as the path field, Scan Now / Clean Up card border states, and an `.admin-main` padding shorthand bug fixed (was zeroing horizontal padding, causing Admin's content to overhang the header by 20px each side). | See `progress.md` "Session — 2026-06-22: Tier 2 — full batch" |
+| 2026-06-22 | Both Tier 3 items done: Home page search bar added, copy unified with the browse tabs ("Search All"/"Search Singles"/"Search Series"); card size control (10%/25%/50%/100%) added, then reworked into Admin → Pagination and extended to cover Home strips and the 2000 AD year picker, which had been missed initially. **Backlog fully closed** — doc renamed to `comicvault-changes-2.1.md`. | See `progress.md` "Session — 2026-06-22: Tier 3 — search bar + card size (+ rework)" |

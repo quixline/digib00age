@@ -260,7 +260,7 @@ ul { list-style: none; }
 /* cover-card inside a horizontal strip — pin width, prevent shrink */
 .continue-strip .cover-card.strip-card {
   flex-shrink: 0;
-  width: 120px;
+  width: var(--card-min);
 }
 
 /* ≈5 mm gap between the strip label and the first card row */
@@ -563,7 +563,7 @@ ul { list-style: none; }
 /* ── 2000 AD year grid ───────────────────────────────────────────────────── */
 #adYearGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
   gap: 14px;
   padding: 18px 0 48px;
 }

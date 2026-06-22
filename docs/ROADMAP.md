@@ -2,23 +2,20 @@
 
 Paused, deferred, or future work — explicitly out of scope until unblocked or
 prioritized. If a request seems to fall under something listed here, flag it rather
-than building it; check `comicvault-changes.md` for what's actually next in the active
-queue.
+than building it; `comicvault-changes-2.1.md` (closed 2026-06-22) covered the prior
+active queue — there is no active backlog doc until Tez creates `comicvault-changes-2.2.md`.
 
 ---
 
-## Active build queue (not paused — see `comicvault-changes.md` for detail)
+## Active build queue
 
-All three Tier 4 items are now complete (2026-06-21). No big item is currently
-driving a session — the remaining active queue is ride-along-only:
+`comicvault-changes-2.1.md` is fully closed (Tiers 1–4 all done, 2026-06-22). No big
+item or ride-along queue is currently active — check with Tez for what's next, or
+once `comicvault-changes-2.2.md` exists, that becomes the active reference.
 
-- **Tier 1 (ride-along bugs):** none open.
-- **Tier 2 (ride-along cosmetic):** none open — all 9 items done 2026-06-22.
-- **Tier 3 (ride-along, more design):** home page search bar unification, card size
-  control.
-- **Tier 5 (manual, non-dev):** Genre additions (Anthology, Comic, Omnibus) via the
-  new admin editor, logo + `.ico`, a personal note to check a draw.io visual-mapping
-  skill video.
+- **Tier 5 (manual, non-dev, still open):** Genre additions (Anthology, Comic,
+  Omnibus) via the new admin editor, logo + `.ico`, a personal note to check a
+  draw.io visual-mapping skill video.
 
 ---
 

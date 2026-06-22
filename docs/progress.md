@@ -1588,3 +1588,68 @@ manual testing.
 
 **Docs updated:** this entry; `CHANGELOG.md`; `comicvault-changes.md` (Tier 2
 list cleared); `ROADMAP.md` (Tier 2 line updated to none-open).
+
+---
+
+## Session — 2026-06-22: Tier 3 — search bar + card size (+ rework)
+
+Both Tier 3 items built and verified, then the card-size item reworked per
+Tez's follow-up feedback after testing.
+
+**1. Home page search bar, unified with the browse tabs.** The inline search
+bar (`#searchWrap`/`#searchInput`) previously only showed on Series/Singles/
+All. Now also shows on Home, with placeholder copy unified: "Search All"
+(Home + All), "Search Singles", "Search Series" (`SEARCH_PLACEHOLDERS` map +
+`updateSearchPlaceholder()`, `app.js`). Home has no list of its own to filter
+(it shows curated strips) — typing a query there redirects to the All tab
+with that query already applied (`redirectHomeSearchToAll()`), since "Search
+All" is the label Home's bar shows. Verified live: typed "Akira" on Home,
+landed on All tab filtered to 6 titles including the series card; confirmed
+all three placeholder strings render correctly on their respective tabs;
+confirmed the bar still correctly stays hidden on 2000 AD.
+
+**2. Card size control, 10%/25%/50%/100%.** First pass added a
+`<select id="cardSizeSelect">` inline in the browse-controls bar (next to
+the grid/list toggle), driving a new `--card-min` CSS variable consumed by
+`.cover-grid`'s `grid-template-columns`. Verified working on Series/Singles/
+All, persisted via `localStorage` (`cv_card_size`).
+
+**Rework, same session, after Tez tested it:** two changes requested —
+(a) move the control out of the browse bar into Admin → Pagination, same
+dd-menu style as the existing "Results per page" row; (b) the control's
+scope was supposed to be global but two grids were silently missed and
+stayed hardcoded at `120px`, independent of `--card-min`: Home strips
+(`.continue-strip .cover-card.strip-card`) and the 2000 AD year-*picker*
+grid (`#adYearGrid`) — note the issues-*within*-a-year grid
+(`buildAdProgCard()`) already correctly used `.cover-grid` and was unaffected.
+
+Used the Explore → Plan subagent workflow (plan mode) to confirm exact
+selectors/line numbers before touching anything, given the cross-page
+coordination involved (Admin writes to `localStorage`, `index.html` reads it
+on next load — same mechanism the existing page-size setting already uses).
+
+**Fix:** `style.css` — both hardcoded `120px` values changed to
+`var(--card-min)`. `index.html` — `cardSizeSelect` removed from
+`.browse-controls` entirely. `admin.html` — new `.admin-card` added directly
+under "Results per page" (using the existing `.admin-card--spaced` modifier
+for the gap), same structure/style, with an `.admin-hint` listing the full
+scope. `app.js` — `bindFilterEvents()`'s select-specific binding replaced
+with a single `applyCardSize(cardSize)` call (still runs once on page load).
+`admin.js` — new `initCardSize()` mirroring `initPagination()` exactly
+(read/write `cv_card_size`, toast on change), called alongside
+`initPagination()` in the bootstrap.
+
+**Verified:** changed the size in Admin, confirmed the toast and
+`localStorage` update, then confirmed Home strips, the 2000 AD year picker,
+and Series/Singles/All all resized together at 10/25/50/100%; drilled into a
+2000 AD year to confirm the issues grid still resizes correctly (no
+regression); confirmed `.browse-controls` has no layout gap where the select
+used to be; no console errors on either page.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `comicvault-changes-2.1.md`
+(Tier 3 cleared — **backlog now fully closed**, file renamed from
+`comicvault-changes.md` to mark it; structural references in `INDEX.md`,
+`ROADMAP.md`, `working-rules.md`, `README.md`, `CUSTOM_TABS_SPEC.md`, and
+`HOME_STRIPS_SPEC.md` updated to the new filename — historical narrative
+entries in `progress.md`/`DECISIONS.md`/`EDITOR_SPEC.md` left as-is, they're
+frozen at the time they were written).

@@ -45,9 +45,10 @@ Python dependencies are in `requirements.txt` (`pip install -r requirements.txt`
 ## Status
 
 V1 is complete. V2 is active — editor integration, Custom Tabs, Home Strips, and a
-Genre/Format admin editor have all shipped; see `docs/CHANGELOG.md` for the dated list
-and `docs/comicvault-changes.md` for what's queued next. No installer yet — setup is
-manual (`config.json` + `start.bat`); not currently prioritized, see `docs/ROADMAP.md`.
+Genre/Format admin editor have all shipped; see `docs/CHANGELOG.md` for the dated list.
+The 2.1 planning backlog (`docs/comicvault-changes-2.1.md`) closed out 2026-06-22 with
+everything in it done; check `docs/ROADMAP.md` for what's next. No installer yet — setup
+is manual (`config.json` + `start.bat`); not currently prioritized.
 
 See `docs/SPEC.md` for the full V1 technical specification and `docs/INDEX.md` for the
 complete doc map (what governs what, and the authority order between docs).

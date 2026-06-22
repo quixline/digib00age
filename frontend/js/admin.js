@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadStats();
   loadConfig();
   initPagination();
+  initCardSize();
 
   document.getElementById('backupBtn').addEventListener('click', doBackup);
   document.getElementById('addRootBtn').addEventListener('click', addRoot);
@@ -412,6 +413,17 @@ function initPagination() {
   sel.addEventListener('change', () => {
     localStorage.setItem('cv_page_size', sel.value);
     showToast(`Page size set to ${sel.value}`);
+  });
+}
+
+// ── Card size ─────────────────────────────────────────────────────────────────
+function initCardSize() {
+  const sel   = document.getElementById('cardSizeSelect');
+  const saved = localStorage.getItem('cv_card_size') || '25';
+  sel.value   = saved;
+  sel.addEventListener('change', () => {
+    localStorage.setItem('cv_card_size', sel.value);
+    showToast(`Card size set to ${sel.value}%`);
   });
 }
 

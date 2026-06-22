@@ -285,6 +285,16 @@ let viewMode = localStorage.getItem('cv_view_mode') || 'grid';
 let currentPage = 1;
 let pageSize    = parseInt(localStorage.getItem('cv_page_size') || '50', 10);
 
+// Card size control (library view) — percent labels are presets, not literal
+// scale factors; 25% matches the original fixed --card-min (120px) so the
+// default look is unchanged until a user picks a different size.
+const CARD_SIZE_PX = { '10': '90px', '25': '120px', '50': '160px', '100': '220px' };
+let cardSize = localStorage.getItem('cv_card_size') || '25';
+
+function applyCardSize(size) {
+  document.documentElement.style.setProperty('--card-min', CARD_SIZE_PX[size] || CARD_SIZE_PX['25']);
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function initLibrary() {
@@ -353,6 +363,17 @@ async function loadCustomTabsNav() {
   }
 }
 
+// Search copy unified with the All tab — Home's search bar searches the same
+// flat library All does (see redirectHomeSearchToAll()), so it carries the
+// same label. Surfaces not listed here (2000 AD, fieldview/folderview, custom
+// tabs) keep the generic placeholder — out of this backlog item's scope.
+const SEARCH_PLACEHOLDERS = { home: 'Search All', all: 'Search All', singles: 'Search Singles', series: 'Search Series' };
+
+function updateSearchPlaceholder(surface) {
+  const input = document.getElementById('searchInput');
+  if (input) input.placeholder = SEARCH_PLACEHOLDERS[surface] || 'Search…';
+}
+
 async function switchSurface(surface) {
   exitSelectionMode();
   activeSurface = surface;
@@ -368,9 +389,14 @@ async function switchSurface(surface) {
   document.getElementById('homeView').hidden   = surface !== 'home';
   document.getElementById('browseView').hidden = !isBrowse;
   document.getElementById('adView').hidden     = surface !== '2000ad';
-  document.getElementById('searchWrap').hidden = !isBrowse;
+  document.getElementById('searchWrap').hidden = !(isBrowse || surface === 'home');
+  updateSearchPlaceholder(surface);
 
   if (surface === 'home') {
+    // Clear search when switching surface
+    const input = document.getElementById('searchInput');
+    if (input) { input.value = ''; activeSearch = ''; }
+    document.getElementById('searchClear').style.display = 'none';
     await loadHome();
   } else if (isBrowse) {
     // Clear search when switching surface
@@ -381,6 +407,23 @@ async function switchSurface(surface) {
   } else if (surface === '2000ad') {
     await load2000AD();
   }
+}
+
+// Home's search bar has no list of its own to filter (it shows curated
+// strips) — typing a query redirects to the All tab with that query already
+// applied, since "Search All" is the label Home's search bar shows.
+async function redirectHomeSearchToAll(q) {
+  activeSurface = 'all';
+  document.querySelectorAll('.surface-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.surface === 'all');
+    b.setAttribute('aria-selected', String(b.dataset.surface === 'all'));
+  });
+  document.getElementById('homeView').hidden   = true;
+  document.getElementById('browseView').hidden = false;
+  document.getElementById('adView').hidden     = true;
+  updateSearchPlaceholder('all');
+  activeSearch = q;
+  await loadBrowse();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -884,6 +927,10 @@ function bindSearchEvents() {
   if (!input) return;
 
   const doSearch = debounce(q => {
+    if (activeSurface === 'home') {
+      if (q) redirectHomeSearchToAll(q);
+      return;
+    }
     activeSearch = q;
     renderBrowse();
   }, 260);
@@ -967,6 +1014,9 @@ function bindFilterEvents() {
     document.getElementById('coverGrid').classList.toggle('list-view', viewMode === 'list');
     viewBtn.textContent = viewMode === 'list' ? '⊞' : '☰';
   });
+
+  // Card size is set via Admin → Pagination; just apply whatever's stored.
+  applyCardSize(cardSize);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

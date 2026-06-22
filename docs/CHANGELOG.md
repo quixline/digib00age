@@ -7,6 +7,13 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-22** — Both Tier 3 items done: Home page search bar (copy unified
+  with the browse tabs — "Search All"/"Search Singles"/"Search Series"); card
+  size control (10%/25%/50%/100%), then reworked into Admin → Pagination and
+  extended to Home strips and the 2000 AD year picker (both had been missed
+  initially and stayed hardcoded). **`comicvault-changes-2.1.md` backlog now
+  fully closed** (renamed from `comicvault-changes.md`). →
+  `progress.md` "Session — 2026-06-22: Tier 3 — search bar + card size (+ rework)"
 - **2026-06-22** — All 9 Tier 2 ride-along items done: clickable genre tags
   on `/issue/{id}`, restyled "Clear" filter button, Format added to Grouping
   menu, "Mark all read" on 2000 AD Year page, pagination 25 option, Admin

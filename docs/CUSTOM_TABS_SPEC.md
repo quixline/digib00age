@@ -9,7 +9,8 @@
 > **Status:** Built and verified (2026-06-19) — see `progress.md` "V2.1 — Custom Tabs
 > Built (2026-06-19)" for the build log. This was the first v2.1 feature tackled; the
 > others (editable home strips — see `HOME_STRIPS_SPEC.md`, taskbar app changes, mobile
-> reader changes) are tracked in `comicvault-changes.md`, which supersedes the
+> reader changes) were tracked in `comicvault-changes-2.1.md` (closed
+> 2026-06-22, renamed from `comicvault-changes.md`), which supersedes the
 > now-removed `v2_1-main-new-features.md`.
 
 ---
