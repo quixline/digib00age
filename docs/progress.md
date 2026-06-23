@@ -1949,13 +1949,21 @@ Admin → Appearance theme select applies Light live with no layout breakage
 across the full library grid (covers, titles, status colours, gold borders
 all remained legible), persists correctly across a full page navigation/
 reload with no flash, and was switched back to "Match Windows" before
-ending the session. No console errors throughout. Did not test the Dark
-explicit-override option specifically (base palette already is dark, so
-this is the no-op case) or theme switching on `series.html`/`issue.html`/
-`editor_full.html`/`guide.html` directly — those share the same CSS
-variables and the same inline script as the pages that were tested, so risk
-is low, but flagging as unverified rather than claimed.
+ending the session. Did not test the Dark explicit-override option
+specifically (base palette already is dark, so this is the no-op case) or
+theme switching on `series.html`/`issue.html`/`editor_full.html`/
+`guide.html` directly — those share the same CSS variables and the same
+inline script as the pages that were tested, so risk is low, but flagging
+as unverified rather than claimed.
 
-**Docs updated:** this entry; `CHANGELOG.md`; `comicvault-changes-v2.3.md`
+**Bug found during manual test pass, not this session's regression to fix:**
+after switching the theme in Admin and navigating back to the library, hit
+"Failed to initialise. Cannot read properties of null (reading
+'addEventListener')" once. Not reproducible on retry; a hard refresh
+cleared it. Logged as BUG-012 (`BUGS.md`) rather than chased blind, since
+the exact null element isn't confirmed and it didn't recur.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `BUGS.md` (BUG-012);
+`comicvault-changes-v2.3.md`
 (Item 3 marked done); v2.3 build plan `build-plan.html` (Item 3 node marked
 done).
