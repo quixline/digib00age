@@ -269,7 +269,10 @@ let activeDecade    = '';
 let activeYear      = '';
 let activeRating    = '';
 let activeBW        = '';       // '' | yes | no
-let activeSort      = 'alpha';  // alpha | newest | recent
+let activeSort       = 'alpha'; // alpha | newest | recent | issues | pages
+let activeSortDir    = 'asc';   // asc | desc — MENU_BAR_SPEC.md §2.1
+let activeStars      = '';      // '' | 1-5 — personal star rating, MENU_BAR_SPEC.md §2.2
+let activeFavorites  = false;   // MENU_BAR_SPEC.md §2.3
 let activeGroupBy   = '';       // '' | year | genre | publisher | writer | format
 let activeSearch    = '';
 
@@ -376,6 +379,33 @@ function isFolderViewTab(surface) {
   return surface.startsWith('tab-') && tabViewModes[surface.slice(4)] === 'folder';
 }
 
+// Menu bar controls (sort/rated/favourites) act on whichever surface is
+// active — Flat View re-renders the cover grid, Folder View re-fetches/
+// re-filters the current folder level (MENU_BAR_SPEC.md §3).
+function renderActiveSurface() {
+  if (isFolderViewTab(activeSurface)) {
+    renderFolderView(activeSurface.slice(4), viewTabPath);
+  } else {
+    renderBrowse();
+  }
+}
+
+// MENU_BAR_SPEC.md §2.1 — "# of Pages" is suppressed on surfaces showing
+// aggregate cards: Series/Singles (page_count there is just the cover
+// issue's page count, not series-wide) and all of Folder View.
+function updateSortPagesOption(surface) {
+  const opt = document.getElementById('sortPagesOpt');
+  if (!opt) return;
+  const suppress = surface === 'series' || surface === 'singles' || isFolderViewTab(surface);
+  opt.hidden = suppress;
+  opt.disabled = suppress;
+  if (suppress && activeSort === 'pages') {
+    activeSort = 'alpha';
+    const sel = document.getElementById('sortSelect');
+    if (sel) sel.value = 'alpha';
+  }
+}
+
 // Search copy unified with the All tab — Home's search bar searches the same
 // flat library All does (see redirectHomeSearchToAll()), so it carries the
 // same label. Surfaces not listed here (fieldview/folderview, custom tabs)
@@ -405,7 +435,9 @@ async function switchSurface(surface, opts = {}) {
   document.getElementById('browseView').hidden = !isBrowse || folderTab;
   document.getElementById('folderView').hidden = !folderTab;
   document.getElementById('searchWrap').hidden = !(isBrowse || surface === 'home');
+  document.getElementById('menuBar').hidden    = !isBrowse;
   updateSearchPlaceholder(surface);
+  updateSortPagesOption(surface);
 
   if (surface === 'home') {
     // Clear search when switching surface
@@ -720,37 +752,51 @@ function getFilteredLibrary() {
   if (activeBW === 'yes') pool = pool.filter(s => s.has_bw);
   if (activeBW === 'no')  pool = pool.filter(s => !s.has_bw);
 
-  // Sort
-  if (activeSort === 'newest') {
-    pool = [...pool].sort((a, b) => (b.year || 0) - (a.year || 0));
-  } else if (activeSort === 'recent') {
-    // 'recent' = by date_added; not available per series in library response,
-    // so fall through to alpha (date_added would require a different endpoint)
-    pool = [...pool].sort((a, b) => a.series.localeCompare(b.series));
-  } else {
-    pool = [...pool].sort((a, b) =>
-      a.series.replace(/^['"]/,'').localeCompare(b.series.replace(/^['"]/,''))
-    );
-  }
+  // Menu bar — star rating + favourites (MENU_BAR_SPEC.md §2.2, §2.3)
+  if (activeStars)     pool = pool.filter(s => String(s.personal_rating || '') === activeStars);
+  if (activeFavorites) pool = pool.filter(s => !!s.favorites);
 
+  pool = [...pool].sort(sortComparator);
   return pool;
+}
+
+// MENU_BAR_SPEC.md §2.1 — unified sort dropdown + ascend/descend toggle.
+// 'recent' has no date_added field in the /library response, so it falls
+// through to alpha (same gap as before this item; not new).
+const SORT_KEY_FNS = {
+  alpha:  s => s.series.replace(/^['"]/, '').toLowerCase(),
+  newest: s => s.year || 0,
+  recent: s => s.series.replace(/^['"]/, '').toLowerCase(),
+  issues: s => s.issue_count || 0,
+  pages:  s => s.page_count  || 0,
+};
+
+function sortComparator(a, b) {
+  const keyFn = SORT_KEY_FNS[activeSort] || SORT_KEY_FNS.alpha;
+  const ka = keyFn(a), kb = keyFn(b);
+  const cmp = typeof ka === 'string' ? ka.localeCompare(kb) : ka - kb;
+  return activeSortDir === 'desc' ? -cmp : cmp;
 }
 
 function hasActiveFilters() {
   return activeSearch || activeStatus || activeGenre || activePublisher ||
     activeFormat || activeDecade ||
-    activeYear || activeRating || activeBW;
+    activeYear || activeRating || activeBW || activeStars || activeFavorites;
 }
 
 function clearAllFilters() {
   activeStatus = activeGenre = activePublisher =
-    activeFormat = activeDecade = activeYear = activeRating = activeBW = activeSearch = '';
+    activeFormat = activeDecade = activeYear = activeRating = activeBW = activeSearch = activeStars = '';
+  activeFavorites = false;
 
   ['genreFilter','publisherFilter',
-   'formatFilter','decadeFilter','yearFilter','ratingFilter','bwFilter'].forEach(id => {
+   'formatFilter','decadeFilter','yearFilter','ratingFilter','bwFilter','starRatingFilter'].forEach(id => {
     const el_ = document.getElementById(id);
     if (el_) { el_.value = ''; el_.classList.remove('active'); }
   });
+
+  const favBtn = document.getElementById('favFilterBtn');
+  if (favBtn) favBtn.classList.remove('active');
 
   document.querySelectorAll('.status-pill').forEach(p => {
     p.classList.toggle('active', p.dataset.status === '');
@@ -1026,15 +1072,32 @@ function bindFilterEvents() {
     renderBrowse();
   });
 
-  // Sort toggle
-  const sortBtn = document.getElementById('sortBtn');
-  const SORT_CYCLE = ['alpha', 'newest', 'recent'];
-  const SORT_LABELS = { alpha: 'A–Z', newest: 'Newest', recent: 'Recent' };
-  sortBtn.addEventListener('click', () => {
-    const idx = SORT_CYCLE.indexOf(activeSort);
-    activeSort = SORT_CYCLE[(idx + 1) % SORT_CYCLE.length];
-    sortBtn.textContent = SORT_LABELS[activeSort];
-    renderBrowse();
+  // Menu bar — sort dropdown + ascend/descend toggle (MENU_BAR_SPEC.md §2.1)
+  document.getElementById('sortSelect').addEventListener('change', e => {
+    activeSort = e.target.value;
+    renderActiveSurface();
+  });
+  document.getElementById('sortDirBtn').addEventListener('click', () => {
+    activeSortDir = activeSortDir === 'asc' ? 'desc' : 'asc';
+    document.getElementById('sortDirBtn').innerHTML = activeSortDir === 'asc' ? '&#8593;' : '&#8595;';
+    renderActiveSurface();
+  });
+
+  // Menu bar — star rating filter (MENU_BAR_SPEC.md §2.2). Reset to "all" is
+  // the dropdown's own empty "Rated" option, not a same-value reselect — a
+  // native <select> doesn't fire 'change' when the value doesn't change, so
+  // "second click on active resets" isn't reproducible via this control type.
+  document.getElementById('starRatingFilter').addEventListener('change', e => {
+    activeStars = e.target.value;
+    e.target.classList.toggle('active', !!activeStars);
+    renderActiveSurface();
+  });
+
+  // Menu bar — favourites filter toggle (MENU_BAR_SPEC.md §2.3)
+  document.getElementById('favFilterBtn').addEventListener('click', () => {
+    activeFavorites = !activeFavorites;
+    document.getElementById('favFilterBtn').classList.toggle('active', activeFavorites);
+    renderActiveSurface();
   });
 
   // Group by
@@ -1100,11 +1163,29 @@ async function renderFolderView(tabId, path) {
     return;
   }
 
-  grid.innerHTML = '';
-  for (const folder of data.folders) grid.appendChild(buildFolderCard(tabId, path, folder));
-  for (const file of data.files) grid.appendChild(buildFolderFileCard(file));
+  // Menu bar filters (MENU_BAR_SPEC.md §2.2, §2.3). Folder cards aren't
+  // individually rated, so the star filter only narrows flat file cards;
+  // a folder stays visible if any descendant issue is favourited (§2.3),
+  // using the has_favorite flag computed server-side.
+  let folders = data.folders;
+  let files   = data.files;
+  if (activeFavorites) {
+    folders = folders.filter(f => f.has_favorite);
+    files   = files.filter(f => !!f.favorites);
+  }
+  if (activeStars) {
+    files = files.filter(f => String(f.personal_rating || '') === activeStars);
+  }
+  // Sort applies to flat file cards; folder cards stay in the server's
+  // alphabetical order — most sort criteria (newest/issues/pages) don't map
+  // cleanly onto a folder aggregate the way they do a series aggregate.
+  files = [...files].sort(sortComparator);
 
-  if (!data.folders.length && !data.files.length) {
+  grid.innerHTML = '';
+  for (const folder of folders) grid.appendChild(buildFolderCard(tabId, path, folder));
+  for (const file of files) grid.appendChild(buildFolderFileCard(file));
+
+  if (!folders.length && !files.length) {
     grid.appendChild(el('div', 'empty-state', 'This folder is empty.'));
   }
 

@@ -271,6 +271,7 @@ def get_tab_folder_contents(
     direct_files: list[Issue] = []
     subfolder_counts: dict[str, int] = {}
     subfolder_issue_ids: dict[str, list[int]] = {}
+    subfolder_has_favorite: dict[str, bool] = {}
     for issue in under_target:
         issue_dir = normalize_path(os.path.dirname(issue.file_path))
         if issue_dir == target_dir:
@@ -280,6 +281,8 @@ def get_tab_folder_contents(
         immediate_child = rel.split(os.sep)[0]
         subfolder_counts[immediate_child] = subfolder_counts.get(immediate_child, 0) + 1
         subfolder_issue_ids.setdefault(immediate_child, []).append(issue.id)
+        if issue.favorites:
+            subfolder_has_favorite[immediate_child] = True
 
     progress_map = {
         p.issue_id: p
@@ -295,6 +298,7 @@ def get_tab_folder_contents(
             "cover_path": (
                 f"/api/cover/{random.choice(subfolder_issue_ids[name])}" if count else None
             ),
+            "has_favorite": subfolder_has_favorite.get(name, False),
         }
         for name, count in sorted(subfolder_counts.items(), key=lambda kv: kv[0].lower())
     ]

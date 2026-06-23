@@ -6,6 +6,30 @@ specs and aren't repeated. Newest first.
 
 ---
 
+### Multi-select scope corrected to include Series and Singles aggregate cards
+
+**Decided:** 2026-06-23, inbox triage.
+**Why:** Original scoping (`SPEC.md` §20.15, `comicvault-changes.md` Tier 4 Item 2)
+deliberately limited card-hold multi-select to elements that map 1:1 to a single
+issue — Singles surface cards, series-detail issue rows, Folder View flat file cards.
+Series-aggregate cards were explicitly excluded on the reasoning that Favorites should
+apply at the issue level and that a bulk action's meaning across a whole series
+(mark read? favorite? rate?) would be ambiguous.
+
+After using the library in practice, Tez found issue-only selection too limiting —
+Series and Singles cards should be selectable on the same terms as issues, with the
+same read/unread/favorite/rate bulk actions available. The "ambiguous meaning across
+many issues" concern was weighed and overridden: bulk-marking a series as read or
+favourited is a natural, common action and the ambiguity argument applies equally to
+the existing "Mark all read" series-detail button, which has always been there and is
+never confusing in practice.
+
+**Where:** `SPEC.md` §20.15 (scope boundary definition) — treat this entry as the
+correction before implementation begins. `SPEC.md` §20.15's explicit exclusion of
+Series-aggregate cards is superseded by this decision.
+
+---
+
 ### A scratch DB copy's `file_path` values still point at real, shared files — and ids aren't stable across separate scratch copies
 **Decided:** 2026-06-21, during Tier 4 Item 3 Session C verification.
 **Why:** Two related mistakes compounded into a real incident. (1) A "scratch DB" is
@@ -227,3 +251,13 @@ needing an edit to its metadata.
 a single Flutter codebase covers both Android and Windows rather than building two
 separate native readers.
 **Where:** `SPEC.md` §21 change log (2026-06-12 entry), `flutter_app/`.
+
+### Menu bar redesign: treated Item 2's inline bullets as the complete sort spec
+**Decided:** 2026-06-23, start of v2.3 build plan Item 2.
+**Why:** `comicvault-changes-v2.3.md` Item 2 pointed to a "sort controls section
+below" that doesn't exist anywhere in the doc — a dangling cross-reference, not an
+intentional placeholder. Rather than pause the session to draft that missing section,
+Tez chose to proceed using Item 2's own bullet list (A–Z / Newest / Recent / # of
+Issues / # of Pages + ascend/descend toggle) together with `MENU_BAR_SPEC.md` as the
+full spec.
+**Where:** `comicvault-changes-v2.3.md` Item 2, `MENU_BAR_SPEC.md`.

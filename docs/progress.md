@@ -1825,3 +1825,72 @@ mirrors; not separately driven in a browser this session.
 text already described the resolved design from earlier the same day — no
 further edit needed); `comicvault-changes-v2.3.md` (folder-card-images entry
 marked built).
+
+---
+
+## Session — 2026-06-23: v2.3 Item 2 — Menu bar redesign built
+
+Built the unified menu bar (`MENU_BAR_SPEC.md`) replacing the old three-state
+sort-cycle button, across both Flat View and Folder View.
+
+**Spec gap found and resolved before building:** `comicvault-changes-v2.3.md`
+Item 2 pointed to a "sort controls section below" within the same doc that
+doesn't exist — a dangling cross-reference. Tez opted to treat Item 2's own
+bullet list (A–Z / Newest / Recent / # of Issues / # of Pages + asc/desc
+toggle) plus `MENU_BAR_SPEC.md` as the complete spec rather than pause to
+write the missing section. Noted as a decision in `DECISIONS.md`.
+
+**Frontend (`frontend/index.html`, `frontend/js/app.js`, `frontend/css/style.css`):**
+- New shared `<div class="menu-bar">` sits above whichever surface is active
+  (Flat View or Folder View) — single markup block, not duplicated per
+  surface — containing: sort `<select>` (alpha/newest/recent/issues/pages),
+  an asc/desc toggle button, a star-rating `<select>` (1–5, separate from the
+  existing age-rating filter), a favourites toggle button, and the
+  pre-existing grid/list toggle (relocated here, logic unchanged). Hidden on
+  Home; the existing search bar already lived in the header and didn't need
+  to move.
+- New state: `activeSort` (extended with `issues`/`pages`), `activeSortDir`
+  (`asc`/`desc`), `activeStars`, `activeFavorites`. Old `sortBtn` cycle-button
+  code removed.
+- `getFilteredLibrary()` gained a shared `sortComparator()` keyed off
+  `activeSort`/`activeSortDir`, plus star-rating/favourites filter clauses.
+- `updateSortPagesOption(surface)` hides/disables the "Pages" sort option on
+  Series, Singles, and any Folder View tab — `page_count` on an aggregate
+  card is just the cover issue's page count, not series-wide, so the
+  criterion is genuinely misleading there (matches `MENU_BAR_SPEC.md` §3).
+- `renderFolderView()` now applies the same star/favourites filters and sort
+  to flat file cards. Folder cards themselves stay in the backend's
+  alphabetical order — most sort criteria (newest/issues/pages) don't map
+  onto a folder aggregate the way they do a series aggregate, so sorting
+  folders was left out of scope rather than guessing at a mapping.
+- Dropped a "second click on the active star rating resets to all" idea from
+  the spec — a native `<select>` doesn't fire `change` on a same-value
+  reselect, so it's not reproducible with this control type. The dropdown's
+  own empty "Rated" option covers the same reset behaviour in one extra
+  click.
+
+**Backend (`backend/routers/library.py`):** `get_tab_folder_contents()` now
+also tracks `subfolder_has_favorite` per subfolder in its existing one-pass
+loop, and returns a `has_favorite` flag per folder dict — needed so a folder
+card stays visible when filtering by favourites if any descendant issue
+(not just direct children) is favourited, per `MENU_BAR_SPEC.md` §2.3.
+
+**Verified:** ran the real server (`start_server.py`) against the live
+library (read-only — no writes from any check performed) and drove it via
+the Chrome MCP. Confirmed: sort-by-Issues ascending then descending reorders
+Series cards correctly; the Pages option is hidden (`#sortPagesOpt.hidden`)
+on Series and on the Folder View tab; the Rated dropdown filters to the
+single issue with a 5-star `personal_rating`; the Favourites toggle filters
+to the 3 currently-favourited issues on the All surface and correctly shows
+0 results combined with an unrelated rating on Series (no favourited series
+covers); Folder View shows the same menu bar, the Favourites toggle
+correctly filtered both folder cards and flat file cards (empty result where
+expected, given no favourited issues live under the "2000 AD" tab); no
+console errors at any point. Did not test list-view layout for the
+relocated grid/list toggle inside Folder View specifically (existing
+grid/list logic, unchanged, low risk) — flagging as untested rather than
+claiming full coverage.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `DECISIONS.md` (spec-gap
+resolution); `comicvault-changes-v2.3.md` (Item 2 marked done); v2.3 build
+plan `build-plan.html` (Item 2 node marked done).

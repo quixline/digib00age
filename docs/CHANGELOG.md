@@ -7,6 +7,12 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-23** — Unified menu bar (sort dropdown + asc/desc toggle, star
+  rating filter, favourites filter, shared grid/list toggle) shipped across
+  Flat View and Folder View, replacing the old three-state sort-cycle button.
+  Folder View gained full parity — sort/filter now apply there too, including
+  a new recursive "any descendant favourited" flag on folder cards. See
+  `MENU_BAR_SPEC.md` and v2.3 build plan Item 2.
 - **2026-06-23** — Folder View folder cards now show a representative cover
   image: one randomly-selected cached thumbnail from any issue recursively
   under that folder, re-rolled on every request. No new pipeline — reuses

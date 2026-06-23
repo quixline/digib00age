@@ -197,8 +197,19 @@ ul { list-style: none; }
 .status-pill:hover { color: var(--text-2); }
 .status-pill.active { background: var(--accent); color: #000; }
 
-/* Sort + grid/list buttons */
-.sort-btn, .view-toggle-btn {
+/* ── Unified menu bar (MENU_BAR_SPEC.md) — shared across Flat View and
+   Folder View; sits above whichever surface is active. ───────────────────── */
+.menu-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.sort-dir-btn, .view-toggle-btn, .fav-filter-btn {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -209,7 +220,8 @@ ul { list-style: none; }
   transition: border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
-.sort-btn:hover, .view-toggle-btn:hover { border-color: var(--accent); color: var(--text); }
+.sort-dir-btn:hover, .view-toggle-btn:hover, .fav-filter-btn:hover { border-color: var(--accent); color: var(--text); }
+.fav-filter-btn.active { border-color: var(--accent); color: var(--accent); }
 
 /* Grouping dropdown — slightly wider to fit "No grouping" */
 .group-by-select { max-width: 150px; }
