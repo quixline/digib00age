@@ -340,7 +340,7 @@ async function processBatch(mode) {
 
   const payload = { mode, increment_enabled: incrementEnabled, start_issue_no: startIssueNo };
   if (mode === 'all') {
-    payload.fields = await warnOnFuzzyCredits(collectFormFields());
+    payload.fields = await warnOnFuzzyCredits(collectFieldsForProcessAll());
     payload.file_ids = loadedFiles.map((f) => f.id);
   }
 
@@ -464,6 +464,24 @@ function collectFormFields() {
     Language: document.getElementById('fe-language').value,
     Notes: document.getElementById('fe-notes').value,
   };
+}
+
+// EDITOR_SPEC.md §5.2 amended note — Process All only bulk-applies fields
+// whose "Apply to: All" checkbox is checked; everything else is omitted so
+// build_xml_from_fields() (backend) leaves each file's existing value
+// untouched, the same way it already preserves any tag the editor doesn't
+// expose at all. Issue Number has no checkbox — it's governed entirely by
+// the separate increment_enabled/start_issue_no mechanism, never by this set.
+function collectFieldsForProcessAll() {
+  const all = collectFormFields();
+  const checked = new Set(
+    Array.from(document.querySelectorAll('.fe-apply-all:checked')).map((c) => c.dataset.field)
+  );
+  const result = {};
+  for (const field of checked) {
+    if (field in all) result[field] = all[field];
+  }
+  return result;
 }
 
 function updateActionButtonStates() {

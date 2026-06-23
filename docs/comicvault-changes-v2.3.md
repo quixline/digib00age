@@ -70,7 +70,9 @@ by the `DECISIONS.md` entry.
 
 ---
 
-## Item 5 — Full Editor: Process All per-field checkbox
+## ✅ Item 5 — Full Editor: Process All per-field checkbox
+
+Built 2026-06-23.
 
 **Spec:** `EDITOR_SPEC.md` §5.2 (amended note) + §12 change log
 

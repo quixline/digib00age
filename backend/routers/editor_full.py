@@ -397,14 +397,28 @@ def process_batch(payload: dict = Body(...)):
         path = paths[file_id]
         clean_fields = {k: v for k, v in field_values.items() if k in COMICINFO_TAGS}
 
-        field_errors = validate_enforced_fields(clean_fields)
+        try:
+            xml_files = find_xml_in_archive(path)
+            original_xml = extract_xml_from_archive(path, xml_files[0]) if xml_files else None
+        except Exception as exc:
+            errors.append(f"{os.path.basename(path)}: {exc}")
+            continue
+
+        # mode="all" with the per-field "Apply to: All" checkboxes (EDITOR_SPEC.md
+        # §5.2) can send a partial clean_fields — only the checked fields. The
+        # *effective* result after the merge in build_xml_from_fields is each
+        # file's own existing value for every unchecked field, so validation must
+        # check that merged effective state, not the bare (possibly Genre/Format/
+        # AgeRating-less) clean_fields dict on its own.
+        existing_fields = parse_comicinfo_xml(original_xml) if original_xml else {}
+        effective_fields = {**existing_fields, **clean_fields}
+
+        field_errors = validate_enforced_fields(effective_fields)
         if field_errors:
             errors.append(f"{os.path.basename(path)}: {'; '.join(field_errors)}")
             continue
 
         try:
-            xml_files = find_xml_in_archive(path)
-            original_xml = extract_xml_from_archive(path, xml_files[0]) if xml_files else None
             xml_content = build_xml_from_fields(clean_fields, original_xml)
             write_comicinfo_to_cbz(path, xml_content)
             processed += 1

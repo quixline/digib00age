@@ -7,6 +7,13 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-23** — Full Editor Process All gained a per-field "Apply to: All"
+  checkbox (default unchecked) — only checked fields bulk-apply across every
+  loaded file; unchecked fields keep each file's own value. Issue Number has
+  no checkbox (governed by the existing Increment # mechanism only). Backend
+  validation fix alongside it: enforced-field checks (Genre/Format/AgeRating)
+  now validate each file's *effective* merged result, not just the partial
+  checked-fields payload. See `EDITOR_SPEC.md` §5.2 and v2.3 build plan Item 5.
 - **2026-06-23** — Multi-select scope expanded to Series-aggregate cards:
   long-press-selecting a series card now expands to every issue in that
   series server-side before a bulk Read/Unread/Favorite/Rate action runs,

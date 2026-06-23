@@ -59,11 +59,17 @@
           <form id="feForm">
             <div class="editor-tab-panel" data-panel="main">
               <div class="editor-field">
-                <label for="fe-series">Series Title</label>
+                <div class="editor-field-head">
+                  <label for="fe-series">Series Title</label>
+                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Series"> Apply to: All</label>
+                </div>
                 <input type="text" id="fe-series" name="Series">
               </div>
               <div class="editor-field">
-                <label for="fe-title">Issue Title</label>
+                <div class="editor-field-head">
+                  <label for="fe-title">Issue Title</label>
+                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Title"> Apply to: All</label>
+                </div>
                 <input type="text" id="fe-title" name="Title">
               </div>
               <div class="editor-field-row fe-number-row">
@@ -75,29 +81,45 @@
                   <label><input type="checkbox" id="fe-increment"> Increment #</label>
                 </div>
                 <div class="editor-field">
-                  <label for="fe-year">Year</label>
+                  <div class="editor-field-head">
+                    <label for="fe-year">Year</label>
+                    <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Year"> Apply to: All</label>
+                  </div>
                   <input type="text" id="fe-year" name="Year" inputmode="numeric">
                 </div>
               </div>
               <div class="editor-field">
-                <label>Genre <span class="editor-required">*</span></label>
+                <div class="editor-field-head">
+                  <label>Genre <span class="editor-required">*</span></label>
+                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Genre"> Apply to: All</label>
+                </div>
                 <div class="editor-genre-grid" id="fe-genre-grid"></div>
               </div>
               <div class="editor-field-row">
                 <div class="editor-field">
-                  <label for="fe-format">Format <span class="editor-required">*</span></label>
+                  <div class="editor-field-head">
+                    <label for="fe-format">Format <span class="editor-required">*</span></label>
+                    <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Format"> Apply to: All</label>
+                  </div>
                   <select id="fe-format" name="Format"></select>
                 </div>
                 <div class="editor-field">
-                  <label for="fe-agerating">Age Rating <span class="editor-required">*</span></label>
+                  <div class="editor-field-head">
+                    <label for="fe-agerating">Age Rating <span class="editor-required">*</span></label>
+                    <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="AgeRating"> Apply to: All</label>
+                  </div>
                   <select id="fe-agerating" name="AgeRating"></select>
                 </div>
               </div>
-              <div class="editor-field editor-field-checkbox">
+              <div class="editor-field editor-field-checkbox editor-field-head">
                 <label><input type="checkbox" id="fe-bw" name="BlackAndWhite"> Black &amp; White</label>
+                <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="BlackAndWhite"> Apply to: All</label>
               </div>
               <div class="editor-field">
-                <label for="fe-summary">Summary</label>
+                <div class="editor-field-head">
+                  <label for="fe-summary">Summary</label>
+                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Summary"> Apply to: All</label>
+                </div>
                 <textarea id="fe-summary" name="Summary" rows="4"></textarea>
               </div>
             </div>
@@ -105,32 +127,53 @@
             <div class="editor-tab-panel" data-panel="more" hidden>
               <div class="editor-field-row">
                 <div class="editor-field">
-                  <label for="fe-count">Count</label>
+                  <div class="editor-field-head">
+                    <label for="fe-count">Count</label>
+                    <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Count"> Apply to: All</label>
+                  </div>
                   <input type="text" id="fe-count" name="Count">
                 </div>
                 <div class="editor-field">
-                  <label for="fe-pagecount">Page Count</label>
+                  <div class="editor-field-head">
+                    <label for="fe-pagecount">Page Count</label>
+                    <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="PageCount"> Apply to: All</label>
+                  </div>
                   <input type="text" id="fe-pagecount" name="PageCount">
                 </div>
               </div>
               <div class="editor-field">
-                <label for="fe-writer">Writer</label>
+                <div class="editor-field-head">
+                  <label for="fe-writer">Writer</label>
+                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Writer"> Apply to: All</label>
+                </div>
                 <input type="text" id="fe-writer" name="Writer">
               </div>
               <div class="editor-field">
-                <label for="fe-penciller">Penciller</label>
+                <div class="editor-field-head">
+                  <label for="fe-penciller">Penciller</label>
+                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Penciller"> Apply to: All</label>
+                </div>
                 <input type="text" id="fe-penciller" name="Penciller">
               </div>
               <div class="editor-field">
-                <label for="fe-publisher">Publisher</label>
+                <div class="editor-field-head">
+                  <label for="fe-publisher">Publisher</label>
+                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Publisher"> Apply to: All</label>
+                </div>
                 <input type="text" id="fe-publisher" name="Publisher">
               </div>
               <div class="editor-field">
-                <label for="fe-storyarc">Story Arc</label>
+                <div class="editor-field-head">
+                  <label for="fe-storyarc">Story Arc</label>
+                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="StoryArc"> Apply to: All</label>
+                </div>
                 <input type="text" id="fe-storyarc" name="StoryArc">
               </div>
               <div class="editor-field">
-                <label for="fe-language">Language</label>
+                <div class="editor-field-head">
+                  <label for="fe-language">Language</label>
+                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Language"> Apply to: All</label>
+                </div>
                 <input type="text" id="fe-language" name="Language" list="fe-language-options">
                 <datalist id="fe-language-options">
                   <option value="English">
@@ -141,7 +184,10 @@
                 </datalist>
               </div>
               <div class="editor-field">
-                <label for="fe-notes">Notes</label>
+                <div class="editor-field-head">
+                  <label for="fe-notes">Notes</label>
+                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Notes"> Apply to: All</label>
+                </div>
                 <input type="text" id="fe-notes" name="Notes">
               </div>
             </div>

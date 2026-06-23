@@ -1855,6 +1855,36 @@ ul { list-style: none; }
   color: var(--text-2);
 }
 .editor-required { color: var(--accent); }
+
+/* EDITOR_SPEC.md §5.2 amended note — per-field "Apply to: All" checkbox for
+   Process All (default unchecked). Sits opposite the field's own label;
+   Issue Number has no equivalent, it's covered by the separate Increment #
+   checkbox/mechanism instead. */
+.editor-field-head {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.fe-apply-all-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-3);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fe-apply-all-label input { cursor: pointer; }
+/* Beats #feForm .editor-field-checkbox label's specificity so the BlackAndWhite
+   row's "Apply to: All" label keeps the same muted styling as every other field's. */
+#feForm .editor-field-checkbox label.fe-apply-all-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-3);
+}
 .editor-field input[type="text"],
 .editor-field select,
 .editor-field textarea {

@@ -2021,5 +2021,65 @@ testing standard.
 **Docs updated:** this entry; `CHANGELOG.md`; `SPEC.md` §20.15;
 `comicvault-changes-v2.3.md` (Item 4 marked done); v2.3 build plan
 `build-plan.html` (Item 4 node marked done).
+
+---
+
+## Session — 2026-06-23/24: v2.3 Item 5 — Full Editor Process All per-field checkbox built
+
+Built the `EDITOR_SPEC.md` §5.2 amended note: every Full Editor field except
+Issue Number gets an "Apply to: All" checkbox (default unchecked); Process
+All only bulk-applies checked fields, leaving unchecked fields at each
+file's own existing value.
+
+**`frontend/editor_full.html`:** added a `.fe-apply-all` checkbox
+(`data-field="<FieldName>"`) next to every field's label, wrapped in a new
+`.editor-field-head` row (flex, space-between). Issue Number gets none —
+unchanged, still governed solely by the existing "Increment #" checkbox.
+
+**`frontend/js/editor_full.js`:** new `collectFieldsForProcessAll()` reads
+`collectFormFields()`'s full set, then returns only the keys whose
+`.fe-apply-all` checkbox is checked. `processBatch('all')` now calls this
+instead of the unconditional `collectFormFields()`. No changes needed to
+`populateForm()`/`resetForm()` — the checkboxes live inside `#feForm`, so
+the native `form.reset()` that "Clear List" already calls correctly wipes
+them back to unchecked, and switching focus between loaded files (which
+doesn't touch `#feForm`'s reset) correctly leaves the checkboxes alone,
+since they represent batch-wide intent, not a per-file value.
+
+**`backend/routers/editor_full.py` `process_batch()`, mode="all" — real bug
+found and fixed, not just the checkbox plumbing:** the existing
+`validate_enforced_fields()` call only ever saw `clean_fields` (now
+correctly just the checked subset). With Genre/Format/AgeRating unchecked,
+validation failed immediately — "Genre: at least one value is required" —
+even though each file's own existing Genre was already valid and would be
+left untouched by `build_xml_from_fields()`'s existing tag-preservation
+behaviour. Fixed by computing `effective_fields = {**existing_fields,
+**clean_fields}` (existing file's parsed XML merged under the checked
+overrides) and validating *that* instead — matches what actually ends up in
+the file. `mode="queue"` is unaffected: queued fields are always a full
+form snapshot already, so the merge contributes nothing new there.
+
+**Verified — against scratch copies, never the real library:** copied two
+small real singles CBZs (`100 Scenes`, `1000 Ways To Die`) into a new
+`_scratch_item5_test` folder under the real `library_root` (file picker is
+hard-scoped to `library_root`, so testing required a folder inside it — the
+copies, not the originals, were the only thing ever written to). Loaded
+both into the real running Full Editor via the actual `/api/editor/full/files/add`
+endpoint, set Publisher + AgeRating with their "Apply to: All" boxes
+checked to a shared value, left every other field unchecked, and ran the
+real `/api/editor/full/process` endpoint (first via the actual Process All
+button click, then directly to rule out a UI-side state issue after an
+inconclusive first click). Confirmed: both files ended up with the same
+checked Publisher/AgeRating; Series, Writer, Genre, BlackAndWhite, and
+Number all stayed at each file's own original per-file value; a follow-up
+run with `increment_enabled: true` correctly stamped sequential Number
+values (5, 6) without disturbing anything else. No console errors. Deleted
+the entire scratch folder afterward and confirmed (by construction — no
+write call ever targeted the original paths) the two real source files
+were untouched.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `comicvault-changes-v2.3.md`
+(Item 5 marked done); v2.3 build plan `build-plan.html` (Item 5 node marked
+done).
 (Item 3 marked done); v2.3 build plan `build-plan.html` (Item 3 node marked
 done).
