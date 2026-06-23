@@ -56,7 +56,9 @@ Four visual changes, all frontend:
 
 ---
 
-## Item 4 — Multi-select scope expansion
+## ✅ Item 4 — Multi-select scope expansion
+
+Built 2026-06-23.
 
 **Spec:** `DECISIONS.md` (multi-select scope correction, 2026-06-23)
 

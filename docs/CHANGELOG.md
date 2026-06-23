@@ -7,6 +7,11 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-23** — Multi-select scope expanded to Series-aggregate cards:
+  long-press-selecting a series card now expands to every issue in that
+  series server-side before a bulk Read/Unread/Favorite/Rate action runs,
+  same meaning as the existing "Mark all read" series-detail button. See
+  `SPEC.md` §20.15 and v2.3 build plan Item 4.
 - **2026-06-23** — Card behaviour additions shipped: larger favourite-star
   badge with a black border, a thin gold border on favourited cards
   (coexisting with the existing read-state colours), a wider issue-page star

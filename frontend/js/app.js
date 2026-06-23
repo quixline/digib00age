@@ -31,18 +31,22 @@ function debounce(fn, ms) {
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  MULTI-SELECT — long-press to select, short tap to add more
-//  Only attached to elements that map 1:1 to a single issue (Singles cards,
-//  series-detail issue rows, Folder View flat file cards) — never series-
-//  aggregate cards, where a bulk action's meaning would be ambiguous.
+//  Attached to single-issue elements (Singles cards, series-detail issue
+//  rows, Folder View flat file cards) and, as of DECISIONS.md's 2026-06-23
+//  scope correction, Series-aggregate cards too. A selection entry's kind
+//  ('issue' | 'series') is tracked in selectedIds so a bulk action can
+//  expand a selected series into all its issue ids server-side, while still
+//  patching just the one series card's own DOM node + cached counts
+//  afterward — see resolveBulkIssueIds().
 // ══════════════════════════════════════════════════════════════════════════════
 
 const LONG_PRESS_MS         = 500;
 const PRESS_MOVE_TOLERANCE  = 10;  // px — a drag/scroll cancels the long-press
 
 let selectionActive = false;
-const selectedIds   = new Map();   // issue id -> true
+const selectedIds   = new Map();   // id -> 'issue' | 'series'
 
-function makeSelectable(element, issueId) {
+function makeSelectable(element, issueId, kind = 'issue') {
   element.dataset.issueId = issueId;
 
   let pressTimer     = null;
@@ -58,8 +62,8 @@ function makeSelectable(element, issueId) {
     clearPress();
     pressTimer = setTimeout(() => {
       longPressFired = true;
-      if (!selectionActive) enterSelectionMode(issueId);
-      else toggleSelected(issueId);
+      if (!selectionActive) enterSelectionMode(issueId, kind);
+      else toggleSelected(issueId, kind);
     }, LONG_PRESS_MS);
   });
 
@@ -76,7 +80,7 @@ function makeSelectable(element, issueId) {
     clearPress();
     if (selectionActive) {
       e.preventDefault();
-      if (!firedLongPress) toggleSelected(issueId);  // short tap while already selecting
+      if (!firedLongPress) toggleSelected(issueId, kind);  // short tap while already selecting
     }
     // else: plain short tap, no long-press — let the <a href> navigate normally
   });
@@ -95,10 +99,10 @@ document.addEventListener('click', (e) => {
   }
 }, true);
 
-function enterSelectionMode(firstId) {
+function enterSelectionMode(firstId, kind) {
   selectionActive = true;
   showSelectionToolbar();
-  toggleSelected(firstId);
+  toggleSelected(firstId, kind);
 }
 
 function exitSelectionMode() {
@@ -112,9 +116,9 @@ function exitSelectionMode() {
   hideSelectionToolbar();
 }
 
-function toggleSelected(id) {
+function toggleSelected(id, kind = 'issue') {
   if (selectedIds.has(id)) selectedIds.delete(id);
-  else selectedIds.set(id, true);
+  else selectedIds.set(id, kind);
 
   const node = document.querySelector(`[data-issue-id="${id}"]`);
   if (node) node.classList.toggle('selected', selectedIds.has(id));
@@ -193,16 +197,38 @@ function updateSelectionToolbar() {
   if (countEl) countEl.textContent = `${selectedIds.size} selected`;
 }
 
+// Expands any selected series-aggregate entries into every issue id under
+// that series (via the same /series/{id} endpoint the series-detail page
+// already uses), so the server-side bulk action actually applies to the
+// whole series — not just its cover issue. Plain issue selections pass
+// through unchanged.
+async function resolveBulkIssueIds() {
+  const ids = new Set();
+  await Promise.all(Array.from(selectedIds.entries()).map(async ([id, kind]) => {
+    if (kind === 'series') {
+      const data = await apiFetch(`/series/${id}`);
+      for (const issue of data.issues) ids.add(issue.id);
+    } else {
+      ids.add(id);
+    }
+  }));
+  return Array.from(ids);
+}
+
 async function runBulkAction(path, extraBody, applyFn) {
-  const ids = Array.from(selectedIds.keys());
-  if (!ids.length) return;
+  const originalIds = Array.from(selectedIds.keys());
+  if (!originalIds.length) return;
   try {
+    const issueIds = await resolveBulkIssueIds();
     await fetch(`${API}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ issue_ids: ids, ...extraBody }),
+      body: JSON.stringify({ issue_ids: issueIds, ...extraBody }),
     });
-    if (applyFn) applyFn(ids);
+    // Patch DOM/cache using the originally selected ids (series cards and
+    // their cached aggregate counts), not the expanded per-issue ids —
+    // there's no individual DOM node for issues inside an unopened series.
+    if (applyFn) applyFn(originalIds);
   } catch (_) {
     // Best-effort — selection still clears; a reload reflects true server state.
   }
@@ -937,9 +963,10 @@ function buildCoverCard(s) {
   const card = el('a', `cover-card ${state}${s.favorites ? ' is-favorite' : ''}`);
   card.href  = href;
 
-  // Multi-select only on single-issue cards (Singles) — series-aggregate
-  // cards stay click-to-navigate only (Tier 4 Item 2 scope decision).
-  if (isSingle) makeSelectable(card, s.series_anchor_id);
+  // Multi-select: Singles cards select their one underlying issue directly;
+  // Series-aggregate cards select the whole series (DECISIONS.md 2026-06-23
+  // scope correction — previously series-aggregate cards were navigation-only).
+  makeSelectable(card, s.series_anchor_id, isSingle ? 'issue' : 'series');
 
   const wrap = el('div', 'cover-img-wrap');
   const img  = el('img');

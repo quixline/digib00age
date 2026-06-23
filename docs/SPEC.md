@@ -889,24 +889,31 @@ Recorded so they aren't mistaken for code changes:
 - Series-level overview field (needs XML + DB + editor changes).
 - Advanced Search page (if inline filter+search proves insufficient).
 
-### 20.15 Multi-select Scope Boundary (Tier 4 Item 2, 2026-06-21)
+### 20.15 Multi-select Scope Boundary (Tier 4 Item 2, 2026-06-21; expanded 2026-06-23)
 
 Long-press-to-select and the bulk Read/Unread/Favorite/Rate toolbar (`comicvault-
-changes.md` Tier 4 Item 2) only attach to elements that map **1:1 to a single issue**:
+changes.md` Tier 4 Item 2) attach to:
 
 - Singles surface cards, and Singles-type cards on the All surface (`buildCoverCard()`,
-  gated on `format_group === 'Singles'`).
-- Series-detail issue rows (`buildIssueRow()`).
+  gated on `format_group === 'Singles'`) — map 1:1 to a single issue.
+- Series-detail issue rows (`buildIssueRow()`) — map 1:1 to a single issue.
 - Folder View flat file cards (`buildFolderFileCard()` — was `buildAdProgCard()`'s
-  2000 AD prog cards until v2.2 generalised it; see `CUSTOM_TABS_SPEC.md` §9).
+  2000 AD prog cards until v2.2 generalised it; see `CUSTOM_TABS_SPEC.md` §9) — map
+  1:1 to a single issue.
+- **Series-aggregate cards** (Series surface, series-type cards on All) — map to every
+  issue in that series. A bulk action against a selected series card expands to the
+  series' full issue-id list server-side (`resolveBulkIssueIds()`, via the same
+  `/series/{id}` endpoint the series-detail page uses) before calling the existing
+  bulk endpoints, so "Mark Read"/"Mark Unread"/"Favorite"/rate apply to every issue in
+  the series — the same meaning the existing series-detail "Mark all read" button has
+  always had. Originally excluded on the reasoning that a bulk action's meaning across
+  many issues would be ambiguous; superseded 2026-06-23 (`DECISIONS.md`) after Tez
+  found issue-only selection too limiting in practice.
 
-**Series-aggregate cards (Series surface, series-type cards on All) are deliberately
-excluded** — a card there represents many issues, and a bulk action's meaning (mark
-read? favorite? rate?) would be ambiguous across all of them. Clicking/long-pressing a
-series-aggregate card stays a plain navigation, unchanged from before this feature.
-Any future surface or card type added to a browse view needs to make the same call
+Any future surface or card type added to a browse view still needs to make this call
 explicitly — don't assume multi-select should "just work" on a new card type without
-deciding what a bulk action means for it first.
+deciding what a bulk action means for it first (1:1 passthrough, or an expansion like
+Series cards', or genuinely excluded).
 
 Favorites has **no dedicated browse surface yet** — a favorite badge renders on
 eligible cards/rows when set, and the issue detail page shows favorite state + a 1–5

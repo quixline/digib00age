@@ -1965,5 +1965,61 @@ the exact null element isn't confirmed and it didn't recur.
 
 **Docs updated:** this entry; `CHANGELOG.md`; `BUGS.md` (BUG-012);
 `comicvault-changes-v2.3.md`
+
+---
+
+## Session — 2026-06-23: v2.3 Item 4 — Multi-select scope expansion built
+
+Extended long-press multi-select to Series-aggregate cards, per
+`DECISIONS.md`'s 2026-06-23 scope correction (Singles cards already worked —
+each Singles card maps 1:1 to one issue, so they were never actually
+excluded; only true Series-aggregate cards were).
+
+**`frontend/js/app.js`:**
+- `selectedIds` now maps `id -> 'issue' | 'series'` instead of `id -> true`.
+  `makeSelectable(element, issueId, kind = 'issue')` takes a third param;
+  `enterSelectionMode`/`toggleSelected` thread it through.
+- New `resolveBulkIssueIds()`: for each selected entry, a plain `'issue'`
+  passes through unchanged; a `'series'` entry fetches `/api/series/{id}`
+  (the same endpoint the series-detail page already uses) and adds every
+  one of its issue ids. `runBulkAction()` sends this expanded, deduplicated
+  list to the existing bulk endpoints, but calls `applyFn` with the
+  *original* (unexpanded) selected ids — there's no DOM node for individual
+  issues inside an unopened series card, so patching only the series card's
+  own node + cached aggregate counts is correct and sufficient.
+  `applyReadStateToDom`/`applyFavoriteToDom` needed no changes at all: they
+  already key off `series_anchor_id`, which is the same id used for both
+  Singles and Series cards.
+- `buildCoverCard()`: removed the `isSingle` gate on `makeSelectable()` —
+  now always called, with `kind` set from `isSingle`.
+
+**`backend/`:** no changes — reuses the existing bulk endpoints and the
+existing `/series/{id}` endpoint as-is.
+
+**`docs/SPEC.md` §20.15:** rewritten to describe Series-aggregate cards as
+expanding to their full issue list rather than being excluded; old
+"ambiguous meaning" exclusion text removed since `DECISIONS.md` already
+explains why it was superseded.
+
+**Verified:** ran the real server against the live library, drove it via
+Chrome. Deliberately avoided firing any actual bulk-action POST against the
+real DB (that would write real reading-progress/favourite/rating changes) —
+instead verified the new logic two ways: (1) dispatched genuine `PointerEvent`
+long-press sequences (not manual function calls) on a real Series card
+("2000 AD") and a real Singles card, confirming `kind` resolves to
+`'series'` and `'issue'` respectively straight from `buildCoverCard()`'s
+actual wiring, with the `.selected` class applied correctly either way; (2)
+called the new `resolveBulkIssueIds()` directly (GET-only, no write) against
+a real 5-issue series ("47 Ronin", id 20) and confirmed its output matches
+`/api/series/20`'s issue list exactly, plus confirmed it correctly merges a
+mixed series+plain-issue selection without duplicates. No console errors.
+Did not exercise an actual Mark Read/Favorite/Rate click against a selected
+series card end-to-end against real data — the resolution and selection
+logic were verified independently instead, per the no-real-data-writes
+testing standard.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `SPEC.md` §20.15;
+`comicvault-changes-v2.3.md` (Item 4 marked done); v2.3 build plan
+`build-plan.html` (Item 4 node marked done).
 (Item 3 marked done); v2.3 build plan `build-plan.html` (Item 3 node marked
 done).
