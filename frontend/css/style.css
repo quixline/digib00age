@@ -18,6 +18,42 @@
   --card-min: 120px;
 }
 
+/* Light theme (SPEC.md §20.17) — applied either by explicit override
+   (data-theme="light", set by the Admin Appearance setting) or by following
+   the OS preference when no override is stored (data-theme absent). The
+   override attribute is set by a render-blocking inline script in each
+   page's <head> so there's no dark-then-light flash on load. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: #f5f4f2;
+    --surface: #ffffff;
+    --surface-2: #ececea;
+    --surface-3: #dddbd8;
+    --accent: #6e54c9;
+    --accent-dim: #8b6ef5;
+    --text: #1a1a1c;
+    --text-2: #55555c;
+    --text-3: #8a8a90;
+    --green: #2f8f55;
+    --blue: #2a6fd1;
+    --border: #d8d6d2;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #f5f4f2;
+  --surface: #ffffff;
+  --surface-2: #ececea;
+  --surface-3: #dddbd8;
+  --accent: #6e54c9;
+  --accent-dim: #8b6ef5;
+  --text: #1a1a1c;
+  --text-2: #55555c;
+  --text-3: #8a8a90;
+  --green: #2f8f55;
+  --blue: #2a6fd1;
+  --border: #d8d6d2;
+}
+
 /* ── Reset ───────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 /* Ensure hidden attribute wins over any author display values */
@@ -438,7 +474,9 @@ ul { list-style: none; }
 }
 .cover-card.selected { transform: translateY(-3px); }
 
-/* Favorite badge — small star, opposite corner from the unread badge */
+/* Favorite badge — small star, opposite corner from the unread badge.
+   SPEC.md §20.17: +5px size, 1px solid black border, for visibility against
+   light or busy cover images. */
 .cover-card.is-favorite .cover-img-wrap::before,
 .issue-row.is-favorite .issue-thumb::before {
   content: '★';
@@ -446,11 +484,25 @@ ul { list-style: none; }
   top: 6px;
   left: 6px;
   color: #f0c419;
-  font-size: 13px;
+  font-size: 18px;
+  border: 1px solid #000;
+  border-radius: 50%;
+  line-height: 1;
+  padding: 1px;
+  background: rgba(0, 0, 0, 0.35);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   z-index: 1;
 }
 .issue-row.is-favorite .issue-thumb { position: relative; }
+
+/* Favourited card border — thin gold ring around the whole card outline,
+   coexisting with (not replacing) the read-state background/gradient above.
+   A box-shadow ring rather than `border-color` so it doesn't fight the
+   existing hover/selected border-color rules. SPEC.md §20.17. */
+.cover-card.is-favorite,
+.issue-row.is-favorite {
+  box-shadow: 0 0 0 1px #f0c419;
+}
 
 /* Read-state card colours */
 
@@ -1030,14 +1082,17 @@ ul { list-style: none; }
   border-color: #f0c419;
   color: #f0c419;
 }
+/* SPEC.md §20.17 — larger stars + space-between (no fixed gap) so the row
+   fills the same width as the button column below it, instead of sitting
+   centered with blank margin either side at the old smaller star size. */
 .rating-control {
   display: flex;
-  justify-content: center;
-  gap: 4px;
+  justify-content: space-between;
+  width: 100%;
   padding: 4px 0;
 }
 .rating-control .rating-star {
-  font-size: 18px;
+  font-size: 30px;
   line-height: 1;
   color: var(--surface-3);
   transition: color 0.15s, transform 0.1s;

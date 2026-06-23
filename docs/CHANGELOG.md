@@ -7,6 +7,12 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-23** — Card behaviour additions shipped: larger favourite-star
+  badge with a black border, a thin gold border on favourited cards
+  (coexisting with the existing read-state colours), a wider issue-page star
+  rating row, and a new light/dark theme system (auto-matches Windows, with
+  a manual override in Admin → Appearance). See `SPEC.md` §20.17 and v2.3
+  build plan Item 3.
 - **2026-06-23** — Unified menu bar (sort dropdown + asc/desc toggle, star
   rating filter, favourites filter, shared grid/list toggle) shipped across
   Flat View and Folder View, replacing the old three-state sort-cycle button.

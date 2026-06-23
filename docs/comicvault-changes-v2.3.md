@@ -41,9 +41,9 @@ Folder View gets full parity — see `MENU_BAR_SPEC.md` §3 for the full surface
 
 ---
 
-## Item 3 — Card behaviour additions
+## ✅ Item 3 — Card behaviour additions
 
-**Spec:** `SPEC.md` §20.17
+Built 2026-06-23. **Spec:** `SPEC.md` §20.17
 
 Four visual changes, all frontend:
 1. Favourite star (card top-left): +5px size, 1px solid black border.

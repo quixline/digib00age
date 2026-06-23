@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ComicVault — Admin</title>
+  <script>(function(){var t=localStorage.getItem('cv_theme');if(t&&t!=='auto')document.documentElement.dataset.theme=t;})();</script>
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body data-page="admin">
@@ -98,6 +99,22 @@
             <option value="100">100%</option>
           </select>
           <span class="admin-hint">Applies to Series, Singles, All, and Home strips.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Appearance (SPEC.md §20.17) ─────────────────────────────────────── -->
+    <section class="admin-section">
+      <h2 class="admin-section-heading">Appearance</h2>
+      <div class="admin-card">
+        <div class="admin-card-label">Theme</div>
+        <div class="pagination-setting-row">
+          <select class="admin-select" id="themeSelect" aria-label="Theme">
+            <option value="auto">Match Windows</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+          <span class="admin-hint">"Match Windows" follows your system's dark/light setting.</span>
         </div>
       </div>
     </section>

@@ -1894,3 +1894,68 @@ claiming full coverage.
 **Docs updated:** this entry; `CHANGELOG.md`; `DECISIONS.md` (spec-gap
 resolution); `comicvault-changes-v2.3.md` (Item 2 marked done); v2.3 build
 plan `build-plan.html` (Item 2 node marked done).
+
+---
+
+## Session — 2026-06-23: v2.3 Item 3 — Card behaviour additions built
+
+Built all four `SPEC.md` §20.17 bullets — this item's spec was self-contained
+(no dangling references like Item 2's).
+
+**Favourite star + gold card border (`frontend/css/style.css`):** the
+`::before`-rendered star badge grew from 13px to 18px and gained a 1px solid
+black border plus a circular semi-transparent backing (so the border reads
+clearly against any cover art, not just busy ones). Implemented as
+`border-radius: 50%` + small padding around the glyph, not a literal square
+border around the character. Favourited cards (`.cover-card.is-favorite`,
+`.issue-row.is-favorite`) also get a thin gold `box-shadow` ring around the
+whole card — a box-shadow rather than `border-color` specifically so it
+doesn't fight the existing hover/selected `border-color` rules, which would
+otherwise visually override or conflict with it.
+
+**Issue-page star rating row (`frontend/css/style.css`, `.rating-control`):**
+swapped `justify-content: center` + fixed 4px gap for `justify-content:
+space-between` + `width: 100%`, and increased star size 18px → 30px. The row
+now spans the same width as the action buttons below it instead of sitting
+centered with blank margin either side.
+
+**Dark/Light theme — new system, no prior infrastructure existed:**
+- `frontend/css/style.css`: added a light palette as CSS variable overrides,
+  applied two ways — `@media (prefers-color-scheme: light) { :root:not([data-theme]) {...} }`
+  for following the OS when no override is stored, and `:root[data-theme="light"]`
+  for an explicit override regardless of OS. No explicit `dark` override
+  block needed since the base `:root` is already dark.
+- Every page's `<head>` (`index.html`, `series.html`, `issue.html`,
+  `admin.html`, `editor_full.html`, `guide.html`) gained a tiny
+  render-blocking inline `<script>` before the stylesheet `<link>`, reading
+  `localStorage.cv_theme` and setting `data-theme` on `<html>` before any
+  CSS is applied — avoids a dark-then-light flash on load for users who've
+  set an explicit override. `editor_basic.html` didn't need this; it's a
+  fragment injected into pages that already have the script.
+- New "Appearance" section in `admin.html`, ungated (not inside the existing
+  "Advanced Settings" unlock) since a theme preference isn't a destructive
+  or technical setting — same tier as the existing Pagination/Card-size
+  controls. `initTheme()` in `admin.js` follows the exact pattern of
+  `initPagination()`/`initCardSize()`: read `localStorage`, sync the
+  `<select>`, write back + apply `data-theme` live on change. "Auto" deletes
+  the `data-theme` attribute so the `prefers-color-scheme` media query takes
+  over again.
+
+**Verified:** ran the real server against the live library, drove it via
+Chrome. Confirmed: favourite badge renders at the new size/border on real
+favourited cards; gold card border coexists visibly with the green
+fully-read background; issue-page rating row now matches button-row width;
+Admin → Appearance theme select applies Light live with no layout breakage
+across the full library grid (covers, titles, status colours, gold borders
+all remained legible), persists correctly across a full page navigation/
+reload with no flash, and was switched back to "Match Windows" before
+ending the session. No console errors throughout. Did not test the Dark
+explicit-override option specifically (base palette already is dark, so
+this is the no-op case) or theme switching on `series.html`/`issue.html`/
+`editor_full.html`/`guide.html` directly — those share the same CSS
+variables and the same inline script as the pages that were tested, so risk
+is low, but flagging as unverified rather than claimed.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `comicvault-changes-v2.3.md`
+(Item 3 marked done); v2.3 build plan `build-plan.html` (Item 3 node marked
+done).

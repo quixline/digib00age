@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadConfig();
   initPagination();
   initCardSize();
+  initTheme();
 
   document.getElementById('backupBtn').addEventListener('click', doBackup);
   document.getElementById('addRootBtn').addEventListener('click', addRoot);
@@ -424,6 +425,22 @@ function initCardSize() {
   sel.addEventListener('change', () => {
     localStorage.setItem('cv_card_size', sel.value);
     showToast(`Card size set to ${sel.value}%`);
+  });
+}
+
+// ── Theme (SPEC.md §20.17) — "auto" means no override; let the
+// prefers-color-scheme CSS media query decide, same as if nothing were ever
+// chosen. Explicit light/dark sets data-theme on <html>, mirrored by the
+// anti-flash inline script each page's <head> runs on load. ───────────────────
+function initTheme() {
+  const sel   = document.getElementById('themeSelect');
+  const saved = localStorage.getItem('cv_theme') || 'auto';
+  sel.value   = saved;
+  sel.addEventListener('change', () => {
+    localStorage.setItem('cv_theme', sel.value);
+    if (sel.value === 'auto') delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = sel.value;
+    showToast(sel.value === 'auto' ? 'Theme set to match Windows' : `Theme set to ${sel.value}`);
   });
 }
 
