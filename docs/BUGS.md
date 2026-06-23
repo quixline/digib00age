@@ -8,6 +8,73 @@ Add new entries at the top. Mark fixed entries with the date and what was change
 
 ## OPEN
 
+### BUG-012 — Library fails to initialise after changing theme in Admin, then navigating back
+
+**Found:** 2026-06-23, manual test pass during v2.3 Item 3 (card behaviour additions).
+
+**Where:** Library page (`/`), right after switching the Admin → Appearance theme
+setting and navigating back to the library.
+
+**Impact:** Library shows "Failed to initialise. Cannot read properties of null
+(reading 'addEventListener')" with a Retry button, instead of loading normally.
+`initLibrary()`'s catch block (`frontend/js/app.js`) is catching a `null.addEventListener`
+call from one of `bindSurfaceNav()`/`bindFilterEvents()`/`bindSearchEvents()` — exactly
+which element was null isn't confirmed yet. A hard refresh cleared it immediately, and
+repeating the theme switch + back-navigation afterward did not reproduce it — so this
+looks like a one-time/intermittent state issue (possibly browser back/forward-cache
+restoring a stale DOM, or a race between the new theme anti-flash inline script and
+the rest of page load), not a deterministic break in the new theme code itself.
+
+**Not fixed** — not reproducible yet; needs a dedicated repro attempt (try: browser
+back-button vs. clicking a nav link back to `/`, with/without bfcache, with the new
+per-page inline theme script in `<head>`) before a real fix can be scoped.
+
+---
+
+### BUG-011 — Admin "Scan Roots" Add button doesn't open file dialog
+
+**Found:** 2026-06-23, inbox triage.
+
+**Where:** Admin page — "Add" button under Scan Roots / Library Folders section.
+
+**Impact:** Clicking "Add" should open a folder/file picker dialog so a new scan root
+can be added. Currently does nothing. Admin page is otherwise functional; existing
+scan roots still work.
+
+**Not fixed.**
+
+---
+
+### BUG-010 — 2000 AD writer credit link doesn't filter the issue list
+
+**Found:** 2026-06-23, inbox triage.
+
+**Where:** Issue page for a 2000 AD-tagged issue (e.g. year 1979, issue #174) — clicking
+a writer's series card (e.g. "2000 AD — writer in 1104 issues + 7 singles") opens the
+full 2000 AD prog run, not a list filtered to issues credited to that writer.
+
+**Impact:** The writer series card states correct totals (counts appear right) but the
+click-through doesn't filter — it shows the full series, making the writer's credit
+link functionally useless for browsing their specific contributions.
+
+**Not fixed.**
+
+---
+
+### BUG-009 — Star rating doesn't clear to Unrated
+
+**Found:** 2026-06-23, inbox triage.
+
+**Where:** Issue page (`/issue/{id}`) star rating row.
+
+**Impact:** Clicking an already-highlighted star (i.e. the current rating) should drop
+the rating to Unrated (NULL). Currently it floors at 1 star — once any rating is set,
+there's no way to return to Unrated via this interaction.
+
+**Not fixed.**
+
+---
+
 ### BUG-008 — Flutter app's 2000 AD tab calls endpoints removed in v2.2
 
 **Found:** 2026-06-22, flagged by the nightly doc scan.
