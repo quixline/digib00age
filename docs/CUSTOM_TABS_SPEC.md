@@ -199,6 +199,8 @@ layout.
 | 2026-06-19 | Section 5.1's folder picker reuses the Full Editor's picker *CSS* (`.editor-overlay`/`.editor-modal`/`.fe-picker-*`) but not its multi-select checkbox interaction — Custom Tabs only ever needs one folder, so it's click-to-descend-a-folder-row plus a single "Select This Folder" button instead. | A custom tab has exactly one `folder_path`; the editor's checkbox multi-select (built for adding many files/folders to a working set at once) doesn't apply. |
 | 2026-06-19 | Added a small fix beyond the spec's text: cached custom-tab names in `sessionStorage` so the existing issue/series back-link label (previously only aware of the four fixed surface names) shows the tab's actual name instead of falling back to "Library" when navigating from a custom tab. Navigation itself was already correct without this — label only. | Not addressed by the spec; found while verifying the `from=tab-{id}` back-link round trip end to end. |
 | 2026-06-22 | Added `view_mode` (`flat`/`folder`) to `custom_tabs`. Folder View generalises 2000 AD's old hardcoded two-level year-grid into a reusable per-tab mode: recursive folder/file mixed-grid browsing with real history-backed navigation, depth-agnostic search, and recursive Mark All Read. The 2000 AD fixed tab is fully removed; 2000 AD becomes an ordinary custom tab (Folder View) post-build, consuming a normal visible-tab slot. | v2.2 planning — 2000 AD's bespoke view was always meant to be removed before the app went public; Folder View captures the part of its behaviour that was actually useful and makes it available to any custom tab. |
+| 2026-06-23 | Resolved the folder-card image gap flagged 2026-06-22 (§9.2): random cached issue thumbnail from anywhere in the folder's subtree, re-rolled every request. Considered and rejected an explicit `folder.jpg`/`cover.jpg`/`poster.jpg` convention with its own thumbnail pipeline — reusing existing per-issue thumbnails achieves the same goal (better than a blank icon) with no new pipeline, file convention, or invalidation logic. | Design discussion 2026-06-23 session; see `comicvault-changes-v2.3.md`. |
+| 2026-06-23 | Built the above same day: `get_tab_folder_contents()` (`library.py`) now returns a `cover_path` per subfolder (random choice over issue ids already collected in its single pass); `buildFolderCard()` (`app.js`) renders it image-on-top/info-below (new `.folder-card.has-cover` CSS), falling back to the 📁 icon on no-cover or image load error. | Implementation session 2026-06-23; see `progress.md`. |
 
 ---
 
@@ -230,11 +232,21 @@ grid**:
   case — most custom tabs pointed at a normally-structured library folder will hit
   this immediately, since folder = series/single there).
 
-> **Known gap, found 2026-06-22 during Tez's manual test pass — missed during
-> original scoping.** Folder cards currently show only a generic folder icon, the
-> name, and the recursive count — no cover/representative image from inside the
-> folder. Needs a design discussion (options, backend/frontend cost) before
-> building — see `ROADMAP.md` "Follow-up needed (2026-06-23 session)".
+**Folder card images (resolved 2026-06-23):** each folder card additionally shows
+a representative image — a random cached thumbnail drawn from any issue
+recursively under that folder, via `ORDER BY RANDOM() LIMIT 1` scoped to the same
+subtree query the recursive issue count (above) already runs. No new image
+pipeline: this reuses existing per-issue cached thumbnails as-is, so there's no
+new file convention (no `folder.jpg`/`cover.jpg`/`poster.jpg`), no scanner
+changes, and no cache invalidation to manage.
+
+Re-randomizes on every request — page load, refresh, or navigating back into the
+folder may show a different cover each time. Deliberate choice over a stable/
+pinned image, for a "kept alive" feel consistent with the existing Random Unread/
+Random Genre home strips. A folder with no issues anywhere underneath it (count
+of 0) shows the plain folder icon, unchanged.
+
+Built 2026-06-23 — see Change Log below and `progress.md`.
 
 Clicking a folder card drills into that folder, repeating the same mixed-grid logic
 one level down.

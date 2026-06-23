@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import difflib
 import os
+import random
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -269,6 +270,7 @@ def get_tab_folder_contents(
 
     direct_files: list[Issue] = []
     subfolder_counts: dict[str, int] = {}
+    subfolder_issue_ids: dict[str, list[int]] = {}
     for issue in under_target:
         issue_dir = normalize_path(os.path.dirname(issue.file_path))
         if issue_dir == target_dir:
@@ -277,6 +279,7 @@ def get_tab_folder_contents(
         rel = os.path.relpath(issue_dir, target_dir)
         immediate_child = rel.split(os.sep)[0]
         subfolder_counts[immediate_child] = subfolder_counts.get(immediate_child, 0) + 1
+        subfolder_issue_ids.setdefault(immediate_child, []).append(issue.id)
 
     progress_map = {
         p.issue_id: p
@@ -286,7 +289,13 @@ def get_tab_folder_contents(
     }
 
     folders = [
-        {"name": name, "issue_count": count}
+        {
+            "name": name,
+            "issue_count": count,
+            "cover_path": (
+                f"/api/cover/{random.choice(subfolder_issue_ids[name])}" if count else None
+            ),
+        }
         for name, count in sorted(subfolder_counts.items(), key=lambda kv: kv[0].lower())
     ]
     files = [

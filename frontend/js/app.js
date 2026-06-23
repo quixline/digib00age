@@ -1139,10 +1139,30 @@ function renderFolderBreadcrumb(tabId, path) {
 }
 
 function buildFolderCard(tabId, currentPath, folder) {
-  const card = el('div', 'folder-card');
-  card.appendChild(el('div', 'folder-card-icon', '📁'));
-  card.appendChild(el('div', 'folder-card-name', folder.name));
-  card.appendChild(el('div', 'folder-card-count', `${folder.issue_count} issue${folder.issue_count === 1 ? '' : 's'}`));
+  const hasCover = !!folder.cover_path;
+  const card = el('div', `folder-card${hasCover ? ' has-cover' : ''}`);
+  const nameEl = el('div', 'folder-card-name', folder.name);
+  const countEl = el('div', 'folder-card-count', `${folder.issue_count} issue${folder.issue_count === 1 ? '' : 's'}`);
+
+  if (hasCover) {
+    const wrap = el('div', 'cover-img-wrap');
+    const img = el('img');
+    img.src = folder.cover_path;
+    img.alt = folder.name;
+    img.loading = 'lazy';
+    img.onerror = () => { wrap.innerHTML = '<div class="folder-card-icon">📁</div>'; };
+    wrap.appendChild(img);
+    card.appendChild(wrap);
+    const info = el('div', 'folder-card-info');
+    info.appendChild(nameEl);
+    info.appendChild(countEl);
+    card.appendChild(info);
+  } else {
+    card.appendChild(el('div', 'folder-card-icon', '📁'));
+    card.appendChild(nameEl);
+    card.appendChild(countEl);
+  }
+
   const newPath = currentPath ? `${currentPath}/${folder.name}` : folder.name;
   card.addEventListener('click', () => goToFolderPath(tabId, newPath));
   return card;

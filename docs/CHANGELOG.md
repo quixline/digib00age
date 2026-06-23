@@ -7,6 +7,10 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-23** — Folder View folder cards now show a representative cover
+  image: one randomly-selected cached thumbnail from any issue recursively
+  under that folder, re-rolled on every request. No new pipeline — reuses
+  the existing per-issue thumbnail cache. See `CUSTOM_TABS_SPEC.md` §9.2.
 - **2026-06-22** — v2.2 shipped: 2000 AD's hardcoded fixed-tab surface fully
   removed (endpoints, nav button, year-grid UI, all code paths); Custom Tabs
   gained a `view_mode` (`flat`/`folder`) — Folder View generalises 2000 AD's

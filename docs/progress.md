@@ -1780,3 +1780,48 @@ work is scoped.
 session)" section); `CUSTOM_TABS_SPEC.md` §9.2 (known-gap callout, no Change
 Log row yet since nothing shipped — that follows once the design is decided
 and built).
+
+---
+
+## Session — 2026-06-23: v2.3 — Folder card images built
+
+Built the design resolved earlier the same day (`CUSTOM_TABS_SPEC.md` §9.2,
+`comicvault-changes-v2.3.md`): each Folder View folder card now shows a
+representative cover image — a random cached thumbnail from any issue
+recursively under that folder, re-rolled on every request. No new pipeline:
+reuses the existing per-issue thumbnail cache via `/api/cover/{id}`.
+
+**Backend:** `backend/routers/library.py`, `get_tab_folder_contents()` — the
+existing single pass over `under_target` that builds `subfolder_counts` now
+also collects each subfolder's issue ids (`subfolder_issue_ids`), then picks
+one at random per subfolder (`random.choice`) to set `cover_path` in the
+folder response dict (`None` when the subfolder has no issues underneath).
+No second query — same one-pass-no-N+1 shape as before.
+
+**Frontend:** `frontend/js/app.js`, `buildFolderCard()` — when `cover_path`
+is present, renders a `cover-img-wrap`/`<img>` (same pattern as
+`buildFolderFileCard()`/issue cards) with an `onerror` fallback back to the
+plain 📁 icon, and moves the name/count into a `.folder-card-info` block
+below the image instead of the centered icon layout. `frontend/css/style.css`
+gained a `.folder-card.has-cover` / `.folder-card-info` ruleset for this
+image-on-top layout; the no-image card path is unchanged.
+
+**Verified:** spun up a second, scratch-port (8123) `uvicorn` instance
+against the live (real) DB — GET-only, no writes, real server on :8000 left
+untouched — and hit `GET /api/library/tab/4/folder` (tab "H", real library
+data) at both root and one level down (`path=Series`). Confirmed every
+subfolder with issues returns a `cover_path` of the form `/api/cover/{id}`,
+that repeated requests return different ids (re-randomization works), and
+that `GET /api/cover/{id}` for one returned id resolves to a real
+`image/jpeg` (200, ~43KB). Killed the scratch server and removed scratch temp
+files afterward. Did not test the empty-subfolder (`count == 0` →
+`cover_path: null`) path live since no empty subfolder existed in the
+sampled real data, but the code only sets `cover_path` `if count`, so the
+`None` branch is straightforward from inspection. Frontend change verified
+by code-reading the existing `cover-img-wrap`/`cover-card` CSS pattern it
+mirrors; not separately driven in a browser this session.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `CUSTOM_TABS_SPEC.md` (§9.2
+text already described the resolved design from earlier the same day — no
+further edit needed); `comicvault-changes-v2.3.md` (folder-card-images entry
+marked built).

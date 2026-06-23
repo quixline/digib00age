@@ -591,6 +591,22 @@ ul { list-style: none; }
 }
 .folder-card-count { font-size: 12px; color: var(--text-3); }
 
+/* Folder card with a representative cover image (CUSTOM_TABS_SPEC.md §9.2):
+   switch from the centered icon layout to an image-on-top, info-below
+   layout matching .cover-card, instead of overlaying text on the image. */
+.folder-card.has-cover {
+  padding: 0;
+  justify-content: flex-start;
+  overflow: hidden;
+}
+.folder-card.has-cover .cover-img-wrap { flex: 1; }
+.folder-card-info {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .folder-result-path {
   font-size: 11px;
   color: var(--text-3);
