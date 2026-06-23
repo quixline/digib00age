@@ -8,6 +8,27 @@ Add new entries at the top. Mark fixed entries with the date and what was change
 
 ## OPEN
 
+### BUG-008 — Flutter app's 2000 AD tab calls endpoints removed in v2.2
+
+**Found:** 2026-06-22, flagged by the nightly doc scan.
+
+**Where:** `flutter_app/lib/screens/two_thousand_ad_screen.dart` —
+`TwoThousandAdTab` calls `GET /api/2000ad/years`; `TwoThousandAdYearScreen` calls
+`GET /api/2000ad/year/{year}`. Both endpoints were removed in v2.2 (Part A,
+`backend/routers/home.py`).
+
+**Impact:** The Flutter app's 2000 AD tab would return 404 errors on those calls.
+The web-side 2000 AD surface was removed intentionally and its behaviour generalised
+into Folder View (Custom Tabs, `CUSTOM_TABS_SPEC.md` §9), but Flutter was explicitly
+out of scope for v2.2 — the Flutter tab was not replaced, just left broken.
+
+**Not fixed.** Flutter app development is on hold until web-side work is complete
+(per `ROADMAP.md`). To be picked up as part of that Flutter work — fix would be
+either removing the 2000 AD tab from the Flutter app, or adding a Folder View
+equivalent for Flutter once the web Folder View is settled.
+
+---
+
 ### BUG-007 — Basic Editor's multi-line textarea fields (Summary) round-trip with doubled line breaks on every save
 
 **Found:** 2026-06-21, incidentally — while verifying Tier 4 Item 3's editor fuzzy-

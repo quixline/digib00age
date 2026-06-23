@@ -16,6 +16,7 @@ within a single doc, a later-dated or higher-numbered section overrides an earli
 | `CUSTOM_TABS_SPEC.md` | Custom Tabs feature | Built and verified (2026-06-19) |
 | `HOME_STRIPS_SPEC.md` | Home Page Strips feature | Built and verified (2026-06-19) |
 | `comicvault-changes-v2.2.md` | v2.2: remove 2000 AD fixed tab + Folder View for Custom Tabs | Closed out 2026-06-22 |
+| `comicvault-changes-v2.3.md` | v2.3: active build queue | Active |
 | `comicvault-changes-2.1.md` | Planning backlog / build queue, 2.1 — closed out 2026-06-22, kept for history | Closed |
 | `BUGS.md` | Live bug/issue register (separate from applied-decision logs) | Active |
 | `progress.md` | Narrative build history, per-session detail and verification notes | Active, append-only |

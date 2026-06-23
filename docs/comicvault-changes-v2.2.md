@@ -238,6 +238,21 @@ confirm untouched files on disk), add:
 
 ---
 
+- **Manual update to doc 22/6/2026, 22:45** Owner; Tez
+
+Proposed plan overview for changes to the folder view cards.
+Starting at: ?surface=tab-4 = H (L:\Comic Archives\H)
+
+First View - Series and Singles, two folders as expected - folder name and # issues - basic folder icon. If there is a folder.jpg (or other common variations) this should be used as the card background and displayed in the same way other cards do with text below the image (folder name and # issues) - this is obviously user optional, non-enforcable but should be documented, in the guide at minimum. For now noted in the docs where best.
+
+Going in to Series /?surface=tab-4&path=Series or Singles /?surface=tab-4&path=Singles also shows the folder icon, title, year and number of issues. In Series showing title, year and number of issues is correct, each folder should get its bg cover image from a. folder.jpg if present or the first page of the first issue.
+
+in the Singles, each folder has 1 issue to a folder and should show the number of pages of the archive in that folder and the first page of the archive as the card background, text below.
+
+Doing it this way should provide visual consistency accross the site while providing two different ways to view and navigate a collection. The card size option in the Admin should apply to these cards and the read state too.
+
+This is the first thing to take care of, needs the usual planning discussion with Chat to provide more detail and draft the plan then over to Cowork to review while having access to the source code to tighten the plan before it gets passed to Code for the final viewing, techinical implementation and implementation.
+
 ## Change Log entry to add to `CUSTOM_TABS_SPEC.md` §8
 
 | Date | Change | Reason |
