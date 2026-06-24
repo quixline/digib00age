@@ -23,7 +23,7 @@ from backend import scan_logs
 from backend.auth import is_local_request
 from backend.config import get_config, save_config, PROJECT_ROOT
 from backend.database import get_db, SessionLocal
-from backend.models import CustomTab, HomeStrip, Issue, ReadingProgress
+from backend.models import CustomTab, HomeStrip, Issue, Person, ReadingProgress
 from backend.path_utils import is_under, normalize_path
 
 router = APIRouter(tags=["admin"])
@@ -335,6 +335,46 @@ def cleanup_missing(db: Session = Depends(get_db)):
     count = len(missing)
     for issue in missing:
         db.delete(issue)
+    db.commit()
+    return {"removed": count}
+
+
+# ---------------------------------------------------------------------------
+# POST /api/admin/clear-database
+# POST /api/admin/clear-reading-progress
+# Both destructive, irreversible — local-access-only, same tier as
+# restart_server / browse_folder_dialog (ADMIN_SPEC.md §7.4, §7.5).
+# ---------------------------------------------------------------------------
+
+@router.post("/admin/clear-database")
+def clear_database(request: Request, db: Session = Depends(get_db)):
+    """
+    Hard-deletes ALL library data: issues, genres, credits, reading progress,
+    and now-orphaned people. CustomTab and HomeStrip rows are configuration,
+    not library data, and are deliberately left untouched.
+    """
+    if not is_local_request(request):
+        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
+
+    issue_count = db.query(func.count(Issue.id)).scalar()
+    db.query(Issue).delete(synchronize_session=False)
+    db.commit()
+
+    person_count = db.query(func.count(Person.id)).scalar()
+    db.query(Person).delete(synchronize_session=False)
+    db.commit()
+
+    return {"issues_removed": issue_count, "people_removed": person_count}
+
+
+@router.post("/admin/clear-reading-progress")
+def clear_reading_progress(request: Request, db: Session = Depends(get_db)):
+    """Deletes all ReadingProgress rows only. Issues, genres, credits untouched."""
+    if not is_local_request(request):
+        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
+
+    count = db.query(func.count(ReadingProgress.id)).scalar()
+    db.query(ReadingProgress).delete(synchronize_session=False)
     db.commit()
     return {"removed": count}
 

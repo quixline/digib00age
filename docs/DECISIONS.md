@@ -6,6 +6,31 @@ specs and aren't repeated. Newest first.
 
 ---
 
+### Clear Database scope: library data only, not Custom Tabs/Home Strips; same confirm() as Delete Tab; local-only gate
+
+**Decided:** 2026-06-24, Item 9 build session.
+**Why:** `ADMIN_SPEC.md` §7.4's literal wording ("wipes all records from the DB")
+doesn't say whether Custom Tabs / Home Strip configuration counts as "all
+records." Checked the schema directly: neither table has any FK relationship to
+Issue, so wiping Issues has zero effect on them either way — the real question
+was whether to *also* write code to explicitly delete them. Tez's call: library
+data only (issues, genres, credits, reading progress, the now-orphaned People
+rows) — Custom Tabs/Home Strips stay intact, since a "start fresh" library reset
+shouldn't force rebuilding unrelated nav/home-page configuration.
+
+Confirmation: the spec says "confirmation warning/modal," but Tez confirmed
+reusing the exact same plain `confirm()` mechanism already used for deleting a
+Custom Tab, not a custom modal — consistency with existing UX over literal spec
+wording.
+
+Gating: both Clear Database and Clear Reading Progress got the same
+`is_local_request()` gate already used for Restart Server and the backup folder
+dialog, on top of the existing blanket admin-password gate — a full library wipe
+was judged at least as disruptive as either of those, and shouldn't be
+triggerable over an authenticated Remote Administration session.
+
+**Where:** `backend/routers/admin.py`'s `clear_database()` / `clear_reading_progress()`.
+
 ### Backup destination uses a native OS folder dialog, not the existing library-scoped picker
 
 **Decided:** 2026-06-24, Item 8 build session.

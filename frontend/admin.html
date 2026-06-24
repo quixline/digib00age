@@ -32,6 +32,7 @@
       <a href="/editor" target="_blank" rel="noopener" class="btn-admin-action">Open Editor</a>
       <button class="btn-admin-action" id="backupBtn">Backup Database</button>
       <button class="btn-admin-action" id="passwordResetBtn">Password Reset</button>
+      <button class="btn-admin-action" id="donateBtn">Donate</button>
     </div>
 
     <!-- ── Library Stats ───────────────────────────────────────────────────── -->
@@ -402,6 +403,26 @@
               </div>
             </div>
           </div>
+
+          <!-- ── Danger Zone (ADMIN_SPEC.md §7.4 / §7.5) ──────────────────── -->
+          <div class="admin-subsection">
+            <h3 class="admin-subsection-heading">Danger Zone</h3>
+            <p class="admin-card-hint">
+              These actions permanently delete library data and cannot be undone.
+              Custom Tabs and Home Page Strips are configuration, not library data,
+              and are never affected by either action below. Local access only.
+            </p>
+            <div class="admin-card">
+              <div class="admin-field-row">
+                <label class="admin-field-label">Clear Reading Progress</label>
+                <button class="btn-admin-action" id="clearProgressBtn">Clear Reading Progress</button>
+              </div>
+              <div class="admin-field-row">
+                <label class="admin-field-label">Clear Database</label>
+                <button class="btn-admin-action" id="clearDbBtn">Clear Database</button>
+              </div>
+            </div>
+          </div>
         </fieldset>
       </div>
     </section>
@@ -457,6 +478,17 @@
           <button type="submit" class="btn-primary">Save</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ── Donate modal (ADMIN_SPEC.md §10 — content TBC) ──────────────────── -->
+  <div id="donateOverlay" class="editor-overlay" hidden>
+    <div class="editor-modal">
+      <div class="editor-modal-header">
+        <h2 class="editor-modal-title">Donate</h2>
+        <button type="button" class="editor-close-btn" id="donateCloseBtn" aria-label="Close">&times;</button>
+      </div>
+      <p class="admin-card-hint" style="margin: 0 20px 20px;">Coming soon.</p>
     </div>
   </div>
 

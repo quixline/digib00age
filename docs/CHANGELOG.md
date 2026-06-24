@@ -7,6 +7,16 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-24** — v2.3 Item 9 (final v2.3 item): Admin destructive actions +
+  Donate placeholder. New "Danger Zone" in Advanced Settings — Clear Database
+  (wipes issues/genres/credits/reading progress + orphaned People rows, leaves
+  Custom Tabs/Home Strips intact) and Clear Reading Progress, both gated
+  local-only and confirm()-gated like the existing Delete Tab flow. New
+  Donate button + "Coming soon" placeholder modal in the top action row. The
+  Full Editor admin cog-link (also part of this item per spec) was already
+  built in the Item 6 session. See `docs/progress.md` for the full build
+  narrative.
+
 - **2026-06-24** — v2.3 Item 8: Admin scheduled database backup + server
   listening port. New Scheduled Backup section (native OS folder dialog for
   the destination — not the existing library-scoped picker, which can't

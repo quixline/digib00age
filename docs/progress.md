@@ -2419,3 +2419,102 @@ marked built, with §9's folder-picker wording corrected to describe the
 native dialog actually built and a note added about the two collapsed
 dropdown entries; `comicvault-changes-v2.3.md` (Item 8 marked done); v2.3
 build plan `build-plan.html` (Item 8 node marked done).
+
+## Session — 2026-06-24: v2.3 Item 9 (final v2.3 item) — Destructive actions + Donate placeholder built
+
+Built `ADMIN_SPEC.md` §7.4 (Clear Database), §7.5 (Clear Reading Progress),
+and §10 (Donate) — the last three pieces of the v2.3 build plan. The fourth
+piece listed under Item 9, the Full Editor admin cog-link (§1), turned out to
+already exist: it was added as a bonus during the Item 6 (password
+protection) session while `editor_full.html` was already being touched for
+the Logout control, so this session just confirmed it was present rather than
+building it again.
+
+**Two real design questions resolved with Tez before building, since the
+spec text alone was ambiguous or directly at odds with established
+precedent:**
+1. **Clear Database's scope** — `ADMIN_SPEC.md` §7.4 says "wipes all records
+   from the DB" without naming tables. Checked the schema directly: neither
+   `CustomTab` nor `HomeStrip` has any FK relationship to `Issue`, so the real
+   question was whether to write explicit code to also delete them. Decided:
+   library data only (issues, genres, credits, reading progress, and the
+   now-orphaned People rows) — Custom Tabs and Home Strips are configuration,
+   not library data, and stay intact so a "start fresh" reset doesn't force
+   rebuilding unrelated nav/home-page setup.
+2. **Confirmation mechanism** — the spec literally says "confirmation
+   warning/modal," but every destructive action built so far this session
+   (disable password protection, delete a Custom Tab, restart server) uses a
+   plain browser `confirm()`. Tez's direction: stay consistent — same
+   `confirm()` mechanism as deleting a Custom Tab, not a new modal pattern,
+   with a detailed multi-line message matching that precedent's level of
+   detail.
+
+**Backend — `backend/routers/admin.py`:** two new endpoints,
+`clear_database()` and `clear_reading_progress()`, both gated with
+`is_local_request()` on top of the existing blanket admin-password
+dependency — the same stricter tier already used for Restart Server and the
+backup folder dialog, since a full library wipe was judged at least as
+disruptive as either. `clear_database()` does a bulk `Issue.delete(synchronize_session=False)`
+rather than a loop-and-delete (the existing `cleanup-missing` precedent) —
+confirmed `backend/database.py` sets `PRAGMA foreign_keys=ON` on every
+connection and every relevant FK (`IssueGenre`, `IssueCredit`,
+`ReadingProgress`) is declared `ondelete="CASCADE"`, so SQLite does the
+cross-table cascade in one statement with no need to materialize thousands of
+ORM objects just to delete them. `Person` has no FK *to* Issue (it's
+`IssueCredit`'s FK target), so it doesn't cascade-delete automatically —
+confirmed this by reading the schema, and added an explicit second bulk
+delete for the now-orphaned People rows after the Issue delete commits.
+`clear_reading_progress()` is a single bulk delete on `ReadingProgress` only.
+
+**Frontend — `admin.html`/`admin.js`:** new "Danger Zone" subsection inside
+the existing `#advancedFields` fieldset, after Format List (last item —
+furthest from routine configuration). Both buttons wired to the matching
+`confirm()` message (the Clear Database message explicitly mentions the
+existing Backup Database button as a one-click safety suggestion, per Tez's
+direction) and both call `loadStats()` on success so the Library Stats /
+Library Scan grids reflect the wipe without a manual page reload. New
+"Donate" button in the top action row, opening a `.editor-overlay` modal
+(the same established pattern as the Log Viewer, Custom Tabs picker, and
+Password Reset) showing "Coming soon." rather than a totally empty shell —
+real content is still TBC per the spec and is a pure content edit to this
+same block later, no structural change needed. Pure frontend addition, no
+backend endpoint.
+
+**Verified — this is the single most destructive feature built all
+session, so verification was the most thorough of any v2.3 item; the real
+database was never touched and its mtime was reconfirmed unchanged at the
+very end:** before trusting any cascade-delete logic, confirmed
+`PRAGMA foreign_keys` actually returns `1` on the live SQLite connection
+under test (a runtime fact, not just a code-presence check) — historically
+SQLite defaults this off, so this was treated as the single most
+load-bearing check in the whole feature. Built a fully isolated scratch
+SQLite database (separate from the real `comicvault_v2.db`, never opened or
+modified), seeded with issues, genres, credits, reading-progress rows, one
+Custom Tab, and one Home Strip, then ran both endpoints' actual query logic
+directly against it: confirmed Clear Reading Progress empties only
+`reading_progress` while every other table's row count is exactly unchanged,
+and confirmed Clear Database empties `issues`/`issue_genres`/
+`issue_credits`/`reading_progress`/`people` while `custom_tabs`/`home_strips`
+are byte-for-byte unchanged. Separately verified the `is_local_request()`
+gate rejects a simulated non-local request with a 403 *before* any database
+query is issued (using a mocked request object — confirmed the DB mock was
+never called). In-browser (Preview), confirmed both Danger Zone buttons
+trigger their exact intended `confirm()` message text and that declining
+correctly aborts with no network request — the real destructive paths were
+deliberately never exercised against the live app (already fully verified
+against scratch data above), only the safe decline path was exercised live.
+Confirmed the Donate modal opens, displays "Coming soon," closes via both the
+close button and a background click, and triggers zero network requests
+throughout. No console errors observed at any point. The real
+`comicvault_v2.db`'s file modification time was checked before and after the
+entire session and confirmed identical.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `DECISIONS.md` (one entry
+covering the Clear-Database-scope, confirm()-mechanism, and local-only-gate
+decisions together); `ADMIN_SPEC.md` §7.4/§7.5/§10 marked built (§7.4/§7.5
+corrected to state the actual library-data-only scope and the real `confirm()`
+mechanism used instead of the literal "modal" wording, §1's cog-link note
+updated to point at where it was actually built); `comicvault-changes-v2.3.md`
+(Item 9 marked done); v2.3 build plan `build-plan.html` (Item 9 node marked
+done — **this was the last item in the v2.3 build plan**; only the manual
+test pass listed at the bottom of `comicvault-changes-v2.3.md` remains).

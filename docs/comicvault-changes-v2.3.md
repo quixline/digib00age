@@ -127,18 +127,19 @@ conflict) as a user-configurable workaround.
 
 ---
 
-## Item 9 — Admin: destructive actions + extras
+## ✅ Item 9 — Admin: destructive actions + extras
 
-**Spec:** `ADMIN_SPEC.md` §7.4, §7.5, §10, §1 (Admin cog in Full Editor)
+Built 2026-06-24. **Spec:** `ADMIN_SPEC.md` §7.4, §7.5, §10, §1 (Admin cog in Full Editor)
 
-- **Clear Database** (Advanced Settings): wipes all DB records including reading
-  progress. Confirmation modal required.
+- **Clear Database** (Advanced Settings): wipes library data (issues, genres,
+  credits, reading progress, orphaned People rows) — Custom Tabs/Home Strips
+  configuration intentionally untouched, see `DECISIONS.md`. Confirmed via the
+  existing `confirm()` mechanism (same as Delete Tab), local-only gated.
 - **Clear Reading Progress** (Advanced Settings): wipes progress only, keeps all
-  other data. Confirmation modal required.
-- **Donate button**: opens a popup modal. Content TBC — build the button + empty
-  popup shell now, fill content later.
-- **Admin cog-link in Full Editor**: small icon/link in the Full Editor header
-  pointing to `/admin`. Nav convenience only.
+  other data. Same `confirm()`/local-only mechanism as above.
+- **Donate button**: opens a "Coming soon." popup modal. Content TBC, no backend.
+- **Admin cog-link in Full Editor**: already built during the Item 6 session
+  (bundled in while that file was touched for the Logout control).
 
 ---
 

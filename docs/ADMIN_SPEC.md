@@ -34,9 +34,12 @@ use muted grey — consistent with the Full Editor's styling (`EDITOR_SPEC.md` �
 **Header:** Same fixed top navigation header as all other pages, including the gear
 icon.
 
-**Admin cog-link in Full Editor:** A small cog/admin icon link in the Full Editor
-header gives direct navigation to `/admin`, so a user moving from the editor to
-trigger a scan doesn't have to navigate away first. Small convenience, no auth impact.
+**Admin cog-link in Full Editor *(built — V2.3 Item 6, 2026-06-24):*** A small
+cog/admin icon link in the Full Editor header gives direct navigation to `/admin`,
+so a user moving from the editor to trigger a scan doesn't have to navigate away
+first. Small convenience, no auth impact. (Built as a bonus alongside the Logout
+control while that file was already being touched for the password-protection
+session — not a separate Item 9 task.)
 
 ---
 
@@ -261,17 +264,23 @@ A manual numeric input field for the server's listening port (currently hardcode
 Relevant to `BUGS.md` BUG-004 (port 8000 / Windows port-exclusion conflict) — moving
 to a less commonly reserved port is a workaround for that issue.
 
-### 7.4 Clear Database *(not yet built — destructive)*
+### 7.4 Clear Database *(built — V2.3 Item 9, 2026-06-24 — destructive)*
 
-Advanced Settings. Wipes all records from the DB, including reading progress. Requires
-an explicit confirmation warning/modal before executing. Not reversible — pairs with
-the scheduled backup (§9) as a "start fresh" option.
+Advanced Settings. Wipes all **library data** from the DB — issues, genres, credits,
+reading progress, and the now-orphaned People rows. **Custom Tabs and Home Strip
+configuration are deliberately left untouched** (they're configuration, not library
+data — see `DECISIONS.md`). Confirmation uses a plain `confirm()` dialog (same
+mechanism as deleting a Custom Tab), not a custom modal, despite this section's
+literal "confirmation warning/modal" wording. Gated to local sessions only — same
+tier as Restart Server and the backup folder dialog, since a full library wipe is at
+least as disruptive as either. Not reversible — pairs with the scheduled backup (§9)
+as a "start fresh" option; the confirm() message points at the Backup Database button.
 
-### 7.5 Clear Reading Progress *(not yet built — destructive)*
+### 7.5 Clear Reading Progress *(built — V2.3 Item 9, 2026-06-24 — destructive)*
 
 Advanced Settings. Narrower than Clear Database (§7.4) — wipes only reading progress
-records, keeps all other data (issues, people, credits, genres, etc.). Requires a
-confirmation warning/modal before executing.
+records, keeps all other data (issues, people, credits, genres, etc.). Same `confirm()`
+mechanism and local-only gate as §7.4.
 
 ### 7.6 Reader Location *(built — V1)*
 
@@ -353,11 +362,12 @@ on-demand manual backups — it uses the same destination folder once one is set
 
 ---
 
-## 10. Donate *(not yet built)*
+## 10. Donate *(built — V2.3 Item 9, 2026-06-24)*
 
-A Donate button on the Admin page opens a popup/modal window. Details of the popup
-content are TBC. For the initial build: the button and a functional (but empty/
-placeholder) popup shell are sufficient — content is filled in later.
+A Donate button on the Admin page (top action row) opens a popup/modal window
+showing "Coming soon." — real content is still TBC and is a pure content edit to
+this same modal block when ready, no structural change needed. Frontend-only, no
+backend endpoint.
 
 ---
 

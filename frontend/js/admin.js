@@ -81,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initLogsSection();
   initServerPort();
   initBackupSettings();
+  initDangerZone();
+  initDonate();
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -425,6 +427,61 @@ function initBackupSettings() {
 
   document.getElementById('backupFreqSelect').addEventListener('change', (e) => {
     patchConfig({ backup_frequency: e.target.value });
+  });
+}
+
+// ── Danger Zone (ADMIN_SPEC.md §7.4 / §7.5) ─────────────────────────────────
+function initDangerZone() {
+  document.getElementById('clearProgressBtn').addEventListener('click', clearReadingProgress);
+  document.getElementById('clearDbBtn').addEventListener('click', clearDatabase);
+}
+
+async function clearReadingProgress() {
+  if (!confirm(
+    'Clear all reading progress?\n\nThis resets every issue to unread and erases ' +
+    'all saved page positions for your entire library. Issue metadata and comic ' +
+    'files are not affected. This cannot be undone.'
+  )) return;
+
+  const r = await fetch(`${API}/admin/clear-reading-progress`, { method: 'POST' });
+  const d = await r.json();
+  if (!r.ok) {
+    showToast(d.detail?.error === 'local_access_required' ? 'Local access required' : 'Clear failed', true);
+    return;
+  }
+  showToast(`Cleared reading progress for ${d.removed} issue(s)`);
+  await loadStats();
+}
+
+async function clearDatabase() {
+  if (!confirm(
+    'Clear the entire database?\n\nThis permanently deletes all issues, genres, ' +
+    'credits, and reading progress — your whole library record. Comic files on ' +
+    'disk are not touched; re-scanning will re-import them as new entries with ' +
+    'blank metadata. Custom Tabs and Home Page Strips are configuration and will ' +
+    'NOT be affected. Consider using Backup Database first. This cannot be undone.'
+  )) return;
+
+  const r = await fetch(`${API}/admin/clear-database`, { method: 'POST' });
+  const d = await r.json();
+  if (!r.ok) {
+    showToast(d.detail?.error === 'local_access_required' ? 'Local access required' : 'Clear failed', true);
+    return;
+  }
+  showToast(`Cleared ${d.issues_removed} issue(s), ${d.people_removed} person record(s)`);
+  await loadStats();
+}
+
+// ── Donate (ADMIN_SPEC.md §10 — placeholder shell, content TBC) ────────────
+function initDonate() {
+  document.getElementById('donateBtn').addEventListener('click', () => {
+    document.getElementById('donateOverlay').hidden = false;
+  });
+  document.getElementById('donateCloseBtn').addEventListener('click', () => {
+    document.getElementById('donateOverlay').hidden = true;
+  });
+  document.getElementById('donateOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'donateOverlay') document.getElementById('donateOverlay').hidden = true;
   });
 }
 
