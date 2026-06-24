@@ -80,11 +80,11 @@ Stat cards plus one action card:
 - **Scan Now** (action card): triggers `POST /api/scan`; card expands inline to show
   a live progress bar and log output during the scan.
 
-**Scan log cards (not yet built — see §6):** the four scan stat cards above will
-additionally show per-category log details once §6 ships. See §6 for the log file
-format, green-border "new entries" indicator, and per-card Logs button.
+**Scan log cards (built — V2.3 Item 7, 2026-06-24):** the four scan stat cards above
+additionally show per-category log details. See §8 for the log file format,
+green-border "new entries" indicator, and per-card Logs button.
 
-### Auto Scan Options (not yet built)
+### Auto Scan Options (built — V2.3 Item 7, 2026-06-24)
 
 Under the scan cards, a small options area:
 
@@ -281,7 +281,7 @@ reader). Deferred — see `ROADMAP.md` (reader-launch entry).
 
 ---
 
-## 8. Logs *(not yet built)*
+## 8. Logs *(built — V2.3 Item 7, 2026-06-24)*
 
 Two controls in the logs area:
 
@@ -298,19 +298,24 @@ button that opens it. Log files live in `/logs/`:
 | Card | Log file | Log entry format |
 |---|---|---|
 | Last Scanned | `last_scan_log.md` | `DD/MM/YYYY 00:00 — Duration: 00:00:00` |
-| Changed Files | `changed_files_log.md` | `filename.cbz — type of change` |
+| Changed Files | `changed_files_log.md` | `filename.cbz — metadata updated` |
 | New Files | `new_files_log.md` | `filename.cbz — location` |
 | Missing Records | `missing_log.md` | `filename.cbz — last known path — date went missing` |
 
-**"Changed" definition — open TODO for Claude Code:** confirm against the actual
-scanner logic what currently gets flagged as a changed file before finalising the log
-format. Working assumption: XML content changes are already flagged; a filename change
-should be logged as a new + missing pair (not a "change"); file-size-only change
-behaviour is untested and needs checking. Do not implement the log format without
-first verifying this against `scanner.py`.
+**"Changed" definition — resolved 2026-06-24 by reading `scanner.py` directly:**
+`scan_single_file()` matches files by exact `file_path` and flags "changed" purely
+on mtime delta (≥1 second from the stored `date_modified`) — it cannot distinguish
+*why* the mtime changed, so the log's "type of change" field uses the fixed literal
+`"metadata updated"` rather than a real classification. A filename change is
+confirmed to produce a separate new-row insert + missing-flag on the old row (not a
+"change") — `file_path` is the sole, unique match key. A same-mtime,
+different-file-size change (e.g. a re-zip that preserves the timestamp) is
+confirmed **not** detected at all — logged as `BUGS.md` BUG-013, out of scope to fix
+here.
 
 **Green border indicator:** a card's border turns green when its corresponding log
-file has new entries since it was last viewed. Resets on open.
+file has new entries since it was last viewed (tracked via `log_last_viewed` in
+`config.json`). Resets on open.
 
 
 ---

@@ -7,6 +7,17 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-24** — v2.3 Item 7: Admin scan log cards + Logs area + Auto Scan
+  Options. Each of the 4 scan stat cards (Last Scanned, New Files, Changed
+  Files, Missing Records) now has a persistent on-disk log in `/logs/`, a
+  "Logs" button to view it, and a green-border indicator for unviewed entries.
+  New Logs section (folder path display + log size limit) and Auto Scan
+  Options (frequency dropdown + scan-on-launch) under Library Scan. Resolved
+  the spec's open "what counts as changed" TODO by reading `scanner.py`
+  directly — see `DECISIONS.md` and `BUGS.md` BUG-013 for a confirmed
+  pre-existing detection gap (size-only changes with an unchanged mtime).
+  See `docs/progress.md` for the full build narrative.
+
 - **2026-06-24** — v2.3 Item 6: Admin password protection + Remote Administration
   toggle. Single shared password gates `/admin`, `/editor`, the Basic Editor popup,
   and all `/api/admin/*` + `/api/editor/*` endpoints (off by default, no behaviour

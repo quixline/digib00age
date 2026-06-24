@@ -48,6 +48,51 @@
       <div class="stat-grid" id="scanGrid">
         <div class="loading-state">Loading…</div>
       </div>
+
+      <div class="admin-card admin-card--spaced">
+        <div class="admin-card-label">Auto Scan Options</div>
+        <div class="pagination-setting-row">
+          <select class="admin-select" id="autoScanFreqSelect" aria-label="Auto scan frequency">
+            <option value="off">Off (manual only)</option>
+            <option value="1hr">Every 1 hour</option>
+            <option value="6hr">Every 6 hours</option>
+            <option value="12hr">Every 12 hours</option>
+            <option value="1day">Every 1 day</option>
+            <option value="3days">Every 3 days</option>
+            <option value="7days">Every 7 days</option>
+            <option value="1month">Every 1 month</option>
+          </select>
+          <label class="admin-lock-label" style="margin:0;">
+            <input type="checkbox" id="scanOnLaunchCheckbox" />
+            <span>Scan on launch</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Logs (ADMIN_SPEC.md §8) ─────────────────────────────────────────── -->
+    <section class="admin-section">
+      <h2 class="admin-section-heading">Logs</h2>
+      <div class="admin-card">
+        <div class="admin-field-row">
+          <label class="admin-field-label">Logs Folder</label>
+          <div class="admin-field-input-wrap">
+            <div class="admin-field-input-row">
+              <input type="text" class="admin-input" id="logsFolderPathInput" readonly />
+              <button class="btn-admin-action" id="copyLogsPathBtn">Copy</button>
+            </div>
+          </div>
+        </div>
+        <div class="admin-field-row">
+          <label class="admin-field-label" for="logSizeLimitInput">Log Size Limit (MB)</label>
+          <div class="admin-field-input-wrap">
+            <div class="admin-field-input-row">
+              <input type="number" class="admin-input" id="logSizeLimitInput" min="1" style="max-width:120px;" />
+              <button class="btn-primary" id="saveLogSizeLimitBtn">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ── Library Folders ─────────────────────────────────────────────────── -->
@@ -305,6 +350,17 @@
     </section>
 
   </main>
+
+  <!-- ── Scan log viewer modal (shared, parameterized by log name) ──────────── -->
+  <div id="logViewerOverlay" class="editor-overlay" hidden>
+    <div class="editor-modal">
+      <div class="editor-modal-header">
+        <h2 class="editor-modal-title" id="logViewerTitle">Log</h2>
+        <button type="button" class="editor-close-btn" id="logViewerCloseBtn" aria-label="Close">&times;</button>
+      </div>
+      <pre class="log-viewer-content" id="logViewerContent"></pre>
+    </div>
+  </div>
 
   <!-- ── Custom Tab folder picker modal ──────────────────────────────────── -->
   <div id="ctPickerOverlay" class="editor-overlay" hidden>

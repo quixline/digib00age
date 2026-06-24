@@ -6,6 +6,41 @@ specs and aren't repeated. Newest first.
 
 ---
 
+### Scan log truncation, last-viewed state, and Explorer-reveal — Item 7 judgment calls
+
+**Decided:** 2026-06-24, Item 7 build session.
+**Why:** Three small implementation choices `ADMIN_SPEC.md` §4/§8 left open:
+
+1. **Log truncation** — when a log file exceeds its configured size limit, the
+   oldest ~10% of lines are dropped and the file rewritten, rather than rotating
+   to `.1`/`.2` backups. The spec doesn't mention rotation, and a single
+   append-only file that quietly drops its oldest entries is simpler and matches
+   the "log", not "archive", framing of the feature.
+2. **Last-viewed state** (drives each card's green-border indicator) lives in
+   `config.json`'s new `log_last_viewed` object rather than a separate state
+   file — it's UI state, but small and config-shaped, and reuses
+   `config.save_config()` directly with no new file format to introduce.
+3. **"View Logs Folder"** displays/copies the path rather than having the
+   backend call `os.startfile()` to open Explorer directly. Even though this
+   app always runs frontend and backend on the same machine (so it would work),
+   no precedent exists yet for a web API spawning a native OS window, and
+   display+copy achieves the same practical outcome without introducing one.
+
+**Where:** `backend/scan_logs.py` (truncation), `backend/routers/admin.py`
+(`mark_log_viewed`, `get_logs_folder_path`), `frontend/js/admin.js`
+(`initLogsSection()`).
+
+### `autostart_scan` config key reused verbatim for "Scan on launch"
+
+**Decided:** 2026-06-24, Item 7 build session.
+**Why:** `config.json` already had an `autostart_scan: false` key, present since
+an earlier session but read nowhere in the codebase — clearly a stub left for
+exactly this feature. Reused it directly for ADMIN_SPEC.md §4's "Scan on
+launch" checkbox rather than introducing a new, differently-named key.
+
+**Where:** `backend/scheduler.py`'s `maybe_scan_on_launch()`,
+`frontend/admin.html`'s `#scanOnLaunchCheckbox`.
+
 ### Admin password gate: client-side popup instead of server-side redirect; global fetch wrap for 401 interception
 
 **Decided:** 2026-06-24, Item 6 build session.

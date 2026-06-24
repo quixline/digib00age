@@ -71,6 +71,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('formatNameInput').addEventListener('keydown', e => { if (e.key === 'Enter') addFormat(); });
 
   initAuthSettings();
+
+  document.getElementById('logViewerCloseBtn').addEventListener('click', closeLogViewer);
+  document.getElementById('logViewerOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'logViewerOverlay') closeLogViewer();
+  });
+
+  initScanSettings();
+  initLogsSection();
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -80,7 +88,7 @@ async function loadStats() {
     if (!r.ok) throw new Error(r.statusText);
     const d = await r.json();
     renderStats(d);
-    renderScanSection(d.scan_state, d.missing_count);
+    renderScanSection(d.scan_state, d.missing_count, d.log_status);
   } catch (e) {
     document.getElementById('statGrid').innerHTML =
       '<div class="loading-state">Failed to load stats</div>';
@@ -122,9 +130,10 @@ function renderStats(d) {
 }
 
 // ── Scan section ──────────────────────────────────────────────────────────────
-function renderScanSection(scanState, missingCount) {
+function renderScanSection(scanState, missingCount, logStatus) {
   const grid = document.getElementById('scanGrid');
   grid.innerHTML = '';
+  logStatus = logStatus || {};
 
   const lastScan = scanState.finished_at
     ? new Date(scanState.finished_at).toLocaleString()
@@ -150,18 +159,23 @@ function renderScanSection(scanState, missingCount) {
     startScanPoll();
   }
 
-  // Info cards
+  // Info cards — each maps to a persistent log file (ADMIN_SPEC.md §8)
   const infoCards = [
-    { label: 'Last Scan',               value: lastScan },
-    { label: 'Files Found',             value: (scanState.total_files    || 0).toLocaleString() },
-    { label: 'New Files',               value: (scanState.new_files      || 0).toLocaleString() },
-    { label: 'Changed Files',           value: (scanState.updated_files  || 0).toLocaleString() },
+    { label: 'Last Scan',     value: lastScan,                                     logName: 'last_scan' },
+    { label: 'Files Found',   value: (scanState.total_files   || 0).toLocaleString(), logName: null },
+    { label: 'New Files',     value: (scanState.new_files     || 0).toLocaleString(), logName: 'new_files' },
+    { label: 'Changed Files', value: (scanState.updated_files || 0).toLocaleString(), logName: 'changed_files' },
   ];
 
   for (const c of infoCards) {
     const card = document.createElement('div');
     card.className = 'stat-card';
-    card.innerHTML = `<div class="stat-label">${c.label}</div><div class="stat-value stat-value--md">${c.value}</div>`;
+    if (c.logName && logStatus[c.logName]) card.classList.add('has-pending');
+    card.innerHTML = `
+      <div class="stat-label">${c.label}</div>
+      <div class="stat-value stat-value--md">${c.value}</div>
+      ${c.logName ? `<button class="btn-admin-action log-btn" data-log="${c.logName}">Logs</button>` : ''}
+    `;
     grid.appendChild(card);
   }
 
@@ -170,15 +184,46 @@ function renderScanSection(scanState, missingCount) {
   const missingCard = document.createElement('div');
   missingCard.className = 'stat-card scan-now-card';
   missingCard.id = 'missingRecordsCard';
-  if (mc > 0) missingCard.classList.add('has-pending');
+  if (mc > 0 || logStatus.missing) missingCard.classList.add('has-pending');
   missingCard.innerHTML = `
     <div class="stat-label">Missing Records</div>
     <div class="stat-value stat-value--md" id="missingCountVal">${mc.toLocaleString()}</div>
     <button class="btn-admin-action" id="cleanupBtn"${mc === 0 ? ' disabled' : ''}>Clean Up</button>
+    <button class="btn-admin-action log-btn" data-log="missing">Logs</button>
     <div class="scan-status-text" id="cleanupResult"></div>
   `;
   grid.appendChild(missingCard);
   document.getElementById('cleanupBtn').addEventListener('click', doCleanup);
+
+  for (const btn of grid.querySelectorAll('.log-btn')) {
+    btn.addEventListener('click', () => openLogViewer(btn.dataset.log, btn.closest('.stat-card')));
+  }
+}
+
+// ── Scan log viewer modal (ADMIN_SPEC.md §8) ─────────────────────────────────
+const LOG_TITLES = {
+  last_scan: 'Last Scan Log',
+  new_files: 'New Files Log',
+  changed_files: 'Changed Files Log',
+  missing: 'Missing Records Log',
+};
+
+async function openLogViewer(logName, cardEl) {
+  document.getElementById('logViewerTitle').textContent = LOG_TITLES[logName] || 'Log';
+  document.getElementById('logViewerContent').textContent = 'Loading…';
+  document.getElementById('logViewerOverlay').hidden = false;
+
+  const r = await fetch(`${API}/admin/logs/${logName}`);
+  const d = await r.json();
+  document.getElementById('logViewerContent').textContent =
+    d.exists && d.content ? d.content : 'No entries yet.';
+
+  await fetch(`${API}/admin/logs/${logName}/mark-viewed`, { method: 'POST' });
+  if (cardEl) cardEl.classList.remove('has-pending');
+}
+
+function closeLogViewer() {
+  document.getElementById('logViewerOverlay').hidden = true;
 }
 
 function showScanProgress() {
@@ -322,6 +367,39 @@ async function loadConfig() {
   renderRoots();
   renderExcludes();
   renderAdvancedFields();
+
+  document.getElementById('autoScanFreqSelect').value = _config.auto_scan_frequency || 'off';
+  document.getElementById('scanOnLaunchCheckbox').checked = !!_config.autostart_scan;
+  document.getElementById('logSizeLimitInput').value = _config.log_size_limit_mb || 5;
+}
+
+function initScanSettings() {
+  document.getElementById('autoScanFreqSelect').addEventListener('change', (e) => {
+    patchConfig({ auto_scan_frequency: e.target.value });
+  });
+  document.getElementById('scanOnLaunchCheckbox').addEventListener('change', (e) => {
+    patchConfig({ autostart_scan: e.target.checked });
+  });
+}
+
+async function initLogsSection() {
+  const r = await fetch(`${API}/admin/logs/folder-path`);
+  const d = await r.json();
+  document.getElementById('logsFolderPathInput').value = d.path;
+
+  document.getElementById('copyLogsPathBtn').addEventListener('click', async () => {
+    await navigator.clipboard.writeText(d.path);
+    showToast('Path copied');
+  });
+
+  document.getElementById('saveLogSizeLimitBtn').addEventListener('click', () => {
+    const val = parseInt(document.getElementById('logSizeLimitInput').value, 10);
+    if (!val || val < 1) {
+      showToast('Enter a valid size in MB', true);
+      return;
+    }
+    patchConfig({ log_size_limit_mb: val });
+  });
 }
 
 function renderRoots() {

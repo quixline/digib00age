@@ -1417,7 +1417,7 @@ ul { list-style: none; }
 .scan-now-card { gap: 12px; }
 #scanNowCard { border-color: #fff; }
 #scanNowCard.is-scanning { border-color: var(--green); }
-#missingRecordsCard.has-pending { border-color: var(--green); }
+.has-pending { border-color: var(--green); }
 .scan-progress { width: 100%; }
 .scan-bar-wrap {
   height: 4px;
@@ -1804,6 +1804,17 @@ ul { list-style: none; }
   padding: 18px 20px 0;
 }
 .editor-modal-title { font-size: 17px; font-weight: 700; }
+.log-viewer-content {
+  margin: 16px 20px 20px;
+  padding: 12px;
+  background: var(--surface-3);
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  max-height: 50vh;
+  overflow-y: auto;
+}
 .editor-close-btn {
   background: none;
   color: var(--text-2);

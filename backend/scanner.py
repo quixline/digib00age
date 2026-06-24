@@ -26,7 +26,7 @@ from xml.etree import ElementTree as ET
 from PIL import Image
 from sqlalchemy.orm import Session
 
-from backend import config
+from backend import config, scan_logs
 from backend.models import Issue, IssueCredit, IssueGenre, Person, ReadingProgress
 
 logger = logging.getLogger(__name__)
@@ -579,9 +579,11 @@ def scan_library(db: Session):
         if result == "new":
             scan_progress.new += 1
             scan_progress.add_log(f"NEW: {Path(file_path).name}")
+            scan_logs.append_new_files_entry(Path(file_path).name, str(Path(file_path).parent))
         elif result == "updated":
             scan_progress.updated += 1
             scan_progress.add_log(f"UPDATED: {Path(file_path).name}")
+            scan_logs.append_changed_files_entry(Path(file_path).name)
         elif result == "skipped":
             scan_progress.skipped += 1
         elif result == "error":
@@ -607,6 +609,9 @@ def scan_library(db: Session):
         issue.missing = True
         scan_progress.missing += 1
         scan_progress.add_log(f"MISSING: {Path(issue.file_path).name}")
+        scan_logs.append_missing_entry(
+            Path(issue.file_path).name, issue.file_path, datetime.utcnow()
+        )
 
     db.commit()
 
@@ -620,6 +625,7 @@ def scan_library(db: Session):
     )
     scan_progress.running = False
     scan_progress.finished_at = datetime.utcnow()
+    scan_logs.append_last_scan_entry(scan_progress.started_at, scan_progress.finished_at)
 
     # Snapshot the accumulated change count (includes editor rescans + this
     # scan's own detections), then reset for the next cycle.

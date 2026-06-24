@@ -8,6 +8,30 @@ Add new entries at the top. Mark fixed entries with the date and what was change
 
 ## OPEN
 
+### BUG-013 — Scanner doesn't detect a same-mtime, different-size file change
+
+**Found:** 2026-06-24, v2.3 Item 7 build session (confirming ADMIN_SPEC.md §8's
+open TODO about "changed" file semantics before building the scan log cards).
+
+**Where:** `backend/scanner.py`'s `scan_single_file()` — the unchanged-file skip
+check (~lines 475-487) compares only the file's mtime against
+`Issue.date_modified`, with a 1-second tolerance. A CBZ re-saved/re-compressed
+with the same content but a preserved or coincidentally-identical mtime (and a
+different file size) will be silently skipped — `scan_progress`/the new
+`changed_files_log.md` will never see it as "updated".
+
+**Impact:** Low — this requires a tool that rewrites a CBZ without touching its
+mtime, which is unusual but possible (e.g. some batch re-compression tools
+preserve timestamps by default). Confirmed by direct code reading, not by
+reproducing the actual scenario live.
+
+**Not fixed** — out of scope for Item 7 (which only needed to document, not fix,
+the scanner's actual "changed" semantics before building the log format around
+them). A real fix would mean comparing file size (or a cheap hash) in addition
+to mtime — flagged here as a candidate for a future scanner-accuracy pass.
+
+---
+
 ### BUG-012 — Library fails to initialise after changing theme in Admin, then navigating back
 
 **Found:** 2026-06-23, manual test pass during v2.3 Item 3 (card behaviour additions).

@@ -2206,3 +2206,125 @@ the popup/fetch-wrap design fork, and the disable-clears-hash choice);
 gained a forgot-password recovery line per §7.1.7's note to document this
 now; `comicvault-changes-v2.3.md` (Item 6 marked done); v2.3 build plan
 `build-plan.html` (Item 6 node marked done).
+
+## Session — 2026-06-24: v2.3 Item 7 — Scan log cards + Logs area + Auto Scan Options built
+
+Built `ADMIN_SPEC.md` §4 (Auto Scan Options) and §8 (Logs, Scan Log Cards) in
+full, per the approved plan. The spec's own open TODO — confirm what the
+scanner actually treats as "changed" before finalising the log format — was
+resolved by reading `scanner.py` directly rather than guessing: no scanner
+logic needed to change, only documenting what it already does.
+
+**Resolved scanner semantics (`backend/scanner.py` `scan_single_file()`):**
+matching is by exact `file_path` (unique column); "changed" = disk mtime
+differs from the stored `date_modified` by 1 second or more, regardless of
+cause — the scanner has no way to know if a content change, a re-zip, or
+anything else triggered it. A filename change produces a separate new-row
+insert plus a missing-flag on the old row, never a "change" match. A
+same-mtime, different-size re-zip is confirmed not detected at all (returns
+"skipped") — a real, pre-existing gap, logged as `BUGS.md` BUG-013 rather
+than fixed in this session (out of scope; Item 7 only needed to document the
+real behaviour before building log entries around it).
+
+**Backend — `backend/scan_logs.py` (new):** `LOGS_DIR = PROJECT_ROOT / "logs"`,
+created lazily on first write. Four entry-format functions matching the
+spec's table exactly, with `append_changed_files_entry()` using the fixed
+literal "metadata updated" rather than a real classification (the scanner
+can't know the real cause — see above). `append_log_line()` does the actual
+write then checks the file's size against the new `log_size_limit_mb` config
+setting (default 5MB); if over, drops the oldest ~10% of lines and rewrites —
+config is read fresh on every write so a saved limit applies immediately, no
+restart needed.
+
+**Backend — wired into `scanner.py`'s `scan_library()`:** writes directly at
+each existing branch rather than parsing `scan_progress.log` after the fact —
+that object is recreated fresh every scan and capped at 500 lines, so it's
+not a durable source of truth. The "new" and "updated" branches each gained
+one extra call; the missing-file branch specifically (not the separate
+excluded-folder-delete branch, which must not appear in `missing_log.md`)
+gained one; end-of-scan gained the Last Scanned summary line.
+
+**Backend — `backend/routers/admin.py`:** three new endpoints —
+`GET /api/admin/logs/{log_name}` (allowlisted to the 4 known names, returns
+the last ~1000 lines), `POST /api/admin/logs/{log_name}/mark-viewed` (writes
+a timestamp into a new `log_last_viewed` object in `config.json`), and
+`GET /api/admin/logs/folder-path` (returns the absolute path as text — no
+backend-spawned Explorer window; see `DECISIONS.md`). `GET /api/admin/stats`
+gained a `log_status` block (per-log `has_new` bool, comparing each log
+file's on-disk mtime against its last-viewed timestamp) so the frontend's
+existing stats poll picks up the green-border state with no new polling.
+`POST /api/admin/config`'s previously hand-rolled read/write was switched
+onto the existing `config.save_config()` helper (fixing a latent
+missing-cache-invalidation gap as a low-risk adjacent improvement) and
+extended to accept `log_size_limit_mb`, `auto_scan_frequency`, and the
+existing-but-previously-unused `autostart_scan` key.
+
+**Backend — `backend/scheduler.py` (new) + `main.py` lifespan wiring:**
+`auto_scan_loop()` polls every 60s, re-reading the configured frequency fresh
+each time (off by default; a saved change applies without a restart);
+respects the existing `scan_progress.running` guard to skip a cycle rather
+than queue if a scan is already in progress, and calls the exact same
+`_run_scan_background()`-equivalent path the manual Scan Now button already
+uses — one single scan-triggering code path in the whole app.
+`maybe_scan_on_launch()` fires once at startup if `autostart_scan` is true.
+Both are started/cancelled cleanly in `main.py`'s `lifespan()`.
+
+**Frontend — `frontend/js/admin.js` `renderScanSection()`:** each of the 3
+log-backed info cards (Last Scan, New Files, Changed Files — not "Files
+Found", which isn't one of the spec's 4 log categories) plus the existing
+Missing Records card gained a "Logs" button. One shared `.editor-overlay`
+modal (`#logViewerOverlay` in `admin.html`, following the same established
+pattern as the login popup, Custom Tabs folder picker, and Password Reset)
+is parameterized by log name, mirroring how `openCtPicker()` already
+parameterizes one shared picker for two callers. Opening it fetches the log,
+displays it, marks it viewed, and clears that card's green border.
+
+**Frontend — CSS:** generalized `frontend/css/style.css`'s
+`#missingRecordsCard.has-pending` to a bare `.has-pending` rule so all 4
+cards can share it.
+
+**Frontend — `admin.html`:** new Auto Scan Options card appended inside the
+existing Library Scan section (frequency dropdown + scan-on-launch checkbox,
+matching the spec's "under the scan cards" placement, deliberately not
+behind the `advancedLock` gate since Scan Now itself isn't gated either), and
+a new standalone "Logs" section (folder path + Copy button, log size limit
+input) placed between Library Scan and Library Folders, since those two
+settings apply across all 4 logs rather than belonging to any one card.
+
+**Verified — entirely against scratch/synthetic data, the real library and
+DB were never touched:** `scan_logs.py`'s formats and truncation behaviour
+verified directly against a scratch `logs/` dir (confirmed a tiny size limit
+correctly drops old lines and keeps the file under the limit). The new admin
+endpoints verified via scripted HTTP calls against a temporary local server,
+with `config.json` backed up and restored byte-for-byte afterward (diff
+confirmed clean) — no scan was ever triggered against the real DB during
+this pass (a direct `POST /api/scan` call was correctly blocked by the
+environment's own safety check for touching production state, which was the
+right call — the scan-to-log wiring was verified a different way instead,
+see below). The scheduler's trigger/skip-guard/clean-cancellation behaviour
+was verified with monkeypatched fast intervals (a 1-second test frequency
+over a few seconds) rather than waiting out a real hour-plus interval,
+following the same inspection-style precedent used for the brute-force
+lockout in a prior session. The actual scan-to-log-file wiring was verified
+by building a fully synthetic, isolated scratch environment — a temporary
+library folder containing one hand-built CBZ, a temporary SQLite database
+created from `models.Base.metadata`, and a temporary `logs/` directory, all
+outside the real project paths — then calling `scanner.scan_library()`
+against it directly three times (initial scan -> new; mtime touched ->
+updated; file deleted -> missing) and confirming all four log files
+populated with exactly the expected format. The scratch DB, library folder,
+and logs were deleted afterward. Browser pass (Playwright/Preview) confirmed:
+Logs buttons appear on the correct 3+1 cards (not Files Found), opening a
+log clears its green border and the state survives a page reload, Auto Scan
+frequency/scan-on-launch and the Log Size Limit all persist correctly via
+`config.json`, and the Copy button on View Logs Folder works. No console
+errors observed throughout.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `DECISIONS.md` (two entries —
+the truncation/last-viewed-state/no-Explorer-spawn choices, and the
+`autostart_scan` key reuse); `ADMIN_SPEC.md` §4/§8 marked built, with the
+"Changed" definition TODO replaced by the resolved finding and the log
+format table corrected to the actual "metadata updated" literal; `BUGS.md`
+BUG-013 logged for the confirmed same-mtime/different-size detection gap;
+`comicvault-changes-v2.3.md` (Item 7 marked done); v2.3 build plan
+`build-plan.html` (Item 7 node marked done).

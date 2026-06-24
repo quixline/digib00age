@@ -90,17 +90,18 @@ Built 2026-06-24. **Spec:** `ADMIN_SPEC.md` §7.1, §7.2 — full design there; 
 
 ---
 
-## Item 7 — Admin: scan improvements + auto scan
+## ✅ Item 7 — Admin: scan improvements + auto scan
 
-**Spec:** `ADMIN_SPEC.md` §4 (scan log cards), §8 (logs + auto scan)
+Built 2026-06-24. **Spec:** `ADMIN_SPEC.md` §4 (scan log cards), §8 (logs + auto scan)
 
 Two related scan-area additions:
 
 **Scan log cards:** each of the four scan stat cards (Last Scanned, Changed Files,
 New Files, Missing Records) gains its own log file (`/logs/`), a Logs button that
 opens it, and a green border indicator when new entries exist since last viewed. Log
-formats per `ADMIN_SPEC.md` §8. Note the open TODO: confirm scanner's "changed" flag
-definition against `scanner.py` before implementing the Changed Files log format.
+formats per `ADMIN_SPEC.md` §8. The open TODO (confirm scanner's "changed" flag
+definition against `scanner.py`) was resolved by direct code reading — see
+`DECISIONS.md` and `BUGS.md` BUG-013 for a confirmed pre-existing detection gap.
 
 **Auto Scan Options:** frequency dropdown (off / 1hr / 6hr / 12hr / 1 day / 3 days /
 7 days / 1 month) + "Scan on launch" checkbox. Saved to `config.json`.

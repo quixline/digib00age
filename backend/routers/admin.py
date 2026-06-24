@@ -19,7 +19,8 @@ from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Qu
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from backend.config import get_config, PROJECT_ROOT
+from backend import scan_logs
+from backend.config import get_config, save_config, PROJECT_ROOT
 from backend.database import get_db, SessionLocal
 from backend.models import CustomTab, HomeStrip, Issue, ReadingProgress
 from backend.path_utils import is_under, normalize_path
@@ -69,6 +70,7 @@ def get_stats(db: Session = Depends(get_db)):
     from backend.scanner import scan_progress as sp, get_changes_last_cycle
 
     config = get_config()
+    log_status = _compute_log_status(config)
 
     return {
         "total_issues": total_issues,
@@ -87,7 +89,27 @@ def get_stats(db: Session = Depends(get_db)):
             "new_files": sp.new,
             "updated_files": get_changes_last_cycle(),
         },
+        "log_status": log_status,
     }
+
+
+def _compute_log_status(cfg: dict) -> dict:
+    """has_new per log card — on-disk log mtime vs. its last-viewed timestamp."""
+    viewed = cfg.get("log_last_viewed", {})
+    status = {}
+    for log_name in scan_logs._FILENAMES:
+        path = scan_logs.log_path(log_name)
+        if not path.exists():
+            status[log_name] = False
+            continue
+        viewed_at = viewed.get(log_name)
+        if not viewed_at:
+            status[log_name] = True
+            continue
+        log_mtime = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+        viewed_dt = datetime.fromisoformat(viewed_at)
+        status[log_name] = log_mtime > viewed_dt
+    return status
 
 
 # ---------------------------------------------------------------------------
@@ -193,6 +215,9 @@ def get_admin_config():
         "library_roots": roots,
         "scan_exclude": cfg.get("scan_exclude", []),
         "library_root": root,
+        "log_size_limit_mb": cfg.get("log_size_limit_mb", 5),
+        "auto_scan_frequency": cfg.get("auto_scan_frequency", "off"),
+        "autostart_scan": cfg.get("autostart_scan", False),
     }
 
 
@@ -202,25 +227,62 @@ def get_admin_config():
 
 @router.post("/admin/config")
 def save_admin_config(data: dict):
-    config_path = PROJECT_ROOT / "config.json"
-    with open(config_path, "r", encoding="utf-8") as f:
-        cfg = json.load(f)
+    cfg = get_config()
+    update: dict = {}
 
     if "library_roots" in data:
         roots = [r.strip() for r in data["library_roots"] if r.strip()]
-        cfg["library_roots"] = roots
+        update["library_roots"] = roots
         if roots:
-            cfg["library_root"] = roots[0]
+            update["library_root"] = roots[0]
     elif "library_root" in data and data["library_root"].strip():
-        cfg["library_root"] = data["library_root"].strip()
+        update["library_root"] = data["library_root"].strip()
 
     if "scan_exclude" in data:
-        cfg["scan_exclude"] = [e.strip() for e in data["scan_exclude"] if e.strip()]
+        update["scan_exclude"] = [e.strip() for e in data["scan_exclude"] if e.strip()]
 
-    with open(config_path, "w", encoding="utf-8") as f:
-        json.dump(cfg, f, indent=2)
+    if "log_size_limit_mb" in data:
+        update["log_size_limit_mb"] = int(data["log_size_limit_mb"])
+
+    if "auto_scan_frequency" in data:
+        update["auto_scan_frequency"] = data["auto_scan_frequency"]
+
+    if "autostart_scan" in data:
+        update["autostart_scan"] = bool(data["autostart_scan"])
+
+    save_config(update)
 
     return {"message": "Config saved"}
+
+
+# ---------------------------------------------------------------------------
+# GET /api/admin/logs/{log_name}        Log file contents
+# POST /api/admin/logs/{log_name}/mark-viewed
+# GET /api/admin/logs/folder-path       Logs directory path
+# ---------------------------------------------------------------------------
+
+@router.get("/admin/logs/folder-path")
+def get_logs_folder_path():
+    return {"path": str(scan_logs.LOGS_DIR)}
+
+
+@router.get("/admin/logs/{log_name}")
+def get_log_contents(log_name: str):
+    if log_name not in scan_logs._FILENAMES:
+        raise HTTPException(status_code=404, detail={"error": "unknown_log"})
+    content, exists = scan_logs.read_log(log_name)
+    return {"content": content, "exists": exists}
+
+
+@router.post("/admin/logs/{log_name}/mark-viewed")
+def mark_log_viewed(log_name: str):
+    if log_name not in scan_logs._FILENAMES:
+        raise HTTPException(status_code=404, detail={"error": "unknown_log"})
+    cfg = get_config()
+    viewed = dict(cfg.get("log_last_viewed", {}))
+    viewed[log_name] = datetime.now(timezone.utc).isoformat()
+    save_config({"log_last_viewed": viewed})
+    return {"ok": True}
 
 
 # ---------------------------------------------------------------------------

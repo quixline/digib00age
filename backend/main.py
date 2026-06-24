@@ -67,8 +67,20 @@ async def lifespan(app: FastAPI):
     # but still completes before the server accepts any connections.
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _warmup_db)
+
+    from backend.scheduler import auto_scan_loop, maybe_scan_on_launch
+
+    # Fire-and-forget — must not block startup waiting for a full scan.
+    asyncio.create_task(maybe_scan_on_launch())
+    scheduler_task = asyncio.create_task(auto_scan_loop())
+
     yield
-    # Nothing to clean up for SQLite
+
+    scheduler_task.cancel()
+    try:
+        await scheduler_task
+    except asyncio.CancelledError:
+        pass
 
 # ---------------------------------------------------------------------------
 # App
