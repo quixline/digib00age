@@ -92,15 +92,26 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Routers — each file owns a slice of the API
 # ---------------------------------------------------------------------------
-from backend.routers import library, reader, progress, admin, home, editor_basic, editor_full  # noqa: E402
+from fastapi import Depends  # noqa: E402
+from backend.auth import require_admin_auth  # noqa: E402
+from backend.routers import (  # noqa: E402
+    library, reader, progress, admin, home, editor_basic, editor_full, admin_auth,
+)
 
 app.include_router(library.router, prefix="/api")
 app.include_router(reader.router,  prefix="/api")
 app.include_router(progress.router, prefix="/api")
-app.include_router(admin.router,   prefix="/api")
 app.include_router(home.router,    prefix="/api")
-app.include_router(editor_basic.router, prefix="/api")
-app.include_router(editor_full.router, prefix="/api")
+
+# admin_auth is intentionally ungated — it's the login/status surface the gate itself depends on.
+app.include_router(admin_auth.router, prefix="/api")
+
+# Gated per ADMIN_SPEC.md §7.1: all /api/admin/* and /api/editor/* routes require auth
+# once password protection is enabled (no-op when disabled, V1 behaviour unchanged).
+_auth_gate = [Depends(require_admin_auth)]
+app.include_router(admin.router,        prefix="/api", dependencies=_auth_gate)
+app.include_router(editor_basic.router, prefix="/api", dependencies=_auth_gate)
+app.include_router(editor_full.router,  prefix="/api", dependencies=_auth_gate)
 
 # ---------------------------------------------------------------------------
 # Serve frontend static files

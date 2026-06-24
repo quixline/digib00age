@@ -19,6 +19,7 @@
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
       </a>
+      <button type="button" class="btn-admin-action" id="logoutBtn" hidden>Logout</button>
     </div>
   </header>
 
@@ -30,7 +31,7 @@
       <a href="/guide" target="_blank" rel="noopener" class="btn-admin-action">User Guide</a>
       <a href="/editor" target="_blank" rel="noopener" class="btn-admin-action">Open Editor</a>
       <button class="btn-admin-action" id="backupBtn">Backup Database</button>
-      <button class="btn-admin-action" disabled title="Password management coming in V2">Password Reset</button>
+      <button class="btn-admin-action" id="passwordResetBtn">Password Reset</button>
     </div>
 
     <!-- ── Library Stats ───────────────────────────────────────────────────── -->
@@ -136,6 +137,37 @@
                 <button class="btn-primary" id="saveAdvancedBtn">Save Location</button>
               </div>
               <p class="admin-field-hint">No functional effect in V1 — reserved for future reader configuration.</p>
+            </div>
+          </div>
+
+          <!-- ── Password Protection (ADMIN_SPEC.md §7.1 / §7.2) ─────────── -->
+          <div class="admin-subsection">
+            <h3 class="admin-subsection-heading">Password Protection</h3>
+            <p class="admin-card-hint" id="authLocalOnlyHint" hidden>
+              Password protection, remote administration and password changes can only be
+              changed from this machine — log in locally to change these settings.
+            </p>
+            <div class="admin-card">
+              <label class="admin-lock-label">
+                <input type="checkbox" id="authProtectionToggle" />
+                <span>Require a password for Admin / Editor</span>
+              </label>
+              <div class="admin-field-row" id="authPasswordFields" hidden>
+                <div class="admin-field-input-wrap">
+                  <div class="admin-field-input-row">
+                    <input type="password" class="admin-input" id="authNewPassword" placeholder="New password" autocomplete="new-password" />
+                    <input type="password" class="admin-input" id="authConfirmPassword" placeholder="Confirm password" autocomplete="new-password" />
+                    <button class="btn-primary" id="authSaveBtn">Save</button>
+                  </div>
+                  <p class="editor-error" id="authError" hidden></p>
+                </div>
+              </div>
+
+              <label class="admin-lock-label" id="authRemoteLabel">
+                <input type="checkbox" id="authRemoteToggle" disabled />
+                <span>Allow Remote Administration (non-local access)</span>
+              </label>
+              <p class="admin-field-hint">Requires password protection to be on.</p>
             </div>
           </div>
 
@@ -290,6 +322,32 @@
     </div>
   </div>
 
+  <!-- ── Password Reset modal ────────────────────────────────────────────── -->
+  <div id="pwResetOverlay" class="editor-overlay" hidden>
+    <div class="editor-modal">
+      <div class="editor-modal-header">
+        <h2 class="editor-modal-title">Change Password</h2>
+        <button type="button" class="editor-close-btn" id="pwResetCloseBtn" aria-label="Close">&times;</button>
+      </div>
+      <form id="pwResetForm">
+        <div class="editor-field">
+          <label for="pwResetCurrent">Current Password</label>
+          <input type="password" id="pwResetCurrent" autocomplete="current-password">
+        </div>
+        <div class="editor-field">
+          <label for="pwResetNew">New Password</label>
+          <input type="password" id="pwResetNew" autocomplete="new-password">
+        </div>
+        <div class="editor-error" id="pwResetError" hidden></div>
+        <div class="editor-actions">
+          <button type="button" class="btn-status-toggle" id="pwResetCancelBtn">Cancel</button>
+          <button type="submit" class="btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="/static/js/admin.js"></script>
+  <script src="/static/js/auth.js"></script>
 </body>
 </html>

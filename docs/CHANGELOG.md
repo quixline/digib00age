@@ -7,6 +7,13 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-24** — v2.3 Item 6: Admin password protection + Remote Administration
+  toggle. Single shared password gates `/admin`, `/editor`, the Basic Editor popup,
+  and all `/api/admin/*` + `/api/editor/*` endpoints (off by default, no behaviour
+  change until enabled). Stateless signed-cookie sessions, in-memory brute-force
+  lockout, local-only enforcement on enable/disable/password-change/remote-toggle.
+  See `docs/progress.md` for the full build narrative.
+
 - **2026-06-23** — Full Editor Process All gained a per-field "Apply to: All"
   checkbox (default unchecked) — only checked fields bulk-apply across every
   loaded file; unchecked fields keep each file's own value. Issue Number has

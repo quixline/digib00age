@@ -6,6 +6,49 @@ specs and aren't repeated. Newest first.
 
 ---
 
+### Admin password gate: client-side popup instead of server-side redirect; global fetch wrap for 401 interception
+
+**Decided:** 2026-06-24, Item 6 build session.
+**Why:** `ADMIN_SPEC.md` §7.1.2 says an unauthenticated page request is "shown the
+password popup." Two ways to get there: (a) always serve the page HTML/JS and let a
+JS bootstrap show a blocking overlay if unauthenticated, or (b) check the session
+cookie server-side in `main.py`'s page routes and redirect to a dedicated login page.
+(b) is more airtight (unauthenticated HTML/JS never reaches the browser) but this
+codebase has no templating engine — page routes are plain `FileResponse` — so it would
+need a new login page and a redirect-back-after-login flow. Chose (a): simpler, reuses
+one popup component for both page bootstraps and API 401s, and the actual security
+cost is minor given the spec's own threat model (closed home LAN, not defending
+against a hostile client reading static JS).
+
+To catch 401s from every caller — `apiFetch()` in `app.js` plus the many raw
+`fetch()` call sites in `editor_basic.js`/`editor_full.js` — without rewriting each
+one, `auth.js` monkey-patches `window.fetch` globally to watch for 401 responses and
+trigger the login popup. This is more "magic" than this codebase's usual explicit
+style, but the alternative (touching dozens of call sites) was judged more invasive
+and more error-prone to keep in sync over time.
+
+After a successful login, the popup does a full `location.reload()` rather than
+transparently retrying the original failed request — simpler given the interception
+point doesn't have a handle back to the original caller's promise chain.
+
+**Where:** `ADMIN_SPEC.md` §7.1/§7.2. Implementation: `frontend/js/auth.js`,
+`frontend/login_popup.html`, `backend/auth.py` (`require_admin_auth` dependency, not
+global middleware — kept per-router so the gate stays auditable per `main.py`'s
+router-registration block, and so `/api/editor/genres`/`/formats` are caught
+alongside the issue-specific editor routes without special-casing a path regex).
+
+### Disabling password protection clears the stored hash outright
+
+**Decided:** 2026-06-24, Item 6 build session.
+**Why:** `ADMIN_SPEC.md` §7.1.1 says the stored hash "may remain on disk" after
+disabling — ambiguous on whether enforcement state needs its own separate flag.
+Chose to clear `admin_password_hash`/`admin_password_salt` on disable instead, so
+`is_protection_enabled()` stays a one-line "hash present" check rather than needing a
+second boolean to keep in sync (especially relevant given §7.1.1's force-disable-
+remote-admin rule already has to update two fields atomically).
+
+**Where:** `backend/routers/admin_auth.py`'s `disable_protection`.
+
 ### Multi-select scope corrected to include Series and Singles aggregate cards
 
 **Decided:** 2026-06-23, inbox triage.

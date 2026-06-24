@@ -83,14 +83,9 @@ unchanged). This changes the existing default-everything behaviour.
 
 ---
 
-## Item 6 — Admin: password protection + access controls
+## ✅ Item 6 — Admin: password protection + access controls
 
-**Spec:** `ADMIN_SPEC.md` §7.1, §7.2
-
-Gate `/admin` (and editor access via Admin) behind a password popup. Password
-management in Advanced Settings. Remote Administration toggle (block/allow non-local
-access to `/admin`) added to Advanced Settings — cannot be enabled until a password
-is set.
+Built 2026-06-24. **Spec:** `ADMIN_SPEC.md` §7.1, §7.2 — full design there; this item is a pointer only.
 
 
 ---

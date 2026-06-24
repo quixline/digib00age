@@ -69,6 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
   loadFormatList();
   document.getElementById('formatAddBtn').addEventListener('click', addFormat);
   document.getElementById('formatNameInput').addEventListener('keydown', e => { if (e.key === 'Enter') addFormat(); });
+
+  initAuthSettings();
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -1161,4 +1163,151 @@ function showToast(msg, isError = false) {
   toast.classList.toggle('admin-toast--error', isError);
   toast.classList.add('admin-toast--show');
   setTimeout(() => toast.classList.remove('admin-toast--show'), 3500);
+}
+
+// ── Password Protection + Remote Administration (ADMIN_SPEC.md §7.1 / §7.2) ────
+
+async function initAuthSettings() {
+  const protectionToggle = document.getElementById('authProtectionToggle');
+  const passwordFields = document.getElementById('authPasswordFields');
+  const remoteToggle = document.getElementById('authRemoteToggle');
+  const saveBtn = document.getElementById('authSaveBtn');
+
+  await refreshAuthSettingsUi();
+
+  protectionToggle.addEventListener('change', () => {
+    passwordFields.hidden = !protectionToggle.checked;
+    document.getElementById('authError').hidden = true;
+    if (!protectionToggle.checked) {
+      // Turning protection off is immediate (no password needed) — confirm since
+      // it also force-disables Remote Administration in the same action.
+      if (!confirm('Turn off password protection? This will also disable Remote Administration.')) {
+        protectionToggle.checked = true;
+        passwordFields.hidden = true;
+        return;
+      }
+      disableProtection();
+    }
+  });
+
+  saveBtn.addEventListener('click', enableProtection);
+
+  remoteToggle.addEventListener('change', async () => {
+    const res = await fetch(`${API}/admin/auth/remote-toggle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: remoteToggle.checked }),
+    });
+    if (!res.ok) {
+      remoteToggle.checked = !remoteToggle.checked;
+      showToast('Could not update Remote Administration', true);
+      return;
+    }
+    showToast(remoteToggle.checked ? 'Remote Administration enabled' : 'Remote Administration disabled');
+  });
+
+  document.getElementById('passwordResetBtn').addEventListener('click', openPwResetModal);
+  document.getElementById('pwResetCloseBtn').addEventListener('click', closePwResetModal);
+  document.getElementById('pwResetCancelBtn').addEventListener('click', closePwResetModal);
+  document.getElementById('pwResetForm').addEventListener('submit', submitPwReset);
+}
+
+async function refreshAuthSettingsUi() {
+  const status = await fetch(`${API}/admin/auth/status`).then(r => r.json());
+
+  document.getElementById('authProtectionToggle').checked = status.protection_enabled;
+  document.getElementById('authPasswordFields').hidden = true;
+  document.getElementById('authRemoteToggle').checked = status.remote_admin_enabled;
+  document.getElementById('authRemoteToggle').disabled = !status.protection_enabled;
+
+  // Local-only enforcement (ADMIN_SPEC.md §7.1.1) — these controls are only ever
+  // submittable from a 127.0.0.1 session, even when advancedLock is unchecked.
+  const localOnlyHint = document.getElementById('authLocalOnlyHint');
+  const remoteLabel = document.getElementById('authRemoteLabel');
+  if (!status.is_local) {
+    localOnlyHint.hidden = false;
+    document.getElementById('authProtectionToggle').disabled = true;
+    document.getElementById('authSaveBtn').disabled = true;
+    remoteLabel.querySelector('input').disabled = true;
+    document.getElementById('passwordResetBtn').disabled = true;
+  } else {
+    localOnlyHint.hidden = true;
+    document.getElementById('authProtectionToggle').disabled = false;
+    document.getElementById('authSaveBtn').disabled = false;
+    remoteLabel.querySelector('input').disabled = !status.protection_enabled;
+    document.getElementById('passwordResetBtn').disabled = false;
+  }
+}
+
+async function enableProtection() {
+  const errorBox = document.getElementById('authError');
+  errorBox.hidden = true;
+  const pw = document.getElementById('authNewPassword').value;
+  const confirmPw = document.getElementById('authConfirmPassword').value;
+
+  if (!pw || pw !== confirmPw) {
+    errorBox.hidden = false;
+    errorBox.textContent = 'Passwords do not match (or are empty).';
+    return;
+  }
+
+  const res = await fetch(`${API}/admin/auth/enable`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw }),
+  });
+  if (!res.ok) {
+    errorBox.hidden = false;
+    errorBox.textContent = 'Could not enable password protection.';
+    return;
+  }
+  document.getElementById('authNewPassword').value = '';
+  document.getElementById('authConfirmPassword').value = '';
+  showToast('Password protection enabled');
+  await refreshAuthSettingsUi();
+}
+
+async function disableProtection() {
+  const res = await fetch(`${API}/admin/auth/disable`, { method: 'POST' });
+  if (!res.ok) {
+    showToast('Could not disable password protection', true);
+    await refreshAuthSettingsUi();
+    return;
+  }
+  showToast('Password protection disabled');
+  await refreshAuthSettingsUi();
+}
+
+function openPwResetModal() {
+  document.getElementById('pwResetError').hidden = true;
+  document.getElementById('pwResetCurrent').value = '';
+  document.getElementById('pwResetNew').value = '';
+  document.getElementById('pwResetOverlay').hidden = false;
+}
+
+function closePwResetModal() {
+  document.getElementById('pwResetOverlay').hidden = true;
+}
+
+async function submitPwReset(e) {
+  e.preventDefault();
+  const errorBox = document.getElementById('pwResetError');
+  errorBox.hidden = true;
+
+  const current_password = document.getElementById('pwResetCurrent').value;
+  const new_password = document.getElementById('pwResetNew').value;
+
+  const res = await fetch(`${API}/admin/auth/change-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_password, new_password }),
+  });
+
+  if (!res.ok) {
+    errorBox.hidden = false;
+    errorBox.textContent = 'Current password incorrect, or local access required.';
+    return;
+  }
+  closePwResetModal();
+  showToast('Password changed');
 }

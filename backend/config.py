@@ -23,6 +23,18 @@ def get_config() -> dict:
         return json.load(f)
 
 
+def save_config(data: dict) -> dict:
+    """Read-modify-write config.json with the given keys, then invalidate the cache."""
+    config_path = PROJECT_ROOT / "config.json"
+    with open(config_path, "r", encoding="utf-8") as f:
+        current = json.load(f)
+    current.update(data)
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(current, f, indent=2)
+    get_config.cache_clear()
+    return current
+
+
 def _resolve(path_str: str) -> Path:
     p = Path(path_str)
     return p if p.is_absolute() else PROJECT_ROOT / p

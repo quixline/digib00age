@@ -2083,3 +2083,126 @@ were untouched.
 done).
 (Item 3 marked done); v2.3 build plan `build-plan.html` (Item 3 node marked
 done).
+
+## Session — 2026-06-24: v2.3 Item 6 — Admin password protection + Remote Administration toggle built
+
+Built `ADMIN_SPEC.md` §7.1 (Password Protection) and §7.2 (Remote
+Administration Toggle) in full, per the approved plan. Off by default — no
+behaviour change until Tez explicitly turns it on from Admin → Advanced
+Settings.
+
+**Backend — `backend/auth.py` (new):** stdlib-only primitives.
+`hash_password()`/`verify_password()` via `hashlib.pbkdf2_hmac` (200k
+iterations, random 16-byte salt). `make_session_cookie()`/
+`verify_session_cookie()`: stateless signed cookie, value =
+`<expiry_ts>.<hmac_sha256_hex>` keyed on a `SESSION_SECRET` generated once
+into `config.json` on first "enable protection" call — no server-side
+session store, survives tray app restarts. `is_local_request()` checks
+`request.client.host in ('127.0.0.1', '::1')`. In-memory per-IP
+brute-force tracker — 5 failed attempts locks that IP for 10 minutes,
+resets on server restart (matches the spec's stated threat model: casual
+LAN guessing, not a sustained distributed attack). `require_admin_auth()`
+is the FastAPI dependency that gates everything — a no-op when protection
+is disabled (preserves V1 behaviour exactly), otherwise checks
+local-vs-remote-admin-enabled first, then the session cookie, then
+reissues a refreshed cookie on every authenticated request (sliding
+30-day expiry).
+
+**Backend — `backend/routers/admin_auth.py` (new):** the
+login/logout/status/enable/disable/change-password/remote-toggle
+endpoints, registered *without* the auth-gating dependency (it's the
+chicken-and-egg surface the gate itself depends on). The four
+state-mutating endpoints (enable, disable, change-password, remote-toggle)
+each do their own `is_local_request()` check inline — per §7.1.1, these
+can only ever be called from a `127.0.0.1` session, even if the current
+session is already authenticated remotely. `remote-toggle` additionally
+refuses to enable Remote Administration unless protection is already on
+(§7.2). `disable_protection()` clears the stored hash/salt outright and
+force-disables remote admin in the same write — see `DECISIONS.md` for why.
+
+**Backend — `backend/config.py`:** added `save_config()` — a
+read-modify-write helper that calls `get_config.cache_clear()` immediately
+after writing, so the new auth fields are never stale within the same
+process. (No existing call site did this before; `admin.py`'s own
+`POST /api/admin/config` still writes directly and wasn't migrated to
+avoid scope creep on this session — flagged as optional cleanup.)
+
+**Backend — `backend/main.py`:** registered `admin_auth.router` ungated;
+applied `dependencies=[Depends(require_admin_auth)]` at
+`include_router()` time for `admin.router`, `editor_basic.router`, and
+`editor_full.router` — kept the wiring visible in one place rather than
+scattered into each router file. `editor_basic.py`'s `/editor/genres` and
+`/editor/formats` (not just the per-issue popup route) are gated too,
+matching the spec's "all `/api/editor/*`" wording.
+
+**Frontend — `frontend/js/auth.js` + `frontend/login_popup.html` (new):**
+fragment-loaded login popup following the exact pattern
+`editor_basic.js`'s `ensureEditorLoaded()` already established (fetch the
+fragment, inject, wire chrome once). `checkAuthStatus()` runs on every
+page load, shows/hides the `#logoutBtn`, and triggers the popup if
+protection is on and the session isn't authenticated. A global
+`window.fetch` wrap watches every response for a 401 and shows the popup —
+covers `apiFetch()` in `app.js` and the many raw `fetch()` call sites in
+`editor_basic.js`/`editor_full.js` without touching each one individually
+(see `DECISIONS.md` for the trade-off). Successful login does a full
+`location.reload()` rather than transparently retrying the original failed
+request.
+
+**Frontend — Logout control + cog-link, 6 files:** added a hidden
+`#logoutBtn` next to (or, on `series.html`/`issue.html`, in place of — they
+had no gear icon already) the existing settings link in `index.html`,
+`series.html`, `issue.html`, `admin.html`, `guide.html`, `editor_full.html`.
+`editor_full.html` also gained the missing gear/settings link itself
+(`ADMIN_SPEC.md` §1's "Admin cog-link in Full Editor" — bundled in since
+the file was already being touched for Logout).
+
+**Frontend — `admin.html`/`admin.js` Advanced Settings:** new "Password
+Protection" subsection inside the existing locked-by-default
+`#advancedFields` fieldset, placed right after Reader Location. Contains
+the protection on/off checkbox (reveals new-password + confirm fields when
+turning on; confirms before turning off since it also kills Remote Admin),
+and the Remote Administration checkbox (disabled until protection is on).
+A separate `refreshAuthSettingsUi()` layers a *second*, independent
+disable on top of `advancedLock`'s simple checkbox-driven fieldset
+disable: even with Advanced Settings unlocked, these two specific controls
+(plus the Password Reset button) stay disabled unless
+`GET /api/admin/auth/status` reports `is_local: true` — a remote
+authenticated session cannot weaken the gate, per §7.1.1. The previously
+inert "Password Reset" button (top action row) is now wired to a small
+current+new-password modal, reusing the same `.editor-overlay` shell
+pattern as the login popup and the existing Custom Tabs folder picker.
+
+**Verified — against the real running app, but only read-only/auth state
+changes, never the real library or DB rows:** backend gating verified twice
+— first with a scripted `urllib` pass against a temporary local server
+(protection off → no behaviour change; enable → gated calls 401 without a
+cookie; wrong password → 401; correct password → cookie issued and gated
+calls succeed; 5 failed attempts → 6th locked out with 423; disable →
+gated calls open again with no cookie), then end-to-end in a real browser
+via the Preview tool against the actual `/admin` page: enabled protection
+through the UI, confirmed the login popup blocks the page on reload, wrong
+password shows an inline error without crashing, correct password unlocks
+and reloads with Logout now visible, Logout actually clears the session
+(confirmed via `/api/admin/auth/status`), Remote Administration toggle and
+Password Reset both round-tripped correctly via the UI, and disabling
+protection from the UI confirmed `remote_admin_enabled` flips back to
+`false` in the same action. `config.json` was backed up before this pass
+and byte-for-byte restored afterward (diff confirmed clean) — no real
+config state left behind. No scan, backup, or destructive action was
+triggered at any point; only `/api/admin/stats` (read-only) and the new
+auth endpoints were exercised. No console errors observed in any of the
+above.
+
+**Open/deferred, not part of this session's scope:** migrating
+`admin.py`'s existing `POST /api/admin/config` onto the new
+`save_config()` helper (optional cleanup, flagged in `DECISIONS.md`'s
+plan); brute-force lockout's 10-minute expiry was verified by code
+inspection plus an immediate 6th-attempt check, not by waiting out the
+full duration live.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `DECISIONS.md` (two entries —
+the popup/fetch-wrap design fork, and the disable-clears-hash choice);
+`ADMIN_SPEC.md` §7.1/§7.2 status lines updated to "built"; `guide.html`
+gained a forgot-password recovery line per §7.1.7's note to document this
+now; `comicvault-changes-v2.3.md` (Item 6 marked done); v2.3 build plan
+`build-plan.html` (Item 6 node marked done).
