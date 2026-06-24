@@ -15,11 +15,12 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query, Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from backend import scan_logs
+from backend.auth import is_local_request
 from backend.config import get_config, save_config, PROJECT_ROOT
 from backend.database import get_db, SessionLocal
 from backend.models import CustomTab, HomeStrip, Issue, ReadingProgress
@@ -218,6 +219,9 @@ def get_admin_config():
         "log_size_limit_mb": cfg.get("log_size_limit_mb", 5),
         "auto_scan_frequency": cfg.get("auto_scan_frequency", "off"),
         "autostart_scan": cfg.get("autostart_scan", False),
+        "reader_port": cfg.get("reader_port", 8000),
+        "backup_folder": cfg.get("backup_folder", ""),
+        "backup_frequency": cfg.get("backup_frequency", "off"),
     }
 
 
@@ -250,9 +254,41 @@ def save_admin_config(data: dict):
     if "autostart_scan" in data:
         update["autostart_scan"] = bool(data["autostart_scan"])
 
+    if "reader_port" in data:
+        update["reader_port"] = int(data["reader_port"])
+
+    if "backup_folder" in data:
+        update["backup_folder"] = data["backup_folder"].strip()
+
+    if "backup_frequency" in data:
+        update["backup_frequency"] = data["backup_frequency"]
+
     save_config(update)
 
     return {"message": "Config saved"}
+
+
+# ---------------------------------------------------------------------------
+# POST /api/admin/restart  — deliberately exit the process so the tray app's
+# existing crash-recovery relaunches it on the freshly-saved port
+# (ADMIN_SPEC.md §7.3). Local-only — restarting is disruptive to anyone
+# currently using the library, same local-access boundary as the admin
+# password controls.
+# ---------------------------------------------------------------------------
+
+@router.post("/admin/restart")
+async def restart_server(request: Request):
+    if not is_local_request(request):
+        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
+
+    import asyncio
+
+    async def _delayed_exit():
+        await asyncio.sleep(1)  # let the HTTP response actually reach the client first
+        os._exit(0)
+
+    asyncio.create_task(_delayed_exit())
+    return {"message": "Restarting"}
 
 
 # ---------------------------------------------------------------------------
@@ -310,21 +346,17 @@ def cleanup_missing(db: Session = Depends(get_db)):
 @router.post("/admin/backup")
 def backup_database():
     """
-    Copies comicvault.db to a dated backup file in the same directory.
+    Copies comicvault.db to a dated backup file.
     e.g. comicvault_backup_2025-01-15_14-32-00.db
+
+    Uses the configured Scheduled Backup destination (ADMIN_SPEC.md §9) if one
+    is set, otherwise falls back to the DB's own directory (original V1
+    behaviour) — this is also the function the scheduled backup loop calls.
     """
-    config = get_config()
-    db_path = PROJECT_ROOT / config.get("db_path", "backend/comicvault.db")
-
-    if not db_path.exists():
-        raise HTTPException(status_code=404, detail="Database file not found")
-
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    backup_name = f"comicvault_backup_{timestamp}.db"
-    backup_path = db_path.parent / backup_name
-
     try:
-        shutil.copy2(str(db_path), str(backup_path))
+        backup_path = run_database_backup()
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Database file not found")
     except OSError as exc:
         raise HTTPException(status_code=500, detail=f"Backup failed: {exc}")
 
@@ -333,6 +365,23 @@ def backup_database():
         "backup_file": str(backup_path),
         "size_bytes": backup_path.stat().st_size,
     }
+
+
+def run_database_backup() -> Path:
+    """Shared by the manual Backup Database button and the scheduled backup loop."""
+    config = get_config()
+    db_path = PROJECT_ROOT / config.get("db_path", "backend/comicvault.db")
+
+    if not db_path.exists():
+        raise FileNotFoundError(str(db_path))
+
+    dest_dir = Path(config["backup_folder"]) if config.get("backup_folder") else db_path.parent
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    backup_path = dest_dir / f"comicvault_backup_{timestamp}.db"
+    shutil.copy2(str(db_path), str(backup_path))
+    return backup_path
 
 
 # ---------------------------------------------------------------------------
@@ -517,6 +566,44 @@ def admin_browse_directory(path: str = Query(None)):
         raise HTTPException(status_code=500, detail=str(exc))
 
     return {"path": target, "roots": roots, "items": items}
+
+
+# ---------------------------------------------------------------------------
+# POST /api/admin/browse-folder-dialog
+# Native OS folder picker for the Scheduled Backup destination (ADMIN_SPEC.md
+# §9) — unlike /admin/browse above, this destination is explicitly meant to
+# live outside the library (a different drive, USB, or cloud-sync folder), so
+# the library-scoped tree-view picker doesn't apply here. Frontend and backend
+# always run on the same machine for this app, so a native dialog opened by
+# the backend is the same thing as the user opening one themselves — except
+# for a remote-admin session, where it would open on the wrong (server)
+# machine, hence the local-only gate.
+# ---------------------------------------------------------------------------
+
+@router.post("/admin/browse-folder-dialog")
+async def browse_folder_dialog(request: Request):
+    if not is_local_request(request):
+        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
+
+    import asyncio
+
+    loop = asyncio.get_event_loop()
+    path = await loop.run_in_executor(None, _show_folder_dialog)
+    return {"path": path}
+
+
+def _show_folder_dialog() -> str | None:
+    import tkinter
+    from tkinter import filedialog
+
+    root = tkinter.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    try:
+        selected = filedialog.askdirectory(title="Choose Backup Destination")
+    finally:
+        root.destroy()
+    return selected or None
 
 
 # ---------------------------------------------------------------------------

@@ -6,6 +6,67 @@ specs and aren't repeated. Newest first.
 
 ---
 
+### Backup destination uses a native OS folder dialog, not the existing library-scoped picker
+
+**Decided:** 2026-06-24, Item 8 build session.
+**Why:** `ADMIN_SPEC.md` §9 originally said the backup folder picker should reuse
+"the same mechanism as the Scan Roots Add button / Full Editor's path picker."
+Checked both existing browse endpoints (`GET /api/admin/browse`,
+`GET /editor/full/browse`) directly — both hard-reject any path outside the
+configured library roots. A backup destination is explicitly meant to live
+*outside* the library (a different drive, USB, or cloud-sync folder), so that
+restriction makes the existing picker unusable here, not just inconvenient.
+
+Tez's direction: use a real native OS folder dialog instead, opened by the
+backend itself. This works because frontend and backend always run on the same
+machine for this app — `tkinter.filedialog.askdirectory()` (stdlib, no new
+dependency) run in a thread executor so it doesn't block the async event loop.
+Gated to local-only sessions (`is_local_request()`, same helper already built
+for the admin password feature) since a remote-admin session would otherwise
+pop the dialog open on the server machine, not the remote user's screen — a
+confusing, effectively broken result for that one case.
+
+**Where:** `backend/routers/admin.py`'s `browse_folder_dialog()` /
+`_show_folder_dialog()`.
+
+### Server port change restarts via deliberate self-exit, relying on the tray app's existing crash-recovery
+
+**Decided:** 2026-06-24, Item 8 build session.
+**Why:** `reader_port` is read once at process start (`backend/config.py`'s
+module-level `READER_PORT` constant, plus `start_server.py`'s `uvicorn.run()`
+call) — there's no live-rebind path, a real process restart is required.
+Rather than building new restart-orchestration code, `POST /api/admin/restart`
+just saves the new port then calls `os._exit(0)` after a short delay (long
+enough for the HTTP response to actually reach the client). The tray app's
+`tray/tray_app.py` `health_check_loop()` already auto-relaunches the reader
+subprocess on any unexpected exit — and a freshly-spawned process reads
+`config.json` from scratch, picking up the new port with zero extra code.
+
+Confirmed by live testing: when the server isn't running under the tray app
+(e.g. started directly via `uvicorn`, as in this session's own scratch
+verification), the process exits and **stays down** — there's no other
+supervisor to relaunch it. This is a known, accepted limitation: the user gets
+the same "you need to restart it" outcome either way, just automatically under
+the tray app and manually otherwise. The frontend shows a confirmation dialog
+before submitting a port change (it disconnects active LAN users) and the
+field's hint text states the restart consequence up front.
+
+**Where:** `backend/routers/admin.py`'s `restart_server()`,
+`frontend/js/admin.js`'s `initServerPort()`.
+
+### Backup frequency dict separate from the Auto Scan frequency dict
+
+**Decided:** 2026-06-24, Item 8 build session.
+**Why:** `ADMIN_SPEC.md` §9's 22 backup intervals (down to 1hr/2hr/4hr
+granularity, up to 12 months) don't overlap cleanly with §4's 8-option scan
+frequency set. Built a second `_BACKUP_FREQUENCY_SECONDS` dict in
+`backend/scheduler.py` and a parallel `backup_loop()` following the exact same
+polling/skip/re-read-config pattern as `auto_scan_loop()`, rather than trying
+to force one shared frequency vocabulary onto two features with different
+granularity needs.
+
+**Where:** `backend/scheduler.py`.
+
 ### Scan log truncation, last-viewed state, and Explorer-reveal — Item 7 judgment calls
 
 **Decided:** 2026-06-24, Item 7 build session.

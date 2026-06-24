@@ -95,6 +95,51 @@
       </div>
     </section>
 
+    <!-- ── Scheduled Database Backup (ADMIN_SPEC.md §9) ────────────────────── -->
+    <section class="admin-section">
+      <h2 class="admin-section-heading">Scheduled Backup</h2>
+      <div class="admin-card">
+        <div class="admin-field-row">
+          <label class="admin-field-label">Backup Destination</label>
+          <div class="admin-field-input-wrap">
+            <div class="admin-field-input-row">
+              <input type="text" class="admin-input" id="backupFolderInput" readonly placeholder="Falls back to the database's own folder if unset" />
+              <button class="btn-admin-action" id="browseBackupFolderBtn">Choose…</button>
+            </div>
+          </div>
+        </div>
+        <div class="admin-field-row">
+          <label class="admin-field-label" for="backupFreqSelect">Backup Frequency</label>
+          <div class="admin-field-input-wrap">
+            <select class="admin-select" id="backupFreqSelect" aria-label="Backup frequency">
+              <option value="off">Off (manual only)</option>
+              <option value="1hr">Every 1 hour</option>
+              <option value="2hr">Every 2 hours</option>
+              <option value="4hr">Every 4 hours</option>
+              <option value="6hr">Every 6 hours</option>
+              <option value="12hr">Every 12 hours</option>
+              <option value="24hr">Every 24 hours</option>
+              <option value="2days">Every 2 days</option>
+              <option value="3days">Every 3 days</option>
+              <option value="4days">Every 4 days</option>
+              <option value="5days">Every 5 days</option>
+              <option value="6days">Every 6 days</option>
+              <option value="1week">Every 1 week</option>
+              <option value="2weeks">Every 2 weeks</option>
+              <option value="3weeks">Every 3 weeks</option>
+              <option value="4weeks">Every 4 weeks</option>
+              <option value="1month">Every 1 month</option>
+              <option value="2months">Every 2 months</option>
+              <option value="3months">Every 3 months</option>
+              <option value="6months">Every 6 months</option>
+              <option value="12months">Every 12 months</option>
+            </select>
+          </div>
+        </div>
+        <p class="admin-card-hint">The manual "Backup Database" button above uses this same destination once set.</p>
+      </div>
+    </section>
+
     <!-- ── Library Folders ─────────────────────────────────────────────────── -->
     <section class="admin-section">
       <h2 class="admin-section-heading">Library Folders</h2>
@@ -182,6 +227,18 @@
                 <button class="btn-primary" id="saveAdvancedBtn">Save Location</button>
               </div>
               <p class="admin-field-hint">No functional effect in V1 — reserved for future reader configuration.</p>
+            </div>
+          </div>
+
+          <!-- ── Server Listening Port (ADMIN_SPEC.md §7.3) ───────────────── -->
+          <div class="admin-field-row">
+            <label class="admin-field-label" for="serverPortInput">Server Listening Port</label>
+            <div class="admin-field-input-wrap">
+              <div class="admin-field-input-row">
+                <input type="number" class="admin-input" id="serverPortInput" min="1" max="65535" style="max-width:120px;" />
+                <button class="btn-primary" id="savePortBtn">Save &amp; Restart</button>
+              </div>
+              <p class="admin-field-hint">Changing this restarts the server and disconnects active users. Workaround for BUG-004 (Windows port-exclusion conflicts).</p>
             </div>
           </div>
 

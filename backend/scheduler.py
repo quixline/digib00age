@@ -1,7 +1,8 @@
 """
-ComicVault — Auto Scan scheduler (ADMIN_SPEC.md §4 "Auto Scan Options")
+ComicVault — Auto Scan + Scheduled Backup schedulers
+(ADMIN_SPEC.md §4 "Auto Scan Options", §9 "Scheduled Database Backup")
 
-Off by default. Re-reads config.json on every loop iteration so a saved
+Both off by default. Re-read config.json on every loop iteration so a saved
 frequency change takes effect without a server restart.
 """
 
@@ -23,6 +24,32 @@ _FREQUENCY_SECONDS = {
     "3days": 259200,
     "7days": 604800,
     "1month": 2592000,
+}
+
+_BACKUP_FREQUENCY_SECONDS = {
+    "off": None,
+    "1hr": 3600,
+    "2hr": 7200,
+    "4hr": 14400,
+    "6hr": 21600,
+    "12hr": 43200,
+    "24hr": 86400,
+    "1day": 86400,
+    "2days": 172800,
+    "3days": 259200,
+    "4days": 345600,
+    "5days": 432000,
+    "6days": 518400,
+    "7days": 604800,
+    "1week": 604800,
+    "2weeks": 1209600,
+    "3weeks": 1814400,
+    "4weeks": 2419200,
+    "1month": 2592000,
+    "2months": 5184000,
+    "3months": 7776000,
+    "6months": 15552000,
+    "12months": 31536000,
 }
 
 DEFAULT_POLL_SECONDS = 60  # how often we re-check the configured frequency
@@ -79,3 +106,37 @@ async def maybe_scan_on_launch() -> None:
         return
     logger.info("Scan on launch triggered")
     await asyncio.get_event_loop().run_in_executor(None, _run_scan_background)
+
+
+def _run_backup_background() -> None:
+    from backend.routers.admin import run_database_backup
+
+    try:
+        run_database_backup()
+    except FileNotFoundError:
+        logger.error("Scheduled backup skipped — database file not found")
+    except OSError:
+        logger.exception("Scheduled backup failed")
+
+
+async def backup_loop(poll_seconds: int = DEFAULT_POLL_SECONDS) -> None:
+    """Runs forever (until cancelled). Mirrors auto_scan_loop's polling
+    pattern — re-reads the configured frequency every poll_seconds and fires
+    a backup once that interval has elapsed."""
+    elapsed = 0
+    while True:
+        await asyncio.sleep(poll_seconds)
+        elapsed += poll_seconds
+
+        frequency = get_config().get("backup_frequency", "off")
+        interval = _BACKUP_FREQUENCY_SECONDS.get(frequency)
+        if interval is None:
+            elapsed = 0
+            continue
+
+        if elapsed < interval:
+            continue
+
+        elapsed = 0
+        logger.info("Scheduled backup triggered (frequency=%s)", frequency)
+        await asyncio.get_event_loop().run_in_executor(None, _run_backup_background)

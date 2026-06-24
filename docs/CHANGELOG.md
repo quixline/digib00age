@@ -7,6 +7,16 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-24** — v2.3 Item 8: Admin scheduled database backup + server
+  listening port. New Scheduled Backup section (native OS folder dialog for
+  the destination — not the existing library-scoped picker, which can't
+  reach paths outside the library — + a 22-option frequency dropdown); the
+  existing manual Backup Database button now uses the same destination once
+  set. New Server Listening Port field in Advanced Settings — saving
+  confirms, then restarts the server (self-exit, relying on the tray app's
+  existing crash-recovery to relaunch on the new port). See
+  `docs/progress.md` for the full build narrative.
+
 - **2026-06-24** — v2.3 Item 7: Admin scan log cards + Logs area + Auto Scan
   Options. Each of the 4 scan stat cards (Last Scanned, New Files, Changed
   Files, Missing Records) now has a persistent on-disk log in `/logs/`, a

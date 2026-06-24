@@ -68,19 +68,22 @@ async def lifespan(app: FastAPI):
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _warmup_db)
 
-    from backend.scheduler import auto_scan_loop, maybe_scan_on_launch
+    from backend.scheduler import auto_scan_loop, backup_loop, maybe_scan_on_launch
 
     # Fire-and-forget — must not block startup waiting for a full scan.
     asyncio.create_task(maybe_scan_on_launch())
-    scheduler_task = asyncio.create_task(auto_scan_loop())
+    scan_task = asyncio.create_task(auto_scan_loop())
+    backup_task = asyncio.create_task(backup_loop())
 
     yield
 
-    scheduler_task.cancel()
-    try:
-        await scheduler_task
-    except asyncio.CancelledError:
-        pass
+    for task in (scan_task, backup_task):
+        task.cancel()
+    for task in (scan_task, backup_task):
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 # ---------------------------------------------------------------------------
 # App

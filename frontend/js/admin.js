@@ -79,6 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initScanSettings();
   initLogsSection();
+  initServerPort();
+  initBackupSettings();
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -371,6 +373,9 @@ async function loadConfig() {
   document.getElementById('autoScanFreqSelect').value = _config.auto_scan_frequency || 'off';
   document.getElementById('scanOnLaunchCheckbox').checked = !!_config.autostart_scan;
   document.getElementById('logSizeLimitInput').value = _config.log_size_limit_mb || 5;
+  document.getElementById('serverPortInput').value = _config.reader_port || 8000;
+  document.getElementById('backupFolderInput').value = _config.backup_folder || '';
+  document.getElementById('backupFreqSelect').value = _config.backup_frequency || 'off';
 }
 
 function initScanSettings() {
@@ -379,6 +384,47 @@ function initScanSettings() {
   });
   document.getElementById('scanOnLaunchCheckbox').addEventListener('change', (e) => {
     patchConfig({ autostart_scan: e.target.checked });
+  });
+}
+
+// ── Server Listening Port (ADMIN_SPEC.md §7.3) ──────────────────────────────
+function initServerPort() {
+  document.getElementById('savePortBtn').addEventListener('click', async () => {
+    const port = parseInt(document.getElementById('serverPortInput').value, 10);
+    if (!port || port < 1 || port > 65535) {
+      showToast('Enter a valid port (1-65535)', true);
+      return;
+    }
+    if (!confirm('This will restart the server and disconnect active users. Continue?')) {
+      return;
+    }
+    await fetch(`${API}/admin/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reader_port: port }),
+    });
+    await fetch(`${API}/admin/restart`, { method: 'POST' });
+    showToast(`Restarting on port ${port}…`);
+    setTimeout(() => { window.location.href = `http://${location.hostname}:${port}/admin`; }, 4000);
+  });
+}
+
+// ── Scheduled Database Backup (ADMIN_SPEC.md §9) ────────────────────────────
+function initBackupSettings() {
+  document.getElementById('browseBackupFolderBtn').addEventListener('click', async () => {
+    const r = await fetch(`${API}/admin/browse-folder-dialog`, { method: 'POST' });
+    if (!r.ok) {
+      showToast('Folder browsing requires a local session', true);
+      return;
+    }
+    const d = await r.json();
+    if (!d.path) return; // dialog cancelled
+    document.getElementById('backupFolderInput').value = d.path;
+    patchConfig({ backup_folder: d.path });
+  });
+
+  document.getElementById('backupFreqSelect').addEventListener('change', (e) => {
+    patchConfig({ backup_frequency: e.target.value });
   });
 }
 

@@ -111,14 +111,15 @@ definition against `scanner.py`) was resolved by direct code reading — see
 
 ---
 
-## Item 8 — Admin: scheduled backup + server port
+## ✅ Item 8 — Admin: scheduled backup + server port
 
-**Spec:** `ADMIN_SPEC.md` §7.3, §9
+Built 2026-06-24. **Spec:** `ADMIN_SPEC.md` §7.3, §9
 
-**Scheduled Database Backup:** single folder picker (Explorer, same mechanism as scan
-roots) + frequency dropdown. Replaces and supersedes the old one-off Backup Database
-button's location field. The top-row Backup Database button stays for manual
-on-demand backups, using the same destination folder.
+**Scheduled Database Backup:** single folder picker (native OS dialog — not the
+library-scoped Custom Tabs/Scan Roots picker, which can't reach paths outside the
+library; see `DECISIONS.md`) + frequency dropdown. Replaces and supersedes the old
+one-off Backup Database button's location field. The top-row Backup Database button
+stays for manual on-demand backups, using the same destination folder.
 
 **Server listening port:** manual numeric input in Advanced Settings, updates
 `config.json`, restarts server. Addresses BUG-004 (port 8000 Windows exclusion

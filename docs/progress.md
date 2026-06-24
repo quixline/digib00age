@@ -2328,3 +2328,94 @@ format table corrected to the actual "metadata updated" literal; `BUGS.md`
 BUG-013 logged for the confirmed same-mtime/different-size detection gap;
 `comicvault-changes-v2.3.md` (Item 7 marked done); v2.3 build plan
 `build-plan.html` (Item 7 node marked done).
+
+## Session — 2026-06-24: v2.3 Item 8 — Scheduled database backup + server listening port built
+
+Built `ADMIN_SPEC.md` §7.3 (Server Listening Port) and §9 (Scheduled Database
+Backup) in full. Caught and corrected one inaccuracy in the spec's own wording
+before building: §9 said the backup folder picker should reuse "the same
+mechanism as the Scan Roots Add button / Full Editor's path picker" — checked
+both existing browse endpoints directly and confirmed they hard-reject any
+path outside the configured library roots, which makes them unusable for a
+destination explicitly meant to live elsewhere (a different drive, USB, or
+cloud-sync folder). Tez's direction: use a real native OS folder dialog
+instead, since frontend and backend always run on the same machine for this
+app anyway.
+
+**Backend — `backend/routers/admin.py`:** new `POST /api/admin/browse-folder-dialog`
+opens `tkinter.filedialog.askdirectory()` in a thread executor (stdlib, no new
+dependency) so it doesn't block the async event loop; gated to local-only
+sessions via the existing `is_local_request()` helper (built for the admin
+password feature) since a remote session would otherwise pop the dialog open
+on the server machine, not the remote user's screen. `backup_database()` was
+split into a thin HTTP wrapper plus a new `run_database_backup()` helper that
+checks the new `backup_folder` config key and falls back to the database's
+own directory if unset (preserving exact V1 behaviour when nothing's
+configured) — this same helper is what the new scheduled backup loop calls,
+so there's exactly one backup-writing code path whether triggered manually or
+on a timer. New `POST /api/admin/restart`: saves nothing itself (the port is
+saved through the existing `POST /api/admin/config`, extended with
+`reader_port`/`backup_folder`/`backup_frequency`), just responds then calls
+`os._exit(0)` after a one-second delay so the HTTP response actually reaches
+the browser first. Also local-only gated — restarting disconnects active LAN
+users, the same boundary already established for the password-protection
+controls.
+
+**Backend — `backend/scheduler.py`:** new `_BACKUP_FREQUENCY_SECONDS` dict (22
+entries, matching the spec's full list down to 1hr/2hr/4hr granularity and up
+to 12 months — deliberately separate from Auto Scan's 8-entry dict rather than
+forcing one shared vocabulary onto two features with different granularity
+needs) and a `backup_loop()` mirroring `auto_scan_loop()`'s exact polling/
+re-read-config/skip pattern. Both scan and backup loops now run side by side,
+started and cancelled cleanly together in `main.py`'s `lifespan()`.
+
+**Backend — port restart mechanism:** `reader_port` is read once at process
+start (`config.py`'s module-level `READER_PORT`, `start_server.py`'s
+`uvicorn.run()` call) — there's no live-rebind path, so a real process exit is
+required either way. Rather than building new restart-orchestration code, the
+self-exit relies entirely on `tray/tray_app.py`'s already-existing
+`health_check_loop()`, which auto-relaunches the reader subprocess on any
+unexpected exit; a freshly spawned process reads `config.json` from scratch
+and picks up the new port automatically, zero extra code needed.
+
+**Frontend — `admin.html`/`admin.js`:** new "Server Listening Port" field
+inside the existing Advanced Settings fieldset (right after Reader Location),
+with a "Save & Restart" button that shows a confirm dialog (since this
+disconnects active users) before saving and calling the restart endpoint. New
+standalone "Scheduled Backup" section (destination folder display + "Choose…"
+button wired to the native dialog endpoint, plus the 22-distinct-interval
+frequency dropdown — "24 hours"/"1 day" and "7 days"/"1 week" collapse to one
+dropdown entry each since they're identical durations, though both spellings
+remain accepted internally) placed near the existing Logs section.
+
+**Verified — entirely against scratch state; the real config, DB, and any
+real backup destination were never touched, and no real restart was ever
+triggered against a server actually serving the real library:** the backup
+destination logic (`run_database_backup()`) was verified directly with a
+scratch DB file and scratch destination folder, confirming both the
+configured-destination and fallback-to-db-directory paths, plus the
+missing-DB-file error path. The native dialog's selection and cancel paths
+were verified by mocking `tkinter` directly (no real window was ever opened
+during this verification) — confirmed it returns the chosen path, or `None`
+on cancel, and always calls `withdraw()`/`destroy()` regardless. The
+`reader_port`/`backup_folder`/`backup_frequency` config round-trip and the
+22-entry frequency dict were verified via scripted HTTP calls against a
+temporary local server, with `config.json` backed up and restored
+byte-for-byte afterward each time (diff confirmed clean both times). The
+restart mechanism itself **was** exercised for real, but only against this
+session's own disposable scratch server instance (never the real app): a
+confirm-declined click correctly left the port unchanged, and a
+confirm-accepted click correctly saved the new port, returned a successful
+response to the browser, and then the process genuinely exited — confirmed by
+the old port becoming unreachable immediately after. Also confirmed, as
+expected and documented as a known limitation, that the scratch process (not
+running under the tray app's supervision in this dev session) did **not**
+relaunch itself on the new port — there's no other process watching it.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `DECISIONS.md` (three entries —
+the native-dialog choice, the self-exit restart mechanism and its tray-app
+dependency, and the separate backup-frequency dict); `ADMIN_SPEC.md` §7.3/§9
+marked built, with §9's folder-picker wording corrected to describe the
+native dialog actually built and a note added about the two collapsed
+dropdown entries; `comicvault-changes-v2.3.md` (Item 8 marked done); v2.3
+build plan `build-plan.html` (Item 8 node marked done).

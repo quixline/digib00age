@@ -254,7 +254,7 @@ surface to anyone on the home network with no gate at all.
   force-disabled in the same action (§7.1.1) — never left enabled with nothing
   backing it.
 
-### 7.3 Server Listening Port *(not yet built)*
+### 7.3 Server Listening Port *(built — V2.3 Item 8, 2026-06-24)*
 
 A manual numeric input field for the server's listening port (currently hardcoded to
 8000 via `config.json`). Saving updates `config.json` and restarts the server.
@@ -320,19 +320,28 @@ file has new entries since it was last viewed (tracked via `log_last_viewed` in
 
 ---
 
-## 9. Scheduled Database Backup *(not yet built)*
+## 9. Scheduled Database Backup *(built — V2.3 Item 8, 2026-06-24)*
 
 Consolidates two previously separate inbox items ("Backup Database Location" and
 "Schedule database backup") into one unified control.
 
 **Controls:**
-- **Backup folder picker** — opens Explorer (same mechanism as the Scan Roots Add
-  button / Full Editor's path picker). Single destination folder for all backups.
-  Saved to `config.json`.
+- **Backup folder picker** — opens a native OS folder dialog (not the existing
+  library-scoped Custom Tabs/Scan Roots picker — that one is hard-restricted to
+  paths under the configured library roots, which doesn't fit a destination
+  explicitly meant to live elsewhere). Frontend and backend always run on the
+  same machine for this app, so the backend opening a native dialog is
+  equivalent to the user opening one themselves; gated to local sessions only,
+  since a remote-admin session would otherwise open the dialog on the wrong
+  (server) machine. Single destination folder for all backups, saved to
+  `config.json`.
 - **Backup frequency dropdown:** Every 1 hour / 2 hours / 4 hours / 6 hours /
   12 hours / 24 hours / 1 day / 2 days / 3 days / 4 days / 5 days / 6 days /
   7 days / 1 week / 2 weeks / 3 weeks / 4 weeks / 1 month / 2 months / 3 months /
-  6 months / 12 months.
+  6 months / 12 months. (The UI dropdown shows one entry per distinct interval —
+  "24 hours"/"1 day" and "7 days"/"1 week" collapse to a single option each
+  since they're identical in duration; both spellings are still accepted
+  internally.)
 
 **No cloud API integration.** Pointing the destination folder at a cloud-sync
 client's local folder (e.g. Google Drive Desktop sync folder) covers cloud backup
