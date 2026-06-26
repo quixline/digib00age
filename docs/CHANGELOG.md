@@ -7,6 +7,26 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-26** — v2.3 post-test fix pass (`docs/2.3-fixes.md`, Fixes 1–9, plus
+  two additional steps raised mid-session). Menu bar: collapsed the unintended
+  second row into one (status pills moved to the header, secondary filters +
+  count merged into the menu-bar row), fixed a CSS shorthand bug that broke
+  edge alignment with the header/card grid, widened the search bar, and — per
+  Tez's mid-session request — extended secondary filters and the full menu row
+  to Folder View (previously Flat-View-only). Multi-select: favourite toggle
+  now actually toggles (was add-only), added a rating-clear button (was
+  invisible due to a colour-matches-background bug, also fixed). Full Editor:
+  Process All errors now open a dismissible modal instead of an unbounded
+  inline wall of text. Auth: login popup no longer fires on the unprotected
+  library page, the auth button is now always visible with a Login/Logout
+  label, disabling password protection requires re-entering the current
+  password, and clicking Login with no password set shows an explanation
+  dialog instead of a doomed-to-fail form. Admin: Last Scan persists across
+  server restarts, the changed-files log now distinguishes metadata-only vs.
+  archive(page-count) changes, and a new Last Backup indicator + scheduler
+  failure surfacing was added to the Scheduled Backup block. See
+  `docs/progress.md` for the full build narrative.
+
 - **2026-06-24** — v2.3 Item 9 (final v2.3 item): Admin destructive actions +
   Donate placeholder. New "Danger Zone" in Advanced Settings — Clear Database
   (wipes issues/genres/credits/reading progress + orphaned People rows, leaves

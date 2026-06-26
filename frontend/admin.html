@@ -137,6 +137,13 @@
             </select>
           </div>
         </div>
+        <div class="admin-field-row">
+          <label class="admin-field-label">Last Backup</label>
+          <div class="admin-field-input-wrap">
+            <span id="lastBackupValue">Never</span>
+            <p class="admin-card-hint admin-backup-error" id="lastBackupError" hidden></p>
+          </div>
+        </div>
         <p class="admin-card-hint">The manual "Backup Database" button above uses this same destination once set.</p>
       </div>
     </section>
@@ -263,6 +270,17 @@
                     <button class="btn-primary" id="authSaveBtn">Save</button>
                   </div>
                   <p class="editor-error" id="authError" hidden></p>
+                </div>
+              </div>
+              <div class="admin-field-row" id="authDisableConfirmRow" hidden>
+                <div class="admin-field-input-wrap">
+                  <p class="admin-field-hint">Enter current password to disable protection:</p>
+                  <div class="admin-field-input-row">
+                    <input type="password" class="admin-input" id="authDisableCurrentPassword" placeholder="Current password" autocomplete="current-password" />
+                    <button class="btn-primary" id="authDisableConfirmBtn">Confirm</button>
+                    <button class="btn-admin-action" id="authDisableCancelBtn">Cancel</button>
+                  </div>
+                  <p class="editor-error" id="authDisableError" hidden></p>
                 </div>
               </div>
 

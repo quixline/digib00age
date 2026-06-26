@@ -269,6 +269,20 @@
     </div>
   </div>
 
+  <!-- ── Process All error modal (2.3-fixes.md Fix 3) ───────────────────────── -->
+  <div id="feProcessErrorOverlay" class="editor-overlay" hidden>
+    <div class="editor-modal fe-process-error-modal">
+      <div class="editor-modal-header">
+        <h2 class="editor-modal-title">Process All — Errors</h2>
+        <button type="button" class="editor-close-btn" id="feProcessErrorCloseBtn" aria-label="Close">&times;</button>
+      </div>
+      <div class="log-viewer-content" id="feProcessErrorBody"></div>
+      <div class="fe-process-error-footer">
+        <button type="button" class="btn-primary" id="feProcessErrorDismissBtn">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/static/js/editor_full.js"></script>
   <script src="/static/js/auth.js"></script>
 </body>

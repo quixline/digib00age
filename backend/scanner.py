@@ -449,10 +449,14 @@ def _ensure_progress(db: Session, issue: Issue):
 # Scan a single file (also used by POST /api/scan/file)
 # ---------------------------------------------------------------------------
 
-def scan_single_file(file_path: str, db: Session) -> str:
+def scan_single_file(file_path: str, db: Session, details: dict | None = None) -> str:
     """
     Scan or rescan one CBZ file.
     Returns one of: "new", "updated", "skipped", "error"
+
+    `details`, if passed, is filled in with extra info the caller may want —
+    currently just `change_type` for "updated" results (changed_files log,
+    2.3-fixes.md Fix 8). Other callers don't need it and can omit it.
     """
     file_path = str(Path(file_path).resolve())
 
@@ -497,6 +501,14 @@ def scan_single_file(file_path: str, db: Session) -> str:
 
     if existing:
         # UPDATE
+        if details is not None:
+            old_page_count = existing.page_count
+            new_page_count = meta["page_count"]
+            details["change_type"] = (
+                f"archive changed (pages: {old_page_count} → {new_page_count})"
+                if new_page_count != old_page_count
+                else "metadata updated"
+            )
         _apply_metadata(existing, meta, source, file_path, mtime)
         db.flush()
         _sync_genres(db, existing, meta["genres"])
@@ -573,7 +585,8 @@ def scan_library(db: Session):
 
     # ---- Process each file ----
     for file_path in sorted(disk_paths):
-        result = scan_single_file(file_path, db)
+        details: dict = {}
+        result = scan_single_file(file_path, db, details)
         scan_progress.processed += 1
 
         if result == "new":
@@ -583,7 +596,9 @@ def scan_library(db: Session):
         elif result == "updated":
             scan_progress.updated += 1
             scan_progress.add_log(f"UPDATED: {Path(file_path).name}")
-            scan_logs.append_changed_files_entry(Path(file_path).name)
+            scan_logs.append_changed_files_entry(
+                Path(file_path).name, details.get("change_type", "metadata updated")
+            )
         elif result == "skipped":
             scan_progress.skipped += 1
         elif result == "error":

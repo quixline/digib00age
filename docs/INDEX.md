@@ -15,8 +15,10 @@ within a single doc, a later-dated or higher-numbered section overrides an earli
 | `EDITOR_SPEC.md` | Editor integration (Basic + Full editor) | Built and verified (2026-06-18) |
 | `CUSTOM_TABS_SPEC.md` | Custom Tabs feature | Built and verified (2026-06-19) |
 | `HOME_STRIPS_SPEC.md` | Home Page Strips feature | Built and verified (2026-06-19) |
+| `ADMIN_SPEC.md` | Admin page — existing behaviour + new items (password, logs, backup scheduling, etc.) | All v2.3 items built (2026-06-24); manual test pass remaining |
+| `MENU_BAR_SPEC.md` | Unified menu bar (sort, filters, search, view toggle) across Flat and Folder View | Built (v2.3 Item 2, 2026-06-23) |
 | `comicvault-changes-v2.2.md` | v2.2: remove 2000 AD fixed tab + Folder View for Custom Tabs | Closed out 2026-06-22 |
-| `comicvault-changes-v2.3.md` | v2.3: active build queue | Active |
+| `comicvault-changes-v2.3.md` | v2.3: active build queue | All items built; manual test pass remaining |
 | `comicvault-changes-2.1.md` | Planning backlog / build queue, 2.1 — closed out 2026-06-22, kept for history | Closed |
 | `BUGS.md` | Live bug/issue register (separate from applied-decision logs) | Active |
 | `progress.md` | Narrative build history, per-session detail and verification notes | Active, append-only |
@@ -54,3 +56,5 @@ the reasoning behind a past decision is needed again; do not treat as current.
 | Doc | Purpose |
 |---|---|
 | `CLAUDE.md` | Session instructions — how Claude Code sessions on this repo should run. Read before any other doc. |
+| `working-rules.md` | Shared working habits and conventions for how Claude and Tez operate on this project — decision-making, doc structure, inbox workflow, quality bar, scope discipline. Claude Code should read this and update it if working practices change. Gitignored (local only). |
+| `build-plan.html` | Visual build tracker for the current active version — open in browser, tick items off as built. State persists via localStorage. Gitignored (local only, not part of the codebase). Claude Code should update the item list here when a build round closes out or new items are added to `comicvault-changes-vN.M.md`. |

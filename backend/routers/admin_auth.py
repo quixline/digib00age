@@ -56,6 +56,10 @@ class RemoteToggleBody(BaseModel):
     enabled: bool
 
 
+class DisableBody(BaseModel):
+    current_password: str
+
+
 def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
@@ -123,9 +127,14 @@ def enable_protection(body: EnableBody, request: Request):
 
 
 @router.post("/admin/auth/disable")
-def disable_protection(request: Request):
+def disable_protection(body: DisableBody, request: Request):
     if not is_local_request(request):
         raise HTTPException(status_code=403, detail={"error": "local_access_required"})
+    cfg = get_config()
+    hash_hex = cfg.get("admin_password_hash")
+    salt_hex = cfg.get("admin_password_salt")
+    if not hash_hex or not salt_hex or not verify_password(body.current_password, hash_hex, salt_hex):
+        raise HTTPException(status_code=403, detail={"error": "invalid_password"})
     save_config(
         {
             "admin_password_hash": None,

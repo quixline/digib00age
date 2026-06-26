@@ -34,6 +34,13 @@
         <button class="search-clear" id="searchClear" aria-label="Clear search">&#x2715;</button>
       </div>
 
+      <div class="status-pills" id="statusPills" role="group" aria-label="Filter by read status" hidden>
+        <button class="status-pill active" data-status="">All</button>
+        <button class="status-pill" data-status="unread">Unread</button>
+        <button class="status-pill" data-status="reading">Reading</button>
+        <button class="status-pill" data-status="read">Read</button>
+      </div>
+
       <a href="/admin" class="settings-btn" title="Admin / Settings" aria-label="Settings">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="3"/>
@@ -47,6 +54,7 @@
   <!-- ── UNIFIED MENU BAR (MENU_BAR_SPEC.md) — shared across all browse
        surfaces, Flat View and Folder View alike. Hidden on Home. ──────────── -->
   <div class="menu-bar" id="menuBar" hidden>
+   <div class="container menu-bar-inner">
     <select class="filter-select" id="sortSelect" aria-label="Sort by">
       <option value="alpha">A–Z</option>
       <option value="newest">Newest</option>
@@ -65,6 +73,36 @@
     </select>
     <button class="fav-filter-btn" id="favFilterBtn" title="Show favourites only">&#9733; Favourites</button>
     <button class="view-toggle-btn" id="viewToggle" title="Toggle list/grid view">&#9783;</button>
+
+    <!-- Grouping — Flat browse surfaces only. Folder View already groups by
+         directory structure, so "Group by" doesn't apply there. -->
+    <select class="filter-select group-by-select" id="groupBySelect" aria-label="Group by">
+      <option value="">No grouping</option>
+      <option value="year">Year</option>
+      <option value="genre">Genre</option>
+      <option value="publisher">Publisher</option>
+      <option value="writer">Writer</option>
+      <option value="format">Format</option>
+    </select>
+
+    <!-- Secondary filters — shared by Flat browse and Folder View alike. -->
+    <div class="browse-filters" id="browseFilters">
+      <select class="filter-select" id="genreFilter"     aria-label="Genre"><option value="">Genre</option></select>
+      <select class="filter-select" id="formatFilter"    aria-label="Format"><option value="">Format</option></select>
+      <select class="filter-select" id="decadeFilter"    aria-label="Decade"><option value="">Decade</option></select>
+      <select class="filter-select" id="yearFilter"      aria-label="Year"><option value="">Year</option></select>
+      <select class="filter-select" id="publisherFilter" aria-label="Publisher"><option value="">Publisher</option></select>
+      <select class="filter-select" id="ratingFilter"    aria-label="Rating"><option value="">Rating</option></select>
+      <select class="filter-select" id="bwFilter"        aria-label="B&amp;W">
+        <option value="">B&amp;W</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+      <button class="filter-clear" id="filterClear">Clear</button>
+    </div>
+
+    <span class="browse-count" id="browseCount"></span>
+   </div>
   </div>
 
   <main class="container">
@@ -78,40 +116,6 @@
 
     <!-- ── BROWSE SURFACES (Series / Singles / All) ───────────────────────── -->
     <div id="browseView" hidden>
-
-      <!-- Single controls bar: pills · grouping · filters · count -->
-      <div class="browse-controls">
-        <div class="status-pills" role="group" aria-label="Filter by read status">
-          <button class="status-pill active" data-status="">All</button>
-          <button class="status-pill" data-status="unread">Unread</button>
-          <button class="status-pill" data-status="reading">Reading</button>
-          <button class="status-pill" data-status="read">Read</button>
-        </div>
-
-        <select class="filter-select group-by-select" id="groupBySelect" aria-label="Group by">
-          <option value="">No grouping</option>
-          <option value="year">Year</option>
-          <option value="genre">Genre</option>
-          <option value="publisher">Publisher</option>
-          <option value="writer">Writer</option>
-          <option value="format">Format</option>
-        </select>
-
-        <select class="filter-select" id="genreFilter"     aria-label="Genre"><option value="">Genre</option></select>
-        <select class="filter-select" id="formatFilter"    aria-label="Format"><option value="">Format</option></select>
-        <select class="filter-select" id="decadeFilter"    aria-label="Decade"><option value="">Decade</option></select>
-        <select class="filter-select" id="yearFilter"      aria-label="Year"><option value="">Year</option></select>
-        <select class="filter-select" id="publisherFilter" aria-label="Publisher"><option value="">Publisher</option></select>
-        <select class="filter-select" id="ratingFilter"    aria-label="Rating"><option value="">Rating</option></select>
-        <select class="filter-select" id="bwFilter"        aria-label="B&amp;W">
-          <option value="">B&amp;W</option>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
-        <button class="filter-clear" id="filterClear">Clear</button>
-
-        <span class="browse-count" id="browseCount"></span>
-      </div>
 
       <!-- Cover grid -->
       <div class="cover-grid" id="coverGrid">

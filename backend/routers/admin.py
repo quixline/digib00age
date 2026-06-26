@@ -86,11 +86,14 @@ def get_stats(db: Session = Depends(get_db)):
         "scan_state": {
             "running": sp.running,
             "finished_at": (sp.finished_at.isoformat() + "Z") if sp.finished_at else None,
+            "last_scan_persisted": scan_logs.read_last_scan_timestamp(),
             "total_files": sp.total,
             "new_files": sp.new,
             "updated_files": get_changes_last_cycle(),
         },
         "log_status": log_status,
+        "last_backup_at": config.get("last_backup_at"),
+        "last_backup_error": config.get("last_backup_error"),
     }
 
 
@@ -421,6 +424,7 @@ def run_database_backup() -> Path:
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     backup_path = dest_dir / f"comicvault_backup_{timestamp}.db"
     shutil.copy2(str(db_path), str(backup_path))
+    save_config({"last_backup_at": datetime.now().isoformat(), "last_backup_error": None})
     return backup_path
 
 

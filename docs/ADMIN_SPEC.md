@@ -6,11 +6,11 @@
 > page. Record any deviations at the bottom (Change Log), same convention as other
 > spec files.
 >
-> **Status:** Partially built. §1–§4 (core layout, stats, scan, library folders,
-> pagination) are live as of V1 (2026-06-17 build close-out). §5 (Advanced Settings)
-> is partially live — the existing Locked section is built; most new items in §5 are
-> not yet built. §6 (Logs), §7 (Scheduled Backup), §8 (Auto Scan), §9 (Donate) and
-> all password/access items are **not yet built** — see status notes per section.
+> **Status:** All v2.3 items built as of 2026-06-24. §1–§6 (core layout, stats, scan,
+> library folders, pagination) were live from V1. All Advanced Settings additions (§7:
+> password protection, remote admin toggle, scheduled backup, server port, clear
+> database, clear reading progress), Logs/Auto Scan (§8), and Donate (§10) are now
+> also built — see per-section notes for details. Manual test pass remaining.
 >
 > **Note on authority:** `SPEC.md` §11 and §20.13 contain earlier admin descriptions.
 > Where they conflict with this file, **this file is authoritative** — it consolidates
@@ -77,7 +77,12 @@ Individual stat cards, one value per card. **Built (V1).**
 
 Stat cards plus one action card:
 
-- **Last Scan:** date/time of the most recent scan completion.
+- **Last Scan:** date/time of the most recent scan completion. Persists across server
+  restarts (fixed — V2.3 post-test fixes, Fix 7, 2026-06-26): the in-memory
+  `ScanProgress.finished_at` resets to `None` on every restart, so the card now falls
+  back to the last line of `last_scan_log.md` (via `read_last_scan_timestamp()` in
+  `backend/scan_logs.py`) when no live `finished_at` is available, before finally
+  falling back to "Never".
 - **Files Found:** total files found in last scan.
 - **New Files:** new files found in last scan.
 - **Scan Now** (action card): triggers `POST /api/scan`; card expands inline to show
@@ -150,8 +155,21 @@ enforced, current V1 behaviour is unchanged until Tez explicitly turns it on.
 Password protection and password-setting are a **single combined action** — there is
 no state where the toggle is on with no password, or a password is saved but the
 toggle is off. Turning protection on requires entering a new password at the same
-time; turning it off clears the enforcement (the stored password hash may remain on
-disk, but is no longer checked against anything).
+time; turning it off clears the enforcement and the stored password hash/salt.
+
+**Disabling requires re-entering the current password (fixed — V2.3 post-test
+fixes, Fix 6, 2026-06-26):** previously an already-authenticated admin could
+uncheck the toggle and have it take effect immediately with no credential
+re-entry. Unchecking the toggle now shows an inline confirmation row (below the
+toggle, not a separate modal — keeps it close to the control being changed):
+a password field + Confirm/Cancel. Cancel restores the checkbox to checked with no
+network call. Confirm POSTs to `POST /api/admin/auth/disable` with
+`{ current_password }`; the backend (`admin_auth.py`) verifies it against the
+stored hash before clearing protection and returns `403` on mismatch (the toggle
+stays on and the confirmation row stays open with an error). On success, Remote
+Administration is force-disabled in the same operation as before. The session
+itself is *not* auto-logged-out by this action — the user already proved their
+identity via the password just entered.
 
 **This action — and any later password change — can only be performed from a local
 session (request originates from `127.0.0.1`).** This holds even if the current
@@ -175,6 +193,23 @@ response, rather than the API layer trying to render HTML.
 A single password field; on submit, POST to a login endpoint
 (`POST /api/admin/login` suggested). On success, the server sets the session cookie
 (§7.1.4) and the original request can proceed/retry.
+
+**Auto-popup page gating (fixed — V2.3 post-test fixes, Fix 4, 2026-06-26):**
+`auth.js`'s `checkAuthStatus()` only auto-opens the popup on page load when the
+current path is one of the protected pages (`/admin`, `/editor`) — previously it
+fired on every page, including the unauthenticated library (`/`), the moment
+password protection was turned on. The 401-interception path (any authenticated API
+call that bounces with 401) is unchanged and still surfaces the popup regardless of
+page — that's how the Basic Editor popup on `/issue/{id}` still triggers correctly.
+
+**No-password-set explanation dialog (added — V2.3 post-test fixes, follow-on to
+Fix 5, 2026-06-26):** clicking Login when password protection is off (so there is
+no password to log in with) no longer opens the doomed-to-fail login form. Instead
+`auth.js` shows a small info dialog ("Password Protection Not Set Up") explaining
+that a password needs to be set in Advanced Settings first, with a single OK button.
+The auth button tracks `protection_enabled` (via a `dataset.protectionEnabled`
+attribute set in `checkAuthStatus()`) to decide which of the three states applies:
+logout, real login form, or this explanation.
 
 #### 7.1.3 Brute-force protection
 
@@ -212,12 +247,21 @@ restarts and manual server restarts without forcing every open browser to re-log
   `bcrypt`/`argon2` for a single-user home app where the threat model doesn't
   warrant it).
 
-#### 7.1.5 Logout
+#### 7.1.5 Logout / Login
 
-A **Logout** control sits next to the gear icon in the main header on every page,
-visible only when an authenticated session is active. Clears the session by setting
-an already-expired cookie. No confirmation needed — logging back in is one password
-entry away.
+An auth control sits next to the gear icon in the main header on every page.
+
+**Always-visible, label reflects state (fixed — V2.3 post-test fixes, Fix 5,
+2026-06-26):** the button used to be hidden entirely when unauthenticated, which
+combined with Fix 4 above left no way to log back in after logging out except by
+navigating to `/admin` directly. It's now always visible, labelled "Logout" when
+authenticated or "Login" when not (`auth.js checkAuthStatus()`), and the click
+handler branches accordingly — logout posts to `/api/admin/logout` and reloads;
+login (when a password is set — see the no-password-set case in §7.1.2) opens the
+same password popup as the page-load auto-trigger. After a successful login,
+`location.reload()` already fires (§7.1.2's existing behaviour), so the button
+re-renders with the correct label with no extra wiring needed. No confirmation
+needed for logout — logging back in is one password entry away.
 
 #### 7.1.6 Changing password (in-session)
 
@@ -307,20 +351,27 @@ button that opens it. Log files live in `/logs/`:
 | Card | Log file | Log entry format |
 |---|---|---|
 | Last Scanned | `last_scan_log.md` | `DD/MM/YYYY 00:00 — Duration: 00:00:00` |
-| Changed Files | `changed_files_log.md` | `filename.cbz — metadata updated` |
+| Changed Files | `changed_files_log.md` | `filename.cbz — metadata updated` or `filename.cbz — archive changed (pages: X → Y)` |
 | New Files | `new_files_log.md` | `filename.cbz — location` |
 | Missing Records | `missing_log.md` | `filename.cbz — last known path — date went missing` |
 
 **"Changed" definition — resolved 2026-06-24 by reading `scanner.py` directly:**
 `scan_single_file()` matches files by exact `file_path` and flags "changed" purely
 on mtime delta (≥1 second from the stored `date_modified`) — it cannot distinguish
-*why* the mtime changed, so the log's "type of change" field uses the fixed literal
-`"metadata updated"` rather than a real classification. A filename change is
-confirmed to produce a separate new-row insert + missing-flag on the old row (not a
-"change") — `file_path` is the sole, unique match key. A same-mtime,
-different-file-size change (e.g. a re-zip that preserves the timestamp) is
-confirmed **not** detected at all — logged as `BUGS.md` BUG-013, out of scope to fix
-here.
+*why* the mtime changed. A filename change is confirmed to produce a separate
+new-row insert + missing-flag on the old row (not a "change") — `file_path` is the
+sole, unique match key. A same-mtime, different-file-size change (e.g. a re-zip
+that preserves the timestamp) is confirmed **not** detected at all — logged as
+`BUGS.md` BUG-013, out of scope to fix here.
+
+**Change-type classification (fixed — V2.3 post-test fixes, Fix 8, 2026-06-26):**
+the log entry now distinguishes *what* changed, instead of always logging the fixed
+literal `"metadata updated"`. `scan_single_file()` compares the existing DB
+`page_count` against the freshly-parsed page count (reusing the same zip-read
+`_parse_cbz()` already does for every scan — no second zip open) before applying
+the new metadata: a page-count mismatch logs
+`"archive changed (pages: {old} → {new})"`; otherwise it logs `"metadata updated"`
+as before.
 
 **Green border indicator:** a card's border turns green when its corresponding log
 file has new entries since it was last viewed (tracked via `log_last_viewed` in
@@ -360,6 +411,20 @@ cloud-synced folder equally.
 The existing **Backup Database** button in the top action row (§2) remains for
 on-demand manual backups — it uses the same destination folder once one is set.
 
+**Last Backup indicator + scheduler failure surfacing (fixed — V2.3 post-test
+fixes, Fix 9, 2026-06-26):** a "Last Backup" row sits directly under the Backup
+Frequency dropdown in this same Scheduled Backup block (not the top action row —
+keeps it close to the destination/frequency it describes), showing a localised
+datetime string or "Never". `run_database_backup()` (shared by the manual button
+and the scheduled loop) writes `last_backup_at` to `config.json` on every
+successful copy and clears any `last_backup_error`. If a scheduled backup attempt
+fails (`FileNotFoundError`/`OSError` in `scheduler.py`'s `_run_backup_background()`),
+`last_backup_error` is set and a red warning line renders under the Last Backup
+value until the next successful backup clears it. The manual button stays
+exception-surfacing as before (a failed manual backup returns an HTTP error
+directly) — this indicator is specifically for catching *unattended* scheduled
+failures that would otherwise go unnoticed.
+
 ---
 
 ## 10. Donate *(built — V2.3 Item 9, 2026-06-24)*
@@ -379,3 +444,4 @@ backend endpoint.
 |---|---|---|
 | 2026-06-23 | `ADMIN_SPEC.md` created — consolidates `SPEC.md` §11 and §20.13's admin descriptions plus all new admin items scoped in the 2026-06-23 inbox triage session. `SPEC.md` §11/§20.13 are superseded by this file for admin-page specifics. | Inbox triage 2026-06-23; EDITOR_SPEC.md precedent for a standalone admin spec. |
 | 2026-06-24 | §7.1 and §7.2 stubs replaced with full design: scope expanded to cover `/editor` and all `/api/admin/*` + `/api/editor/*` endpoints (not just `/admin`); local-only security boundary; stateless signed-cookie session; brute-force lockout; sliding expiry; no-built forgot-password recovery; §7.2 remote toggle dependency tightened. §1 Access gate wording updated to point at §7.1, drop §5.1 reference and "deferred to V2" framing. | Design session 2026-06-24; `comicvault-changes-v2.3.md` Item 6 updated to pointer-only. |
+| 2026-06-26 | Post-test fix pass (`docs/2.3-fixes.md`, Fixes 4–9): §7.1.2/§7.1.5 — login popup gated to protected pages only, auth button always visible with Login/Logout label, new no-password-set explanation dialog; §7.1.1 — disabling password protection now requires re-entering the current password via an inline confirm row; §4 — Last Scan card falls back to the persisted log on server restart instead of showing "Never"; §8 — changed-files log now distinguishes "metadata updated" vs. "archive changed (pages: X → Y)"; §9 — new Last Backup indicator + scheduler failure surfacing in the Scheduled Backup block. | Manual test pass 2026-06-26 (`docs/2.3-testing-notes.md`) surfaced all six issues. |

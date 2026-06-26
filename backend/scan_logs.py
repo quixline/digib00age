@@ -56,8 +56,8 @@ def append_last_scan_entry(started_at: datetime, finished_at: datetime) -> None:
     append_log_line("last_scan", line)
 
 
-def append_changed_files_entry(filename: str) -> None:
-    append_log_line("changed_files", f"{filename} — metadata updated")
+def append_changed_files_entry(filename: str, change_type: str = "metadata updated") -> None:
+    append_log_line("changed_files", f"{filename} — {change_type}")
 
 
 def append_new_files_entry(filename: str, location: str) -> None:
@@ -67,6 +67,17 @@ def append_new_files_entry(filename: str, location: str) -> None:
 def append_missing_entry(filename: str, last_known_path: str, date_missing: datetime) -> None:
     line = f"{filename} — {last_known_path} — {date_missing.strftime('%d/%m/%Y')}"
     append_log_line("missing", line)
+
+
+def read_last_scan_timestamp() -> str | None:
+    """Last line of the persistent last-scan log, surviving server restarts
+    (unlike scanner.py's in-memory ScanProgress.finished_at)."""
+    path = log_path("last_scan")
+    if not path.exists():
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        lines = [line.strip() for line in f if line.strip()]
+    return lines[-1] if lines else None
 
 
 def read_log(log_name: str, max_lines: int = 1000) -> tuple[str, bool]:

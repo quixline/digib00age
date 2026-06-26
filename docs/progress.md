@@ -2518,3 +2518,142 @@ updated to point at where it was actually built); `comicvault-changes-v2.3.md`
 (Item 9 marked done); v2.3 build plan `build-plan.html` (Item 9 node marked
 done — **this was the last item in the v2.3 build plan**; only the manual
 test pass listed at the bottom of `comicvault-changes-v2.3.md` remains).
+
+## Session — 2026-06-26: v2.3 post-test fix pass (`docs/2.3-fixes.md`, Fixes 1–9)
+
+The manual test pass referenced at the end of the prior session (`docs/2.3-testing-notes.md`,
+2026-06-26) surfaced nine issues across the menu bar layout, multi-select, the Full
+Editor, auth, and three Admin-page items. Worked through all nine in order, plus two
+additional steps Tez raised mid-session that weren't in the original doc.
+
+**Fix 1 — Menu bar collapsed to one row.** `.status-pills` moved out of
+`.browse-controls` into the site header (`#statusPills`, right after `#searchWrap`),
+visibility tied to the same browse-surface logic as `#menuBar`. Reduced
+`.search-wrap`'s max-width (480px → 180px, then widened to 340px after Tez flagged
+too much gap to the gear icon once the pills moved in). **Mid-fix correction:** Tez
+clarified the menu-bar/secondary-filters split (menu bar = sort/rated/fav/view-toggle,
+browse-controls = grouping/filters/count as a second row) wasn't what was wanted —
+the whole thing needed to be one row with the count pushed to the far right. Re-merged
+`#browseFilters` (grouping + 7 filter dropdowns + Clear) and `#browseCount` directly
+into `#menuBar`. Found and fixed a real CSS bug while checking edge alignment: the new
+`.menu-bar-inner` wrapper's `padding: 10px 0` shorthand was silently zeroing out the
+horizontal padding inherited from `.container` on the same element (both classes on
+one div, later shorthand rule wins for all four sides) — the row was rendering 20px
+past the header/card-grid edges on both sides. Fixed by switching to
+`padding-top`/`padding-bottom` only.
+
+**Additional step (not in the original doc, same area):** Tez asked for Folder View
+to show the full menu row too — previously `#browseFilters`/`#browseCount` were
+Flat-View-only, leaving Folder View with just sort/rated/fav/view-toggle (the original
+`MENU_BAR_SPEC.md` framing was "Folder View should be functionally equal to Flat
+View," so this closes a real gap). Split `#groupBySelect` out as its own
+Flat-View-only control (folder structure already groups by directory) from
+`#browseFilters` (now shown in both). Filter-dropdown `change` handlers and Clear now
+call `renderActiveSurface()` instead of `renderBrowse()` so they re-render whichever
+surface is active. `renderFolderView()` now filters `files` by genre/format/decade/
+year/publisher/rating/B&W (folders stay navigable — no per-field aggregate to test
+them against) and populates the filter dropdowns itself if a folder tab is the first
+surface a session loads (previously dropdown population only happened from
+`loadBrowse()`). Verified live: format/publisher filters correctly narrow file cards
+in a real folder (`2000 AD` tab → `1977`), Clear restores the count, dropdowns
+populate even on direct folder-tab entry.
+
+**Fix 2 — Multi-select favourite toggle + rating clear.** The `★ Favorite` button now
+checks whether *all* selected cards already have `.is-favorite` before deciding
+`bulk/favorite` vs `bulk/unfavorite` (was add-only). Added a `✕` "Clear rating" button
+before the 1–5 stars, calling `bulk/rate` with `{ rating: 0 }` — required loosening
+`BulkRating`'s pydantic validator from `1–5` to `0–5` in `backend/routers/progress.py`.
+**Found a real pre-existing visibility bug while testing this:** `.selection-rate
+.rating-star`'s colour exactly matched the toolbar's background colour
+(`var(--surface-3)` both), so the stars (and the new ✕ button) were invisible until
+hovered — confirmed via `getComputedStyle`, not guessed. Fixed by giving `.selection-rate`
+a pill background/border matching `.selection-action-btn` and changing the star colour
+to `var(--text-2)`. Verified live against two real library issues (toggled
+favourite on/off both directions, set rating to 3, cleared to 0) — both restored to
+their original unfavourited/unrated state afterward.
+
+**Fix 3 — Process All error modal.** Added `#feProcessErrorOverlay` to
+`editor_full.html`, following the existing multi-XML modal pattern and reusing
+`.log-viewer-content` for the body (per the doc's "style like admin's log viewer"
+direction). `processBatch()`'s error handler now calls `openProcessErrorModal()`
+instead of building a pipe-delimited string for `#feError`. Shows `Processed X of Y
+files`, the first file's full error, and — if more failed — a count + guidance note.
+`#feError`/`showError()`/`clearError()` left untouched, confirmed still working for
+short single-line cases. Verified via direct function calls in the live page (no
+real files needed for this UI-only check) plus a regression check on `showError`.
+
+**Fixes 4–6 — Auth, done together as Tez requested (interdependent, same files).**
+Fix 4: gated `auth.js`'s auto-popup-on-load to `/admin`/`/editor` paths only — it
+previously fired on every page once protection was on, including the library.
+Fix 5: the auth button is now always visible (was hidden when unauthenticated),
+labelled Login/Logout based on state via a `dataset.authenticated` attribute, click
+handler branches accordingly. Fix 6: unchecking "Require a password" now shows an
+inline password-confirm row instead of disabling immediately on a bare `confirm()`;
+backend's `disable_protection` endpoint now requires and verifies `current_password`
+(403 on mismatch) before clearing protection + force-disabling Remote Administration.
+**Extra step raised after live-testing Fix 5:** with no password set, clicking Login
+opened a login form with nothing to check the password against — confusing, not
+actually broken. Added a third button state: when `protection_enabled` is false,
+clicking Login shows a small explanation dialog ("Password Protection Not Set Up")
+with a single OK, instead of the real login form. All three fixes verified together
+live end-to-end (enable scratch password → no popup on `/`, popup on `/admin`, login
+works, button flips to Logout, disable requires correct password and rejects wrong
+ones, Cancel restores the checkbox) — config always restored to its original
+`protection_enabled: false` state afterward. One process hiccup: a scratch password
+set during this testing got left enabled going into the next chapter and I'd lost
+track of it; recovered by editing `config.json` directly back to the exact original
+`admin_password_hash: null` snapshot taken at session start, then restarting.
+
+**Fix 7 — Last Scan persists across restarts.** Added `read_last_scan_timestamp()`
+to `scan_logs.py` (reads the last line of `last_scan_log.md`). `/admin/stats`'s
+`scan_state` now includes `last_scan_persisted`; `admin.js`'s `renderScanSection`
+falls back to it when the in-memory `finished_at` is `None` (every server restart),
+before finally falling back to "Never". Verified by restarting the live server and
+confirming the API returned the persisted log-format string in the gap before the
+scan-on-launch finished and `finished_at` repopulated.
+
+**Fix 8 — Changed-files log distinguishes change type.** `scan_single_file()` gained
+an optional `details` out-param; for "updated" results it compares the existing DB
+`page_count` against the freshly-parsed value (reusing the same zip-read
+`_parse_cbz()` already does — no second zip open) and records
+`"archive changed (pages: X → Y)"` or `"metadata updated"`. Other callers
+(`/scan/file`, the editor's rescan-on-save) ignore the new param, unaffected.
+Verified with a fully scratch setup — a synthetic CBZ (with a minimal ComicInfo.xml
+so page-count detection takes the real code path) and a throwaway DB row, both
+cleaned up after: same-page-count rewrite logged "metadata updated", a page-count
+change logged "archive changed (pages: 2 → 5)". The real library was never touched.
+
+**Fix 9 — Last Backup indicator + scheduler failure surfacing.**
+`run_database_backup()` (shared by the manual button and the scheduled loop) now
+writes `last_backup_at` and clears `last_backup_error` on every successful copy.
+`scheduler.py`'s `_run_backup_background()` sets `last_backup_error` on
+`FileNotFoundError`/`OSError`. **Placement correction from Tez:** the doc said "top
+action row or wherever makes sense" — Tez was specific that it belongs in the
+Scheduled Backup settings block, not the top row, so the "Last Backup" row + error
+badge sit directly under the Backup Frequency dropdown there. Verified live: clicking
+the real Backup Database button updates the timestamp immediately (no page reload
+needed — `doBackup()` now calls `loadStats()` on success); a simulated scheduler
+failure (mocked in a separate Python process, since `get_config()`'s `lru_cache` is
+per-process and doesn't see writes from outside the running server) correctly
+rendered the red warning badge after a restart; a subsequent successful backup
+cleared it again.
+
+**Verified throughout:** every backend change required a server restart
+(`start_server.py` runs without `--reload`) to take effect — restarted the live tray
+server four times this session, each time confirming `/api/admin/auth/status` (or
+the relevant endpoint) reflected the change before continuing. Browser-side, hit a
+recurring stale-disk-cache issue after several JS edits (`Ctrl+Shift+R` resolved it
+each time) — not a real bug, just this testing environment's cache behaviour. No real
+library files or the real database were touched at any point; all destructive-leaning
+tests (auth enable/disable, scan/backup triggers) used either the existing scratch
+password or fully synthetic scratch data.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `ADMIN_SPEC.md` (§4 Last Scan
+persistence, §7.1.1/§7.1.2/§7.1.5 auth fixes + the no-password-set dialog, §8 changed-
+files change-type, §9 Last Backup indicator, §11 Change Log row); `MENU_BAR_SPEC.md`
+(§2.6/§2.7 status pills + secondary filters relocated and extended to Folder View,
+§3 parity table, §5 Change Log row); `EDITOR_SPEC.md` (§12 Change Log row for the
+Process All error modal). `BUGS.md` left unchanged — none of these nine fixes
+correspond to an open logged bug (BUG-009's single-issue-page rating-clear and
+BUG-013's same-mtime-different-size detection gap are both still open; this session's
+rating-clear fix was multi-select-toolbar-only, a different code path).

@@ -69,6 +69,36 @@ sit alongside the new controls consistently.
 The existing grid/list toggle (`SPEC.md` §20.5). No functional change — moved into
 the menu bar row for visual consistency.
 
+### 2.6 Status Pills *(layout fixed — V2.3 post-test fixes, Fix 1, 2026-06-26)*
+
+The `All / Unread / Reading / Read` status pills live in the site header (`#statusPills`,
+right after the search bar), not the menu bar itself — they were originally a separate
+row inside `.browse-controls` below the menu bar, which produced an unintended extra
+row. They're still tied to the same browse-surface visibility as the menu bar (shown
+whenever a Flat browse surface is active, hidden on Folder View and Home).
+
+### 2.7 Secondary Filters (Genre / Format / Decade / Year / Publisher / Rating / B&W)
+*(extended to Folder View — V2.3 post-test fixes, additional step alongside Fix 1,
+2026-06-26)*
+
+The secondary filter dropdowns plus the title/item count and Clear button
+(`#browseFilters` / `#browseCount`) render in the same single menu-bar row as the
+sort/rated/fav/view-toggle controls — previously a separate `.browse-controls` row
+below the menu bar, now merged into one row per Tez's direction ("the whole row
+needs to be in line with the items above and below"). **Grouping (`#groupBySelect`)
+is the one control that stays Flat-View-only** — Folder View already groups by
+directory structure, so a second grouping mechanism doesn't apply there.
+
+These filters now also apply to Folder View's flat file cards (folders themselves
+have no per-field aggregate to filter against, so they stay navigable regardless of
+filter state) — closing the gap this spec's §1 framing originally called out.
+`renderFolderView()` filters `files` by `genres`/`format`/`age_rating`/`year`/
+`publisher`/`black_and_white` using the same predicates Flat View uses, just against
+singular issue fields instead of a series aggregate's plural fields. The dropdown
+options are populated from a global `/library` fetch the first time any browse
+surface (flat or folder) loads — entering directly on a folder tab no longer leaves
+the dropdowns empty.
+
 ---
 
 ## 3. Flat View vs. Folder View parity
@@ -81,6 +111,10 @@ the menu bar row for visual consistency.
 | Favourites filter | ✅ | ✅ (folder shown if any descendant issue is favourited) |
 | Search | ✅ | ✅ (existing Folder View search behaviour — depth-agnostic, `CUSTOM_TABS_SPEC.md` §9.3) |
 | Grid/List toggle | ✅ | ✅ |
+| Status pills (§2.6) | ✅ | ❌ (no read-status concept for folder cards) |
+| Secondary filters (§2.7) | ✅ | ✅ (flat file cards only; folder cards unaffected) |
+| Grouping (`#groupBySelect`) | ✅ | ❌ (folder structure already groups by directory) |
+| Item/title count | ✅ | ✅ |
 
 ---
 
@@ -100,3 +134,4 @@ The menu bar also does not appear on the Admin page or the Full Editor.
 |---|---|---|
 | 2026-06-23 | `MENU_BAR_SPEC.md` created — consolidates four inbox items (sort dropdown, Rated filter, Favourites filter, Folder View parity) into one unified menu bar spec. | Inbox triage 2026-06-23; Tez's explicit framing that Folder View should be functionally equal to Flat View. |
 | 2026-06-23 | Built. Folder cards in Folder View are not individually re-sorted by the sort dropdown (only flat file cards are) — most criteria don't map onto a folder aggregate the way they do a series aggregate. | Scope decision made during build rather than left unspecified; see `DECISIONS.md`. |
+| 2026-06-26 | Status pills moved from a separate `.browse-controls` row into the site header (§2.6); secondary filters + item count merged into the single menu-bar row, with `#groupBySelect` kept Flat-View-only (§2.7); secondary filters extended to Folder View's flat file cards, closing this spec's original Folder-View-parity gap. | Post-test fix pass (`docs/2.3-fixes.md` Fix 1) plus an additional step raised mid-session — see `docs/progress.md`. |

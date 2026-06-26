@@ -152,10 +152,22 @@ function ensureSelectionToolbar() {
     () => runBulkAction('/progress/bulk/mark-read',   {}, ids => applyReadStateToDom(ids, 'read')));
   mkBtn('selMarkUnread', 'Mark Unread',
     () => runBulkAction('/progress/bulk/mark-unread', {}, ids => applyReadStateToDom(ids, 'unread')));
-  mkBtn('selFavorite',   '★ Favorite',
-    () => runBulkAction('/progress/bulk/favorite',    {}, ids => applyFavoriteToDom(ids, true)));
+  mkBtn('selFavorite',   '★ Favorite', () => {
+    const ids = Array.from(selectedIds.keys());
+    const allFavorited = ids.length > 0 && ids.every(id => {
+      const node = document.querySelector(`[data-issue-id="${id}"]`);
+      return node && node.classList.contains('is-favorite');
+    });
+    const path = allFavorited ? '/progress/bulk/unfavorite' : '/progress/bulk/favorite';
+    runBulkAction(path, {}, idsApplied => applyFavoriteToDom(idsApplied, !allFavorited));
+  });
 
   const rateWrap = el('div', 'selection-rate');
+  const clearStar = el('button', 'rating-star rating-clear', '✕');
+  clearStar.type  = 'button';
+  clearStar.title = 'Clear rating';
+  clearStar.addEventListener('click', () => runBulkAction('/progress/bulk/rate', { rating: 0 }));
+  rateWrap.appendChild(clearStar);
   for (let i = 1; i <= 5; i++) {
     const star = el('button', 'rating-star', '★');
     star.type  = 'button';
@@ -462,6 +474,10 @@ async function switchSurface(surface, opts = {}) {
   document.getElementById('folderView').hidden = !folderTab;
   document.getElementById('searchWrap').hidden = !(isBrowse || surface === 'home');
   document.getElementById('menuBar').hidden    = !isBrowse;
+  document.getElementById('statusPills').hidden = !isBrowse || folderTab;
+  document.getElementById('groupBySelect').hidden = !isBrowse || folderTab;
+  document.getElementById('browseFilters').hidden = !isBrowse;
+  document.getElementById('browseCount').hidden   = !isBrowse;
   updateSearchPlaceholder(surface);
   updateSortPagesOption(surface);
 
@@ -508,6 +524,11 @@ async function redirectHomeSearchToAll(q) {
   document.getElementById('homeView').hidden   = true;
   document.getElementById('browseView').hidden = false;
   document.getElementById('folderView').hidden = true;
+  document.getElementById('menuBar').hidden    = false;
+  document.getElementById('statusPills').hidden = false;
+  document.getElementById('groupBySelect').hidden = false;
+  document.getElementById('browseFilters').hidden = false;
+  document.getElementById('browseCount').hidden   = false;
   updateSearchPlaceholder('all');
   activeSearch = q;
   await loadBrowse();
@@ -1082,7 +1103,7 @@ function bindFilterEvents() {
     sel.addEventListener('change', e => {
       setter(e.target.value);
       e.target.classList.toggle('active', !!e.target.value);
-      renderBrowse();
+      renderActiveSurface();
     });
   };
 
@@ -1096,7 +1117,7 @@ function bindFilterEvents() {
 
   document.getElementById('filterClear').addEventListener('click', () => {
     clearAllFilters();
-    renderBrowse();
+    renderActiveSurface();
   });
 
   // Menu bar — sort dropdown + ascend/descend toggle (MENU_BAR_SPEC.md §2.1)
@@ -1175,6 +1196,17 @@ async function renderFolderView(tabId, path) {
   grid.innerHTML = '<div class="loading-state">Loading…</div>';
   document.getElementById('folderMarkAllBtn').hidden = false;
 
+  // Secondary filter dropdowns (genre/format/decade/year/publisher/rating/
+  // B&W) are global across the whole library — populate them here too, since
+  // Folder View can be the first surface a session ever loads.
+  if (!allLibrary.length) {
+    try { allLibrary = await apiFetch('/library'); } catch (_) { /* dropdowns just stay empty */ }
+  }
+  if (!filtersReady && allLibrary.length) {
+    await populateFilterDropdowns();
+    filtersReady = true;
+  }
+
   renderFolderBreadcrumb(tabId, path);
 
   const cacheKey = `${tabId}:${path}`;
@@ -1203,6 +1235,17 @@ async function renderFolderView(tabId, path) {
   if (activeStars) {
     files = files.filter(f => String(f.personal_rating || '') === activeStars);
   }
+  // Secondary filters (MENU_BAR_SPEC.md / browse-filters) — apply to direct
+  // file cards only; folders have no precomputed per-field aggregate to test
+  // against, so they stay navigable regardless of these filters.
+  if (activeGenre)     files = files.filter(f => (f.genres || []).includes(activeGenre));
+  if (activePublisher) files = files.filter(f => f.publisher === activePublisher);
+  if (activeFormat)    files = files.filter(f => f.format === activeFormat);
+  if (activeRating)    files = files.filter(f => f.age_rating === activeRating);
+  if (activeDecade)    files = files.filter(f => f.year && Math.floor(f.year / 10) * 10 === parseInt(activeDecade));
+  if (activeYear)      files = files.filter(f => String(f.year) === String(activeYear));
+  if (activeBW === 'yes') files = files.filter(f => f.black_and_white);
+  if (activeBW === 'no')  files = files.filter(f => !f.black_and_white);
   // Sort applies to flat file cards; folder cards stay in the server's
   // alphabetical order — most sort criteria (newest/issues/pages) don't map
   // cleanly onto a folder aggregate the way they do a series aggregate.
@@ -1211,6 +1254,11 @@ async function renderFolderView(tabId, path) {
   grid.innerHTML = '';
   for (const folder of folders) grid.appendChild(buildFolderCard(tabId, path, folder));
   for (const file of files) grid.appendChild(buildFolderFileCard(file));
+
+  const countEl = document.getElementById('browseCount');
+  const total = folders.length + files.length;
+  countEl.textContent = `${total.toLocaleString()} Item${total === 1 ? '' : 's'}`;
+  document.getElementById('filterClear').style.display = hasActiveFilters() ? 'inline-block' : 'none';
 
   if (!folders.length && !files.length) {
     grid.appendChild(el('div', 'empty-state', 'This folder is empty.'));

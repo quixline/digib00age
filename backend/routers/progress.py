@@ -133,13 +133,13 @@ class BulkIssueIds(BaseModel):
 
 class BulkRating(BaseModel):
     issue_ids: list[int]
-    rating: int   # 1-5
+    rating: int   # 0 (clear) or 1-5
 
     @field_validator("rating")
     @classmethod
     def validate_rating(cls, v):
-        if not 1 <= v <= 5:
-            raise ValueError("rating must be between 1 and 5")
+        if not 0 <= v <= 5:
+            raise ValueError("rating must be between 0 (clear) and 5")
         return v
 
 

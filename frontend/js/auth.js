@@ -64,14 +64,50 @@ function hideLoginPopup() {
   if (overlay) overlay.hidden = true;
 }
 
+const PROTECTED_PATHS = ['/admin', '/editor'];
+
+function showNoPasswordSetModal() {
+  let overlay = document.getElementById('noPasswordOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'noPasswordOverlay';
+    overlay.className = 'editor-overlay';
+    overlay.innerHTML = `
+      <div class="editor-modal login-modal">
+        <div class="editor-modal-header">
+          <h2 class="editor-modal-title">Password Protection Not Set Up</h2>
+        </div>
+        <p class="fe-multixml-hint">
+          No admin password has been set, so there's nothing to log in with yet.
+          Turn on "Require a password for Admin / Editor" in Advanced Settings and set a
+          password first — then Login will work.
+        </p>
+        <div class="editor-actions">
+          <button type="button" class="btn-primary" id="noPasswordOkBtn">OK</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    document.getElementById('noPasswordOkBtn').addEventListener('click', () => {
+      overlay.hidden = true;
+    });
+  }
+  overlay.hidden = false;
+}
+
 async function checkAuthStatus() {
   const res = await fetch('/api/admin/auth/status');
   const status = await res.json();
 
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) logoutBtn.hidden = !status.authenticated;
+  const authBtn = document.getElementById('logoutBtn');
+  if (authBtn) {
+    authBtn.hidden = false;
+    authBtn.textContent = status.authenticated ? 'Logout' : 'Login';
+    authBtn.dataset.authenticated = String(status.authenticated);
+    authBtn.dataset.protectionEnabled = String(status.protection_enabled);
+  }
 
-  if (status.protection_enabled && !status.authenticated) {
+  const onProtectedPage = PROTECTED_PATHS.some((p) => window.location.pathname.startsWith(p));
+  if (status.protection_enabled && !status.authenticated && onProtectedPage) {
     showLoginPopup();
   }
 
@@ -79,11 +115,17 @@ async function checkAuthStatus() {
 }
 
 function wireLogoutButton() {
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (!logoutBtn) return;
-  logoutBtn.addEventListener('click', async () => {
-    await fetch('/api/admin/logout', { method: 'POST' });
-    location.reload();
+  const authBtn = document.getElementById('logoutBtn');
+  if (!authBtn) return;
+  authBtn.addEventListener('click', async () => {
+    if (authBtn.dataset.authenticated === 'true') {
+      await fetch('/api/admin/logout', { method: 'POST' });
+      location.reload();
+    } else if (authBtn.dataset.protectionEnabled === 'false') {
+      showNoPasswordSetModal();
+    } else {
+      showLoginPopup();
+    }
   });
 }
 

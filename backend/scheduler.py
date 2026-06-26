@@ -109,14 +109,17 @@ async def maybe_scan_on_launch() -> None:
 
 
 def _run_backup_background() -> None:
+    from backend.config import save_config
     from backend.routers.admin import run_database_backup
 
     try:
         run_database_backup()
     except FileNotFoundError:
         logger.error("Scheduled backup skipped — database file not found")
-    except OSError:
+        save_config({"last_backup_error": "Database file not found"})
+    except OSError as exc:
         logger.exception("Scheduled backup failed")
+        save_config({"last_backup_error": str(exc)})
 
 
 async def backup_loop(poll_seconds: int = DEFAULT_POLL_SECONDS) -> None:

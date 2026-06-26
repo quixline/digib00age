@@ -93,6 +93,7 @@ async function loadStats() {
     const d = await r.json();
     renderStats(d);
     renderScanSection(d.scan_state, d.missing_count, d.log_status);
+    renderLastBackup(d.last_backup_at, d.last_backup_error);
   } catch (e) {
     document.getElementById('statGrid').innerHTML =
       '<div class="loading-state">Failed to load stats</div>';
@@ -133,6 +134,23 @@ function renderStats(d) {
   }
 }
 
+// ── Last Backup indicator (Scheduled Backup block — 2.3-fixes.md Fix 9) ───────
+function renderLastBackup(lastBackupAt, lastBackupError) {
+  const valueEl = document.getElementById('lastBackupValue');
+  const errorEl = document.getElementById('lastBackupError');
+  if (!valueEl) return;
+
+  valueEl.textContent = lastBackupAt ? new Date(lastBackupAt).toLocaleString() : 'Never';
+
+  if (lastBackupError) {
+    errorEl.hidden = false;
+    errorEl.textContent = `⚠ Last scheduled backup failed: ${lastBackupError}`;
+  } else {
+    errorEl.hidden = true;
+    errorEl.textContent = '';
+  }
+}
+
 // ── Scan section ──────────────────────────────────────────────────────────────
 function renderScanSection(scanState, missingCount, logStatus) {
   const grid = document.getElementById('scanGrid');
@@ -141,7 +159,7 @@ function renderScanSection(scanState, missingCount, logStatus) {
 
   const lastScan = scanState.finished_at
     ? new Date(scanState.finished_at).toLocaleString()
-    : 'Never';
+    : (scanState.last_scan_persisted || 'Never');
 
   // Scan Now card — first
   const scanCard = document.createElement('div');
@@ -348,6 +366,7 @@ async function doBackup() {
     const d = await r.json();
     if (r.ok) {
       showToast('Backup saved: ' + d.backup_file);
+      await loadStats();
     } else {
       showToast('Backup failed: ' + (d.detail || 'Unknown error'), true);
     }
@@ -1356,22 +1375,28 @@ async function initAuthSettings() {
 
   await refreshAuthSettingsUi();
 
+  const disableConfirmRow = document.getElementById('authDisableConfirmRow');
+
   protectionToggle.addEventListener('change', () => {
     passwordFields.hidden = !protectionToggle.checked;
     document.getElementById('authError').hidden = true;
     if (!protectionToggle.checked) {
-      // Turning protection off is immediate (no password needed) — confirm since
-      // it also force-disables Remote Administration in the same action.
-      if (!confirm('Turn off password protection? This will also disable Remote Administration.')) {
-        protectionToggle.checked = true;
-        passwordFields.hidden = true;
-        return;
-      }
-      disableProtection();
+      // Turning protection off requires re-entering the current password
+      // (it also force-disables Remote Administration in the same action).
+      protectionToggle.checked = true;
+      passwordFields.hidden = true;
+      document.getElementById('authDisableCurrentPassword').value = '';
+      document.getElementById('authDisableError').hidden = true;
+      disableConfirmRow.hidden = false;
     }
   });
 
   saveBtn.addEventListener('click', enableProtection);
+
+  document.getElementById('authDisableCancelBtn').addEventListener('click', () => {
+    disableConfirmRow.hidden = true;
+  });
+  document.getElementById('authDisableConfirmBtn').addEventListener('click', disableProtection);
 
   remoteToggle.addEventListener('change', async () => {
     const res = await fetch(`${API}/admin/auth/remote-toggle`, {
@@ -1398,6 +1423,7 @@ async function refreshAuthSettingsUi() {
 
   document.getElementById('authProtectionToggle').checked = status.protection_enabled;
   document.getElementById('authPasswordFields').hidden = true;
+  document.getElementById('authDisableConfirmRow').hidden = true;
   document.getElementById('authRemoteToggle').checked = status.remote_admin_enabled;
   document.getElementById('authRemoteToggle').disabled = !status.protection_enabled;
 
@@ -1449,12 +1475,21 @@ async function enableProtection() {
 }
 
 async function disableProtection() {
-  const res = await fetch(`${API}/admin/auth/disable`, { method: 'POST' });
+  const errorBox = document.getElementById('authDisableError');
+  const current_password = document.getElementById('authDisableCurrentPassword').value;
+  errorBox.hidden = true;
+
+  const res = await fetch(`${API}/admin/auth/disable`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ current_password }),
+  });
   if (!res.ok) {
-    showToast('Could not disable password protection', true);
-    await refreshAuthSettingsUi();
+    errorBox.hidden = false;
+    errorBox.textContent = 'Incorrect password.';
     return;
   }
+  document.getElementById('authDisableConfirmRow').hidden = true;
   showToast('Password protection disabled');
   await refreshAuthSettingsUi();
 }

@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   wireImageViewer();
   wirePicker();
   wireMultiXmlModal();
+  wireProcessErrorModal();
 
   await refreshFileList();
   await refreshQueueList();
@@ -354,7 +355,7 @@ async function processBatch(mode) {
     });
     const result = await res.json();
     if (result.errors && result.errors.length) {
-      showError(`Processed ${result.processed}. Errors: ${result.errors.join(' | ')}`);
+      openProcessErrorModal(result.processed, result.errors);
     }
     await refreshFileList();
     await refreshQueueList();
@@ -753,6 +754,31 @@ function wireMultiXmlModal() {
   document.getElementById('feMultiXmlCloseBtn').onclick = () => {
     document.getElementById('feMultiXmlOverlay').hidden = true;
   };
+}
+
+// ── Process All error modal (2.3-fixes.md Fix 3) ────────────────────────────
+// #feError / showError() / clearError() are unchanged — still used for short
+// single-line cases (network errors, "select a file first", etc). This modal
+// is only for Process All's per-file validation errors, which can be long and
+// repetitive across many files.
+
+function wireProcessErrorModal() {
+  const close = () => { document.getElementById('feProcessErrorOverlay').hidden = true; };
+  document.getElementById('feProcessErrorCloseBtn').onclick = close;
+  document.getElementById('feProcessErrorDismissBtn').onclick = close;
+}
+
+function openProcessErrorModal(processed, errors) {
+  const body = document.getElementById('feProcessErrorBody');
+  const total = processed + errors.length;
+  let text = `Processed ${processed} of ${total} files.\n\n${errors[0]}`;
+  if (errors.length > 1) {
+    text += `\n\n(${errors.length - 1} more file${errors.length - 1 === 1 ? '' : 's'} have the same ` +
+      `errors — unchecked required fields default to blank and will fail validation. Tick Genre, ` +
+      `Format, and Age Rating in the "Apply to All" column, or leave these files unselected.)`;
+  }
+  body.textContent = text;
+  document.getElementById('feProcessErrorOverlay').hidden = false;
 }
 
 function openMultiXmlModal(fileId, candidates) {
