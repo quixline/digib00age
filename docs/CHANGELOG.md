@@ -7,6 +7,9 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-27** — v2.3 Item 10: Admin Password Recovery — added a "Forgot
+  Password?" button/popup to the Admin Top Action Row with manual `config.json`
+  recovery steps.
 - **2026-06-27** — Fixed folder-view card sizing/image-fit mismatch vs standard
   cards (`.folder-card.has-cover` aspect-ratio bug). Fixed BUG-003 (removed dead
   duplicate `GET /api/reading/continue` route in `progress.py`).

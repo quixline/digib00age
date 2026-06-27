@@ -1,6 +1,7 @@
 # ComicVault — v2.3: Build Plan
 
-> **Status: Active.**
+> **Status: Active.** Items 1–9 built, verified, and manually tested (2026-06-24/26).
+> Items 10–14 added 2026-06-27 from inbox triage — queued, not yet built.
 >
 > **How to use this document**
 > This is the single ordered build queue for v2.3. Paste into a Claude Code session
@@ -143,7 +144,7 @@ Built 2026-06-24. **Spec:** `ADMIN_SPEC.md` §7.4, §7.5, §10, §1 (Admin cog i
 
 ---
 
-## Manual test pass
+## Manual test pass **Completed 1-9**
 
 After all items above are built, run a full manual test pass covering:
 - Menu bar on each surface (Home, All, Series, Singles, custom flat tab, Folder View)
@@ -156,3 +157,124 @@ After all items above are built, run a full manual test pass covering:
 - Scan log cards: trigger a scan, confirm log files written, green borders appear
 - Scheduled backup: set a destination, confirm backup runs, confirm manual button uses same destination
 - Destructive actions: confirm modal gates, confirm correct scope (DB vs. progress only)
+
+---
+
+## ✅ Item 10 — Admin: Password Recovery button
+
+Built 2026-06-27. **Spec:** `ADMIN_SPEC.md` §7.1.7
+
+Added a real "Forgot Password?" button/popup to the Admin page's Top Action Row —
+shows simple step-by-step instructions for clearing the password hash/salt directly
+in `config.json` to recover from a forgotten password. This **replaces** §7.1.7's
+plan to rely on a future User Guide stub — the popup itself becomes the
+documentation; the guide (once built) just links to it rather than duplicating the
+instructions.
+
+---
+
+## Item 11 — Admin: reduce Scheduled Backup frequency options
+
+**Spec:** `ADMIN_SPEC.md` §9 (current text to be amended once built)
+
+Cut the existing frequency dropdown (currently 1hr through 12 months, ~20 entries)
+down to: **Every day / week / month / 6 months / 1 year**. Tez's call — the current
+list is excessive for a single-user home app.
+
+---
+
+## Item 12 — Admin: Restore Database option
+
+**Spec:** `ADMIN_SPEC.md` §2/§9 area (new subsection to be added once built)
+
+Pairs with the existing Backup Database (§2) and Scheduled Database Backup (§9).
+Scoped 2026-06-27:
+
+- **Source:** native OS file dialog (same local-machine-sharing justification as the
+  existing Backup folder picker §9), opening in the configured backup folder by
+  default but not restricted to it.
+- **Mechanism:** copy the chosen file over `comicvault.db`, then a full server
+  restart — reuses the existing restart plumbing from §7.3 (port changes) rather
+  than tearing down/rebuilding the live DB engine in-process.
+- **Safety net — confirmed 2026-06-27:** auto-snapshot the *current* DB via the
+  existing `run_database_backup()` helper (already shared by manual + scheduled
+  backup) immediately before the swap, saved as `pre-restore-{timestamp}.db` into
+  the same backup folder. Tez's call — cheap extra safety step, worth it regardless
+  of how good the main confirmation dialog is.
+- **Confirmation:** `confirm()` naming the chosen backup file's date, explicitly
+  warning this is a full DB replacement (broader than Clear Database's library-only
+  scope — also overwrites Custom Tabs/Home Strips), local-only gated same tier as
+  Clear Database §7.4.
+
+---
+
+## Item 13 — Admin: Card Size — add a 75% option
+
+**Spec:** `ADMIN_SPEC.md` §6 (Card Size subsection, backfilled 2026-06-27)
+
+Existing control (built v2.1, 2026-06-22 — only just documented in `ADMIN_SPEC.md`,
+see that doc's Change Log) offers 10% / 25% / 50% / 100%. Add **75%** as a fifth
+option, between 50% and 100%.
+
+---
+
+## Item 14 — Site-wide: unify the main header across Series/Issue detail pages
+
+**Status: parked, last in queue — Tez is not actioning this yet.** A separate
+exploration with Claude Design (UI redesign direction) may change or supersede this
+header work entirely — check there before scoping further. Findings below are kept
+so nothing is lost in the meantime.
+
+**Spec:** none yet — destination doc TBC (likely `SPEC.md` or `MENU_BAR_SPEC.md`,
+whichever currently governs header layout; confirm during scoping)
+
+`/series/{id}` and `/issue/{id}` currently use a different header treatment than
+Home/the browse tabs. Make them consistent with the Home page header. Search scope:
+"Search" should search the full library by default — except when already on a
+Singles, Series, or Custom Tab surface, where it stays scoped to that surface (same
+behaviour as `SEARCH_PLACEHOLDERS`/`updateSearchPlaceholder()` already established
+for Home vs. All vs. Singles vs. Series, per `progress.md` "Session — 2026-06-22:
+Tier 3"). Open question for whoever picks this back up: what should the search bar
+search *from* an issue/series detail page itself, since it isn't "on" any surface
+— proposed default is full-library (same as Home), not yet confirmed with Tez.
+
+**Status pills excluded from scope, confirmed 2026-06-27:** the Unread/Reading/Read
+filter pills were deliberately moved up into the site header (out of
+`.browse-controls`) during the 2026-06-26 menu-bar fix pass, to make room once the
+menu bar picked up more controls (see `progress.md` "Session — 2026-06-26", Fix 1).
+They're list filters and don't apply to a single issue or series detail page —
+header unification here means nav tabs + search + admin-gear link + logout only.
+
+**Code-reading findings, 2026-06-27 (read `issue.html`/`series.html`/`index.html`/
+`app.js` directly before scoping):**
+
+- `issue.html` and `series.html`'s headers currently contain **only the logo and a
+  hidden Logout button** — no surface-nav tabs, no search bar, no admin gear-icon
+  link at all. This is a bigger gap than "different styling" — the markup itself is
+  missing, not just hidden. `index.html` has all of it (`bindSurfaceNav()`,
+  `bindSearchEvents()`, the `/admin` gear link).
+- Recommend factoring the header bindings into one shared init routine all three
+  pages call, rather than duplicating `bindSurfaceNav()`/`bindSearchEvents()`/the
+  admin-link wiring a third time.
+
+**Related but separate — likely root cause of BUG-014, found while reading the same
+code:** the issue/series back-links already use real `window.history.back()` (a
+code comment there says this replaced the old `from=` param logic). But the four
+main surface tabs (Home/All/Singles/Series, `bindSurfaceNav()`) never call
+`pushState` — switching tabs only updates a JS variable, the URL stays bare `/`.
+Folder View *does* call `pushState` on every drill-down
+(`pushFolderViewUrl()` — already explicitly documented in `app.js` as "a deliberate
+departure from the simpler `history.back()`-only pattern used elsewhere"). So: user
+on All (URL still `/`) → opens an issue → real navigation pushes `/issue/123` onto
+history → Back → browser correctly returns to the literal previous entry, bare `/`
+→ page loads defaulting to Home. The `?from=all`/`?from=series`/`?from=singles`
+params still being attached when building card links (`buildCoverCard()` etc.) are
+dead code — already ignored by both detail pages. **Recommended fix for BUG-014:**
+extend Folder View's existing `pushState` pattern to the four main surface tabs;
+once in place, Item 14's nav links on the detail pages can just point at
+`/?surface=all` etc. and back-navigation works correctly for free. Sequence
+BUG-014's fix just before or alongside this item, not independently — same
+mechanism. Full write-up in `BUGS.md` BUG-014.
+
+Needs a quick scoping pass to confirm current header variants before Code starts,
+whenever this gets picked back up.

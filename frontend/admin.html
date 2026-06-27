@@ -32,6 +32,7 @@
       <a href="/editor" target="_blank" rel="noopener" class="btn-admin-action">Open Editor</a>
       <button class="btn-admin-action" id="backupBtn">Backup Database</button>
       <button class="btn-admin-action" id="passwordResetBtn">Password Reset</button>
+      <button class="btn-admin-action" id="passwordRecoveryBtn">Forgot Password?</button>
       <button class="btn-admin-action" id="donateBtn">Donate</button>
     </div>
 
@@ -496,6 +497,34 @@
           <button type="submit" class="btn-primary">Save</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ── Password Recovery modal (ADMIN_SPEC.md §7.1.7) ─────────────────── -->
+  <div id="pwRecoveryOverlay" class="editor-overlay" hidden>
+    <div class="editor-modal">
+      <div class="editor-modal-header">
+        <h2 class="editor-modal-title">Password Recovery</h2>
+        <button type="button" class="editor-close-btn" id="pwRecoveryCloseBtn" aria-label="Close">&times;</button>
+      </div>
+      <div style="margin: 0 20px 20px;">
+        <p class="admin-card-hint">Forgotten your password? There's no in-app reset —
+          recovery is manual and requires local access to the machine running
+          ComicVault:</p>
+        <ol class="admin-card-hint" style="padding-left: 20px;">
+          <li>Stop the ComicVault server.</li>
+          <li>Open <code>config.json</code> in a text editor.</li>
+          <li>Delete the values for <code>admin_password_hash</code> and
+            <code>admin_password_salt</code> (set both to <code>null</code>, or
+            remove the lines entirely).</li>
+          <li>Save the file and restart the server.</li>
+          <li>Password protection is now off. Go to Advanced Settings and set a
+            new password as normal.</li>
+        </ol>
+        <p class="admin-card-hint">This is by design: clearing protection requires
+          physical/local access to the machine, which is the same trust boundary
+          password protection itself relies on.</p>
+      </div>
     </div>
   </div>
 

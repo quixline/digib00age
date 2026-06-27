@@ -6,11 +6,23 @@
 > page. Record any deviations at the bottom (Change Log), same convention as other
 > spec files.
 >
-> **Status:** All v2.3 items built as of 2026-06-24. §1–§6 (core layout, stats, scan,
-> library folders, pagination) were live from V1. All Advanced Settings additions (§7:
-> password protection, remote admin toggle, scheduled backup, server port, clear
-> database, clear reading progress), Logs/Auto Scan (§8), and Donate (§10) are now
-> also built — see per-section notes for details. Manual test pass remaining.
+> **Status:** All original v2.3 items (1–9) built as of 2026-06-24 and verified via
+> manual test pass 2026-06-26 (9 fixes implemented same day — see §12 Change Log).
+> §1–§6 (core layout, stats, scan, library folders, pagination) were live from V1.
+> All Advanced Settings additions (§7: password protection, remote admin toggle,
+> scheduled backup, server port, clear database, clear reading progress),
+> Logs/Auto Scan (§8), and Donate (§10) are built and verified — see per-section
+> notes for details.
+>
+> §6 backfilled 2026-06-27 with the Card Size control — built in v2.1 (2026-06-22)
+> but never written into this doc when it was created the following day.
+>
+> Five further items queued 2026-06-27 from inbox triage, not yet built: Password
+> Recovery button (§7.1.7), Scheduled Backup frequency reduction (§9), Restore
+> Database, Card Size +75% option (§6), and a site-wide header unification. See
+> `comicvault-changes-v2.3.md` Items 10–14.
+>
+> §11.1 File Rename scoped 2026-06-27 — design complete, build not yet started.
 >
 > **Note on authority:** `SPEC.md` §11 and §20.13 contain earlier admin descriptions.
 > Where they conflict with this file, **this file is authoritative** — it consolidates
@@ -129,6 +141,28 @@ search results). Home page strips are exempt (fixed at 15 covers per strip).
 
 Per `SPEC.md` §20.13: the pagination control lives on the Admin page, not the browse
 toolbar; Admin can be opened in its own tab for a quick change.
+
+### Card Size *(built — v2.1 Tier 3, 2026-06-22; missing from this doc until backfilled 2026-06-27)*
+
+A second control in the same Admin area, directly below "Results per page" (same
+`.admin-card--spaced` styling). Dropdown: **10% / 25% / 50% / 100%**, persisted via
+`localStorage` (`cv_card_size`), driving a `--card-min` CSS variable consumed by
+`.cover-grid`'s `grid-template-columns`.
+
+**Scope is global** — every cover-grid site-wide resizes together: Series/Singles/
+All/search results, Home strips, and — at the time this was built — the 2000 AD
+year-picker grid, since superseded by Folder View (`CUSTOM_TABS_SPEC.md` §9). Folder
+View's grids should inherit the same `--card-min` mechanism via the shared
+`.cover-grid` class, but this hasn't been re-verified against the current Folder
+View markup since the 2000 AD removal — worth a quick confirmation next time Code
+touches this area.
+
+Originally lived inline in the browse-controls bar; moved here after Tez's
+follow-up testing, to sit alongside the other display-density setting rather than
+clutter the browse toolbar.
+
+Queued for a fifth option, **75%**, between 50% and 100% — see
+`comicvault-changes-v2.3.md` Item 13 (not yet built).
 
 
 ---
@@ -270,18 +304,21 @@ live: standard current-password + new-password form. No special handling beyond
 normal validation (non-empty, current password must verify before the new one is
 accepted).
 
-#### 7.1.7 Forgot-password recovery — none built
+#### 7.1.7 Forgot-password recovery *(built — V2.3 Item 10, 2026-06-27)*
 
-If the password is forgotten entirely, recovery is **manual, local-disk-only**: stop
-the server, clear the stored password hash/salt fields in `config.json` directly
-(reverts to "no password set" / ungated), restart, then set a new password through
-the UI as normal. No in-app recovery flow, no script — this is already consistent
-with the local-access security boundary established in §7.1.1 (you need local
-machine access to weaken protection anyway).
+A **"Forgot Password?"** button sits in the Top Action Row (§2) next to Password
+Reset, always available (no auth required to view it — it's instructions, not a
+bypass). Clicking it opens a popup explaining the same manual, local-disk-only
+recovery procedure as before: stop the server, clear the stored `admin_password_hash`
+and `admin_password_salt` fields in `config.json` directly (reverts to "no password
+set" / ungated), restart, then set a new password through the UI as normal. No
+in-app recovery flow, no script, no backend endpoint — this is already consistent
+with the local-access security boundary established in §7.1.1 (you need local machine
+access to weaken protection anyway).
 
-This needs to be **documented in the project docs now**, and **added to the future
-User Guide** (currently a stub page per §2) once that's built — flagging both so it
-isn't lost.
+This **replaces** the earlier plan to defer documentation to a future User Guide stub
+— the popup itself is now the documentation; the guide (once built) can link to it
+rather than duplicating the steps.
 
 ### 7.2 Remote Administration Toggle *(built — V2.3 Item 6, 2026-06-24)*
 
@@ -436,7 +473,178 @@ backend endpoint.
 
 ---
 
-## 11. Change Log
+## 11. Processing Tools
+
+Reserved section for CAPT's remaining standalone desktop tools, brought into ComicVault
+one at a time per `ROADMAP.md`'s "CAPT extra tools" entry. Each tool gets its own
+sub-section below (§11.1, §11.2, …) as it's scoped and built. All Processing Tools
+sections live at the bottom of the `/admin` page, in the existing single scrolling
+layout — not separate pages. (`/admin` as a whole is a placeholder layout pending a
+full redesign covered elsewhere; Processing Tools sections will be restyled alongside
+everything else when that happens, not before.)
+
+**Shared design notes across all Processing Tools:**
+
+- These tools operate on files **before** they enter the scanned library — typically
+  staging areas like `Processing/`, but not restricted to any specific folder. None of
+  them write to the database or trigger a rescan; they are pure filesystem utilities
+  with a web UI.
+- Each tool's section is gated to **local-only sessions** (request originates from
+  `127.0.0.1`), same tier as Restart Server / Clear Database / the backup folder
+  dialog — these tools perform real, irreversible filesystem mutations. The section is
+  greyed out with an explanatory hint when accessed remotely, reusing the existing
+  `is_local` flag already returned by `GET /api/admin/auth/status` and the same
+  disable/hint pattern §7.1's auth controls use (`authLocalOnlyHint`).
+- Source code for all four tools (Rename, Convert, Convert Images, Flatten) lives in
+  the original CAPT codebase at `comic_file_editing_toolkit/src/cap_toolkit/`. Each
+  tool's logic is being ported, not rebuilt from scratch — the GUI shell (PyQt) is
+  discarded, the underlying file-operation logic is reused.
+
+---
+
+### 11.1 File Rename
+
+Ported from CAPT's standalone File Renamer (`gui/rename_window.py`,
+`widgets/rename_options_widget.py`, `utils/rename_logic.py`, `utils/rename_u.py`,
+`utils/filename_parser.py`). Batch and single-file renaming of arbitrary files based on
+parsed/edited Series, Issue, Title, and Year values.
+
+#### 11.1.1 Scope
+
+- Operates on **any file**, not just comic archives — no extension filter of any kind.
+  The tool only ever touches the filename string via a path rename; it never opens a
+  file's contents, so it's completely format-agnostic (cbz, cbr, pdf, txt, anything).
+  This also means there is nothing to "restrict to CBZ" here — that consideration
+  applies to Convert Images/Flatten (§11.3/§11.4), not Rename.
+- No restriction to any particular folder (e.g. `Processing/`) — the picker can browse
+  anywhere the server process can see, any drive. In practice this will mostly be used
+  on pre-ingest staging folders, but nothing in the implementation assumes that.
+- Filenames matter to ComicVault only as a fallback parser (`scanner.py`'s
+  `_parse_filename()`) used when a file lacks `ComicInfo.xml` — once a file is tagged
+  and scanned, the filename is purely cosmetic. Renaming here never touches the DB and
+  never needs to.
+
+#### 11.1.2 File Loading
+
+- **Custom in-app folder-tree picker** — same pattern as the Full Editor's file picker
+  (`EDITOR_SPEC.md` §5.1) and the Custom Tabs folder picker (§5 above), **not** a native
+  OS dialog (`tkinter`). This is a deliberate choice over the native-dialog pattern used
+  by the Scheduled Backup folder picker (§9): the native dialog only works because
+  frontend and backend currently share a machine, and breaks conceptually under Remote
+  Administration (it would pop open on the server's own screen). The in-app picker is
+  pure HTTP/JSON server-side directory listing, so it behaves identically regardless of
+  which device is browsing — though committing a rename stays local-gated regardless
+  (§11, shared notes).
+- **No library-root restriction.** Unlike the Editor's and Custom Tabs' pickers, this
+  one is not scoped to `library_root` — it lists any directory the server process can
+  reach. Requires a small new backend capability: a "This PC" drive-letter listing,
+  reached by navigating **Up** past a drive's root (mirrors the Editor picker's
+  Home/Up — **Home** returns to the configured `library_root`, **Up** climbs the tree
+  and terminates at a drive-letter list rather than stopping at a fixed root).
+- **No recursion.** Selecting a folder loads only the files directly inside it — no
+  descent into subfolders (deliberately different from CAPT's original `rglob()`
+  behaviour, and from the Editor's recursive folder-add). Loading files from a
+  subfolder requires navigating into it and selecting from there. Multi-select
+  individual files from within one folder is also supported via the same picker.
+
+#### 11.1.3 Filename Parsing
+
+Ports `filename_parser.py`'s `parse_comic_filename()` unchanged — regex-based
+extraction of Series / Issue Number / Year (Title is left blank; CAPT never parsed it
+out either) from the current filename, used to pre-populate the edit panel when a file
+is selected. Tolerant of scene-release-style tags via bracket-stripping heuristics, but
+not exhaustive — this is acceptable because nothing is committed until the user reviews
+the live preview (§11.1.5) and corrects anything mis-parsed.
+
+#### 11.1.4 Edit Panel
+
+Four fields — **Series, Issue, Title, Year** — each with two independent checkboxes:
+
+| Column | Meaning |
+|---|---|
+| **File** | Apply this field's typed value to the single currently-selected file only |
+| **All** | Apply this field's typed value to every currently loaded file |
+
+**Per-field independence, no column auto-select.** CAPT's original behaviour
+auto-selected every File checkbox the moment one was ticked (same for All) — an
+all-or-nothing column. This is **not** carried over. Each field's File/All pair is
+fully independent of every other field's, matching the convention already established
+for the Full Editor's "Apply to: All" checkboxes (`EDITOR_SPEC.md` §5.2, Item 5 of
+`comicvault-changes-v2.3.md`) — e.g. Series→All and Issue→File can be set
+simultaneously, applying Series across the whole batch while leaving Issue numbers
+edited per-file.
+
+**Batch options:**
+
+- **Auto-Increment Issue Numbers** — enabled only when **Issue→All** is checked
+  specifically (fixes a bug in the original CAPT, where it was enabled by *any* All
+  checkbox regardless of which field). When active, the Issue value typed in is treated
+  as the starting number and incremented sequentially down the loaded-files list in its
+  current display order (respects drag-and-drop reorder).
+- **Case style** — Title Case / All UPPER Case / All lower case, mutually exclusive
+  (single-choice group, unchanged from CAPT). Applies only to Series and Title text
+  values — Issue and Year are never case-styled.
+
+#### 11.1.5 Live Preview
+
+No explicit "Preview Changes" button. The Preview list updates immediately on every
+field edit or checkbox change. Single-file edits **accumulate** across file
+selections — select File A, tick a field, edit it; select File B, tick a different
+field, edit it; both A and B now sit in the Preview list simultaneously, each carrying
+only its own edited field(s) with everything else left as originally parsed. This
+matches CAPT's existing accumulation behaviour exactly, just without the manual Preview
+button. Switching into a batch ("All") edit, or pressing **Clear Preview**, resets the
+list. Clear Preview button is retained.
+
+#### 11.1.6 Apply Rename
+
+Attempts every file currently in the Preview list. On completion, shows a summary modal
+matching the Full Editor's existing Process-error pattern (`feProcessErrorModal`):
+"Renamed X of Y files", plus a per-file error list for any failures (permission denied,
+filename collision, file no longer present on disk, etc.). Files that succeed clear
+from the Preview list; files that fail remain so the user can retry or adjust. No
+partial-silent-failure — every attempted file is accounted for in the summary.
+
+There is **no undo**. This is consistent with the tool's nature (a basic log, not a
+transaction system) and matches CAPT's own behaviour — the live preview is the only
+safety net before committing.
+
+#### 11.1.7 Audit Log
+
+New `rename_log.md` in `/logs/`, following the existing append-only pattern in
+`scan_logs.py` — one line per renamed file:
+
+```
+DD/MM/YYYY HH:MM — old_filename.ext → new_filename.ext
+```
+
+**Independent 1MB size cap** — not governed by the existing configurable Log Size
+Limit setting (§8), which stays scoped to the four scan logs only. Once `rename_log.md`
+exceeds 1MB, the oldest entries are dropped first (same truncation mechanism as
+`scan_logs.py`'s `_truncate_if_oversized()`, just a fixed ceiling instead of the
+configurable one).
+
+#### 11.1.8 Implementation Notes (for Code)
+
+Not binding design, but worth flagging before the build session:
+
+- New backend router (e.g. `backend/routers/rename.py`) mirroring `editor_full.py`'s
+  shape: a `browse` endpoint (no `library_root` restriction, lists files *and* folders,
+  no extension filter, plus a drive-list endpoint for the "This PC" Up-navigation
+  terminus), working-file-list endpoints (add/remove/clear — no recursion, no
+  extension filter), and an apply endpoint.
+- New `rename_log.py`, parallel to `scan_logs.py`, with its own fixed 1MB ceiling.
+- Port `parse_comic_filename()`, `build_filename()`, and the rename-application logic
+  from `comic_file_editing_toolkit/src/cap_toolkit/utils/filename_parser.py` and
+  `rename_u.py` directly — both are already pure functions with no PyQt dependency.
+- This is the **third** near-identical in-app folder-tree picker implementation
+  (Editor's `fePicker*`, Custom Tabs' `ctPicker*`, now Rename's). Worth a quick
+  judgement call on whether to factor a shared picker component now or carry the
+  duplication — not a blocker either way, flagging for awareness only.
+
+---
+
+## 12. Change Log
 
 > Record any deviations from this spec here with date and reason.
 
@@ -445,3 +653,6 @@ backend endpoint.
 | 2026-06-23 | `ADMIN_SPEC.md` created — consolidates `SPEC.md` §11 and §20.13's admin descriptions plus all new admin items scoped in the 2026-06-23 inbox triage session. `SPEC.md` §11/§20.13 are superseded by this file for admin-page specifics. | Inbox triage 2026-06-23; EDITOR_SPEC.md precedent for a standalone admin spec. |
 | 2026-06-24 | §7.1 and §7.2 stubs replaced with full design: scope expanded to cover `/editor` and all `/api/admin/*` + `/api/editor/*` endpoints (not just `/admin`); local-only security boundary; stateless signed-cookie session; brute-force lockout; sliding expiry; no-built forgot-password recovery; §7.2 remote toggle dependency tightened. §1 Access gate wording updated to point at §7.1, drop §5.1 reference and "deferred to V2" framing. | Design session 2026-06-24; `comicvault-changes-v2.3.md` Item 6 updated to pointer-only. |
 | 2026-06-26 | Post-test fix pass (`docs/2.3-fixes.md`, Fixes 4–9): §7.1.2/§7.1.5 — login popup gated to protected pages only, auth button always visible with Login/Logout label, new no-password-set explanation dialog; §7.1.1 — disabling password protection now requires re-entering the current password via an inline confirm row; §4 — Last Scan card falls back to the persisted log on server restart instead of showing "Never"; §8 — changed-files log now distinguishes "metadata updated" vs. "archive changed (pages: X → Y)"; §9 — new Last Backup indicator + scheduler failure surfacing in the Scheduled Backup block. | Manual test pass 2026-06-26 (`docs/2.3-testing-notes.md`) surfaced all six issues. |
+| 2026-06-27 | Added §11 Processing Tools (new section, inserted before the Change Log, which shifts from §11 to §12) and §11.1 File Rename — full scope, picker behaviour, checkbox model, live preview, error handling, and audit log design. Ported from CAPT's standalone File Renamer per `ROADMAP.md`'s "CAPT extra tools" entry, brought in one tool at a time starting with Rename. | Dedicated scoping session 2026-06-27 — CAPT source code and `Processing/` folder structure inspected directly to ground design decisions. |
+| 2026-06-27 | Status block corrected — removed stale "manual test pass remaining" (test pass completed 2026-06-26, see Fixes 1–9). §6 backfilled with the Card Size control (built v2.1, 2026-06-22) — never written into this doc when it was created 2026-06-23. Five new items (10–14) queued from inbox triage, noted in the status block. | Doc-consistency scan flagged ISSUE-007 (`doc-scan-issues.md`); extended into a full inbox triage session. |
+| 2026-06-27 | §7.1.7 — built the Forgot-Password recovery popup (V2.3 Item 10): "Forgot Password?" button added to the Top Action Row, opens a modal with the manual `config.json` recovery steps. Replaces the prior "none built, defer to future User Guide" text. | `comicvault-changes-v2.3.md` Item 10. |

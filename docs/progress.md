@@ -2679,3 +2679,35 @@ the standard Series grid — card proportions and image fit now match, no consol
 registration order) was removed. No behaviour change; `library.py`'s `reading_continue`
 remains the sole implementation. `docs/BUGS.md` updated — entry moved from open list to
 FIXED section.
+
+---
+
+## Session — 2026-06-27: v2.3 Item 10 — Admin Password Recovery button
+
+Built the real Password Recovery control per `ADMIN_SPEC.md` §7.1.7 / `comicvault-
+changes-v2.3.md` Item 10, replacing the earlier "none built, defer to future User
+Guide" plan.
+
+**Frontend:** added a "Forgot Password?" button to the Admin page's Top Action Row
+(`frontend/admin.html`), next to the existing Password Reset button. Clicking it
+opens a new `pwRecoveryOverlay` modal (same `editor-overlay`/`editor-modal` styling
+as the existing Donate modal) showing five numbered steps: stop the server, open
+`config.json`, clear `admin_password_hash`/`admin_password_salt`, save and restart,
+then set a new password via the UI as normal. Wired up in `frontend/js/admin.js`
+(`initPasswordRecovery()`, called alongside the other `init*()` calls), following
+the same open/close/overlay-click-to-dismiss pattern as `initDonate()`. Frontend-only
+— no backend endpoint, no auth gate (it's static instructions, not a credential
+bypass), consistent with §7.1.7's manual-recovery design.
+
+**Verified live** via the Chrome MCP against the running tray-app server
+(`localhost:8000/admin`): button renders in the action row, click opens the modal
+with the five-step instructions rendering correctly, close button (×) dismisses it
+cleanly (confirmed `pwRecoveryOverlay.hidden` toggles true/false as expected). No
+console errors. No real library files, `config.json`, or the database were touched —
+this only reads existing field names (`admin_password_hash`/`admin_password_salt`,
+confirmed against `backend/routers/admin_auth.py`) to write into static instructional
+text.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `ADMIN_SPEC.md` §7.1.7 (rewritten from
+"none built" to built, plus a Change Log row); `comicvault-changes-v2.3.md` Item 10
+marked done.

@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initBackupSettings();
   initDangerZone();
   initDonate();
+  initPasswordRecovery();
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -489,6 +490,19 @@ async function clearDatabase() {
   }
   showToast(`Cleared ${d.issues_removed} issue(s), ${d.people_removed} person record(s)`);
   await loadStats();
+}
+
+// ── Password Recovery (ADMIN_SPEC.md §7.1.7) ────────────────────────────────
+function initPasswordRecovery() {
+  document.getElementById('passwordRecoveryBtn').addEventListener('click', () => {
+    document.getElementById('pwRecoveryOverlay').hidden = false;
+  });
+  document.getElementById('pwRecoveryCloseBtn').addEventListener('click', () => {
+    document.getElementById('pwRecoveryOverlay').hidden = true;
+  });
+  document.getElementById('pwRecoveryOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'pwRecoveryOverlay') document.getElementById('pwRecoveryOverlay').hidden = true;
+  });
 }
 
 // ── Donate (ADMIN_SPEC.md §10 — placeholder shell, content TBC) ────────────
