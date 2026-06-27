@@ -432,13 +432,14 @@ Consolidates two previously separate inbox items ("Backup Database Location" and
   since a remote-admin session would otherwise open the dialog on the wrong
   (server) machine. Single destination folder for all backups, saved to
   `config.json`.
-- **Backup frequency dropdown:** Every 1 hour / 2 hours / 4 hours / 6 hours /
-  12 hours / 24 hours / 1 day / 2 days / 3 days / 4 days / 5 days / 6 days /
-  7 days / 1 week / 2 weeks / 3 weeks / 4 weeks / 1 month / 2 months / 3 months /
-  6 months / 12 months. (The UI dropdown shows one entry per distinct interval —
-  "24 hours"/"1 day" and "7 days"/"1 week" collapse to a single option each
-  since they're identical in duration; both spellings are still accepted
-  internally.)
+- **Backup frequency dropdown *(reduced — V2.3 Item 11, 2026-06-27):*** Off /
+  Every day / Every week / Every month / Every 6 months / Every 1 year. Down from
+  the original ~20-entry list (every 1hr through 12 months) — Tez's call, excessive
+  granularity for a single-user home app. Backend `_BACKUP_FREQUENCY_SECONDS`
+  (`backend/scheduler.py`) is unchanged and still recognises the old values
+  (`1hr`, `2hr`, `12hr`, etc.) — only the frontend `<select>` options
+  (`frontend/admin.html`) were trimmed, so a `config.json` value saved before this
+  change keeps working until the dropdown is touched and re-saved with a new value.
 
 **No cloud API integration.** Pointing the destination folder at a cloud-sync
 client's local folder (e.g. Google Drive Desktop sync folder) covers cloud backup
@@ -656,3 +657,4 @@ Not binding design, but worth flagging before the build session:
 | 2026-06-27 | Added §11 Processing Tools (new section, inserted before the Change Log, which shifts from §11 to §12) and §11.1 File Rename — full scope, picker behaviour, checkbox model, live preview, error handling, and audit log design. Ported from CAPT's standalone File Renamer per `ROADMAP.md`'s "CAPT extra tools" entry, brought in one tool at a time starting with Rename. | Dedicated scoping session 2026-06-27 — CAPT source code and `Processing/` folder structure inspected directly to ground design decisions. |
 | 2026-06-27 | Status block corrected — removed stale "manual test pass remaining" (test pass completed 2026-06-26, see Fixes 1–9). §6 backfilled with the Card Size control (built v2.1, 2026-06-22) — never written into this doc when it was created 2026-06-23. Five new items (10–14) queued from inbox triage, noted in the status block. | Doc-consistency scan flagged ISSUE-007 (`doc-scan-issues.md`); extended into a full inbox triage session. |
 | 2026-06-27 | §7.1.7 — built the Forgot-Password recovery popup (V2.3 Item 10): "Forgot Password?" button added to the Top Action Row, opens a modal with the manual `config.json` recovery steps. Replaces the prior "none built, defer to future User Guide" text. | `comicvault-changes-v2.3.md` Item 10. |
+| 2026-06-27 | §9 — Scheduled Backup frequency dropdown cut from ~20 entries down to 6 (Off/day/week/month/6 months/1 year), V2.3 Item 11. Backend frequency map left untouched (still recognises old values). | `comicvault-changes-v2.3.md` Item 11; Tez's call, excessive list for a single-user home app. |

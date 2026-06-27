@@ -173,13 +173,13 @@ instructions.
 
 ---
 
-## Item 11 — Admin: reduce Scheduled Backup frequency options
+## ✅ Item 11 — Admin: reduce Scheduled Backup frequency options
 
-**Spec:** `ADMIN_SPEC.md` §9 (current text to be amended once built)
+Built 2026-06-27. **Spec:** `ADMIN_SPEC.md` §9
 
-Cut the existing frequency dropdown (currently 1hr through 12 months, ~20 entries)
-down to: **Every day / week / month / 6 months / 1 year**. Tez's call — the current
-list is excessive for a single-user home app.
+Cut the existing frequency dropdown (was 1hr through 12 months, ~20 entries) down
+to: **Off / Every day / week / month / 6 months / 1 year**. Tez's call — the
+original list was excessive for a single-user home app.
 
 ---
 

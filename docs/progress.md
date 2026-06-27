@@ -2711,3 +2711,35 @@ text.
 **Docs updated:** this entry; `CHANGELOG.md`; `ADMIN_SPEC.md` §7.1.7 (rewritten from
 "none built" to built, plus a Change Log row); `comicvault-changes-v2.3.md` Item 10
 marked done.
+
+---
+
+## Session — 2026-06-27: v2.3 Item 11 — reduce Scheduled Backup frequency options
+
+Trimmed the Scheduled Backup frequency dropdown (`frontend/admin.html`,
+`#backupFreqSelect`) from its original ~20-entry list (every 1hr through 12 months)
+down to 6 options per `comicvault-changes-v2.3.md` Item 11: **Off / Every day /
+Every week / Every month / Every 6 months / Every 1 year**, mapped to the existing
+`1day` / `1week` / `1month` / `6months` / `12months` config values.
+
+**Backend untouched.** `backend/scheduler.py`'s `_BACKUP_FREQUENCY_SECONDS` map
+already contained all six of these keys (and more) before this change — no edits
+needed there. Left the now-unused extra keys (`1hr`, `2hr`, `12hr`, etc.) in place
+rather than pruning them: a `config.json` saved under the old dropdown keeps working
+until the dropdown is touched and re-saved, rather than silently going inert.
+
+**Pre-existing stale value caught during verification:** the live `config.json` had
+`backup_frequency: "12hr"`, which isn't one of the six remaining UI options —
+loading the page would have shown the dropdown blank (no matching `<option>`).
+Flagged to Tez; Tez turned off auto-backup and stopped the server before this was an
+issue (`backup_frequency` now `"off"`, which matches the dropdown's first option
+cleanly). No migration code was added — not needed once the value was reset.
+
+**Verified live** via the Chrome MCP against the running tray-app server before it
+was stopped: confirmed the dropdown renders exactly the 6 expected options via an
+accessibility-tree query. Re-confirmed `config.json`'s `backup_frequency` value
+matches a real option after Tez's reset. No real library files or the database were
+touched.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `ADMIN_SPEC.md` §9 (dropdown rewrite +
+Change Log row); `comicvault-changes-v2.3.md` Item 11 marked done.
