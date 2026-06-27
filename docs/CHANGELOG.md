@@ -7,6 +7,10 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-27** — v2.3 Item 12: Admin Restore Database — renamed "Scheduled
+  Backup" section to "Database Backup", split into Scheduled Backup / Restore
+  Backup subsections, added a native file-picker restore flow with a
+  pre-restore safety snapshot and full server restart.
 - **2026-06-27** — v2.3 Item 11: Admin Scheduled Backup — trimmed the frequency
   dropdown from ~20 entries down to 6 (Off/day/week/month/6 months/1 year).
 - **2026-06-27** — v2.3 Item 10: Admin Password Recovery — added a "Forgot

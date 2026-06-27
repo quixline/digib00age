@@ -97,40 +97,68 @@
       </div>
     </section>
 
-    <!-- ── Scheduled Database Backup (ADMIN_SPEC.md §9) ────────────────────── -->
+    <!-- ── Database Backup (ADMIN_SPEC.md §9) ──────────────────────────────── -->
     <section class="admin-section">
-      <h2 class="admin-section-heading">Scheduled Backup</h2>
-      <div class="admin-card">
-        <div class="admin-field-row">
-          <label class="admin-field-label">Backup Destination</label>
-          <div class="admin-field-input-wrap">
-            <div class="admin-field-input-row">
-              <input type="text" class="admin-input" id="backupFolderInput" readonly placeholder="Falls back to the database's own folder if unset" />
-              <button class="btn-admin-action" id="browseBackupFolderBtn">Choose…</button>
+      <h2 class="admin-section-heading">Database Backup</h2>
+
+      <div class="admin-subsection">
+        <h3 class="admin-subsection-heading">Scheduled Backup</h3>
+        <div class="admin-card">
+          <div class="admin-field-row">
+            <label class="admin-field-label">Backup Destination</label>
+            <div class="admin-field-input-wrap">
+              <div class="admin-field-input-row">
+                <input type="text" class="admin-input" id="backupFolderInput" readonly placeholder="Falls back to the database's own folder if unset" />
+                <button class="btn-admin-action" id="browseBackupFolderBtn">Choose…</button>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="admin-field-row">
-          <label class="admin-field-label" for="backupFreqSelect">Backup Frequency</label>
-          <div class="admin-field-input-wrap">
-            <select class="admin-select" id="backupFreqSelect" aria-label="Backup frequency">
-              <option value="off">Off (manual only)</option>
-              <option value="1day">Every day</option>
-              <option value="1week">Every week</option>
-              <option value="1month">Every month</option>
-              <option value="6months">Every 6 months</option>
-              <option value="12months">Every 1 year</option>
-            </select>
+          <div class="admin-field-row">
+            <label class="admin-field-label" for="backupFreqSelect">Backup Frequency</label>
+            <div class="admin-field-input-wrap">
+              <select class="admin-select" id="backupFreqSelect" aria-label="Backup frequency">
+                <option value="off">Off (manual only)</option>
+                <option value="1day">Every day</option>
+                <option value="1week">Every week</option>
+                <option value="1month">Every month</option>
+                <option value="6months">Every 6 months</option>
+                <option value="12months">Every 1 year</option>
+              </select>
+            </div>
           </div>
-        </div>
-        <div class="admin-field-row">
-          <label class="admin-field-label">Last Backup</label>
-          <div class="admin-field-input-wrap">
-            <span id="lastBackupValue">Never</span>
-            <p class="admin-card-hint admin-backup-error" id="lastBackupError" hidden></p>
+          <div class="admin-field-row">
+            <label class="admin-field-label">Last Backup</label>
+            <div class="admin-field-input-wrap">
+              <span id="lastBackupValue">Never</span>
+              <p class="admin-card-hint admin-backup-error" id="lastBackupError" hidden></p>
+            </div>
           </div>
+          <p class="admin-card-hint">The manual "Backup Database" button above uses this same destination once set.</p>
         </div>
-        <p class="admin-card-hint">The manual "Backup Database" button above uses this same destination once set.</p>
+      </div>
+
+      <div class="admin-subsection">
+        <h3 class="admin-subsection-heading">Restore Backup</h3>
+        <div class="admin-card">
+          <div class="admin-field-row">
+            <label class="admin-field-label">Backup File</label>
+            <div class="admin-field-input-wrap">
+              <div class="admin-field-input-row">
+                <input type="text" class="admin-input" id="restoreFileInput" readonly placeholder="Choose a .db backup file to restore" />
+                <button class="btn-admin-action" id="browseRestoreFileBtn">Choose…</button>
+              </div>
+            </div>
+          </div>
+          <div class="admin-field-row">
+            <label class="admin-field-label">Restore</label>
+            <button class="btn-admin-action" id="restoreBtn">Restore Database</button>
+          </div>
+          <p class="admin-card-hint">
+            Replaces the entire database — including Custom Tabs and Home Page
+            Strips — and restarts the server. A safety snapshot of the current
+            database is taken automatically before the swap. Local access only.
+          </p>
+        </div>
       </div>
     </section>
 

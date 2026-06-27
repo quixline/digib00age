@@ -448,6 +448,59 @@ function initBackupSettings() {
   document.getElementById('backupFreqSelect').addEventListener('change', (e) => {
     patchConfig({ backup_frequency: e.target.value });
   });
+
+  document.getElementById('browseRestoreFileBtn').addEventListener('click', async () => {
+    const r = await fetch(`${API}/admin/browse-backup-file-dialog`, { method: 'POST' });
+    if (!r.ok) {
+      showToast('Local access required', true);
+      return;
+    }
+    const d = await r.json();
+    if (!d.path) return; // dialog cancelled
+    document.getElementById('restoreFileInput').value = d.path;
+  });
+
+  document.getElementById('restoreBtn').addEventListener('click', doRestore);
+}
+
+// ── Restore Database (ADMIN_SPEC.md §9, Restore Database — V2.3 Item 12) ───
+async function doRestore() {
+  const path = document.getElementById('restoreFileInput').value;
+  if (!path) {
+    showToast('Choose a backup file first', true);
+    return;
+  }
+  const filename = path.split(/[\\/]/).pop();
+  const ok = confirm(
+    `Restore database from "${filename}"?\n\nThis replaces your ENTIRE database — ` +
+    `including Custom Tabs and Home Page Strips — and restarts the server. A ` +
+    `safety snapshot of the current database is taken automatically first.`
+  );
+  if (!ok) return;
+
+  const btn = document.getElementById('restoreBtn');
+  btn.disabled = true;
+  btn.textContent = 'Restoring…';
+  try {
+    const r = await fetch(`${API}/admin/restore-database`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source_path: path }),
+    });
+    const d = await r.json();
+    if (r.ok) {
+      showToast('Database restored — restarting…');
+      setTimeout(() => { window.location.reload(); }, 4000);
+    } else {
+      showToast(d.detail?.error === 'local_access_required' ? 'Local access required' : (d.detail || 'Restore failed'), true);
+      btn.disabled = false;
+      btn.textContent = 'Restore Database';
+    }
+  } catch (e) {
+    showToast('Restore failed: ' + e.message, true);
+    btn.disabled = false;
+    btn.textContent = 'Restore Database';
+  }
 }
 
 // ── Danger Zone (ADMIN_SPEC.md §7.4 / §7.5) ─────────────────────────────────

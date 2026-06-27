@@ -5,6 +5,7 @@ POST /api/scan               Trigger full background rescan
 POST /api/scan/file?path=    Rescan single file (called by Flask editor)
 GET  /api/scan/status        Live scan progress for admin UI
 POST /api/admin/backup       Copy comicvault.db to dated backup file
+POST /api/admin/restore-database  Restore comicvault.db from a chosen backup file
 """
 
 from __future__ import annotations
@@ -284,6 +285,14 @@ async def restart_server(request: Request):
     if not is_local_request(request):
         raise HTTPException(status_code=403, detail={"error": "local_access_required"})
 
+    _schedule_delayed_exit()
+    return {"message": "Restarting"}
+
+
+def _schedule_delayed_exit() -> None:
+    """Deliberately exit the process after a short delay, so the tray app's
+    crash-recovery relaunches it. Shared by /admin/restart and
+    /admin/restore-database (both need the same relaunch behaviour)."""
     import asyncio
 
     async def _delayed_exit():
@@ -291,7 +300,6 @@ async def restart_server(request: Request):
         os._exit(0)
 
     asyncio.create_task(_delayed_exit())
-    return {"message": "Restarting"}
 
 
 # ---------------------------------------------------------------------------
@@ -410,8 +418,14 @@ def backup_database():
     }
 
 
-def run_database_backup() -> Path:
-    """Shared by the manual Backup Database button and the scheduled backup loop."""
+def run_database_backup(prefix: str = "comicvault_backup", sep: str = "_") -> Path:
+    """
+    Shared by the manual Backup Database button, the scheduled backup loop, and
+    the pre-restore safety snapshot (ADMIN_SPEC.md §9, Restore Database subsection)
+    — `prefix`/`sep` let the restore path produce `pre-restore-{timestamp}.db`
+    instead of the default `comicvault_backup_{timestamp}.db` while reusing the
+    same destination-folder and last-backup-tracking logic.
+    """
     config = get_config()
     db_path = PROJECT_ROOT / config.get("db_path", "backend/comicvault.db")
 
@@ -422,10 +436,84 @@ def run_database_backup() -> Path:
     dest_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    backup_path = dest_dir / f"comicvault_backup_{timestamp}.db"
+    backup_path = dest_dir / f"{prefix}{sep}{timestamp}.db"
     shutil.copy2(str(db_path), str(backup_path))
     save_config({"last_backup_at": datetime.now().isoformat(), "last_backup_error": None})
     return backup_path
+
+
+# ---------------------------------------------------------------------------
+# POST /api/admin/browse-backup-file-dialog
+# POST /api/admin/restore-database
+# Restore Database (ADMIN_SPEC.md §9, Restore Database — V2.3 Item 12).
+# Local-only, same tier as Clear Database (§7.4) — a full DB replacement is at
+# least as disruptive.
+# ---------------------------------------------------------------------------
+
+@router.post("/admin/browse-backup-file-dialog")
+async def browse_backup_file_dialog(request: Request):
+    if not is_local_request(request):
+        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
+
+    import asyncio
+
+    loop = asyncio.get_event_loop()
+    path = await loop.run_in_executor(None, _show_backup_file_dialog)
+    return {"path": path}
+
+
+def _show_backup_file_dialog() -> str | None:
+    import tkinter
+    from tkinter import filedialog
+
+    config = get_config()
+    db_path = PROJECT_ROOT / config.get("db_path", "backend/comicvault.db")
+    initial_dir = config.get("backup_folder") or str(db_path.parent)
+
+    root = tkinter.Tk()
+    root.withdraw()
+    root.attributes("-topmost", True)
+    try:
+        selected = filedialog.askopenfilename(
+            title="Choose Backup File to Restore",
+            initialdir=initial_dir,
+            filetypes=[("Database files", "*.db"), ("All files", "*.*")],
+        )
+    finally:
+        root.destroy()
+    return selected or None
+
+
+@router.post("/admin/restore-database")
+async def restore_database(request: Request, payload: dict = Body(...)):
+    if not is_local_request(request):
+        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
+
+    source_path = (payload.get("source_path") or "").strip()
+    if not source_path:
+        raise HTTPException(status_code=400, detail="source_path is required")
+
+    source = Path(source_path)
+    if not source.is_file():
+        raise HTTPException(status_code=404, detail="Backup file not found")
+
+    # Safety net: snapshot the current DB before overwriting it, same helper
+    # the manual/scheduled backup buttons use, just a distinct filename prefix.
+    try:
+        snapshot_path = run_database_backup(prefix="pre-restore", sep="-")
+    except FileNotFoundError:
+        snapshot_path = None  # no existing DB yet — nothing to snapshot
+
+    config = get_config()
+    db_path = PROJECT_ROOT / config.get("db_path", "backend/comicvault.db")
+    shutil.copy2(str(source), str(db_path))
+
+    _schedule_delayed_exit()
+
+    return {
+        "message": "Database restored, restarting",
+        "pre_restore_backup": str(snapshot_path) if snapshot_path else None,
+    }
 
 
 # ---------------------------------------------------------------------------

@@ -183,12 +183,13 @@ original list was excessive for a single-user home app.
 
 ---
 
-## Item 12 — Admin: Restore Database option
+## ✅ Item 12 — Admin: Restore Database option
 
-**Spec:** `ADMIN_SPEC.md` §2/§9 area (new subsection to be added once built)
+Built 2026-06-27. **Spec:** `ADMIN_SPEC.md` §9.2
 
-Pairs with the existing Backup Database (§2) and Scheduled Database Backup (§9).
-Scoped 2026-06-27:
+Pairs with the existing Backup Database (§2) and Scheduled Backup (§9.1). §9 was
+renamed "Database Backup" and split into two subsections/cards (Scheduled Backup,
+Restore Backup) to host both. Scoped 2026-06-27:
 
 - **Source:** native OS file dialog (same local-machine-sharing justification as the
   existing Backup folder picker §9), opening in the configured backup folder by
@@ -205,6 +206,13 @@ Scoped 2026-06-27:
   warning this is a full DB replacement (broader than Clear Database's library-only
   scope — also overwrites Custom Tabs/Home Strips), local-only gated same tier as
   Clear Database §7.4.
+
+**Built as scoped, one wording deviation:** the confirm() names the file by its
+*filename*, not a separately-parsed date — backups created by ComicVault's own
+naming convention (`comicvault_backup_{timestamp}.db`) already encode the date in
+the filename, and the picker allows choosing *any* `.db` file (not just ones
+ComicVault created), so there's no reliable date to extract from an arbitrary
+file. Filename is the practical equivalent Tez's confirmation intent called for.
 
 ---
 

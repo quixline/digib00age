@@ -417,7 +417,13 @@ file has new entries since it was last viewed (tracked via `log_last_viewed` in
 
 ---
 
-## 9. Scheduled Database Backup *(built — V2.3 Item 8, 2026-06-24)*
+## 9. Database Backup
+
+Section heading renamed from "Scheduled Backup" to **"Database Backup"**
+(V2.3 Item 12, 2026-06-27) once Restore Database was added alongside it — the
+section now covers backup *and* restore, split into two subsections below.
+
+### 9.1 Scheduled Backup *(built — V2.3 Item 8, 2026-06-24)*
 
 Consolidates two previously separate inbox items ("Backup Database Location" and
 "Schedule database backup") into one unified control.
@@ -462,6 +468,38 @@ value until the next successful backup clears it. The manual button stays
 exception-surfacing as before (a failed manual backup returns an HTTP error
 directly) — this indicator is specifically for catching *unattended* scheduled
 failures that would otherwise go unnoticed.
+
+### 9.2 Restore Database *(built — V2.3 Item 12, 2026-06-27)*
+
+Pairs with Scheduled Backup (§9.1) above — its own subsection/card directly below,
+inside the same renamed "Database Backup" section.
+
+**Controls:**
+- **Backup File picker** — opens a native OS file dialog (`tkinter.filedialog.
+  askopenfilename`, same local-machine-sharing justification as the §9.1 folder
+  picker), defaulting to the configured backup folder (falls back to the
+  database's own folder if unset) but **not restricted** to it — any `.db` file
+  the server process can reach is selectable. Local sessions only.
+- **Restore Database button** — `confirm()` naming the chosen file by its
+  filename, explicitly warning this is a full database replacement (broader than
+  Clear Database's §7.4 library-only scope — also overwrites Custom Tabs/Home
+  Strips), then posts to `POST /api/admin/restore-database`. Local-only gated,
+  same tier as Clear Database.
+
+**Mechanism:** `restore_database()` (`backend/routers/admin.py`) takes a
+`source_path`, validates it exists, then:
+1. **Safety net** — snapshots the *current* `comicvault.db` first, reusing the
+   existing `run_database_backup()` helper (now parameterised with a `prefix`/
+   `sep`) to write `pre-restore-{timestamp}.db` into the same backup folder. If
+   there's no existing DB to snapshot (`FileNotFoundError`), this step is skipped
+   rather than blocking the restore.
+2. Copies the chosen file over `comicvault.db` (`shutil.copy2`).
+3. Triggers the same delayed-exit relaunch the Server Listening Port control
+   (§7.3) and `/admin/restart` use — a full server restart rather than tearing
+   down/rebuilding the live DB engine in-process. Factored into a shared
+   `_schedule_delayed_exit()` helper used by both.
+
+No new dependency — `tkinter` is already used by the §9.1 folder picker.
 
 ---
 
@@ -658,3 +696,4 @@ Not binding design, but worth flagging before the build session:
 | 2026-06-27 | Status block corrected — removed stale "manual test pass remaining" (test pass completed 2026-06-26, see Fixes 1–9). §6 backfilled with the Card Size control (built v2.1, 2026-06-22) — never written into this doc when it was created 2026-06-23. Five new items (10–14) queued from inbox triage, noted in the status block. | Doc-consistency scan flagged ISSUE-007 (`doc-scan-issues.md`); extended into a full inbox triage session. |
 | 2026-06-27 | §7.1.7 — built the Forgot-Password recovery popup (V2.3 Item 10): "Forgot Password?" button added to the Top Action Row, opens a modal with the manual `config.json` recovery steps. Replaces the prior "none built, defer to future User Guide" text. | `comicvault-changes-v2.3.md` Item 10. |
 | 2026-06-27 | §9 — Scheduled Backup frequency dropdown cut from ~20 entries down to 6 (Off/day/week/month/6 months/1 year), V2.3 Item 11. Backend frequency map left untouched (still recognises old values). | `comicvault-changes-v2.3.md` Item 11; Tez's call, excessive list for a single-user home app. |
+| 2026-06-27 | §9 renamed from "Scheduled Database Backup" to "Database Backup", split into §9.1 Scheduled Backup (unchanged content) and new §9.2 Restore Database (V2.3 Item 12) — native file picker, `pre-restore-{timestamp}.db` safety snapshot via a now-parameterised `run_database_backup()`, full server restart via a new shared `_schedule_delayed_exit()` helper. | `comicvault-changes-v2.3.md` Item 12. |

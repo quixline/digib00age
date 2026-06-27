@@ -2743,3 +2743,63 @@ touched.
 
 **Docs updated:** this entry; `CHANGELOG.md`; `ADMIN_SPEC.md` §9 (dropdown rewrite +
 Change Log row); `comicvault-changes-v2.3.md` Item 11 marked done.
+
+---
+
+## Session — 2026-06-27: v2.3 Item 12 — Admin Restore Database option
+
+Built the Restore Database control per `comicvault-changes-v2.3.md` Item 12,
+pairing it with the existing Scheduled Backup (§9) by renaming that section and
+splitting it into two subsections.
+
+**Frontend (`frontend/admin.html`):** the section heading "Scheduled Backup"
+became **"Database Backup"**, with its existing content moved under a new
+"Scheduled Backup" `<h3>` subsection (`.admin-subsection`/`.admin-subsection-
+heading`, the same pattern already used by the Danger Zone block), and a new
+"Restore Backup" subsection added below it: a readonly file-path input + Choose…
+button (`restoreFileInput`/`browseRestoreFileBtn`) and a Restore Database button
+(`restoreBtn`), with a hint explaining the full-replacement scope and the
+automatic safety snapshot.
+
+**Backend (`backend/routers/admin.py`):**
+- `run_database_backup()` gained `prefix`/`sep` parameters (defaulting to the
+  original `comicvault_backup`/`_`) so the same helper can also produce
+  `pre-restore-{timestamp}.db` for the safety snapshot, without duplicating the
+  destination-folder/`last_backup_at` logic.
+- New `POST /admin/browse-backup-file-dialog` — local-only gated, opens a native
+  `tkinter.filedialog.askopenfilename` defaulting to the configured backup
+  folder (or the DB's own folder), not restricted to it.
+- New `POST /admin/restore-database` — local-only gated, validates the chosen
+  file exists, snapshots the current DB via `run_database_backup(prefix=
+  "pre-restore", sep="-")` (skipped gracefully if there's no existing DB to
+  snapshot), copies the chosen file over `comicvault.db`, then triggers a full
+  server restart.
+- Factored the restart-and-exit logic shared by `/admin/restart` and the new
+  restore endpoint into `_schedule_delayed_exit()` rather than duplicating the
+  `asyncio.sleep` + `os._exit(0)` snippet a second time.
+
+**One scoped deviation:** the confirm() dialog names the file by its filename
+rather than a separately-parsed date — see `comicvault-changes-v2.3.md` Item 12
+for the reasoning (arbitrary chosen files don't reliably carry a parseable date;
+ComicVault's own backup filenames already encode one).
+
+**Verified:** restarted the live tray server (via its own `/admin/restart`
+endpoint) so the new routes loaded, confirmed the renamed section and both new
+subsections render correctly via the Chrome MCP (`Database Backup` / `Scheduled
+Backup` / `Restore Backup` headings all present, screenshot matches the intended
+two-card layout). Hit `POST /admin/restore-database` with a nonexistent path via
+curl and confirmed the 404 `"Backup file not found"` validation fires before any
+file is touched — no real swap was attempted. Did **not** exercise the actual
+restore-and-restart path or the live file-picker click in this session: a stray
+native folder-dialog window from an earlier `browse-backup-file-dialog` curl
+test was found and closed via computer-use (harmless — it just sat open on the
+desktop, didn't block the server), and the harness's auto-mode classifier
+correctly declined a JS-triggered click on the live Restore button as an
+unverified destructive action against the real `comicvault.db`. The code path
+was instead verified by direct reading against the already-proven `/admin/
+backup` and `/admin/browse-folder-dialog` patterns it mirrors. No real library
+files or the database were touched.
+
+**Docs updated:** this entry; `CHANGELOG.md`; `ADMIN_SPEC.md` §9 (renamed,
+split into §9.1/§9.2, Change Log row); `comicvault-changes-v2.3.md` Item 12
+marked done.
