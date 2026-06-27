@@ -7,6 +7,9 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-27** — Fixed folder-view card sizing/image-fit mismatch vs standard
+  cards (`.folder-card.has-cover` aspect-ratio bug). Fixed BUG-003 (removed dead
+  duplicate `GET /api/reading/continue` route in `progress.py`).
 - **2026-06-26** — v2.3 post-test fix pass (`docs/2.3-fixes.md`, Fixes 1–9, plus
   two additional steps raised mid-session). Menu bar: collapsed the unintended
   second row into one (status pills moved to the header, secondary filters +

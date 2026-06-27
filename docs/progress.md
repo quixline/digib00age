@@ -2657,3 +2657,25 @@ Process All error modal). `BUGS.md` left unchanged — none of these nine fixes
 correspond to an open logged bug (BUG-009's single-issue-page rating-clear and
 BUG-013's same-mtime-different-size detection gap are both still open; this session's
 rating-clear fix was multi-select-toolbar-only, a different code path).
+
+---
+
+## Session — 2026-06-27: Folder-view card sizing fix + BUG-003 cleanup
+
+**Folder-view card sizing.** Tez flagged that cards in Folder view (custom tabs with
+`view_mode='folder'`) displayed differently from standard `.cover-card`s elsewhere —
+different size and cover-image fit. Root cause: `.folder-card` (`frontend/css/style.css`)
+applied `aspect-ratio: 2/3` to the whole card element (image + info text combined),
+whereas `.cover-card` only applies that ratio to the inner `.cover-img-wrap`, letting
+the info text below grow naturally. This squeezed `.folder-card.has-cover` cards (the
+ones showing a representative cover image) into an undersized, distorted box. Fix:
+added `aspect-ratio: auto` to `.folder-card.has-cover` (overriding the parent rule) and
+removed the now-redundant `flex: 1` on its `.cover-img-wrap`. Verified live via browser
+against both a folder-view custom tab ("2000 AD", several year-folders with covers) and
+the standard Series grid — card proportions and image fit now match, no console errors.
+
+**BUG-003 fixed.** The dead duplicate `GET /api/reading/continue` route in
+`backend/routers/progress.py` (unreachable — `library.py`'s copy always won router
+registration order) was removed. No behaviour change; `library.py`'s `reading_continue`
+remains the sole implementation. `docs/BUGS.md` updated — entry moved from open list to
+FIXED section.

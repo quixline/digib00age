@@ -152,27 +152,26 @@ then normalize line endings once, consistently, rather than compounding them.
 
 ---
 
+## FIXED
+
 ### BUG-003 — Dead duplicate route: `GET /api/reading/continue` defined twice
 
 **Found:** 2026-06-19, while building the Home Strips feature (`HOME_STRIPS_SPEC.md`)
 and tracing how "Continue Reading" was resolved before folding it into the unified
 `GET /api/home/strips` endpoint.
 
-**Where:** The route is defined in both `backend/routers/progress.py` (line ~137) and
-`backend/routers/library.py` (line ~455) — identical path, same query intent, slightly
+**Where:** The route was defined in both `backend/routers/progress.py` (line ~219) and
+`backend/routers/library.py` (line ~631) — identical path, same query intent, slightly
 different implementation. `main.py` registers `library.router` before `progress.router`,
-so `library.py`'s version always wins; `progress.py`'s copy is unreachable dead code.
+so `library.py`'s version always won; `progress.py`'s copy was unreachable dead code.
 
-**Impact:** None currently — the live version (`library.py`) is correct and is what
-the Flutter app and (until this session) the web frontend both called. Purely a
-maintenance hazard: a future edit to the dead copy would silently do nothing.
+**Impact:** None — the live version (`library.py`) was correct throughout and is what
+the Flutter app calls. Purely a maintenance hazard: a future edit to the dead copy
+would have silently done nothing.
 
-**Not fixed in this session** — out of scope for the Home Strips build; flagging per
-session convention rather than absorbing an unrelated cleanup into this session's scope.
-
----
-
-## FIXED
+**Fixed:** 2026-06-27 — removed the unreachable duplicate (`get_continue_reading`) from
+`backend/routers/progress.py`. `library.py`'s `reading_continue` remains the sole
+implementation; no behaviour change since it was already winning registration order.
 
 ### BUG-006 — CSV-splitting helpers didn't dedupe a literal repeated name within one field
 

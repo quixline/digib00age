@@ -662,8 +662,8 @@ ul { list-style: none; }
   padding: 0;
   justify-content: flex-start;
   overflow: hidden;
+  aspect-ratio: auto;
 }
-.folder-card.has-cover .cover-img-wrap { flex: 1; }
 .folder-card-info {
   padding: 10px;
   display: flex;

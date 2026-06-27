@@ -211,35 +211,3 @@ def mark_unread(issue_id: int, db: Session = Depends(get_db)):
         db,
     )
 
-
-# ---------------------------------------------------------------------------
-# GET /api/reading/continue
-# ---------------------------------------------------------------------------
-
-@router.get("/reading/continue")
-def get_continue_reading(db: Session = Depends(get_db)):
-    """
-    Issues currently in-progress (status='reading'), ordered by most recently
-    read. Used by the home page 'Continue Reading' strip.
-    """
-    rows = (
-        db.query(ReadingProgress, Issue)
-        .join(Issue, ReadingProgress.issue_id == Issue.id)
-        .filter(ReadingProgress.status == "reading", Issue.missing == False)
-        .order_by(ReadingProgress.last_read_at.desc())
-        .limit(15)
-        .all()
-    )
-    return [
-        {
-            "id": iss.id,
-            "series": iss.series,
-            "number": iss.number,
-            "year": iss.year,
-            "cover_path": f"/api/cover/{iss.id}",
-            "current_page": rp.current_page,
-            "page_count": iss.page_count,
-            "status": rp.status,
-        }
-        for rp, iss in rows
-    ]
