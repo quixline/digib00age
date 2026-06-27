@@ -7,6 +7,8 @@ repeated here unless they also got their own `progress.md` session entry.
 
 ---
 
+- **2026-06-27** — v2.3 Item 13: Admin Card Size — added a 75% option between
+  50% and 100%.
 - **2026-06-27** — v2.3 Item 12: Admin Restore Database — renamed "Scheduled
   Backup" section to "Database Backup", split into Scheduled Backup / Restore
   Backup subsections, added a native file-picker restore flow with a

@@ -216,13 +216,15 @@ file. Filename is the practical equivalent Tez's confirmation intent called for.
 
 ---
 
-## Item 13 — Admin: Card Size — add a 75% option
+## ✅ Item 13 — Admin: Card Size — add a 75% option
 
-**Spec:** `ADMIN_SPEC.md` §6 (Card Size subsection, backfilled 2026-06-27)
+Built 2026-06-27. **Spec:** `ADMIN_SPEC.md` §6 (Card Size subsection)
 
-Existing control (built v2.1, 2026-06-22 — only just documented in `ADMIN_SPEC.md`,
-see that doc's Change Log) offers 10% / 25% / 50% / 100%. Add **75%** as a fifth
-option, between 50% and 100%.
+Existing control (built v2.1, 2026-06-22) offered 10% / 25% / 50% / 100%. Added
+**75%** as a fifth option, between 50% and 100% — `frontend/admin.html`'s
+`#cardSizeSelect` gained the `<option>`, and `frontend/js/app.js`'s
+`CARD_SIZE_PX` map gained `'75': '190px'` (midpoint between 50%'s 160px and
+100%'s 220px).
 
 ---
 

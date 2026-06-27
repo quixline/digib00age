@@ -145,9 +145,12 @@ toolbar; Admin can be opened in its own tab for a quick change.
 ### Card Size *(built — v2.1 Tier 3, 2026-06-22; missing from this doc until backfilled 2026-06-27)*
 
 A second control in the same Admin area, directly below "Results per page" (same
-`.admin-card--spaced` styling). Dropdown: **10% / 25% / 50% / 100%**, persisted via
-`localStorage` (`cv_card_size`), driving a `--card-min` CSS variable consumed by
-`.cover-grid`'s `grid-template-columns`.
+`.admin-card--spaced` styling). Dropdown: **10% / 25% / 50% / 75% / 100%**
+(75% added — V2.3 Item 13, 2026-06-27), persisted via `localStorage`
+(`cv_card_size`), driving a `--card-min` CSS variable consumed by `.cover-grid`'s
+`grid-template-columns`. `CARD_SIZE_PX` (`frontend/js/app.js`) maps each preset to
+a pixel value — 75% sits at `190px`, the midpoint between 50%'s `160px` and 100%'s
+`220px`.
 
 **Scope is global** — every cover-grid site-wide resizes together: Series/Singles/
 All/search results, Home strips, and — at the time this was built — the 2000 AD
@@ -161,8 +164,8 @@ Originally lived inline in the browse-controls bar; moved here after Tez's
 follow-up testing, to sit alongside the other display-density setting rather than
 clutter the browse toolbar.
 
-Queued for a fifth option, **75%**, between 50% and 100% — see
-`comicvault-changes-v2.3.md` Item 13 (not yet built).
+Fifth option **75%** added between 50% and 100% — see
+`comicvault-changes-v2.3.md` Item 13.
 
 
 ---
@@ -697,3 +700,4 @@ Not binding design, but worth flagging before the build session:
 | 2026-06-27 | §7.1.7 — built the Forgot-Password recovery popup (V2.3 Item 10): "Forgot Password?" button added to the Top Action Row, opens a modal with the manual `config.json` recovery steps. Replaces the prior "none built, defer to future User Guide" text. | `comicvault-changes-v2.3.md` Item 10. |
 | 2026-06-27 | §9 — Scheduled Backup frequency dropdown cut from ~20 entries down to 6 (Off/day/week/month/6 months/1 year), V2.3 Item 11. Backend frequency map left untouched (still recognises old values). | `comicvault-changes-v2.3.md` Item 11; Tez's call, excessive list for a single-user home app. |
 | 2026-06-27 | §9 renamed from "Scheduled Database Backup" to "Database Backup", split into §9.1 Scheduled Backup (unchanged content) and new §9.2 Restore Database (V2.3 Item 12) — native file picker, `pre-restore-{timestamp}.db` safety snapshot via a now-parameterised `run_database_backup()`, full server restart via a new shared `_schedule_delayed_exit()` helper. | `comicvault-changes-v2.3.md` Item 12. |
+| 2026-06-27 | §6 — Card Size dropdown gains a 75% option (between 50% and 100%), V2.3 Item 13. `CARD_SIZE_PX` (`frontend/js/app.js`) maps it to `190px`. | `comicvault-changes-v2.3.md` Item 13. |

@@ -336,7 +336,7 @@ let pageSize    = parseInt(localStorage.getItem('cv_page_size') || '50', 10);
 // Card size control (library view) — percent labels are presets, not literal
 // scale factors; 25% matches the original fixed --card-min (120px) so the
 // default look is unchanged until a user picks a different size.
-const CARD_SIZE_PX = { '10': '90px', '25': '120px', '50': '160px', '100': '220px' };
+const CARD_SIZE_PX = { '10': '90px', '25': '120px', '50': '160px', '75': '190px', '100': '220px' };
 let cardSize = localStorage.getItem('cv_card_size') || '25';
 
 function applyCardSize(size) {

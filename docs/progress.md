@@ -2803,3 +2803,25 @@ files or the database were touched.
 **Docs updated:** this entry; `CHANGELOG.md`; `ADMIN_SPEC.md` §9 (renamed,
 split into §9.1/§9.2, Change Log row); `comicvault-changes-v2.3.md` Item 12
 marked done.
+
+---
+
+## Session — 2026-06-27: v2.3 Item 13 — Card Size 75% option
+
+Quick addition per `comicvault-changes-v2.3.md` Item 13: added a 75% option to
+the existing Card Size dropdown (`frontend/admin.html` `#cardSizeSelect`),
+between the existing 50% and 100% options. `frontend/js/app.js`'s `CARD_SIZE_PX`
+map (which drives the `--card-min` CSS variable) gained `'75': '190px'` — the
+midpoint between 50%'s `160px` and 100%'s `220px`. No backend changes; this is a
+pure `localStorage`-persisted frontend preference (`cv_card_size`), same as the
+other four options.
+
+**Verified live** via the Chrome MCP: confirmed the dropdown shows all 5 options,
+set `cv_card_size` to `'75'` and navigated to the All view (5,427 titles) —
+confirmed the grid rendered visibly larger cards (6 per row at this viewport
+width) than the 25% default. Reset `cv_card_size` back to `'25'` afterward so
+Tez's live browser session wasn't left on a changed display preference. No real
+library files or the database were touched (frontend-only change).
+
+**Docs updated:** this entry; `CHANGELOG.md`; `ADMIN_SPEC.md` §6 (Card Size
+subsection + Change Log row); `comicvault-changes-v2.3.md` Item 13 marked done.
