@@ -38,7 +38,27 @@ until triaged — only processed lines ever leave.
 
 ## Unprocessed
 
-(empty — add lines below this heading as they come to you)
+2.3 changes continued
+
+- ~~[feature] Add "Password Recovery" button to Admin - simple popup with instructions on restting password through the config.json - this replaces the info in the guide, the guide just points to this button~~ → added to comicvault-changes-v2.3.md as Item 10; ADMIN_SPEC.md §7.1.7 to be amended once built
+
+- ~~[bug] going from All - http://localhost:8000/issue/2769?from=all then back button took to home ?~~ → added to BUGS.md as BUG-014 (regression — see below, two more repro cases merged in)
+
+- ~~[bug] select genre from issue page lists those genres, correct function. there's no way of clearing http://localhost:8000/?surface=fieldview&field=genre&value=Comedy from the UI. the genre dd menu shows genre not comedy so that doesn't reset and selecting a new tab changes the surface but not the url/genre, selecting a different genre from dd menu then resetting by seleting 'Genre' does reset what's displayed to all genres but the url still says comedy so selecting an issue/series then going back resets the list to show Comedy because the back button reads the url~~ → added to BUGS.md as BUG-015
+
+- ~~[change] reduce number of options for db backup frequency to every day, wk,  month, 6 months, 1 yr~~ → added to comicvault-changes-v2.3.md as Item 11; ADMIN_SPEC.md §9 to be amended once built
+
+- ~~[feature] needs a restore database option~~ → added to comicvault-changes-v2.3.md as Item 12; ADMIN_SPEC.md §2/§9 area, not yet scoped
+
+- ~~[change] Add 75% to the card size options in admin~~ → found the underlying Card Size control already existed (built v2.1, 2026-06-22) but was never written into ADMIN_SPEC.md — backfilled §6 this session; the 75% addition itself added to comicvault-changes-v2.3.md as Item 13
+
+- ~~[bug] Issues page: Stars - fixed on Selection (tabs/surface) with X to remove. Ideadlly the fix on the issue page is clicking the star(s) twice removes the rating.~~ → folded into existing BUG-009 as an addendum, not a new entry
+
+- ~~[change] make the main header appear across the whole site inc /series/{id} & /issues/{id} - this should be the same as the home page - 'Search' searches all library unless on a Singles, Series or Custom Tab~~ → added to comicvault-changes-v2.3.md as Item 14; destination spec doc TBC, needs scoping
+
+- ~~[bug] This issue was fixed - why has it come back, how to fix permenantly - go from series tab - http://localhost:8000/series/2589?from=series - click <- Back it takes me to the home page.~~ → merged into BUG-014 as a second repro case (regression of the Tier 1 back-button fix in `comicvault-changes-2.1.md`)
+
+- ~~[bug] go from singles tab - http://localhost:8000/issue/5478?from=singles - click <- Back it takes me to the home page.~~ → merged into BUG-014 as a third repro case (same regression)
 
 ---
 

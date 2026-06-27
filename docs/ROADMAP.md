@@ -10,9 +10,10 @@ closed 2026-06-22) covered the prior active queues — current active queue is
 
 ## Active build queue
 
-`comicvault-changes-v2.3.md` is the current active queue (Status: Active). All 9 items
-built — Items 1–5 on 2026-06-23, Items 6–9 on 2026-06-24. Manual test pass remaining
-(see the checklist at the bottom of `comicvault-changes-v2.3.md`).
+`comicvault-changes-v2.3.md` is the current active queue (Status: Active). Items 1–9
+built (Items 1–5 on 2026-06-23, Items 6–9 on 2026-06-24) and verified via the manual
+test pass on 2026-06-26 (9 fixes same day — see `progress.md`). Items 10–14 added
+2026-06-27 from inbox triage; not yet built.
 
 - **Tier 5 (manual, non-dev, still open):** Genre additions (Anthology, Comic,
   Omnibus) via the new admin editor, logo + `.ico`, a personal note to check a
@@ -51,9 +52,11 @@ built — Items 1–5 on 2026-06-23, Items 6–9 on 2026-06-24. Manual test pass
 
 ## Deferred — needs dedicated scoping session before building
 
-- **CAPT extra tools** (4–5 tools, code already exists in the original CAPT codebase).
-  Needs inspection and integration scoping in a dedicated session before anything is
-  added to a build queue.
+- **CAPT extra tools** (4 tools — Rename, Convert, Convert Images, Flatten — code
+  already exists in the original CAPT codebase). **Rename scoped and fully designed
+  2026-06-27** — see `ADMIN_SPEC.md` §11.1; build not yet started. Convert, Convert
+  Images, and Flatten still need their own dedicated scoping sessions before going
+  into a build queue.
 
 - **Processing Folder automation** (new Admin area — `ADMIN_SPEC.md` is the future
   home once scoped): scheduled folder monitor; convert-to-cbz via 7zip, custom rename
@@ -109,6 +112,7 @@ tabs and home strips — have since shipped; removed from here, see `CHANGELOG.m
 ---
 
 ## Known environmental risk (not a code bug)
+**edit: 27-6-26 Tez; Custom Ports can now be set in admin - this is completed**
 
 - **Port 8000 / Windows port-exclusion conflict (`BUGS.md` BUG-004).** WSL2/Hyper-V's
   networking stack can reserve a TCP port range at boot that happens to include 8000,
@@ -118,7 +122,7 @@ tabs and home strips — have since shipped; removed from here, see `CHANGELOG.m
   launching.
 
 ## Known open bug
-
+**edit: 27-6-26 Tez; Fixed**
 - **BUG-003 — dead duplicate route** (`GET /api/reading/continue` defined in both
   `progress.py` and `library.py`). No functional impact today; flagged as a
   maintenance hazard, not yet cleaned up. See `BUGS.md` for detail.

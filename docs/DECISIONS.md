@@ -6,6 +6,84 @@ specs and aren't repeated. Newest first.
 
 ---
 
+### Restore Database: auto-snapshot the current DB before every restore
+
+**Decided:** 2026-06-27, Item 12 scoping session.
+**Why:** Restore is strictly more destructive than Clear Database (§7.4) — it
+replaces the entire DB file, including Custom Tabs/Home Strips that Clear Database
+deliberately preserves — and has no undo once committed. Tez's call: take a
+throwaway snapshot of the *current* DB (reusing the existing `run_database_backup()`
+helper already shared by manual + scheduled backup, so this is a filename, not new
+code) immediately before overwriting it. "Can't hurt and extra safety is worth it."
+**Where:** `comicvault-changes-v2.3.md` Item 12.
+
+### BUG-014: root cause is the four main surface tabs never updating the URL, not a regression of the Tier 1 back-button fix
+
+**Decided:** 2026-06-27, found while scoping `comicvault-changes-v2.3.md` Item 14
+(read `app.js`/`issue.html`/`series.html` directly rather than guessing).
+**Why:** Initially logged as a possible regression of the Tier 1 fix
+(`comicvault-changes-2.1.md`, 2026-06-21/22). Direct code reading showed that fix
+is still intact — `initIssue()`/`initSeries()` correctly call `window.history.back()`.
+The real gap: the four main surface tabs (Home/All/Singles/Series) never call
+`pushState`, so the URL never reflects which tab is active, while Folder View
+already does this correctly via `pushFolderViewUrl()`. Recorded as a decision rather
+than just a bug note because it reframes the fix — extend an existing, proven
+pattern to the main tabs, not write a new one — and because it links BUG-014 and
+Item 14 (header unification) as one piece of work rather than two.
+**Where:** `BUGS.md` BUG-014, `comicvault-changes-v2.3.md` Item 14.
+
+### Inbox triage 2026-06-27: treated as v2.3 continuation, not a v2.3 close-out + v2.4 open
+
+**Decided:** 2026-06-27, inbox triage session (`doc-scan-issues.md` ISSUE-007 follow-up).
+**Why:** Tez's explicit call — before closing out v2.3 (all 9 original items built and
+manually tested 2026-06-26), the 7 new inbox lines were folded in as Items 10–14 of
+the same `comicvault-changes-v2.3.md` queue rather than starting a fresh
+`comicvault-changes-v2.4.md`. v2.3 stays "Active" until Items 10–14 are also built.
+**Where:** `comicvault-changes-v2.3.md` (status block, Items 10–14), `INDEX.md`,
+`ROADMAP.md` active-queue line.
+
+### BUG-014: three back-button reports merged into one regression entry
+
+**Decided:** 2026-06-27, inbox triage session.
+**Why:** Three separate inbox lines (`?from=all`, `?from=series`, `?from=singles`)
+all described the identical symptom — back navigation landing on Home instead of
+the originating tab. Logged as one `BUGS.md` entry with three repro cases rather
+than three separate bug numbers, and explicitly flagged as a **regression** of the
+Tier 1 "Back button inconsistency" fix already closed out twice in
+`comicvault-changes-2.1.md` (2026-06-21, then a follow-up correction 2026-06-22) —
+worth flagging as a regression rather than a fresh bug, since it changes what Code
+needs to check first (did the old fix get undone, vs. is this a new code path the
+old fix never covered).
+**Where:** `BUGS.md` BUG-014.
+
+### File Rename: in-app picker, no recursion, per-field checkbox independence, narrow auto-increment scope, no undo
+
+**Decided:** 2026-06-27, dedicated Rename scoping session.
+**Why:** Several deliberate departures from precedent worth recording the reasoning
+for, not just the outcome (full detail lives in `ADMIN_SPEC.md` §11.1, this is the
+*why*):
+- **In-app folder-tree picker, not a native OS dialog** — breaks the pattern set by
+  the Scheduled Backup folder picker (§9), which gets away with a native dialog only
+  because frontend and backend currently share a machine. That assumption doesn't
+  hold under Remote Administration (the dialog would pop open on the server's own
+  screen, not the remote browser), so Rename uses the same in-app HTTP/JSON picker
+  pattern as the Editor and Custom Tabs instead.
+- **No recursion into subfolders** — a deliberate divergence from both CAPT's
+  original `rglob()` behaviour and the Editor's recursive folder-add, to keep a
+  batch rename scoped to exactly what the user can see when they select a folder.
+- **Per-field File/All checkbox independence, no column auto-select** — fixes a real
+  CAPT bug where ticking one File (or All) checkbox auto-selected the entire column
+  regardless of field.
+- **Auto-Increment Issue Numbers gated specifically on Issue→All**, not any-All
+  checkbox — fixes another CAPT bug where it activated regardless of which field's
+  All box was ticked.
+- **No undo** — consistent with the tool being a basic audit log, not a transaction
+  system; the live preview is the only safety net before committing, matching
+  CAPT's own behaviour.
+**Where:** `ADMIN_SPEC.md` §11.1.1–§11.1.6.
+
+---
+
 ### Clear Database scope: library data only, not Custom Tabs/Home Strips; same confirm() as Delete Tab; local-only gate
 
 **Decided:** 2026-06-24, Item 9 build session.

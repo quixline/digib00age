@@ -15,10 +15,10 @@ within a single doc, a later-dated or higher-numbered section overrides an earli
 | `EDITOR_SPEC.md` | Editor integration (Basic + Full editor) | Built and verified (2026-06-18) |
 | `CUSTOM_TABS_SPEC.md` | Custom Tabs feature | Built and verified (2026-06-19) |
 | `HOME_STRIPS_SPEC.md` | Home Page Strips feature | Built and verified (2026-06-19) |
-| `ADMIN_SPEC.md` | Admin page — existing behaviour + new items (password, logs, backup scheduling, etc.) | All v2.3 items built (2026-06-24); manual test pass remaining |
+| `ADMIN_SPEC.md` | Admin page — existing behaviour + new items (password, logs, backup scheduling, etc.) | Items 1–9 built and verified (2026-06-24/26); Items 10–14 queued 2026-06-27, not yet built |
 | `MENU_BAR_SPEC.md` | Unified menu bar (sort, filters, search, view toggle) across Flat and Folder View | Built (v2.3 Item 2, 2026-06-23) |
 | `comicvault-changes-v2.2.md` | v2.2: remove 2000 AD fixed tab + Folder View for Custom Tabs | Closed out 2026-06-22 |
-| `comicvault-changes-v2.3.md` | v2.3: active build queue | All items built; manual test pass remaining |
+| `comicvault-changes-v2.3.md` | v2.3: active build queue | Items 1–9 built, verified, manually tested; Items 10–14 added 2026-06-27, queued |
 | `comicvault-changes-2.1.md` | Planning backlog / build queue, 2.1 — closed out 2026-06-22, kept for history | Closed |
 | `BUGS.md` | Live bug/issue register (separate from applied-decision logs) | Active |
 | `progress.md` | Narrative build history, per-session detail and verification notes | Active, append-only |

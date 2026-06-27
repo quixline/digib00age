@@ -8,6 +8,83 @@ Add new entries at the top. Mark fixed entries with the date and what was change
 
 ## OPEN
 
+### BUG-015 — Genre field-view filter (`?surface=fieldview&field=genre&value=X`) has no UI way to clear, and survives back-navigation incorrectly
+
+**Found:** 2026-06-27, inbox capture.
+
+**Where:** Selecting a genre from an issue page correctly navigates to a filtered
+field-view (`/?surface=fieldview&field=genre&value=Comedy`). From there:
+- The Genre dropdown on that filtered view still shows "Genre" (not the active
+  value "Comedy"), so it doesn't visibly reflect the active filter.
+- Selecting a different tab changes the surface but leaves the genre filter and URL
+  value untouched underneath.
+- Selecting a different genre from the dropdown, then resetting via "Genre" in the
+  dropdown, does visually reset the displayed list — but the URL itself still says
+  `value=Comedy`.
+- Because of that stale URL, opening an issue/series from the (visually reset) list
+  and then pressing back restores the Comedy-filtered view, since back-navigation
+  re-reads the (never-actually-cleared) URL.
+
+**Impact:** No reliable way to fully clear a field-view genre filter via the UI once
+set — dropdown state, displayed list, and URL state can all disagree with each
+other simultaneously.
+
+**Not fixed.**
+
+---
+
+### BUG-014 — Back-button regression: returns to Home instead of the originating tab
+
+**Found:** 2026-06-27, inbox capture (3 repro cases reported across two separate
+inbox lines).
+
+**This is a long-running problem area, not a one-off.** Tez notes this `← Back`
+behaviour "has been buggy from the start, various solutions" — the exact same
+defect class was already found and fixed twice in `comicvault-changes-2.1.md`'s
+Tier 1 ("Back button inconsistency" — first fix 2026-06-21, a follow-up correction
+2026-06-22 after the first fix turned out to miss Issue/Series detail pages). That
+fix replaced hardcoded/guessed-destination back links with real `history.back()` +
+a literal "Back" label.
+
+**Root cause identified 2026-06-27 (confirmed by reading `app.js`/`issue.html`/
+`series.html` directly, while scoping `comicvault-changes-v2.3.md` Item 14):** the
+2026-06-21/22 fix is still in place and working as designed — `initIssue()`/
+`initSeries()` both correctly call `window.history.back()`. The actual problem is
+upstream: the four main surface tabs (Home/All/Singles/Series, `bindSurfaceNav()`)
+never call `pushState` when switching — they only update a JS variable, so the URL
+stays bare `/` no matter which tab is active. Folder View *already* solves this
+correctly via `pushFolderViewUrl()` → `history.pushState()` on every drill-down
+(explicitly documented in `app.js` as "a deliberate departure from the simpler
+`history.back()`-only pattern used elsewhere") — that pattern was just never
+extended to the four main tabs. Sequence: user on All (URL still `/`) → opens an
+issue → real navigation pushes `/issue/123` onto history → Back → browser
+correctly returns to the literal previous entry, bare `/` → page loads defaulting
+to Home, since nothing in the URL says otherwise.
+
+The `?from=all`/`?from=series`/`?from=singles` query params seen in the URLs below
+are a red herring — still being attached when card links are built
+(`buildCoverCard()` etc. in `app.js`), but already dead code: both detail pages'
+back-links stopped reading `from=` when they switched to real `history.back()`.
+
+**Recommended fix:** extend Folder View's existing `pushState` pattern to the four
+main surface tabs (Home/All/Singles/Series), so the URL always reflects the active
+tab. Once in place, the dead `from=` param construction can be removed as cleanup.
+Related to `comicvault-changes-v2.3.md` Item 14 (header unification) — same
+mechanism, worth sequencing together rather than fixing this in isolation again.
+
+**Where — three repro cases, all landing on Home instead of the expected tab:**
+- `/issue/{id}?from=all` (e.g. `/issue/2769?from=all`) — expected All
+- `/series/{id}?from=series` (e.g. `/series/2589?from=series`) — expected Series
+- `/issue/{id}?from=singles` (e.g. `/issue/5478?from=singles`) — expected Singles
+
+**Impact:** Back navigation from any of these pages drops the user on Home instead
+of the tab they actually came from, despite the URL explicitly carrying a `from=`
+param that should make the correct destination unambiguous.
+
+**Not fixed.**
+
+---
+
 ### BUG-013 — Scanner doesn't detect a same-mtime, different-size file change
 
 **Found:** 2026-06-24, v2.3 Item 7 build session (confirming ADMIN_SPEC.md §8's
@@ -94,6 +171,12 @@ link functionally useless for browsing their specific contributions.
 **Impact:** Clicking an already-highlighted star (i.e. the current rating) should drop
 the rating to Unrated (NULL). Currently it floors at 1 star — once any rating is set,
 there's no way to return to Unrated via this interaction.
+
+**Addendum, 2026-06-27 (inbox capture):** the multi-select toolbar's `✕` "Clear
+rating" button (added 2026-06-26, Fix 2) already covers the bulk-selection case.
+This bug is specifically about the single-issue page (`/issue/{id}`) star row,
+where the desired fix is: clicking an already-highlighted star a second time clears
+the rating to Unrated — same gesture, no separate control needed.
 
 **Not fixed.**
 
