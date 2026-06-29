@@ -12,8 +12,10 @@ active queues — current active queue is `v2.4/comicvault-changes-v2.4.md`.
 ## Active build queue
 
 `v2.4/comicvault-changes-v2.4.md` is the current active queue (Status: Active).
-Item 1 (Admin: Processing Tools — File Rename) is fully scoped and ready to hand to
-Claude Code; no items built yet.
+14 items, closed list agreed 2026-06-29: Items 1–3 are small standalone changes;
+Items 4–8 are scope-then-build pairs (one tool at a time, build→test→fix before
+the next); Item 10 (File Rename Tool) is already fully scoped with no dependency
+on the others. No items built yet.
 
 **v2.3 closed 2026-06-29.** Items 1–9 built (Items 1–5 on 2026-06-23, Items 6–9 on
 2026-06-24) and verified via the manual test pass on 2026-06-26 (9 fixes same day).
@@ -28,7 +30,7 @@ project narrative through v2.3's close.
 
 ---
 
-## Blocked on Claude Design UI redesign exploration
+## v2.6 — UI Redesign (blocked on Claude Design exploration)
 
 Two items share the same blocking dependency — a parked exploration with Claude
 Design on overall UI redesign direction, not yet started. Both should be revisited
@@ -113,51 +115,52 @@ whenever this gets picked back up.
 
 ---
 
-## Deferred — needs dedicated scoping session before building
+## v2.5 — scoped for the version after next (not started)
 
-- **CAPT extra tools** (4 tools — Rename, Convert, Convert Images, Flatten — code
-  already exists in the original CAPT codebase). **Rename scoped and fully designed
-  2026-06-27** — see `admin-spec-section-12-processing-tools.md` §12.1; promoted to
-  `v2.4/comicvault-changes-v2.4.md` Item 1, 2026-06-29 — no longer deferred. Convert,
-  Convert Images, and Flatten still need their own dedicated scoping sessions before
-  going into a build queue.
+Seven items, agreed 2026-06-29. None scoped yet — this is a holding list, not a
+build queue; per the version lifecycle in `meta/working-rules.md`, real scoping
+won't start until v2.4 closes and a `docs/v2.5/` working folder is created.
 
-- **Processing Folder automation** (new Admin area — `ADMIN_SPEC.md` is the future
-  home once scoped): scheduled folder monitor; convert-to-cbz via 7zip, custom rename
-  pattern, image-to-WebP conversion, flatten archive folders — all four reusing
-  existing CAPT tooling. Needs its own dedicated scoping session (trigger conditions,
-  conflict handling, action ordering) before going into `ADMIN_SPEC.md`.
-
-- **ComicTagger + ComicVine API integration.** Large project. Tez has flagged this
-  explicitly as needing its own planning session before scoping begins.
-
-- **Third-party reader compatibility** — merge the OPDS idea and the existing
-  partial-Komga-API-compatibility idea into one research note; both solve the same
-  underlying goal (external reader apps connecting to ComicVault) and should be
-  evaluated together rather than as two separate efforts. Research-only until the
-  web-side work is further along.
+- **Scope: ComicTagger + ComicVine API integration.** Large project. Tez has
+  flagged this explicitly as needing its own planning session before scoping
+  begins.
+- **Scope: OPDS — connecting 3rd-party readers.** Merge with the existing
+  partial-Komga-API-compatibility idea into one research note; both solve the
+  same underlying goal (external reader apps connecting to ComicVault) and should
+  be evaluated together rather than as two separate efforts.
+- **Scope: Processing Folder automation** (new Admin area — `ADMIN_SPEC.md` is the
+  future home once scoped): scheduled folder monitor; convert-to-cbz via 7zip,
+  custom rename pattern, image-to-WebP conversion, flatten archive folders — all
+  four reusing the CAPT tooling built in v2.4. Needs its own dedicated scoping
+  session (trigger conditions, conflict handling, action ordering).
+- **Scope: running custom scripts on the Processing Folder.** Same area as the
+  item above — likely worth scoping together rather than separately, since both
+  touch the same automation trigger/conflict-handling design, but kept as its own
+  line per Tez's list rather than pre-merged.
+- **Add: user guide.** Not yet scoped at all — first mention. `ADMIN_SPEC.md`
+  §7.1.7's Password Recovery popup (v2.3 Item 10) already explicitly said the
+  guide, once built, should link to that popup rather than duplicating its
+  instructions — worth checking for any other place a spec already assumes a
+  guide exists before scoping this from scratch.
+- **Add: tooltips (mouseover) site-wide.** Low priority within v2.5 itself, but
+  now has a version attached rather than "end of main dev/design phase" with no
+  target.
+- **Scope: installer — Windows, Mac, and Linux.** Expanded scope, 2026-06-29 —
+  previously Windows-only and unprioritized (`SPEC.md` §20.14: "setup is manual,
+  `config.json` + `start.bat`"). Cross-platform installer is a meaningfully bigger
+  scoping question than a Windows-only one (the app's current setup assumes
+  Windows-specific paths/the pystray tray launcher) — flag this scope session as
+  likely needing its own dedicated time, not a quick pass.
 
 ---
 
-## Deferred to a future version (not started, no committed timeline)
+## Deferred to a future version (not started, no committed timeline, no version assigned)
 
-- **Favorites browse surface/tab.** Tier 4 Item 2 (Multi-select + Favorites/Rating,
-  shipped 2026-06-21) added the `favorites` field, a card/row badge, and an issue-
-  detail toggle, but no dedicated "Favorites" tab to browse just favorited issues —
-  explicitly deferred at build time, not an oversight. See `SPEC.md` §20.15.
 - **Drop the old raw CSV credit columns on `Issue`.** Tier 4 Item 3 (Writer/Artist
   dedup, shipped 2026-06-21) kept `writer`/`penciller`/`inker`/`colorist`/`letterer`/
   `cover_artist` as an inert rollback safety net rather than dropping them
   immediately. Drop them in a dedicated later session once the `people`/
   `issue_credits` system has run for real with no issues found over a release cycle.
-
-- **Tooltips (mouseover) site-wide.** Low priority. Intended for the end of the main
-  dev/design phase once all functional work is settled.
-
-From `SPEC.md` §20.14, corrected 2026-06-20 (two items in the original list — custom
-tabs and home strips — have since shipped; removed from here, see `CHANGELOG.md`):
-
-- An installer — setup is manual (`config.json` + `start.bat`); not yet prioritized.
 
 ---
 
@@ -165,6 +168,9 @@ tabs and home strips — have since shipped; removed from here, see `CHANGELOG.m
 
 - **Port 8000 / Windows port-exclusion conflict.** A user-configurable server port
   (`ADMIN_SPEC.md` §7.3) was added 2026-06-27 as a workaround — Tez confirmed this
-  resolves it in practice. Original defect: `archive/bugs-fixed-archive.md` BUG-004.
+  resolves it in practice. **Resolved at the source 2026-06-29 (v2.4 Item 2):**
+  the default itself moved from 8000 to 9424, so a fresh install no longer needs
+  to discover the workaround after already hitting the conflict. Original defect:
+  `archive/bugs-fixed-archive.md` BUG-004.
 - **BUG-003 — dead duplicate route.** Fixed 2026-06-27. See
   `archive/bugs-fixed-archive.md`.

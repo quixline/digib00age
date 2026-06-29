@@ -10,6 +10,24 @@ close) — entries from 2026-06-29 onward point into `v2.4/progress.md`.
 
 ---
 
+- **2026-06-29** — v2.4 Item 3: empty-results 📚 icon replaced with the
+  ComicVault logo image; extended (Tez's call, beyond original item scope) to
+  all 10 other emoji-based empty/error states in `app.js` for consistency.
+  Manual test passed. → `progress.md` "Session — 2026-06-29: v2.4 Item 3 —
+  empty-results icon → logo image"
+- **2026-06-29** — v2.4 Item 2: default server port changed from 8000 to 9424,
+  resolving the Windows port-exclusion conflict (BUG-004) at the source.
+  Surfaced a separate operational gotcha: stopping the server from the tray
+  menu doesn't kill the process — fully quit/relaunch the tray app after a
+  port change. Manual test passed. → `progress.md` "Session — 2026-06-29: v2.4
+  Item 2 — default server port → 9424"
+- **2026-06-29** — v2.4 Item 1: Admin — remote requests are now blocked from
+  every `/api/admin/*`/`/api/editor/*` endpoint and the `/admin`/`/editor`
+  pages whenever Remote Administration is off, including the previously-open
+  default state (password protection off). Cog icon stays visible but inert
+  for a blocked remote session. Manual test passed. → `progress.md` "Session —
+  2026-06-29: v2.4 Item 1 — restrict all admin access for remote users when
+  Remote Administration is off"
 - **2026-06-28** — Manual test pass v2.3 Items 10–13: Items 10 (Password Recovery), 11 (Backup frequency), 13 (Card Size 75%) passed; Item 12 (Restore Database) failed — BUG-016 logged. → `progress.md` "Session — 2026-06-28: Manual test pass, v2.3 Items 10–13"
 - **2026-06-27** — v2.3 Item 13: Admin Card Size — added a 75% option between
   50% and 100%.

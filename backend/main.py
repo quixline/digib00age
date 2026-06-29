@@ -1,6 +1,6 @@
 """
 ComicVault — Reader Server
-FastAPI entry point. Runs on localhost:8000 (home network accessible).
+FastAPI entry point. Runs on localhost:9424 by default (home network accessible).
 All paths come from config.json — nothing is hardcoded here.
 """
 
@@ -108,7 +108,7 @@ app.add_middleware(
 # Routers — each file owns a slice of the API
 # ---------------------------------------------------------------------------
 from fastapi import Depends  # noqa: E402
-from backend.auth import require_admin_auth  # noqa: E402
+from backend.auth import is_local_request, is_remote_admin_enabled, require_admin_auth  # noqa: E402
 from backend.routers import (  # noqa: E402
     library, reader, progress, admin, home, editor_basic, editor_full, admin_auth,
 )
@@ -138,7 +138,7 @@ if FRONTEND_DIR.exists():
 
     # Serve the HTML pages at their short URLs
     from fastapi.responses import FileResponse
-    from fastapi import Request
+    from fastapi import HTTPException, Request
 
     @app.get("/", include_in_schema=False)
     async def home():
@@ -153,7 +153,12 @@ if FRONTEND_DIR.exists():
         return FileResponse(str(FRONTEND_DIR / "issue.html"))
 
     @app.get("/admin", include_in_schema=False)
-    async def admin_page():
+    async def admin_page(request: Request):
+        # v2.4 Item 1: page navigation itself is part of the gate, not just the
+        # API calls the page makes — a remote request with Remote Administration
+        # off gets no page at all, matching require_admin_auth's API-level block.
+        if not is_local_request(request) and not is_remote_admin_enabled():
+            raise HTTPException(status_code=403, detail={"error": "remote_admin_disabled"})
         return FileResponse(str(FRONTEND_DIR / "admin.html"))
 
     @app.get("/guide", include_in_schema=False)
@@ -161,14 +166,16 @@ if FRONTEND_DIR.exists():
         return FileResponse(str(FRONTEND_DIR / "guide.html"))
 
     @app.get("/editor", include_in_schema=False)
-    async def editor_full_page():
+    async def editor_full_page(request: Request):
+        if not is_local_request(request) and not is_remote_admin_enabled():
+            raise HTTPException(status_code=403, detail={"error": "remote_admin_disabled"})
         return FileResponse(str(FRONTEND_DIR / "editor_full.html"))
 
 # ---------------------------------------------------------------------------
 # Entry point — run directly with: python backend/main.py
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    port = config.get("reader_port", 8000)
+    port = config.get("reader_port", 9424)
     uvicorn.run(
         "backend.main:app",
         host="0.0.0.0",   # Accessible on home network

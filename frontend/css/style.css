@@ -735,6 +735,7 @@ ul { list-style: none; }
   font-size: 14px;
 }
 .empty-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-logo { display: block; height: 56px; width: auto; margin: 0 auto 12px; opacity: 0.7; }
 
 /* ── Back nav ────────────────────────────────────────────────────────────── */
 .back-nav { padding: 14px 0 0; }
@@ -1315,6 +1316,16 @@ ul { list-style: none; }
 .settings-btn--active {
   color: var(--accent);
   background: var(--surface-2);
+}
+
+/* Gear icon present but inert — Remote Administration is off and this is a
+   non-local session, so the link has nowhere to go. Stays in place (no
+   layout shift for the Login/Logout button next to it), just visually dimmed
+   and not clickable. */
+.settings-btn--disabled {
+  opacity: 0.35;
+  pointer-events: none;
+  cursor: default;
 }
 
 /* Top action row — four buttons spread across the full width */

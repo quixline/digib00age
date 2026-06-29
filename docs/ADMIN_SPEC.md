@@ -325,7 +325,8 @@ This **replaces** the earlier plan to defer documentation to a future User Guide
 — the popup itself is now the documentation; the guide (once built) can link to it
 rather than duplicating the steps.
 
-### 7.2 Remote Administration Toggle *(built — V2.3 Item 6, 2026-06-24)*
+### 7.2 Remote Administration Toggle *(built — V2.3 Item 6, 2026-06-24; broadened —
+v2.4 Item 1, 2026-06-29)*
 
 Advanced Settings → block/allow non-local (non-`127.0.0.1`) access to every route
 covered by §7.1 (`/admin`, `/editor`, `/api/admin/*`, `/api/editor/*`).
@@ -343,12 +344,56 @@ surface to anyone on the home network with no gate at all.
   force-disabled in the same action (§7.1.1) — never left enabled with nothing
   backing it.
 
-### 7.3 Server Listening Port *(built — V2.3 Item 8, 2026-06-24)*
+**Remote Administration off means no function at all for a non-local request —
+not just the destructive actions (fixed — v2.4 Item 1, 2026-06-29).** Before this,
+the remote block inside `require_admin_auth()` only ran while password protection
+was *on*; with protection off (the default state, and the only state Remote
+Administration can be in until protection is turned on), the gate no-op'd
+entirely, leaving every `/api/admin/*`/`/api/editor/*` endpoint without its own
+explicit `is_local_request()` check (stats, logs, cleanup-missing, backup, the
+folder-tree browse, the scan trigger) reachable from any device on the LAN. The
+handful of destructive actions (Clear Database, Restore Database, the folder/file
+dialogs, restart) were never affected by this gap — they carry their own
+unconditional `is_local_request()` check regardless of protection/remote-admin
+state.
 
-A manual numeric input field for the server's listening port (currently hardcoded to
-8000 via `config.json`). Saving updates `config.json` and restarts the server.
-Relevant to `BUGS.md` BUG-004 (port 8000 / Windows port-exclusion conflict) — moving
-to a less commonly reserved port is a workaround for that issue.
+The fix made the remote-admin-disabled check in `require_admin_auth()`
+unconditional — it now runs before the protection-enabled check, not after — so
+a single change covers every route already wired through that dependency. The
+`/admin` and `/editor` page routes themselves (`backend/main.py`) gained the
+same check directly, since they were never gated at all (always served the HTML
+shell regardless of caller).
+
+**The cog link stays visible but inert for a blocked remote session** — it does
+not disappear. `auth.js checkAuthStatus()` toggles a `.settings-btn--disabled`
+class (dimmed, `pointer-events: none`) rather than hiding the element, so the
+Login/Logout control next to it doesn't shift position. Local sessions are
+unaffected in every state.
+
+### 7.3 Server Listening Port *(built — V2.3 Item 8, 2026-06-24; default changed —
+v2.4 Item 2, 2026-06-29)*
+
+A manual numeric input field for the server's listening port, default **9424**
+via `config.json` (changed from `8000` — v2.4 Item 2). Saving updates
+`config.json` and restarts the server. Relevant to `BUGS.md` BUG-004 (port 8000 /
+Windows port-exclusion conflict) — moving to a less commonly reserved port is a
+workaround for that issue; the v2.4 change moves the *default* itself off 8000
+so a fresh install doesn't need to discover the workaround after already hitting
+the conflict. 9424 was chosen as a port unlikely to fall inside a typical
+WSL2/Hyper-V dynamic port-exclusion range.
+
+**Restarting the server is not the same as restarting the tray app
+(observed — v2.4 Item 2 testing, 2026-06-29).** The tray app reads
+`reader_port` from `config.json` once, at its own launch, to build its "Open
+Library"/"Admin" menu links and to know what port to manage. Stopping the
+server from the tray menu does not necessarily kill the underlying process —
+if it doesn't, the old process keeps listening on whatever port it started
+with, and a second process can end up running on the new port alongside it,
+both pointed at the same database. After changing this setting, fully quit
+and relaunch the tray app (not just "stop the server" from its menu) so its
+cached port and its managed process both pick up the change — don't assume
+the menu items or the listening port have updated just because `config.json`
+has.
 
 ### 7.4 Clear Database *(built — V2.3 Item 9, 2026-06-24 — destructive)*
 

@@ -4,7 +4,7 @@ import '../models/series.dart';
 import '../models/issue.dart';
 
 class ApiService {
-  String baseUrl; // e.g. "http://192.168.1.10:8000"
+  String baseUrl; // e.g. "http://192.168.1.10:9424"
 
   ApiService(this.baseUrl);
 

@@ -4,6 +4,24 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### v2.4 Item 3 (empty-results logo) extended to all emoji empty/error states
+
+**Decided:** 2026-06-29, build session (Code), Tez's explicit call after seeing
+the original item work.
+**Why:** Item 3 as scoped only covered the "No comics match these filters."
+state's `📚` icon. Once built and manually tested, the same `.empty-icon`
+pattern turned out to cover 10 more states in `app.js` — some genuinely
+"no content" (`📚` on "No content yet."), others error/warning states (`⚠️`
+on server-unreachable, search failure, series/issue not found, etc.). Tez
+asked for the same logo swap across all of them rather than leaving a mix of
+emoji and logo. This is a judgment call worth a paper trail specifically
+because it repurposes the logo for warning/error states too, not just
+"library has nothing to show" — a different semantic than the original item
+text described, decided live rather than scoped in advance.
+**Where:** `frontend/js/app.js` (11 spots total), `frontend/css/style.css`
+(`.empty-logo` class, shared by all of them). See `v2.4/progress.md` "Session
+— 2026-06-29: v2.4 Item 3" for the full list of states touched.
+
 ### BUG-016 root cause confirmed; INBOX.md, ROADMAP.md/INDEX.md/roadmap.html reconciled with the 2026-06-28 manual test pass
 
 **Decided:** 2026-06-28, doc-handling review session (Chat).

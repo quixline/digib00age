@@ -36,7 +36,7 @@ See `docs/EDITOR_SPEC.md` for the full editor design.
      and gives you the full tray menu), or
    - Run `python start_server.py` directly for manual/dev use (validates config,
      initializes the DB if needed, then starts uvicorn; Ctrl+C to stop).
-3. Open `http://localhost:8000` (or `http://<host-pc-ip>:8000` from another device on
+3. Open `http://localhost:9424` (or `http://<host-pc-ip>:9424` from another device on
    the network) for the library. `/admin` for the Admin page, `/editor` for the Full
    Editor — both intended for localhost use only.
 

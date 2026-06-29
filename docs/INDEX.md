@@ -57,13 +57,15 @@ the same: both span every version by design.
 
 *`admin-spec-section-12-processing-tools.md` is logically part of `ADMIN_SPEC.md` §12
 but lives as a separate file — treat as authoritative for §12 until it's merged into
-`ADMIN_SPEC.md` proper. Flagged as a pending cleanup item, not a contradiction.*
+`ADMIN_SPEC.md` proper. Resolution plan settled 2026-06-29: gets folded into
+`ADMIN_SPEC.md` §12 directly when v2.4 Item 10 (File Rename Tool) is actually
+built — not a vague future cleanup, a specific trigger.*
 
 ## `docs/v2.4/` — current version's working set
 
 | Doc | Purpose | Status |
 |---|---|---|
-| `comicvault-changes-v2.4.md` | v2.4: active build queue | Item 1 (File Rename Tool) scoped, ready for Code. No items built yet. |
+| `comicvault-changes-v2.4.md` | v2.4: active build queue | 14 items, closed list agreed 2026-06-29. Items 1–3 built and manually tested 2026-06-29. Items 4–8 scope-then-build, one at a time. Item 10 (File Rename) already scoped, no dependency on others. |
 | `progress.md` | Narrative build history, scoped to v2.4 sessions only | Active, append-only, just started 2026-06-29 |
 
 ## Reference docs
@@ -81,10 +83,7 @@ but lives as a separate file — treat as authoritative for §12 until it's merg
 | `doc-scan-issues.md` | Append-only log of drift/contradictions Cowork's nightly scan finds. Sunday prune to `doc-scan-issues-archive.md`. |
 | `doc-scan-state.md` | Cowork's internal scan-state tracking (last-scanned timestamps etc.) |
 | `cowork-notes.md` | Cowork session log |
-
-Cowork's actual scheduled-task instructions live in the Cowork task config itself, not
-in this folder — see `archive/cowork-doc-scan-instructions.md` for the most recent
-copy pasted in (2026-06-28), kept as a point-in-time record only.
+| `cowork-doc-scan-instructions.md` | Authoritative current copy of Cowork's nightly scan instructions — **paste into Cowork's live scheduled-task config now**, it reflects the 2026-06-29 folder rename (`archive/`) and the per-version `docs/vX.Y/` working folder. Once pasted, this file gets archived as a point-in-time record (same pattern as the 2026-06-28 copy now at `archive/cowork-doc-scan-instructions.md`, which is stale — don't paste that one). |
 
 ## `docs/archive/` — out of focus, not out of reach
 

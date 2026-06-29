@@ -96,14 +96,20 @@ def clear_failed_attempts(ip: str) -> None:
 def require_admin_auth(request: Request, response: Response) -> None:
     """FastAPI dependency gating /api/admin/* and /api/editor/* routes.
 
-    No-op (V1 behaviour) when protection is disabled. Login/status/enable/disable
+    The remote-admin block applies unconditionally — including when password
+    protection itself is off (the default state). Remote Administration can only
+    ever be enabled while protection is on (see is_remote_admin_enabled callers),
+    so a non-local request reaching here with protection off is exactly the case
+    v2.4 Item 1 closes: previously this whole function no-op'd when protection was
+    disabled, so every admin/editor endpoint without its own is_local_request()
+    check was wide open to the LAN by default. Login/status/enable/disable
     endpoints live in admin_auth.py and are registered without this dependency.
     """
-    if not is_protection_enabled():
-        return
-
     if not is_local_request(request) and not is_remote_admin_enabled():
         raise HTTPException(status_code=403, detail={"error": "remote_admin_disabled"})
+
+    if not is_protection_enabled():
+        return
 
     cfg = get_config()
     secret = cfg.get("SESSION_SECRET")

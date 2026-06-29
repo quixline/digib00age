@@ -5,7 +5,7 @@ class SettingsService {
   static const _keyReadingMode = 'reading_mode';
   static const _keyConnectionMode = 'connection_mode';
 
-  static const defaultServerUrl = 'http://192.168.1.10:8000';
+  static const defaultServerUrl = 'http://192.168.1.10:9424';
 
   final SharedPreferences _prefs;
 

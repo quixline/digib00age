@@ -369,7 +369,7 @@ async function initLibrary() {
     const homeStrips = document.getElementById('homeStrips');
     if (homeStrips) {
       homeStrips.innerHTML =
-        '<div class="empty-state"><div class="empty-icon">⚠️</div>' +
+        '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
         `<p>Failed to initialise.<br><small>${err.message}</small></p>` +
         '<p><button onclick="loadHome()">Retry</button></p></div>';
     }
@@ -561,13 +561,13 @@ async function loadHome() {
     }
     if (!homeStrips.children.length) {
       homeStrips.innerHTML =
-        '<div class="empty-state"><div class="empty-icon">📚</div><p>No content yet.</p></div>';
+        '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt=""><p>No content yet.</p></div>';
     }
   } catch (err) {
     clearTimeout(timerId);
     const msg   = err.name === 'AbortError' ? 'Server took too long to respond.' : err.message;
     homeStrips.innerHTML =
-      '<div class="empty-state"><div class="empty-icon">⚠️</div>' +
+      '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
       `<p>${msg}<br><button onclick="loadHome()">Retry</button></p></div>`;
   }
 }
@@ -682,7 +682,7 @@ async function loadBrowse() {
       allLibrary = await apiFetch('/library');
     } catch (err) {
       grid.innerHTML =
-        '<div class="empty-state"><div class="empty-icon">⚠️</div>' +
+        '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
         '<p>Could not reach the server. Is it running?</p></div>';
       return;
     }
@@ -701,7 +701,7 @@ async function loadBrowse() {
         tabLibraryCache[tabId] = await apiFetch(`/library?tab_id=${tabId}`);
       } catch (err) {
         grid.innerHTML =
-          '<div class="empty-state"><div class="empty-icon">⚠️</div>' +
+          '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
           '<p>This tab is no longer available.</p></div>';
         return;
       }
@@ -717,7 +717,7 @@ async function loadBrowse() {
         viewLibraryCache[cacheKey] = await apiFetch(`/library?${qs}`);
       } catch (err) {
         grid.innerHTML =
-          '<div class="empty-state"><div class="empty-icon">⚠️</div>' +
+          '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
           '<p>This view is no longer available.</p></div>';
         return;
       }
@@ -903,7 +903,7 @@ function _renderBrowsePage() {
 
   if (!filtered.length) {
     grid.innerHTML =
-      '<div class="empty-state"><div class="empty-icon">📚</div>' +
+      '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
       '<p>No comics match these filters.</p></div>';
     if (pagEl) pagEl.innerHTML = '';
     return;
@@ -1253,7 +1253,7 @@ async function renderFolderView(tabId, path) {
     data = folderViewCache[cacheKey];
   } catch (err) {
     grid.innerHTML =
-      '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Could not load this folder.</p></div>';
+      '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt=""><p>Could not load this folder.</p></div>';
     return;
   }
 
@@ -1432,7 +1432,7 @@ async function startFolderViewSearch(tabId, q) {
     for (const issue of data.results) resultsGrid.appendChild(buildFolderFileCard(issue));
   } catch (err) {
     resultsGrid.innerHTML =
-      '<div class="empty-state"><div class="empty-icon">⚠️</div><p>Search failed.</p></div>';
+      '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt=""><p>Search failed.</p></div>';
   }
 }
 
@@ -1472,7 +1472,7 @@ async function initSeries() {
   } catch (_) {
     content.innerHTML =
       '<div class="empty-state" style="padding-top:60px">' +
-      '<div class="empty-icon">⚠️</div><p>Series not found.</p></div>';
+      '<img class="empty-logo" src="/static/images/logo1.png" alt=""><p>Series not found.</p></div>';
   }
 }
 
@@ -1698,7 +1698,7 @@ async function initIssue() {
   } catch (_) {
     content.innerHTML =
       '<div class="empty-state" style="padding-top:60px">' +
-      '<div class="empty-icon">⚠️</div><p>Issue not found.</p></div>';
+      '<img class="empty-logo" src="/static/images/logo1.png" alt=""><p>Issue not found.</p></div>';
   }
 }
 

@@ -67,6 +67,7 @@
   .order-badge { width: 20px; height: 20px; min-width: 20px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 11px; font-weight: 600; margin-top: 1px; }
+  .ob-now { background: var(--purple-bg); color: var(--purple-text); }
   .ob-next { background: var(--teal-bg); color: var(--teal-text); }
   .ob-later { background: var(--grey-bg); color: var(--grey-text); }
   .c-title { font-size: 13.5px; font-weight: 500; }
@@ -94,7 +95,8 @@
 <p class="subtitle">Sequence, not dates — what's active, what's likely next, what's
 parked, and what "public-ready" still needs. Regenerated wholesale at each triage
 session; click any card for detail and its source doc.</p>
-<p class="updated">Baseline built 2026-06-28 · updated 2026-06-29 (v2.3 closed, v2.4 started)</p>
+<p class="updated">Baseline built 2026-06-28 · updated 2026-06-29 (v2.4's full 14-item
+plan, v2.5 holding list, v2.6 named)</p>
 
 <div class="bugs-strip">
   <i class="ti ti-bug"></i>
@@ -109,29 +111,169 @@ session; click any card for detail and its source doc.</p>
     <div class="lane-head">
       <div>
         <div class="lane-title">Now</div>
-        <div class="lane-sub">Active build queue</div>
+        <div class="lane-sub">v2.4 — closed list, 14 items (3 built)</div>
       </div>
-      <div class="lane-count">1</div>
+      <div class="lane-count">11</div>
     </div>
     <div class="cards">
+
       <div class="card" onclick="this.classList.toggle('open')">
         <div class="card-top">
+          <div class="order-badge ob-now">1</div>
           <div>
-            <div class="c-title">v2.4 Item 1 — File Rename Tool</div>
-            <div class="c-sub">Fully scoped, ready to hand to Code</div>
+            <div class="c-title">Scope: Favourites as a Custom Tab category</div>
+            <div class="c-sub">Custom Tabs are folder-scoped only today — real design call needed</div>
+            <span class="chip scoping">needs scoping</span>
           </div>
         </div>
         <div class="c-detail">
-          v2.3 closed 2026-06-29 (Items 1–13 built; Item 12 Restore Database
-          failed manual test, open as <code>BUG-016</code>, root cause confirmed;
-          Item 14 moved to <code>ROADMAP.md</code>). Batch/single-file renaming
-          based on parsed Series/Issue/Title/Year. In-app folder-tree picker (not
-          a native dialog — works under Remote Administration), no recursion,
-          per-field File/All checkbox independence, narrow auto-increment scope,
-          no undo. No items built yet.
-          <div class="ref">v2.4/comicvault-changes-v2.4.md · admin-spec-section-12-processing-tools.md §12.1</div>
+          Resolves the long-deferred "Favorites browse tab" idea once scoped and
+          built.
+          <div class="ref">v2.4/comicvault-changes-v2.4.md Item 4</div>
         </div>
       </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">2</div>
+          <div>
+            <div class="c-title">Scope: other formats (CBR, PDF, EPUB)</div>
+            <div class="c-sub">Biggest of the four — touches scanner, thumbnails, reader</div>
+            <span class="chip scoping">needs scoping</span>
+          </div>
+        </div>
+        <div class="c-detail">
+          Three separate technical problems, not one: CBR likely shares a 7-Zip
+          dependency with v2.5's Processing Folder automation; PDF needs
+          page-rendering for covers; EPUB needs real content extraction.
+          <div class="ref">v2.4/comicvault-changes-v2.4.md Item 5</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">3</div>
+          <div>
+            <div class="c-title">Scope: Convert Files</div>
+            <div class="c-sub">CAPT tool port, same pattern as File Rename's scoping</div>
+            <span class="chip scoping">needs scoping</span>
+          </div>
+        </div>
+        <div class="c-detail">
+          <div class="ref">v2.4/comicvault-changes-v2.4.md Item 6</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">4</div>
+          <div>
+            <div class="c-title">Scope: Convert Images</div>
+            <div class="c-sub">CAPT tool port</div>
+            <span class="chip scoping">needs scoping</span>
+          </div>
+        </div>
+        <div class="c-detail">
+          <div class="ref">v2.4/comicvault-changes-v2.4.md Item 7</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">5</div>
+          <div>
+            <div class="c-title">Scope: Flatten Archive</div>
+            <div class="c-sub">CAPT tool port</div>
+            <span class="chip scoping">needs scoping</span>
+          </div>
+        </div>
+        <div class="c-detail">
+          <div class="ref">v2.4/comicvault-changes-v2.4.md Item 8</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">6</div>
+          <div>
+            <div class="c-title">Build: Favourites as a Custom Tab category</div>
+            <div class="c-sub">Depends on Item 4's scoping</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          <div class="ref">v2.4/comicvault-changes-v2.4.md Item 9</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">7</div>
+          <div>
+            <div class="c-title">Build: File Rename Tool</div>
+            <div class="c-sub">Already fully scoped — no dependency, can move anytime</div>
+            <span class="chip ready">ready</span>
+          </div>
+        </div>
+        <div class="c-detail">
+          Batch/single-file renaming, in-app folder-tree picker, live preview, audit
+          log. On build: fold <code>admin-spec-section-12-processing-tools.md</code>
+          into <code>ADMIN_SPEC.md</code> §12 directly — retires the standalone file.
+          <div class="ref">v2.4/comicvault-changes-v2.4.md Item 10 · ADMIN_SPEC.md §11.1 · admin-spec-section-12-processing-tools.md §12.1</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">8</div>
+          <div>
+            <div class="c-title">Build: other formats</div>
+            <div class="c-sub">Depends on Item 5's scoping</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          <div class="ref">v2.4/comicvault-changes-v2.4.md Item 11</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">9</div>
+          <div>
+            <div class="c-title">Build: Convert Files</div>
+            <div class="c-sub">Depends on Item 6's scoping</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          <div class="ref">v2.4/comicvault-changes-v2.4.md Item 12</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">10</div>
+          <div>
+            <div class="c-title">Build: Convert Images</div>
+            <div class="c-sub">Depends on Item 7's scoping</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          <div class="ref">v2.4/comicvault-changes-v2.4.md Item 13</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">11</div>
+          <div>
+            <div class="c-title">Build: Flatten Archive</div>
+            <div class="c-sub">Depends on Item 8's scoping</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          <div class="ref">v2.4/comicvault-changes-v2.4.md Item 14</div>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -140,9 +282,9 @@ session; click any card for detail and its source doc.</p>
     <div class="lane-head">
       <div>
         <div class="lane-title">Next</div>
-        <div class="lane-sub">Ordered — top is soonest</div>
+        <div class="lane-sub">v2.5 — holding list, not started</div>
       </div>
-      <div class="lane-count">2</div>
+      <div class="lane-count">7</div>
     </div>
     <div class="cards">
 
@@ -150,17 +292,12 @@ session; click any card for detail and its source doc.</p>
         <div class="card-top">
           <div class="order-badge ob-next">1</div>
           <div>
-            <div class="c-title">Convert / Convert Images / Flatten</div>
-            <div class="c-sub">Same Processing Tools area as Rename</div>
-            <span class="chip scoping">needs scoping</span>
+            <div class="c-title">Scope: ComicTagger + ComicVine integration</div>
+            <div class="c-sub">Large — needs its own planning session first</div>
           </div>
         </div>
         <div class="c-detail">
-          The other 3 of CAPT's 4 standalone tools — code already exists in the
-          original CAPT codebase, ported one at a time. Each needs its own
-          dedicated scoping session before it can join a build queue, same as
-          Rename did on 2026-06-27.
-          <div class="ref">ROADMAP.md — "Deferred, needs scoping" · admin-spec-section-12-processing-tools.md §12</div>
+          <div class="ref">ROADMAP.md — "v2.5"</div>
         </div>
       </div>
 
@@ -168,16 +305,85 @@ session; click any card for detail and its source doc.</p>
         <div class="card-top">
           <div class="order-badge ob-next">2</div>
           <div>
-            <div class="c-title">ComicTagger + ComicVine integration</div>
-            <div class="c-sub">Large — needs its own planning session first</div>
-            <span class="chip scoping">needs scoping</span>
+            <div class="c-title">Scope: OPDS — connecting 3rd-party readers</div>
+            <div class="c-sub">Merged with the existing Komga-compatibility research note</div>
           </div>
         </div>
         <div class="c-detail">
-          Flagged by Tez as needing dedicated planning before scoping even
-          begins. Last in the Next sequence — the other Processing Tools work
-          above it gets first claim on attention.
-          <div class="ref">ROADMAP.md — "Deferred, needs scoping"</div>
+          <div class="ref">ROADMAP.md — "v2.5"</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-next">3</div>
+          <div>
+            <div class="c-title">Scope: Processing Folder automation</div>
+            <div class="c-sub">Reuses the CAPT tooling v2.4 builds</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          Scheduled folder monitor: convert-to-cbz, custom rename, image-to-WebP,
+          flatten — trigger conditions, conflict handling, action ordering all need
+          deciding.
+          <div class="ref">ROADMAP.md — "v2.5"</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-next">4</div>
+          <div>
+            <div class="c-title">Scope: running custom scripts on the Processing Folder</div>
+            <div class="c-sub">Same area as Item 3 above — likely worth scoping together</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          <div class="ref">ROADMAP.md — "v2.5"</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-next">5</div>
+          <div>
+            <div class="c-title">Add: user guide</div>
+            <div class="c-sub">First mention — not scoped at all yet</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          The v2.3 Password Recovery popup already assumes a guide will exist and
+          link to it — worth checking for other such assumptions before scoping
+          from scratch.
+          <div class="ref">ROADMAP.md — "v2.5" · ADMIN_SPEC.md §7.1.7</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-next">6</div>
+          <div>
+            <div class="c-title">Add: tooltips (mouseover) site-wide</div>
+            <div class="c-sub">Low priority within v2.5, but now has a version attached</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          <div class="ref">ROADMAP.md — "v2.5"</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-next">7</div>
+          <div>
+            <div class="c-title">Scope: installer — Windows, Mac, and Linux</div>
+            <div class="c-sub">Expanded scope — cross-platform is meaningfully bigger than Windows-only</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          Current setup assumes Windows-specific paths and the pystray tray
+          launcher — likely its own dedicated scoping session, not a quick pass.
+          <div class="ref">ROADMAP.md — "v2.5"</div>
         </div>
       </div>
 
@@ -189,58 +395,26 @@ session; click any card for detail and its source doc.</p>
     <div class="lane-head">
       <div>
         <div class="lane-title">Later</div>
-        <div class="lane-sub">First 3 ordered; rest not yet prioritised</div>
+        <div class="lane-sub">No version assigned, no committed order</div>
       </div>
-      <div class="lane-count">9</div>
+      <div class="lane-count">5</div>
     </div>
     <div class="cards">
 
       <div class="card" onclick="this.classList.toggle('open')">
         <div class="card-top">
-          <div class="order-badge ob-later">1</div>
           <div>
-            <div class="c-title">Favorites browse tab</div>
-            <div class="c-sub">Field/badge exist; no dedicated tab yet</div>
-          </div>
-        </div>
-        <div class="c-detail">
-          Deliberately deferred at build time when Favorites/Rating shipped
-          (2026-06-21), not an oversight.
-          <div class="ref">ROADMAP.md · SPEC.md §20.15</div>
-        </div>
-      </div>
-
-      <div class="card" onclick="this.classList.toggle('open')">
-        <div class="card-top">
-          <div class="order-badge ob-later">2</div>
-          <div>
-            <div class="c-title">Third-party reader compatibility</div>
-            <div class="c-sub">OPDS + Komga research, merged</div>
-          </div>
-        </div>
-        <div class="c-detail">
-          Research-only until the web-side work is further along — both ideas
-          solve the same goal (external reader apps connecting to ComicVault)
-          and should be evaluated together.
-          <div class="ref">ROADMAP.md — "Deferred, needs scoping"</div>
-        </div>
-      </div>
-
-      <div class="card" onclick="this.classList.toggle('open')">
-        <div class="card-top">
-          <div class="order-badge ob-later">3</div>
-          <div>
-            <div class="c-title">Header unification + BUG-014</div>
-            <div class="c-sub">v2.3 Item 14, moved here 2026-06-28</div>
+            <div class="c-title">v2.6 — UI Redesign</div>
+            <div class="c-sub">Header unification (v2.3 Item 14) + BUG-014, bundled</div>
             <span class="chip blocked">blocked — Claude Design</span>
           </div>
         </div>
         <div class="c-detail">
-          Unify the Series/Issue detail header with Home's. Shares root cause
-          with BUG-014 (back-button regression) — sequence together, not
-          independently. Both blocked on the parked Claude Design UI redesign
-          exploration; revisit once that direction exists.
-          <div class="ref">ROADMAP.md — "Blocked on Claude Design UI redesign exploration" · BUGS.md BUG-014</div>
+          Blocked on a parked exploration with Claude Design on overall UI
+          redesign direction. Both items share a root cause (the four main
+          surface tabs never call <code>pushState</code>) — revisit together
+          once that direction exists.
+          <div class="ref">ROADMAP.md — "v2.6 — UI Redesign" · BUGS.md BUG-014</div>
         </div>
       </div>
 
@@ -257,25 +431,6 @@ session; click any card for detail and its source doc.</p>
           Flutter changes the current EXE doesn't support, plus a
           same-machine-only limitation; may be dropped rather than built.
           <div class="ref">ROADMAP.md — "Paused indefinitely"</div>
-        </div>
-      </div>
-
-      <div class="card" onclick="this.classList.toggle('open')">
-        <div class="card-top">
-          <div>
-            <div class="c-title">Processing Folder automation</div>
-            <div class="c-sub">After all Processing Tools are in place (incl. ComicTagger)</div>
-            <span class="chip scoping">needs scoping</span>
-          </div>
-        </div>
-        <div class="c-detail">
-          Scheduled folder monitor: convert-to-cbz (7zip), custom rename
-          pattern, image-to-WebP, flatten archive folders. Tez's call,
-          2026-06-28 — this belongs after Rename/Convert/Convert Images/
-          Flatten/ComicTagger are all in place, not alongside them. Needs a
-          dedicated session for trigger conditions, conflict handling, and
-          action ordering before it goes into <code>ADMIN_SPEC.md</code>.
-          <div class="ref">ROADMAP.md — "Deferred, needs scoping"</div>
         </div>
       </div>
 
@@ -302,7 +457,7 @@ session; click any card for detail and its source doc.</p>
           </div>
         </div>
         <div class="c-detail">No urgency — current inline filtering is working.
-          <div class="ref">ROADMAP.md — from SPEC.md §20.14</div>
+          <div class="ref">SPEC.md §20.14</div>
         </div>
       </div>
 
@@ -317,19 +472,7 @@ session; click any card for detail and its source doc.</p>
           Multi-drive scanning with per-folder exclude (would help folder-scoped
           tabs). Series-level overview text field — per-issue descriptions
           cover the need for now.
-          <div class="ref">ROADMAP.md — from SPEC.md §20.14</div>
-        </div>
-      </div>
-
-      <div class="card" onclick="this.classList.toggle('open')">
-        <div class="card-top">
-          <div>
-            <div class="c-title">Tooltips site-wide</div>
-            <div class="c-sub">Low priority — end of main dev/design phase</div>
-          </div>
-        </div>
-        <div class="c-detail">Intended once all functional work is settled.
-          <div class="ref">ROADMAP.md</div>
+          <div class="ref">SPEC.md §20.14</div>
         </div>
       </div>
 
@@ -353,9 +496,10 @@ session; click any card for detail and its source doc.</p>
         here.
         <div class="candidates">
           Raised in conversation, not yet scoped or committed: installer /
-          distribution, onboarding for a setup that isn't Tez's own folder
-          structure, licensing &amp; support story. None of these are commitments
-          — they're the reason this lane needs its own conversation.
+          distribution (now also scoped into v2.5, but distribution/licensing/
+          onboarding-for-non-Tez-setups is a bigger question than the installer
+          alone), licensing &amp; support story. None of these are commitments —
+          they're the reason this lane needs its own conversation.
         </div>
       </div>
     </div>
