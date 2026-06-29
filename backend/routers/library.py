@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models import CustomTab, Issue, IssueCredit, IssueGenre, Person, ReadingProgress
-from backend.path_utils import is_under, matches_field, normalize_path
+from backend.path_utils import is_under, matches_field, matches_search, normalize_path
 from backend.routers.progress import _get_or_create_progress
 
 router = APIRouter(tags=["library"])
@@ -136,16 +136,18 @@ def get_library(
     folder_path: Optional[str] = Query(None, description="Filter to an ad-hoc folder (e.g. a home strip's 'view all' link)"),
     field: Optional[str] = Query(None, description="One of: genre, publisher, writer, artist, format, decade, year, rating, bw"),
     value: Optional[str] = Query(None, description="Value to match for `field`"),
+    q: Optional[str] = Query(None, description="BUG-010: free-text search (same fields as GET /search), scoped before grouping so issue_count reflects only matching issues"),
     db: Session = Depends(get_db),
 ):
     """
     Returns one entry per unique series name, with cover, issue count,
     and unread count. Optionally filtered by format_group, by a custom
-    tab's folder (CUSTOM_TABS_SPEC.md), by an ad-hoc folder_path, or by a
-    single field+value (HOME_STRIPS_SPEC.md's field-based strips) — issues
-    are filtered by file_path/field BEFORE the per-series groupby below, so
-    a series spanning both sides of the filter shows counts scoped to the
-    matching issues only (intended for folder/field-scoped views).
+    tab's folder (CUSTOM_TABS_SPEC.md), by a single field+value
+    (HOME_STRIPS_SPEC.md's field-based strips), or by free-text `q` (the
+    inline search box, BUG-010) — issues are filtered by file_path/field/q
+    BEFORE the per-series groupby below, so a series spanning both sides of
+    the filter shows counts scoped to the matching issues only (intended for
+    folder/field/search-scoped views).
     """
     query = db.query(Issue).filter(Issue.missing == False)
     if group:
@@ -163,6 +165,8 @@ def get_library(
         all_issues = [i for i in all_issues if is_under(i.file_path, tab_folder)]
     if field and value is not None:
         all_issues = [i for i in all_issues if matches_field(i, field, value)]
+    if q:
+        all_issues = [i for i in all_issues if matches_search(i, q)]
 
     # Group by series name
     series_map: dict[str, list[Issue]] = {}
@@ -384,15 +388,17 @@ def get_series(
     issue_id: int,
     field: Optional[str] = Query(None, description="BUG-010: scope to issues matching a credit field (e.g. writer/artist), same semantics as GET /library's field+value"),
     value: Optional[str] = Query(None, description="Value to match for `field`"),
+    q: Optional[str] = Query(None, description="BUG-010: scope to issues matching free-text search (same semantics as GET /library's q), used when a series is reached from the inline search box rather than a credit link"),
     db: Session = Depends(get_db),
 ):
     """
     Returns series header info + all issues in that series, with read status.
     The {issue_id} is used to identify which series — any issue id in the series works.
 
-    Optional field+value (BUG-010) scopes the returned issue list to only
-    issues matching that credit/field — e.g. a Writer credit link should only
-    list the issues that writer is actually credited on, not the whole series.
+    Optional field+value or q (BUG-010) scopes the returned issue list to only
+    issues matching that credit/field/search — e.g. a Writer credit link or an
+    inline search hit should only list the issues actually matching, not the
+    whole series.
     """
     anchor = db.query(Issue).filter(Issue.id == issue_id).first()
     if not anchor:
@@ -406,11 +412,12 @@ def get_series(
         .order_by(Issue.volume, Issue.number, Issue.id)
         .all()
     )
-    issues = (
-        [i for i in all_issues if matches_field(i, field, value)]
-        if field and value is not None
-        else all_issues
-    )
+    if field and value is not None:
+        issues = [i for i in all_issues if matches_field(i, field, value)]
+    elif q:
+        issues = [i for i in all_issues if matches_search(i, q)]
+    else:
+        issues = all_issues
 
     # Sort issues: numeric numbers first, then non-numeric, then None
     def issue_sort(i: Issue):
@@ -467,6 +474,7 @@ def get_series(
         "issues": issue_list,
         "filtered_field": field if (field and value is not None) else None,
         "filtered_value": value if (field and value is not None) else None,
+        "filtered_query": q if (q and not (field and value is not None)) else None,
         "total_issue_count": len(all_issues),
     }
 

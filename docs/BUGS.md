@@ -193,32 +193,46 @@ user navigated there. Repro confirmed with "search All for Alan Moore": the matc
 surfaces "2000 AD" as a series card (since at least one of its 2483 issues credits Alan
 Moore), but clicking it opened all 2483 issues, not just his 117.
 
-**Note — the inline "search All" text-search case is a related but separate gap, not
-fixed here:** `getFilteredLibrary()`'s inline search (`frontend/js/app.js`) matches
-purely client-side against each series' aggregated `writers` array (a flattened union
-across every issue in the series), not a specific person_id — there's no clean filter
-value to carry forward from free-text search the way there is from a credit link's
-`person_id`. Fixing that properly would mean credit-aware per-issue text matching
-server-side, a bigger lift than this fix. The credit-link path (the original, concrete
-repro) is fixed; the free-text search path still surfaces the same class of symptom and
-would need its own pass.
+**First fix pass (credit-link path) was incomplete — caught immediately by Tez
+re-testing the original "search All for Alan Moore" repro itself:** that repro doesn't
+go through the credit-link path at all. The inline "All" search box was, and still is,
+a separate code path — `getFilteredLibrary()`'s inline search matched client-side
+against each series' aggregated `writers` array (a flattened union across every issue
+in the whole series) and returned the series' *full*, unscoped `issue_count`. So
+searching "Alan Moore" reported "2,515 Titles (2,483 in 2000 AD)" — the full series
+totals, not his actual ~146 credited issues — and clicking through (e.g. into "2000 AD
+Yearbook", 4 issues, only 1 actually by Moore) still opened all 4, not the 1 that
+matched. The first fix only handled the credit-link's `person_id`-based filter; it
+didn't touch the inline search box's own separate, still-broken aggregation.
 
-**Fixed, 2026-06-29 (credit-link path).** `GET /api/series/{issue_id}` now accepts
-optional `field`+`value` query params, reusing the same `matches_field()` helper
-`GET /api/library` already used for field-filtered fieldview lists — issues, genres,
-and `issue_count` are scoped to matches only, with `total_issue_count` returned
-alongside for an "X of Y issues" banner. `buildCoverCard()` in `app.js` now forwards
-`viewField`/`viewFieldValue` onto a series card's link whenever it's rendered inside
-the `fieldview` surface (e.g. after clicking a Writer/Artist credit link), and
-`initSeries()`/`buildSeriesHeader()` read those params back off the URL, pass them to
-the API call, and show a "Showing N of M issues — filtered by writer. View full
-series" banner with a link back to the unfiltered page.
+**Fixed properly, 2026-06-29.** Added `matches_search()` to `backend/path_utils.py`
+(same field set as `GET /api/search`: series/title/writer/characters/story_arc/
+publisher) and a new optional `q` param on `GET /api/library` and `GET /api/series/
+{id}`, applied the same way the existing `field`+`value` param already was — filtering
+issues *before* the per-series groupby, so a series' `issue_count` reflects only the
+issues that actually matched `q`, not the whole series. The inline "All" search box
+(`bindSearchEvents()` in `app.js`) now calls `GET /library?q=` (cached per query in
+the new `searchLibraryCache`) instead of filtering the unscoped `allLibrary` aggregate
+client-side; `getFilteredLibrary()` uses that server-scoped pool whenever a search is
+active on the plain All/Series/Singles surfaces (custom tabs/fieldview/folderview keep
+the old client-side substring filter — they're already server-scoped views, search is
+just a secondary local narrowing there, not the primary scoping mechanism). Series
+cards built while a search is active now carry `?q=` onto their link; `initSeries()`/
+`buildSeriesHeader()` read it back and pass it to `GET /series/{id}`, showing the same
+"Showing N of M issues — matching 'X'. View full series" banner as the credit-link
+case.
 
-Verified directly against the live API (2000 AD, Alan Moore, person_id 167):
-`GET /series/248?field=writer&value=167` → `issue_count: 117`, `total_issue_count:
-2483`; `GET /series/248` (no filter) → `issue_count: 2483`, confirming the filtered
-and unfiltered counts now genuinely differ instead of always returning the full
-series.
+Verified directly against the live API:
+- `GET /library?q=Alan%20Moore` → "2000 AD" `issue_count: 117` (not 2483), "2000 AD
+  Yearbook" `issue_count: 1` (not 4) — 146 issues total across 15 series, not the
+  full-series totals the old client-side match reported.
+- `GET /series/5470?q=Alan%20Moore` (2000 AD Yearbook) → `issue_count: 1`,
+  `total_issue_count: 4`, `issues: [5470]` — exactly the one issue Tez confirmed is
+  actually credited to Alan Moore, matching the repro's expectation precisely.
+- `GET /series/248?q=Alan%20Moore` (2000 AD) → `issue_count: 117`,
+  `total_issue_count: 2483`.
+- Unfiltered `GET /library` and `GET /series/248` (no `q`) confirmed unchanged —
+  full series, no regression.
 
 ---
 

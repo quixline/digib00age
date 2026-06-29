@@ -320,6 +320,9 @@ let viewField       = '';
 let viewFieldValue  = '';
 let viewFolderPath  = '';
 let viewLibraryCache = {};      // cache key (see loadBrowse) -> /api/library response
+let searchLibraryCache = {};    // query (lowercased) -> /api/library?q=… response (BUG-010:
+                                 // server-scoped so issue_count reflects only matching issues,
+                                 // not the whole series, unlike the old client-side aggregate filter)
 
 // Folder View (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9)
 let tabViewModes        = {};   // custom tab id (string) -> 'flat' | 'folder', from /nav/config
@@ -756,16 +759,26 @@ async function populateFilterDropdowns() {
 
 function getFilteredLibrary() {
   let pool;
+  let needsLocalSearchFilter = false;
 
   if (activeSurface.startsWith('tab-')) {
     // Custom tab — already folder-scoped server-side; flat like 'all' (no
     // format_group split), per CUSTOM_TABS_SPEC.md 5.3.
     pool = tabLibraryCache[activeSurface.slice(4)] || [];
+    needsLocalSearchFilter = true;
   } else if (activeSurface === 'fieldview' || activeSurface === 'folderview') {
     // Home strip "view all" — already field/folder-scoped server-side,
     // flat like 'all', per HOME_STRIPS_SPEC.md 5.2.
     const cacheKey = activeSurface === 'fieldview' ? `field:${viewField}:${viewFieldValue}` : `folder:${viewFolderPath}`;
     pool = viewLibraryCache[cacheKey] || [];
+    needsLocalSearchFilter = true;
+  } else if (activeSearch) {
+    // BUG-010: server-scoped search (GET /library?q=) — issue_count on each
+    // series here already reflects only the matching issues, not the whole
+    // series, unlike the old client-side aggregate substring filter below.
+    pool = searchLibraryCache[activeSearch] || [];
+    if (activeSurface === 'series')  pool = pool.filter(s => s.format_group === 'Series');
+    if (activeSurface === 'singles') pool = pool.filter(s => s.format_group === 'Singles');
   } else {
     pool = allLibrary;
     if (activeSurface === 'series')  pool = pool.filter(s => s.format_group === 'Series');
@@ -773,8 +786,10 @@ function getFilteredLibrary() {
     // 'all' = both
   }
 
-  // Inline search
-  if (activeSearch) {
+  // Inline search — only for surfaces not already server-scoped above
+  // (custom tabs / fieldview / folderview don't have a search-aware backend
+  // call wired up here, so they keep the old aggregate substring filter).
+  if (activeSearch && needsLocalSearchFilter) {
     const q = activeSearch.toLowerCase();
     pool = pool.filter(s =>
       s.series.toLowerCase().includes(q) ||
@@ -976,13 +991,15 @@ function seriesReadState(s) {
 function buildCoverCard(s) {
   const isSingle = s.format_group === 'Singles';
   // BUG-010: a series card reached via a fieldview filter (e.g. a Writer
-  // credit link) should carry that filter into the series page, so it lists
-  // only the matching issues instead of the whole series.
+  // credit link) or an active search should carry that filter into the
+  // series page, so it lists only the matching issues instead of the whole
+  // series.
   const fieldQs  = activeSurface === 'fieldview' && viewField && viewFieldValue
     ? `field=${encodeURIComponent(viewField)}&value=${encodeURIComponent(viewFieldValue)}`
     : '';
+  const searchQs = !fieldQs && activeSearch ? `q=${encodeURIComponent(activeSearch)}` : '';
   const fromQs   = activeSurface ? `from=${activeSurface}` : '';
-  const qs       = [fromQs, fieldQs].filter(Boolean).join('&');
+  const qs       = [fromQs, fieldQs, searchQs].filter(Boolean).join('&');
   const from     = qs ? `?${qs}` : '';
   const href     = isSingle
     ? `/issue/${s.series_anchor_id}${from}`
@@ -1057,7 +1074,7 @@ function bindSearchEvents() {
   const clearBtn = document.getElementById('searchClear');
   if (!input) return;
 
-  const doSearch = debounce(q => {
+  const doSearch = debounce(async q => {
     if (activeSurface === 'home') {
       if (q) redirectHomeSearchToAll(q);
       return;
@@ -1067,6 +1084,16 @@ function bindSearchEvents() {
       if (q) startFolderViewSearch(tabId, q);
       else clearFolderViewSearch(tabId);
       return;
+    }
+    // BUG-010: scope search server-side (GET /library?q=) so a series with
+    // only one matching issue out of many shows issue_count=1, not the whole
+    // series — rather than the old client-side aggregate substring match.
+    if (q && !searchLibraryCache[q]) {
+      try {
+        searchLibraryCache[q] = await apiFetch(`/library?q=${encodeURIComponent(q)}`);
+      } catch (_) {
+        searchLibraryCache[q] = [];
+      }
     }
     activeSearch = q;
     renderBrowse();
@@ -1428,10 +1455,15 @@ async function initSeries() {
   // not the whole series.
   const field     = urlParams.get('field') || '';
   const value     = urlParams.get('value') || '';
+  // BUG-010: a series reached from an active inline search hit should also
+  // only list the issues that actually matched, same as the field+value case.
+  const q         = urlParams.get('q') || '';
   const content   = document.getElementById('seriesContent');
 
   try {
-    const qs   = field && value ? `?field=${encodeURIComponent(field)}&value=${encodeURIComponent(value)}` : '';
+    const qs   = field && value
+      ? `?field=${encodeURIComponent(field)}&value=${encodeURIComponent(value)}`
+      : q ? `?q=${encodeURIComponent(q)}` : '';
     const data = await apiFetch(`/series/${issueId}${qs}`);
     document.title = `${data.series} — ComicVault`;
     content.innerHTML = '';
@@ -1502,11 +1534,14 @@ function buildSeriesHeader(data) {
     `${data.issue_count} issue${data.issue_count !== 1 ? 's' : ''}`
   ));
 
-  // BUG-010: scoped (credit/field-filtered) view banner, with a way back to
-  // the full series.
-  if (data.filtered_field) {
+  // BUG-010: scoped (credit/field-filtered or search-matched) view banner,
+  // with a way back to the full series.
+  if (data.filtered_field || data.filtered_query) {
+    const reason = data.filtered_field
+      ? `filtered by ${data.filtered_field}`
+      : `matching "${data.filtered_query}"`;
     const banner = el('p', 'series-filter-banner',
-      `Showing ${data.issue_count} of ${data.total_issue_count} issues — filtered by ${data.filtered_field}. `
+      `Showing ${data.issue_count} of ${data.total_issue_count} issues — ${reason}. `
     );
     const clearLink = el('a', 'series-filter-clear', 'View full series');
     clearLink.href = window.location.pathname;

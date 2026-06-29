@@ -49,3 +49,17 @@ def matches_field(issue: Issue, field_name: str, field_value: str) -> bool:
     if field_name == "bw":
         return issue.black_and_white == (field_value == "yes")
     return False
+
+
+def matches_search(issue: Issue, q: str) -> bool:
+    """
+    Free-text match across the same fields as GET /api/search (series, title,
+    writer, characters, story_arc, publisher) — used to scope GET /library and
+    GET /series/{id} to matching issues *before* grouping by series, so a
+    series-level result's issue_count/issues only ever reflects the issues
+    that actually matched (BUG-010: a series with one matching issue out of
+    many must not surface/expand as if every issue in it matched).
+    """
+    pattern = q.lower()
+    fields = [issue.series, issue.title, issue.writer, issue.characters, issue.story_arc, issue.publisher]
+    return any(f and pattern in f.lower() for f in fields)
