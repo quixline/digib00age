@@ -1850,13 +1850,15 @@ function buildRatingControl(data) {
     star.dataset.value = i;
     star.title = `Rate ${i}`;
     star.addEventListener('click', async () => {
+      // Clicking the already-highlighted star clears to Unrated (BUG-009).
+      const newRating = data.personal_rating === i ? 0 : i;
       try {
         await fetch('/api/progress/bulk/rate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ issue_ids: [data.id], rating: i }),
+          body: JSON.stringify({ issue_ids: [data.id], rating: newRating }),
         });
-        data.personal_rating = i;
+        data.personal_rating = newRating;
         sync();
       } catch (_) {}
     });

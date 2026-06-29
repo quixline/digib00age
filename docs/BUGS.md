@@ -8,6 +8,69 @@ Add new entries at the top. Mark fixed entries with the date and what was change
 
 ## OPEN
 
+### BUG-016 — Restore Database: restore completes but does not revert DB to backup state
+
+**Found:** 2026-06-28, manual test pass (Items 10–13).
+
+**Where:** Admin page — Restore Database control (`ADMIN_SPEC.md` §9.2),
+`backend/routers/admin.py` `POST /admin/restore-database`.
+
+**What happens:** The restore flow appears to complete — confirm dialog fires, the
+pre-restore safety snapshot is taken, and the server restarts — but after the restart
+the DB is still in the pre-restore (current) state, not the backup state. Test
+procedure: backed up the DB with only the 2000 AD custom tab in place; then added a
+new 'testdb' custom tab and changed the read status on one issue; then restored the
+backup. After the server restarted, the testdb tab and read-status change both
+persisted — the DB was not reverted to the backed-up state.
+
+**Note:** The restore code path was not live-exercised during the build session (the
+auto-mode classifier declined a live Restore click as a destructive action against the
+real DB, per the `progress.md` Item 12 entry). The code was verified by reading
+against the existing `/admin/backup` pattern it mirrors. The live test is the first
+real exercise of the full copy-and-restart sequence.
+
+**Root cause confirmed 2026-06-28**, by reading `backend/database.py` and
+`backend/routers/admin.py` directly — it's the WAL theory, not the path-mismatch
+alternative (`db_path` resolves identically in both `restore_database()` and
+`run_database_backup()`, ruled out). `database.py` enables
+`PRAGMA journal_mode=WAL` on every connection. In WAL mode, recent writes land in a
+separate `comicvault.db-wal` sidecar file, not the main `.db` file, until SQLite
+checkpoints them. `restore_database()` only does `shutil.copy2(source, db_path)` —
+it copies the backup over the main file but never touches the existing `-wal`/`-shm`
+files sitting next to it. Sequence: backup taken → testdb tab created + read status
+changed (written into the live `-wal` file, not yet checkpointed) → restore copies
+the *old* backup over the main file, but the pre-restore `-wal` file is left in
+place, still holding those two writes → server restarts → SQLite opens the DB,
+finds the existing `-wal` file, and replays its pending writes straight back into
+the just-restored main file — silently reintroducing exactly what the restore was
+meant to undo. Not a race condition; the `-wal` file is simply never cleared.
+
+**Same mechanism likely also affects backups themselves, not just restores
+(unconfirmed):** `run_database_backup()` also does a plain `shutil.copy2` with no
+checkpoint step first. SQLite auto-checkpoints periodically, so a backup usually
+catches everything in practice — but there's no guarantee a very recent write has
+been checkpointed out of the WAL at the exact moment a backup runs. Worth checking
+once the restore fix below is in, since the same checkpoint fix would cover both.
+
+**Impact — high:** Restore Database is the safety net for Clear Database and any
+other destructive action, and it does not work at all if there's been any activity
+since the backup was taken. It fails silently — no error, a normal "Database
+restored, restarting" response — nothing in the UI suggests anything went wrong.
+Until fixed, treat Restore Database as unreliable for anything beyond the most
+trivial case (a backup taken seconds after server startup with zero activity since).
+
+**Recommended fix:** before copying the backup over `db_path` in
+`restore_database()`, force a checkpoint and clear the existing WAL state — either
+`PRAGMA wal_checkpoint(TRUNCATE)` on the live connection followed by deleting any
+remaining `db_path.with_suffix('.db-wal')`/`-shm` files, or simply delete those two
+sidecar files outright once the process has been told to exit (`_schedule_delayed_exit()`
+already tears it down immediately after). Apply the same checkpoint step to
+`run_database_backup()` if the backup-side risk above is confirmed.
+
+**Not fixed.**
+
+---
+
 ### BUG-015 — Genre field-view filter (`?surface=fieldview&field=genre&value=X`) has no UI way to clear, and survives back-navigation incorrectly
 
 **Found:** 2026-06-27, inbox capture.
@@ -109,43 +172,6 @@ to mtime — flagged here as a candidate for a future scanner-accuracy pass.
 
 ---
 
-### BUG-012 — Library fails to initialise after changing theme in Admin, then navigating back
-
-**Found:** 2026-06-23, manual test pass during v2.3 Item 3 (card behaviour additions).
-
-**Where:** Library page (`/`), right after switching the Admin → Appearance theme
-setting and navigating back to the library.
-
-**Impact:** Library shows "Failed to initialise. Cannot read properties of null
-(reading 'addEventListener')" with a Retry button, instead of loading normally.
-`initLibrary()`'s catch block (`frontend/js/app.js`) is catching a `null.addEventListener`
-call from one of `bindSurfaceNav()`/`bindFilterEvents()`/`bindSearchEvents()` — exactly
-which element was null isn't confirmed yet. A hard refresh cleared it immediately, and
-repeating the theme switch + back-navigation afterward did not reproduce it — so this
-looks like a one-time/intermittent state issue (possibly browser back/forward-cache
-restoring a stale DOM, or a race between the new theme anti-flash inline script and
-the rest of page load), not a deterministic break in the new theme code itself.
-
-**Not fixed** — not reproducible yet; needs a dedicated repro attempt (try: browser
-back-button vs. clicking a nav link back to `/`, with/without bfcache, with the new
-per-page inline theme script in `<head>`) before a real fix can be scoped.
-
----
-
-### BUG-011 — Admin "Scan Roots" Add button doesn't open file dialog
-
-**Found:** 2026-06-23, inbox triage.
-
-**Where:** Admin page — "Add" button under Scan Roots / Library Folders section.
-
-**Impact:** Clicking "Add" should open a folder/file picker dialog so a new scan root
-can be added. Currently does nothing. Admin page is otherwise functional; existing
-scan roots still work.
-
-**Not fixed.**
-
----
-
 ### BUG-010 — 2000 AD writer credit link doesn't filter the issue list
 
 **Found:** 2026-06-23, inbox triage.
@@ -178,11 +204,23 @@ This bug is specifically about the single-issue page (`/issue/{id}`) star row,
 where the desired fix is: clicking an already-highlighted star a second time clears
 the rating to Unrated — same gesture, no separate control needed.
 
-**Not fixed.**
+**Fixed, 2026-06-29.** `frontend/js/app.js`'s `buildRatingControl()` star click
+handler now checks whether the clicked star's value already equals
+`data.personal_rating`; if so it sends `rating: 0` instead of the star's value
+(reusing the same `POST /api/progress/bulk/rate` endpoint the multi-select toolbar's
+clear button already uses — that endpoint already accepted `0` as "clear", per its
+existing `BulkRating` validator in `backend/routers/progress.py`, no backend change
+needed). Verified directly against `/api/progress/bulk/rate` on a scratch-state real
+issue (#1, originally unrated): rate→3 confirmed 3, then rate→0 (the same call the
+new click handler now makes when re-clicking star 3) confirmed back to 0/null —
+issue left in its original unrated state afterward.
 
 ---
 
 ### BUG-008 — Flutter app's 2000 AD tab calls endpoints removed in v2.2
+
+## Edit 29/6/26 Tez; the fixed 2000 AD tab has been removed completely - Custom tabs
+## This issue could be dead.
 
 **Found:** 2026-06-22, flagged by the nightly doc scan.
 
@@ -203,7 +241,15 @@ equivalent for Flutter once the web Folder View is settled.
 
 ---
 
+---
+
+## FIXED
+
+---
+
 ### BUG-007 — Basic Editor's multi-line textarea fields (Summary) round-trip with doubled line breaks on every save
+
+## 
 
 **Found:** 2026-06-21, incidentally — while verifying Tier 4 Item 3's editor fuzzy-
 warn-on-save feature against a real issue (`2000AD #011 (1977)`), saving the form
@@ -229,13 +275,47 @@ to Tier 4 Item 3, not introduced by it, just exposed by testing that happened to
 touch a real issue. Not fixed in this session (out of scope for Item 3's no-ride-
 alongs framing) — flagging per session convention.
 
-**Not fixed.** A future session should: confirm the exact mechanism (check whether
+**Fixed.** - Can't reproduce the double line issue. Tez; 29/6/26
+(A future session should: confirm the exact mechanism (check whether
 `field_merge.py` adds `\r\n` on top of an already-`\r\n`-converted textarea value),
-then normalize line endings once, consistently, rather than compounding them.
+then normalize line endings once, consistently, rather than compounding them.)
 
 ---
 
-## FIXED
+### BUG-011 — Admin "Scan Roots" Add button doesn't open file dialog
+
+**Found:** 2026-06-23, inbox triage.
+
+**Where:** Admin page — "Add" button under Scan Roots / Library Folders section.
+
+**Impact:** Clicking "Add" should open a folder/file picker dialog so a new scan root
+can be added. Currently does nothing. Admin page is otherwise functional; existing
+scan roots still work.
+
+**Fixed.** Not actually a Bug - Clicking Add after manually entering a new scan location Adds it to the list - misunderstanding of function not error in function; Tez 29/6/26
+
+---
+
+### BUG-012 — Library fails to initialise after changing theme in Admin, then navigating back
+
+**Found:** 2026-06-23, manual test pass during v2.3 Item 3 (card behaviour additions).
+
+**Where:** Library page (`/`), right after switching the Admin → Appearance theme
+setting and navigating back to the library.
+
+**Impact:** Library shows "Failed to initialise. Cannot read properties of null
+(reading 'addEventListener')" with a Retry button, instead of loading normally.
+`initLibrary()`'s catch block (`frontend/js/app.js`) is catching a `null.addEventListener`
+call from one of `bindSurfaceNav()`/`bindFilterEvents()`/`bindSearchEvents()` — exactly
+which element was null isn't confirmed yet. A hard refresh cleared it immediately, and
+repeating the theme switch + back-navigation afterward did not reproduce it — so this
+looks like a one-time/intermittent state issue (possibly browser back/forward-cache
+restoring a stale DOM, or a race between the new theme anti-flash inline script and
+the rest of page load), not a deterministic break in the new theme code itself.
+
+**Fixed** — No issues found when changing theme; Tez 29/6/26
+
+---
 
 ### BUG-003 — Dead duplicate route: `GET /api/reading/continue` defined twice
 
@@ -255,6 +335,8 @@ would have silently done nothing.
 **Fixed:** 2026-06-27 — removed the unreachable duplicate (`get_continue_reading`) from
 `backend/routers/progress.py`. `library.py`'s `reading_continue` remains the sole
 implementation; no behaviour change since it was already winning registration order.
+
+---
 
 ### BUG-006 — CSV-splitting helpers didn't dedupe a literal repeated name within one field
 
@@ -397,6 +479,8 @@ removed.
 
 **Status:** Fixed in `editor_full.js`. Basic Editor's Save button is unaffected — its
 gate is correctly scoped per Section 4.4.
+
+---
 
 ### BUG-001 — Scanner skips thumbnail generation for unchanged-mtime files, even if the thumbnail file is missing
 
