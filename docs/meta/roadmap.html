@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComicVault — Roadmap</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #ffffff; --bg2: #f5f4f0; --bg3: #eceae4;
+    --text: #1a1a1a; --text2: #5f5e5a; --text3: #888780;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --purple-bg: #EEEDFE; --purple-text: #534AB7;
+    --amber-bg: #FAEEDA; --amber-text: #854F0B;
+    --green-bg: #EAF3DE; --green-text: #3B6D11;
+    --teal-bg: #E1F5EE; --teal-text: #0F6E56;
+    --grey-bg: #EEEDEA; --grey-text: #6B6A66;
+    --progress: #7F77DD;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1e; --bg2: #2a2a2a; --bg3: #333;
+      --text: #e8e8e8; --text2: #aaa; --text3: #777;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+      --purple-bg: #26215C; --purple-text: #AFA9EC;
+      --amber-bg: #412402; --amber-text: #FAC775;
+      --green-bg: #173404; --green-text: #C0DD97;
+      --teal-bg: #04342C; --teal-text: #9FE1CB;
+      --grey-bg: #2c2c2c; --grey-text: #999;
+      --progress: #7F77DD;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text); padding: 1.75rem 1.25rem 3rem;
+    max-width: 1280px; margin: 0 auto; font-size: 15px; line-height: 1.5; }
+  h1 { font-size: 19px; font-weight: 500; margin-bottom: 0.2rem; }
+  .subtitle { font-size: 13px; color: var(--text3); margin-bottom: 0.5rem; max-width: 680px; }
+  .updated { font-size: 12px; color: var(--text3); margin-bottom: 1.5rem; }
+  .bugs-strip { display: flex; align-items: center; gap: 8px; font-size: 12.5px;
+    color: var(--text2); background: var(--bg2); border: 0.5px solid var(--border);
+    border-radius: 10px; padding: 8px 14px; margin-bottom: 1.75rem; }
+  .bugs-strip .count { font-weight: 600; color: var(--text); }
+
+  .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: start; }
+  @media (max-width: 900px) { .board { grid-template-columns: 1fr; } }
+
+  .lane { background: var(--bg2); border: 0.5px solid var(--border);
+    border-radius: 14px; padding: 12px; min-height: 60px; }
+  .lane-head { display: flex; align-items: baseline; justify-content: space-between;
+    padding: 4px 6px 10px; }
+  .lane-title { font-size: 13px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; }
+  .lane-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .lane-count { font-size: 11.5px; color: var(--text3); background: var(--bg3);
+    border-radius: 20px; padding: 2px 8px; }
+
+  .lane.now .lane-title { color: var(--purple-text); }
+  .lane.next .lane-title { color: var(--teal-text); }
+  .lane.later .lane-title { color: var(--text2); }
+  .lane.launch .lane-title { color: var(--amber-text); }
+
+  .cards { display: flex; flex-direction: column; gap: 8px; }
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: 11px;
+    padding: 11px 13px; cursor: pointer; transition: border-color 0.15s; }
+  .card:hover { border-color: var(--border2); }
+  .card-top { display: flex; align-items: flex-start; gap: 8px; }
+  .order-badge { width: 20px; height: 20px; min-width: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; margin-top: 1px; }
+  .ob-next { background: var(--teal-bg); color: var(--teal-text); }
+  .ob-later { background: var(--grey-bg); color: var(--grey-text); }
+  .c-title { font-size: 13.5px; font-weight: 500; }
+  .c-sub { font-size: 12px; color: var(--text2); margin-top: 3px; }
+  .c-detail { font-size: 12.5px; color: var(--text2); margin-top: 8px;
+    padding-top: 8px; border-top: 0.5px solid var(--border); display: none; line-height: 1.55; }
+  .c-detail .ref { color: var(--text3); font-size: 11.5px; }
+  .card.open .c-detail { display: block; }
+  .chip { display: inline-block; font-size: 10.5px; font-weight: 500; border-radius: 6px;
+    padding: 1px 7px; margin-top: 6px; }
+  .chip.blocked { background: var(--amber-bg); color: var(--amber-text); }
+  .chip.scoping { background: var(--grey-bg); color: var(--grey-text); }
+  .chip.ready { background: var(--green-bg); color: var(--green-text); }
+
+  .launch-empty { font-size: 12.5px; color: var(--text2); padding: 10px 4px;
+    line-height: 1.6; }
+  .launch-empty .candidates { margin-top: 8px; color: var(--text3); font-size: 11.5px; }
+
+  .footnote { margin-top: 1.75rem; font-size: 11.5px; color: var(--text3); max-width: 760px; }
+</style>
+</head>
+<body>
+
+<h1>ComicVault — Roadmap</h1>
+<p class="subtitle">Sequence, not dates — what's active, what's likely next, what's
+parked, and what "public-ready" still needs. Regenerated wholesale at each triage
+session; click any card for detail and its source doc.</p>
+<p class="updated">Baseline built 2026-06-28 · updated 2026-06-29 (v2.3 closed, v2.4 started)</p>
+
+<div class="bugs-strip">
+  <i class="ti ti-bug"></i>
+  <span><span class="count">5</span> open bugs — not on this sequence, ride along
+  with whatever's being built. See <code>BUGS.md</code>.</span>
+</div>
+
+<div class="board">
+
+  <!-- NOW -->
+  <div class="lane now">
+    <div class="lane-head">
+      <div>
+        <div class="lane-title">Now</div>
+        <div class="lane-sub">Active build queue</div>
+      </div>
+      <div class="lane-count">1</div>
+    </div>
+    <div class="cards">
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div>
+            <div class="c-title">v2.4 Item 1 — File Rename Tool</div>
+            <div class="c-sub">Fully scoped, ready to hand to Code</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          v2.3 closed 2026-06-29 (Items 1–13 built; Item 12 Restore Database
+          failed manual test, open as <code>BUG-016</code>, root cause confirmed;
+          Item 14 moved to <code>ROADMAP.md</code>). Batch/single-file renaming
+          based on parsed Series/Issue/Title/Year. In-app folder-tree picker (not
+          a native dialog — works under Remote Administration), no recursion,
+          per-field File/All checkbox independence, narrow auto-increment scope,
+          no undo. No items built yet.
+          <div class="ref">v2.4/comicvault-changes-v2.4.md · admin-spec-section-12-processing-tools.md §12.1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NEXT -->
+  <div class="lane next">
+    <div class="lane-head">
+      <div>
+        <div class="lane-title">Next</div>
+        <div class="lane-sub">Ordered — top is soonest</div>
+      </div>
+      <div class="lane-count">2</div>
+    </div>
+    <div class="cards">
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-next">1</div>
+          <div>
+            <div class="c-title">Convert / Convert Images / Flatten</div>
+            <div class="c-sub">Same Processing Tools area as Rename</div>
+            <span class="chip scoping">needs scoping</span>
+          </div>
+        </div>
+        <div class="c-detail">
+          The other 3 of CAPT's 4 standalone tools — code already exists in the
+          original CAPT codebase, ported one at a time. Each needs its own
+          dedicated scoping session before it can join a build queue, same as
+          Rename did on 2026-06-27.
+          <div class="ref">ROADMAP.md — "Deferred, needs scoping" · admin-spec-section-12-processing-tools.md §12</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-next">2</div>
+          <div>
+            <div class="c-title">ComicTagger + ComicVine integration</div>
+            <div class="c-sub">Large — needs its own planning session first</div>
+            <span class="chip scoping">needs scoping</span>
+          </div>
+        </div>
+        <div class="c-detail">
+          Flagged by Tez as needing dedicated planning before scoping even
+          begins. Last in the Next sequence — the other Processing Tools work
+          above it gets first claim on attention.
+          <div class="ref">ROADMAP.md — "Deferred, needs scoping"</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LATER -->
+  <div class="lane later">
+    <div class="lane-head">
+      <div>
+        <div class="lane-title">Later</div>
+        <div class="lane-sub">First 3 ordered; rest not yet prioritised</div>
+      </div>
+      <div class="lane-count">9</div>
+    </div>
+    <div class="cards">
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-later">1</div>
+          <div>
+            <div class="c-title">Favorites browse tab</div>
+            <div class="c-sub">Field/badge exist; no dedicated tab yet</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          Deliberately deferred at build time when Favorites/Rating shipped
+          (2026-06-21), not an oversight.
+          <div class="ref">ROADMAP.md · SPEC.md §20.15</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-later">2</div>
+          <div>
+            <div class="c-title">Third-party reader compatibility</div>
+            <div class="c-sub">OPDS + Komga research, merged</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          Research-only until the web-side work is further along — both ideas
+          solve the same goal (external reader apps connecting to ComicVault)
+          and should be evaluated together.
+          <div class="ref">ROADMAP.md — "Deferred, needs scoping"</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-later">3</div>
+          <div>
+            <div class="c-title">Header unification + BUG-014</div>
+            <div class="c-sub">v2.3 Item 14, moved here 2026-06-28</div>
+            <span class="chip blocked">blocked — Claude Design</span>
+          </div>
+        </div>
+        <div class="c-detail">
+          Unify the Series/Issue detail header with Home's. Shares root cause
+          with BUG-014 (back-button regression) — sequence together, not
+          independently. Both blocked on the parked Claude Design UI redesign
+          exploration; revisit once that direction exists.
+          <div class="ref">ROADMAP.md — "Blocked on Claude Design UI redesign exploration" · BUGS.md BUG-014</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div>
+            <div class="c-title">Mobile Reader changes</div>
+            <div class="c-sub">Paused indefinitely — reader works as-is</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          May be skipped entirely in favour of a third-party reader app.
+          Reader-launch feature (Admin §7.6) parked alongside it — needs
+          Flutter changes the current EXE doesn't support, plus a
+          same-machine-only limitation; may be dropped rather than built.
+          <div class="ref">ROADMAP.md — "Paused indefinitely"</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div>
+            <div class="c-title">Processing Folder automation</div>
+            <div class="c-sub">After all Processing Tools are in place (incl. ComicTagger)</div>
+            <span class="chip scoping">needs scoping</span>
+          </div>
+        </div>
+        <div class="c-detail">
+          Scheduled folder monitor: convert-to-cbz (7zip), custom rename
+          pattern, image-to-WebP, flatten archive folders. Tez's call,
+          2026-06-28 — this belongs after Rename/Convert/Convert Images/
+          Flatten/ComicTagger are all in place, not alongside them. Needs a
+          dedicated session for trigger conditions, conflict handling, and
+          action ordering before it goes into <code>ADMIN_SPEC.md</code>.
+          <div class="ref">ROADMAP.md — "Deferred, needs scoping"</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div>
+            <div class="c-title">Drop old raw CSV credit columns</div>
+            <div class="c-sub">Cleanup, once people/credits proven stable</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          Kept as an inert rollback safety net since the Writer/Artist dedup
+          shipped. Drop in a dedicated session once the new system has run for
+          real with no issues over a release cycle.
+          <div class="ref">ROADMAP.md</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div>
+            <div class="c-title">Advanced Search page</div>
+            <div class="c-sub">Only if inline filter+search proves insufficient</div>
+          </div>
+        </div>
+        <div class="c-detail">No urgency — current inline filtering is working.
+          <div class="ref">ROADMAP.md — from SPEC.md §20.14</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div>
+            <div class="c-title">Multiple scan locations / series overview field</div>
+            <div class="c-sub">Two small SPEC.md ideas, not yet needed</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          Multi-drive scanning with per-folder exclude (would help folder-scoped
+          tabs). Series-level overview text field — per-issue descriptions
+          cover the need for now.
+          <div class="ref">ROADMAP.md — from SPEC.md §20.14</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div>
+            <div class="c-title">Tooltips site-wide</div>
+            <div class="c-sub">Low priority — end of main dev/design phase</div>
+          </div>
+        </div>
+        <div class="c-detail">Intended once all functional work is settled.
+          <div class="ref">ROADMAP.md</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- LAUNCH -->
+  <div class="lane launch">
+    <div class="lane-head">
+      <div>
+        <div class="lane-title">Launch</div>
+        <div class="lane-sub">"Public-ready" — not yet defined</div>
+      </div>
+      <div class="lane-count">0</div>
+    </div>
+    <div class="cards">
+      <div class="launch-empty">
+        Deliberately empty. The goal shifted 2026-06-28 from a personal tool to
+        something others might actually use — that changes what "done" means,
+        and it deserves its own dedicated session rather than a guessed-at list
+        here.
+        <div class="candidates">
+          Raised in conversation, not yet scoped or committed: installer /
+          distribution, onboarding for a setup that isn't Tez's own folder
+          structure, licensing &amp; support story. None of these are commitments
+          — they're the reason this lane needs its own conversation.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="footnote">This page is regenerated wholesale, never hand-edited
+piecemeal — same convention as <code>build-plan.html</code>. State doesn't
+persist between loads; it's a snapshot taken at triage time, not a live
+tracker. If something here disagrees with <code>ROADMAP.md</code>,
+<code>BUGS.md</code>, or <code>comicvault-changes-vN.M.md</code>, those win —
+this is the readable surface, not the source of truth.</p>
+
+</body>
+</html>

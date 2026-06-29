@@ -38,7 +38,13 @@ until triaged — only processed lines ever leave.
 
 ## Unprocessed
 
-2.3 changes continued
+(empty — add lines below this heading as they come to you)
+
+---
+
+## Processed (awaiting Sunday prune)
+
+### Triaged 2026-06-28
 
 - ~~[feature] Add "Password Recovery" button to Admin - simple popup with instructions on restting password through the config.json - this replaces the info in the guide, the guide just points to this button~~ → added to comicvault-changes-v2.3.md as Item 10; ADMIN_SPEC.md §7.1.7 to be amended once built
 
@@ -54,15 +60,13 @@ until triaged — only processed lines ever leave.
 
 - ~~[bug] Issues page: Stars - fixed on Selection (tabs/surface) with X to remove. Ideadlly the fix on the issue page is clicking the star(s) twice removes the rating.~~ → folded into existing BUG-009 as an addendum, not a new entry
 
-- ~~[change] make the main header appear across the whole site inc /series/{id} & /issues/{id} - this should be the same as the home page - 'Search' searches all library unless on a Singles, Series or Custom Tab~~ → added to comicvault-changes-v2.3.md as Item 14; destination spec doc TBC, needs scoping
+- ~~[change] make the main header appear across the whole site inc /series/{id} & /issues/{id} - this should be the same as the home page - 'Search' searches all library unless on a Singles, Series or Custom Tab~~ → added to comicvault-changes-v2.3.md as Item 14; destination spec doc TBC, needs scoping (later moved to ROADMAP.md 2026-06-28, blocked on Claude Design exploration)
 
 - ~~[bug] This issue was fixed - why has it come back, how to fix permenantly - go from series tab - http://localhost:8000/series/2589?from=series - click <- Back it takes me to the home page.~~ → merged into BUG-014 as a second repro case (regression of the Tier 1 back-button fix in `comicvault-changes-2.1.md`)
 
 - ~~[bug] go from singles tab - http://localhost:8000/issue/5478?from=singles - click <- Back it takes me to the home page.~~ → merged into BUG-014 as a third repro case (same regression)
 
----
-
-## Processed (awaiting Sunday prune) — triaged 2026-06-23
+### Triaged 2026-06-23
 
 - ~~There is something that was missed during the original scoping... displaying images from the archives in the folder~~ → overlap with today's v2.3 Folder View card work, no new action needed
 

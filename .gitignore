@@ -69,8 +69,8 @@ voice-and-style.md
 about-me.md
 v2_investigation_report.md
 
-# Local build tracker (HTML, open in browser — gitignored, lives in docs/)
-docs/build-plan.html
+# Local build tracker (HTML, open in browser — gitignored, lives in docs/meta/)
+build-plan.html
 
 # Runtime-generated admin logs (scan/backup/changed-files history) — local
 # state, not source, same treatment as the tray app logs above.

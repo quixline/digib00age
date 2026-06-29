@@ -4,6 +4,135 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### BUG-016 root cause confirmed; INBOX.md, ROADMAP.md/INDEX.md/roadmap.html reconciled with the 2026-06-28 manual test pass
+
+**Decided:** 2026-06-28, doc-handling review session (Chat).
+**Why:** BUG-016 (Restore Database) was logged with two competing theories —
+connection-teardown race vs. path mismatch. Read `backend/database.py` and
+`backend/routers/admin.py` directly: confirmed it's neither a race nor a path bug.
+SQLite runs in WAL mode (`PRAGMA journal_mode=WAL`); `restore_database()` copies the
+backup over the main `.db` file but never clears the existing `-wal`/`-shm` sidecar
+files, so writes made after the backup (sitting in the pre-restore WAL) get replayed
+back in on the next connection, undoing the restore. Path mismatch ruled out —
+`db_path` resolves identically in both the restore and backup functions. Confidence
+is now "confirmed by reading the exact mechanism," not "plausible theory" — worth
+noting for whoever picks up the fix, since the recommended fix (checkpoint + clear
+WAL files before the copy) follows directly from this, not from further
+investigation.
+**Where:** `BUGS.md` BUG-016 (root cause section rewritten, old hedge removed).
+Also reconciled `INDEX.md` and `meta/roadmap.html`, which still said "10–13 not yet
+manually tested" — stale relative to the test pass another session had already run
+and logged; `ROADMAP.md` and `comicvault-changes-v2.3.md` were already current.
+`INBOX.md`'s "Unprocessed" section also turned out to be fully triaged already (every
+line had a destination annotation) — moved to "Processed" under a new "Triaged
+2026-06-28" heading; no actual triage decisions were needed, just the move.
+
+---
+
+### Doc folder restructure (`docs/historical/`, `docs/meta/`) + CLAUDE.md status-line fix + git tag convention
+
+**Decided:** 2026-06-28, doc-handling review session (Chat).
+**Why:** Two separate problems surfaced together. (1) Cowork's nightly scan only
+rechecks *changed* files — a closed-out doc that stops changing drops out of scope
+permanently, so anything it was quietly still tracking (e.g. Admin Card Size, found
+at the bottom of `comicvault-changes-2.1.md`, never carried into `ADMIN_SPEC.md`
+until backfilled 2026-06-27) can sit invisible indefinitely. Splitting closed-out/
+one-time docs into `docs/historical/` makes "out of scope" mechanical (a path Cowork
+can skip by rule) rather than something relying on per-file judgement — doesn't fix
+the omission-detection gap itself (flagged in `INDEX.md`'s historical section as
+still open), but stops the folder from growing more ambiguous. (2) `CLAUDE.md`
+Section 5 had been silently hardcoding the active feature name ("Custom Tabs (done)
+→ Home Strips (in progress)") since before v2.2 even existed — the same failure
+shape as `doc-scan-issues.md` ISSUE-005/006/007 (a status fact restated in a second
+place, with no automated check on this particular copy since Cowork doesn't read
+`CLAUDE.md`). Fixed by having Section 5 point at `comicvault-changes-vN.M.md`'s own
+status block instead of restating it, removing the redundant copy rather than just
+refreshing it. Also added a git tag convention (tag `vN.M` on build-queue close-out)
+rather than adopting finer-grained SemVer-style versioning — the project has one
+deployment and one user, so there's no compatibility surface that finer granularity
+would serve; the existing doc version label just needed an actual git ref tied to it.
+**Where:** `INDEX.md` (folder structure section, full doc table), `CLAUDE.md`
+(Section 2 doc table + folder note, Section 5 rewritten, Section 7 git tag
+convention added), `meta/working-rules.md` (new Versioning section). `meta/
+build-plan.html` also moved from `historical/` to `meta/` during the same pass —
+it's the live build tracker, not a closed-out doc, and was misfiled in the initial
+move.
+
+---
+
+### v2.3 Item 14 moved to `ROADMAP.md`; v2.3 kept open rather than formally closed
+
+**Decided:** 2026-06-28, doc-handling review session (Chat).
+**Why:** Item 14 (site-wide header unification) is blocked on the same dependency
+(Claude Design UI redesign direction) as an existing `ROADMAP.md` item, so it no
+longer belongs in an active build queue — moved there, merged with that context,
+rather than sitting in `comicvault-changes-v2.3.md` looking like queued work. Tez's
+call on the broader question (is v2.3 "done"): explicitly **not** closing it out
+despite Items 1–13 being complete — `INBOX.md` still has unprocessed items that
+might reasonably land under v2.3 once triaged, and closing the doc now would force
+a premature decision about where those go. Separately noted but not yet acted on:
+Items 10–13 were each Code-verified live in their own session but never went
+through the kind of dedicated manual test pass Items 1–9 got — flagged to Tez,
+especially Item 12 (Restore Database), where Code's own session notes confirm the
+actual restore-and-restart path was never exercised against a real file.
+**Where:** `comicvault-changes-v2.3.md` Item 14 entry (now a pointer),
+`ROADMAP.md` (new "Blocked on Claude Design UI redesign exploration" section),
+`ADMIN_SPEC.md` status block, `INDEX.md` (two rows).
+
+---
+
+### Doc folder restructure round two: `historical/` → `archive/`, per-version `docs/vN.M/` working folders, `BUGS.md` split (open vs. fixed), v2.3 fully consolidated, v2.4 started
+
+**Decided:** 2026-06-29, doc-handling review session (Chat), refining the
+2026-06-28 restructure above.
+**Why:** As the project grows, the root doc set keeps growing too — more token
+cost per session, more surface area for drift. Tez's first instinct was to archive
+everything except `ADMIN_SPEC.md`, the Processing Tools spec, and the cowork docs.
+Pushed back on that specifically: feature specs (`SPEC.md`, `EDITOR_SPEC.md`,
+`CUSTOM_TABS_SPEC.md`, `HOME_STRIPS_SPEC.md`, `MENU_BAR_SPEC.md`), `ROADMAP.md`, and
+`TESTING.md` describe what the app currently *does* or standing process — they're
+not version-scoped, and archiving them the moment a build queue closes would mean
+every spec goes stale-by-relocation on every release, forcing future sessions to
+re-derive current behaviour from source instead of reading a maintained reference.
+Landed on a narrower, sharper cut instead:
+- **`historical/` renamed `archive/`** — same contents, different framing: "out of
+  focus, not out of mind." Code/Chat retain full read access any time something
+  needs revisiting; only Cowork's nightly scan treats it as out of scope.
+- **`docs/vN.M/` working folders**, new pattern starting with v2.4 — each version
+  gets its own `comicvault-changes-vN.M.md` + scoped `progress.md`, bundled
+  together and moved into `archive/vN.M/` as one unit on close. Bundling (not
+  separately rotating each file) means a version's full story stays in one place.
+- **`BUGS.md` split into open-only (stays at `docs/` root) + `archive/
+  bugs-fixed-archive.md`** (flat, not version-scoped — a bug found in one version
+  can get fixed in a later one, so tying its fixed record to either version's
+  folder would be the wrong cut). 11 fixed entries moved out 2026-06-29, leaving 5
+  open (`BUGS.md` BUG-016/015/014/013/008).
+- **v2.3 fully consolidated into `archive/v2.3/`**: its build queue, the full
+  pre-v2.4 `progress.md` (covers V1 through v2.3 — predates the per-version
+  pattern, archived as one snapshot rather than split further), and the
+  2026-06-26 test-session artifacts.
+- **`comicvault-changes-v2.4.md` created**, Item 1 = File Rename Tool (already
+  fully scoped in `admin-spec-section-12-processing-tools.md` §12.1).
+- **`ROADMAP.md` cleanup, same pass:** removed two already-resolved sections (port
+  8000 workaround, BUG-003) that had accumulated informal "edit: Tez, fixed" notes
+  instead of being removed; corrected a stale `ADMIN_SPEC.md` section reference for
+  Rename (was §11.1, now §12.1); flagged an unresolved ambiguity rather than
+  guessing — a note in the file said "13 added to bugs.md" but Item 13 (Card Size)
+  passed its test; the actual `BUGS.md` entry is Item 12. Tez confirmed Card Size
+  was never a bug but couldn't explain the mismatch — left as an open flag, not
+  resolved here. Also flagged Tier 5's Genre-additions/draw.io-video items as
+  unconfirmed (only the `.ico` item got an explicit answer: deferred, not done).
+- **`DECISIONS.md` deliberately not touched** — flagged in `INDEX.md` as needing
+  its own entry-by-entry pass (some entries are closed-chapter, others are standing
+  rationale current specs still point back to) rather than a blanket move.
+**Where:** `docs/historical/` → `docs/archive/`, `docs/archive/v2.3/` (new,
+consolidated), `docs/v2.4/` (new), `BUGS.md` (trimmed), `archive/
+bugs-fixed-archive.md` (new), `ROADMAP.md`, `INDEX.md`, `CLAUDE.md` (Section 2
+table + folder note, Section 4 checklist, Section 5, Section 7), `meta/
+working-rules.md` (doc-structure section rewritten), `meta/roadmap.html` (Now/Next
+lanes updated, bug count), `CHANGELOG.md` (intro note on which `progress.md` old
+vs. new entries point to).
+
 ---
 
 ### Restore Database: auto-snapshot the current DB before every restore

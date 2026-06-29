@@ -2,30 +2,93 @@
 
 Paused, deferred, or future work — explicitly out of scope until unblocked or
 prioritized. If a request seems to fall under something listed here, flag it rather
-than building it; `comicvault-changes-2.1.md` and `comicvault-changes-v2.2.md` (both
-closed 2026-06-22) covered the prior active queues — current active queue is
-`comicvault-changes-v2.3.md`.
+than building it; `archive/comicvault-changes-2.1.md` and
+`archive/comicvault-changes-v2.2.md` (both closed 2026-06-22) and
+`archive/v2.3/comicvault-changes-v2.3.md` (closed 2026-06-29) covered the prior
+active queues — current active queue is `v2.4/comicvault-changes-v2.4.md`.
 
 ---
 
 ## Active build queue
 
-`comicvault-changes-v2.3.md` is the current active queue (Status: Active). Items 1–9
-built (Items 1–5 on 2026-06-23, Items 6–9 on 2026-06-24) and verified via the manual
-test pass on 2026-06-26 (9 fixes same day — see `progress.md`). Items 10–14 added
-2026-06-27 from inbox triage; not yet built.
+`v2.4/comicvault-changes-v2.4.md` is the current active queue (Status: Active).
+Item 1 (Admin: Processing Tools — File Rename) is fully scoped and ready to hand to
+Claude Code; no items built yet.
 
-- **Tier 5 (manual, non-dev, still open):** Genre additions (Anthology, Comic,
-  Omnibus) via the new admin editor, logo + `.ico`, a personal note to check a
-  draw.io visual-mapping skill video.
+**v2.3 closed 2026-06-29.** Items 1–9 built (Items 1–5 on 2026-06-23, Items 6–9 on
+2026-06-24) and verified via the manual test pass on 2026-06-26 (9 fixes same day).
+Items 10–13 built and Code-verified 2026-06-27; manually tested 2026-06-28 — Items
+10 (Password Recovery), 11 (Backup frequency), and 13 (Card Size 75%) passed; Item
+12 (Restore Database) did not pass — restore completes but DB is not reverted to
+the backup state (`BUGS.md` BUG-016, open — root cause confirmed, fix not yet
+built). Item 14 moved out of v2.3's queue 2026-06-28 — see "Blocked on Claude
+Design UI redesign exploration" below. Full detail archived at
+`archive/v2.3/comicvault-changes-v2.3.md`; `archive/v2.3/progress.md` holds the full
+project narrative through v2.3's close.
 
 ---
 
-## Follow-up needed (2026-06-23 session)
+## Blocked on Claude Design UI redesign exploration
 
-- **Folder View folder cards — image options. RESOLVED 2026-06-23.** Design
-  discussion held; random cached thumbnail approach selected. Full spec in
-  `CUSTOM_TABS_SPEC.md` §9.2; build tracked in `comicvault-changes-v2.3.md`.
+Two items share the same blocking dependency — a parked exploration with Claude
+Design on overall UI redesign direction, not yet started. Both should be revisited
+together once that direction exists, since either could change what the other needs
+to do.
+
+**v2.3 Item 14 — Site-wide: unify the main header across Series/Issue detail pages**
+(moved here 2026-06-28, originally scoped 2026-06-27)
+
+`/series/{id}` and `/issue/{id}` currently use a different header treatment than
+Home/the browse tabs. Make them consistent with the Home page header. Search scope:
+"Search" should search the full library by default — except when already on a
+Singles, Series, or Custom Tab surface, where it stays scoped to that surface (same
+behaviour as `SEARCH_PLACEHOLDERS`/`updateSearchPlaceholder()` already established
+for Home vs. All vs. Singles vs. Series, per `progress.md` "Session — 2026-06-22:
+Tier 3"). Open question for whoever picks this back up: what should the search bar
+search *from* an issue/series detail page itself, since it isn't "on" any surface
+— proposed default is full-library (same as Home), not yet confirmed with Tez.
+
+**Spec:** none yet — destination doc TBC (likely `SPEC.md` or `MENU_BAR_SPEC.md`,
+whichever currently governs header layout; confirm during scoping).
+
+**Status pills excluded from scope, confirmed 2026-06-27:** the Unread/Reading/Read
+filter pills were deliberately moved up into the site header (out of
+`.browse-controls`) during the 2026-06-26 menu-bar fix pass, to make room once the
+menu bar picked up more controls (see `progress.md` "Session — 2026-06-26", Fix 1).
+They're list filters and don't apply to a single issue or series detail page —
+header unification here means nav tabs + search + admin-gear link + logout only.
+
+**Code-reading findings, 2026-06-27 (read `issue.html`/`series.html`/`index.html`/
+`app.js` directly before scoping):**
+
+- `issue.html` and `series.html`'s headers currently contain **only the logo and a
+  hidden Logout button** — no surface-nav tabs, no search bar, no admin gear-icon
+  link at all. This is a bigger gap than "different styling" — the markup itself is
+  missing, not just hidden. `index.html` has all of it (`bindSurfaceNav()`,
+  `bindSearchEvents()`, the `/admin` gear link).
+- Recommend factoring the header bindings into one shared init routine all three
+  pages call, rather than duplicating `bindSurfaceNav()`/`bindSearchEvents()`/the
+  admin-link wiring a third time.
+
+**`BUG-014` (back-button regression) — sequence with Item 14, not independently:**
+the issue/series back-links already use real `window.history.back()` (a code
+comment there says this replaced the old `from=` param logic). But the four main
+surface tabs (Home/All/Singles/Series, `bindSurfaceNav()`) never call `pushState` —
+switching tabs only updates a JS variable, the URL stays bare `/`. Folder View
+*does* call `pushState` on every drill-down (`pushFolderViewUrl()` — already
+explicitly documented in `app.js` as "a deliberate departure from the simpler
+`history.back()`-only pattern used elsewhere"). So: user on All (URL still `/`) →
+opens an issue → real navigation pushes `/issue/123` onto history → Back → browser
+correctly returns to the literal previous entry, bare `/` → page loads defaulting to
+Home. The `?from=all`/`?from=series`/`?from=singles` params still being attached
+when building card links (`buildCoverCard()` etc.) are dead code — already ignored
+by both detail pages. **Recommended fix:** extend Folder View's existing `pushState`
+pattern to the four main surface tabs; once in place, Item 14's nav links on the
+detail pages can just point at `/?surface=all` etc. and back-navigation works
+correctly for free. Full write-up in `BUGS.md` BUG-014.
+
+Needs a quick scoping pass to confirm current header variants before Code starts,
+whenever this gets picked back up.
 
 ---
 
@@ -54,9 +117,10 @@ test pass on 2026-06-26 (9 fixes same day — see `progress.md`). Items 10–14 
 
 - **CAPT extra tools** (4 tools — Rename, Convert, Convert Images, Flatten — code
   already exists in the original CAPT codebase). **Rename scoped and fully designed
-  2026-06-27** — see `ADMIN_SPEC.md` §11.1; build not yet started. Convert, Convert
-  Images, and Flatten still need their own dedicated scoping sessions before going
-  into a build queue.
+  2026-06-27** — see `admin-spec-section-12-processing-tools.md` §12.1; promoted to
+  `v2.4/comicvault-changes-v2.4.md` Item 1, 2026-06-29 — no longer deferred. Convert,
+  Convert Images, and Flatten still need their own dedicated scoping sessions before
+  going into a build queue.
 
 - **Processing Folder automation** (new Admin area — `ADMIN_SPEC.md` is the future
   home once scoped): scheduled folder monitor; convert-to-cbz via 7zip, custom rename
@@ -86,9 +150,6 @@ test pass on 2026-06-26 (9 fixes same day — see `progress.md`). Items 10–14 
   `cover_artist` as an inert rollback safety net rather than dropping them
   immediately. Drop them in a dedicated later session once the `people`/
   `issue_credits` system has run for real with no issues found over a release cycle.
-- **BUG-007 — Basic Editor Summary field line-break doubling.** Found 2026-06-21 as
-  a side effect of Item 3's editor-save testing; pre-existing, unrelated to Item 3.
-  Not fixed. See `BUGS.md`.
 
 - **Tooltips (mouseover) site-wide.** Low priority. Intended for the end of the main
   dev/design phase once all functional work is settled.
@@ -96,33 +157,14 @@ test pass on 2026-06-26 (9 fixes same day — see `progress.md`). Items 10–14 
 From `SPEC.md` §20.14, corrected 2026-06-20 (two items in the original list — custom
 tabs and home strips — have since shipped; removed from here, see `CHANGELOG.md`):
 
-- Multiple scan locations across drives, with per-folder exclude — would allow a clean
-  split for folder-scoped custom tabs (e.g. Folder View, shipped v2.2) instead of the
-  current path-based fallback.
-- Series-level overview field — needs a new XML tag + DB column + editor fields;
-  per-issue descriptions cover the need for now.
-- Advanced Search page — only worth building if the current inline filter+search
-  proves insufficient in real use.
-- ~~Login/password protection for `/admin`~~ — **⚠️ FLAG FOR TEZ: this entry is now
-  stale.** Full design is written and active — `ADMIN_SPEC.md` §7.1/§7.2; build
-  tracked in `comicvault-changes-v2.3.md` Item 6. Should be removed from this
-  Deferred list once Tez confirms. Not auto-removed.
 - An installer — setup is manual (`config.json` + `start.bat`); not yet prioritized.
 
 ---
 
-## Known environmental risk (not a code bug)
-**edit: 27-6-26 Tez; Custom Ports can now be set in admin - this is completed**
+## Resolved (kept for context, not actionable)
 
-- **Port 8000 / Windows port-exclusion conflict (`BUGS.md` BUG-004).** WSL2/Hyper-V's
-  networking stack can reserve a TCP port range at boot that happens to include 8000,
-  causing uvicorn's bind to fail until `winnat` is restarted. No permanent fix applied
-  yet — options noted but not built: move ComicVault off port 8000 to a less commonly
-  reserved port, or have `start.bat`/the tray app proactively restart `winnat` before
-  launching.
-
-## Known open bug
-**edit: 27-6-26 Tez; Fixed**
-- **BUG-003 — dead duplicate route** (`GET /api/reading/continue` defined in both
-  `progress.py` and `library.py`). No functional impact today; flagged as a
-  maintenance hazard, not yet cleaned up. See `BUGS.md` for detail.
+- **Port 8000 / Windows port-exclusion conflict.** A user-configurable server port
+  (`ADMIN_SPEC.md` §7.3) was added 2026-06-27 as a workaround — Tez confirmed this
+  resolves it in practice. Original defect: `archive/bugs-fixed-archive.md` BUG-004.
+- **BUG-003 — dead duplicate route.** Fixed 2026-06-27. See
+  `archive/bugs-fixed-archive.md`.

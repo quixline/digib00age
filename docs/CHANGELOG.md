@@ -1,12 +1,16 @@
 # ComicVault — Changelog
 
-Terse, one-line-per-entry index, newest first. Each line is a pointer into
-`progress.md`'s matching section heading — read there for the full narrative,
-what was verified, and any gotchas. Bug fixes already logged in `BUGS.md` aren't
-repeated here unless they also got their own `progress.md` session entry.
+Terse, one-line-per-entry index, newest first. Each line is a pointer into the
+current version's `progress.md` matching section heading — read there for the full
+narrative, what was verified, and any gotchas. Bug fixes already logged in
+`BUGS.md` aren't repeated here unless they also got their own `progress.md` session
+entry. **Entries dated 2026-06-29 or earlier point into `archive/v2.3/progress.md`**
+(progress.md became version-scoped starting with v2.4, archived alongside v2.3's
+close) — entries from 2026-06-29 onward point into `v2.4/progress.md`.
 
 ---
 
+- **2026-06-28** — Manual test pass v2.3 Items 10–13: Items 10 (Password Recovery), 11 (Backup frequency), 13 (Card Size 75%) passed; Item 12 (Restore Database) failed — BUG-016 logged. → `progress.md` "Session — 2026-06-28: Manual test pass, v2.3 Items 10–13"
 - **2026-06-27** — v2.3 Item 13: Admin Card Size — added a 75% option between
   50% and 100%.
 - **2026-06-27** — v2.3 Item 12: Admin Restore Database — renamed "Scheduled

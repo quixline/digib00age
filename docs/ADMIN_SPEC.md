@@ -17,10 +17,12 @@
 > §6 backfilled 2026-06-27 with the Card Size control — built in v2.1 (2026-06-22)
 > but never written into this doc when it was created the following day.
 >
-> Five further items queued 2026-06-27 from inbox triage, not yet built: Password
-> Recovery button (§7.1.7), Scheduled Backup frequency reduction (§9), Restore
-> Database, Card Size +75% option (§6), and a site-wide header unification. See
-> `comicvault-changes-v2.3.md` Items 10–14.
+> Items 10–13 built and code-verified 2026-06-27 (Password Recovery button §7.1.7,
+> Scheduled Backup frequency reduction §9, Restore Database §9.2, Card Size +75%
+> option §6). Manually tested 2026-06-28: Items 10, 11, 13 passed; Item 12 (Restore
+> Database) did not pass — restore completes but DB is not reverted to the backup
+> state (BUG-016, open). Item 14 (site-wide header unification) moved to `ROADMAP.md`
+> 2026-06-28 — not admin-page scope, blocked on Claude Design exploration.
 >
 > §11.1 File Rename scoped 2026-06-27 — design complete, build not yet started.
 >

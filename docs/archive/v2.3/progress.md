@@ -2825,3 +2825,24 @@ library files or the database were touched (frontend-only change).
 
 **Docs updated:** this entry; `CHANGELOG.md`; `ADMIN_SPEC.md` §6 (Card Size
 subsection + Change Log row); `comicvault-changes-v2.3.md` Item 13 marked done.
+
+---
+
+## Session — 2026-06-28: Manual test pass, v2.3 Items 10–13
+
+Manual test pass run by Tez on 2026-06-28 covering Items 10, 11, 12, and 13.
+
+- **Item 10 — Password Recovery button:** Passed.
+- **Item 11 — Scheduled Backup frequency reduction:** Passed.
+- **Item 12 — Restore Database:** Not passed. Test: backed up the DB with only the
+  2000 AD custom tab in place, then added a new 'testdb' custom tab and changed the
+  read status on one issue. Restored the backup. After the server restarted, the
+  testdb tab and the read-status change both persisted — the DB was not reverted to
+  the backed-up state. The restore appeared to complete (confirm dialog fired, safety
+  snapshot taken, server restarted) but the DB content was unchanged. Logged as
+  BUG-016. Needs a Code session to diagnose the copy-and-restart sequence (likely
+  SQLAlchemy/WAL teardown ordering — see BUG-016 for details).
+- **Item 13 — Card Size 75%:** Passed.
+
+Items 10, 11, and 13 are fully signed off. Item 12 (Restore Database) requires a fix
+session before v2.3 can close out.
