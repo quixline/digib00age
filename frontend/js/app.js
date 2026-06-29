@@ -975,7 +975,15 @@ function seriesReadState(s) {
 
 function buildCoverCard(s) {
   const isSingle = s.format_group === 'Singles';
-  const from     = activeSurface ? `?from=${activeSurface}` : '';
+  // BUG-010: a series card reached via a fieldview filter (e.g. a Writer
+  // credit link) should carry that filter into the series page, so it lists
+  // only the matching issues instead of the whole series.
+  const fieldQs  = activeSurface === 'fieldview' && viewField && viewFieldValue
+    ? `field=${encodeURIComponent(viewField)}&value=${encodeURIComponent(viewFieldValue)}`
+    : '';
+  const fromQs   = activeSurface ? `from=${activeSurface}` : '';
+  const qs       = [fromQs, fieldQs].filter(Boolean).join('&');
+  const from     = qs ? `?${qs}` : '';
   const href     = isSingle
     ? `/issue/${s.series_anchor_id}${from}`
     : `/series/${s.series_anchor_id}${from}`;
@@ -1412,12 +1420,19 @@ function clearFolderViewSearch(tabId) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function initSeries() {
-  const issueId = window.location.pathname.replace(/^\/series\//, '');
-  const from    = new URLSearchParams(location.search).get('from') || '';
-  const content = document.getElementById('seriesContent');
+  const issueId   = window.location.pathname.replace(/^\/series\//, '');
+  const urlParams = new URLSearchParams(location.search);
+  const from      = urlParams.get('from') || '';
+  // BUG-010: a series reached from a credit/field-filtered context (e.g. a
+  // Writer credit link) should only list the issues matching that filter,
+  // not the whole series.
+  const field     = urlParams.get('field') || '';
+  const value     = urlParams.get('value') || '';
+  const content   = document.getElementById('seriesContent');
 
   try {
-    const data = await apiFetch(`/series/${issueId}`);
+    const qs   = field && value ? `?field=${encodeURIComponent(field)}&value=${encodeURIComponent(value)}` : '';
+    const data = await apiFetch(`/series/${issueId}${qs}`);
     document.title = `${data.series} — ComicVault`;
     content.innerHTML = '';
     content.appendChild(buildSeriesHeader(data));
@@ -1486,6 +1501,18 @@ function buildSeriesHeader(data) {
   hero.appendChild(el('p', 'series-stats',
     `${data.issue_count} issue${data.issue_count !== 1 ? 's' : ''}`
   ));
+
+  // BUG-010: scoped (credit/field-filtered) view banner, with a way back to
+  // the full series.
+  if (data.filtered_field) {
+    const banner = el('p', 'series-filter-banner',
+      `Showing ${data.issue_count} of ${data.total_issue_count} issues — filtered by ${data.filtered_field}. `
+    );
+    const clearLink = el('a', 'series-filter-clear', 'View full series');
+    clearLink.href = window.location.pathname;
+    banner.appendChild(clearLink);
+    hero.appendChild(banner);
+  }
 
   wrapper.appendChild(hero);
   return wrapper;

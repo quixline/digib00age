@@ -380,10 +380,19 @@ def search_tab_folder(
 # ---------------------------------------------------------------------------
 
 @router.get("/series/{issue_id}")
-def get_series(issue_id: int, db: Session = Depends(get_db)):
+def get_series(
+    issue_id: int,
+    field: Optional[str] = Query(None, description="BUG-010: scope to issues matching a credit field (e.g. writer/artist), same semantics as GET /library's field+value"),
+    value: Optional[str] = Query(None, description="Value to match for `field`"),
+    db: Session = Depends(get_db),
+):
     """
     Returns series header info + all issues in that series, with read status.
     The {issue_id} is used to identify which series — any issue id in the series works.
+
+    Optional field+value (BUG-010) scopes the returned issue list to only
+    issues matching that credit/field — e.g. a Writer credit link should only
+    list the issues that writer is actually credited on, not the whole series.
     """
     anchor = db.query(Issue).filter(Issue.id == issue_id).first()
     if not anchor:
@@ -391,11 +400,16 @@ def get_series(issue_id: int, db: Session = Depends(get_db)):
 
     series_name = anchor.series
 
-    issues = (
+    all_issues = (
         db.query(Issue)
         .filter(Issue.series == series_name)
         .order_by(Issue.volume, Issue.number, Issue.id)
         .all()
+    )
+    issues = (
+        [i for i in all_issues if matches_field(i, field, value)]
+        if field and value is not None
+        else all_issues
     )
 
     # Sort issues: numeric numbers first, then non-numeric, then None
@@ -451,6 +465,9 @@ def get_series(issue_id: int, db: Session = Depends(get_db)):
         "genres": sorted(all_genres),
         "issue_count": len(issues),
         "issues": issue_list,
+        "filtered_field": field if (field and value is not None) else None,
+        "filtered_value": value if (field and value is not None) else None,
+        "total_issue_count": len(all_issues),
     }
 
 

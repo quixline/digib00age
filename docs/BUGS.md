@@ -184,9 +184,69 @@ full 2000 AD prog run, not a list filtered to issues credited to that writer.
 click-through doesn't filter — it shows the full series, making the writer's credit
 link functionally useless for browsing their specific contributions.
 
-**Not fixed.**
+**Generalised, 2026-06-29:** not isolated to 2000 AD or to the issue-page credit link —
+any series card reached from a credit/field-filtered context (a Writer/Artist credit
+link, or any future field-filtered fieldview) opened the unfiltered full series, since
+`GET /api/series/{id}` (`backend/routers/library.py`) never accepted a field/value
+filter at all — it always returned every issue in the series regardless of how the
+user navigated there. Repro confirmed with "search All for Alan Moore": the match
+surfaces "2000 AD" as a series card (since at least one of its 2483 issues credits Alan
+Moore), but clicking it opened all 2483 issues, not just his 117.
+
+**Note — the inline "search All" text-search case is a related but separate gap, not
+fixed here:** `getFilteredLibrary()`'s inline search (`frontend/js/app.js`) matches
+purely client-side against each series' aggregated `writers` array (a flattened union
+across every issue in the series), not a specific person_id — there's no clean filter
+value to carry forward from free-text search the way there is from a credit link's
+`person_id`. Fixing that properly would mean credit-aware per-issue text matching
+server-side, a bigger lift than this fix. The credit-link path (the original, concrete
+repro) is fixed; the free-text search path still surfaces the same class of symptom and
+would need its own pass.
+
+**Fixed, 2026-06-29 (credit-link path).** `GET /api/series/{issue_id}` now accepts
+optional `field`+`value` query params, reusing the same `matches_field()` helper
+`GET /api/library` already used for field-filtered fieldview lists — issues, genres,
+and `issue_count` are scoped to matches only, with `total_issue_count` returned
+alongside for an "X of Y issues" banner. `buildCoverCard()` in `app.js` now forwards
+`viewField`/`viewFieldValue` onto a series card's link whenever it's rendered inside
+the `fieldview` surface (e.g. after clicking a Writer/Artist credit link), and
+`initSeries()`/`buildSeriesHeader()` read those params back off the URL, pass them to
+the API call, and show a "Showing N of M issues — filtered by writer. View full
+series" banner with a link back to the unfiltered page.
+
+Verified directly against the live API (2000 AD, Alan Moore, person_id 167):
+`GET /series/248?field=writer&value=167` → `issue_count: 117`, `total_issue_count:
+2483`; `GET /series/248` (no filter) → `issue_count: 2483`, confirming the filtered
+and unfiltered counts now genuinely differ instead of always returning the full
+series.
 
 ---
+
+### BUG-008 — Flutter app's 2000 AD tab calls endpoints removed in v2.2
+
+## Edit 29/6/26 Tez; the fixed 2000 AD tab has been removed completely - Custom tabs
+## This issue could be dead. To be ignored until flutter dev starts (if it starts)
+
+**Found:** 2026-06-22, flagged by the nightly doc scan.
+
+**Where:** `flutter_app/lib/screens/two_thousand_ad_screen.dart` —
+`TwoThousandAdTab` calls `GET /api/2000ad/years`; `TwoThousandAdYearScreen` calls
+`GET /api/2000ad/year/{year}`. Both endpoints were removed in v2.2 (Part A,
+`backend/routers/home.py`).
+
+**Impact:** The Flutter app's 2000 AD tab would return 404 errors on those calls.
+The web-side 2000 AD surface was removed intentionally and its behaviour generalised
+into Folder View (Custom Tabs, `CUSTOM_TABS_SPEC.md` §9), but Flutter was explicitly
+out of scope for v2.2 — the Flutter tab was not replaced, just left broken.
+
+**Not fixed.** Flutter app development is on hold until web-side work is complete
+(per `ROADMAP.md`). To be picked up as part of that Flutter work — fix would be
+either removing the 2000 AD tab from the Flutter app, or adding a Folder View
+equivalent for Flutter once the web Folder View is settled.
+
+-------------------------------------------------------------------------------------------
+
+## BUGS FIXED
 
 ### BUG-009 — Star rating doesn't clear to Unrated
 
@@ -214,36 +274,6 @@ needed). Verified directly against `/api/progress/bulk/rate` on a scratch-state 
 issue (#1, originally unrated): rate→3 confirmed 3, then rate→0 (the same call the
 new click handler now makes when re-clicking star 3) confirmed back to 0/null —
 issue left in its original unrated state afterward.
-
----
-
-### BUG-008 — Flutter app's 2000 AD tab calls endpoints removed in v2.2
-
-## Edit 29/6/26 Tez; the fixed 2000 AD tab has been removed completely - Custom tabs
-## This issue could be dead.
-
-**Found:** 2026-06-22, flagged by the nightly doc scan.
-
-**Where:** `flutter_app/lib/screens/two_thousand_ad_screen.dart` —
-`TwoThousandAdTab` calls `GET /api/2000ad/years`; `TwoThousandAdYearScreen` calls
-`GET /api/2000ad/year/{year}`. Both endpoints were removed in v2.2 (Part A,
-`backend/routers/home.py`).
-
-**Impact:** The Flutter app's 2000 AD tab would return 404 errors on those calls.
-The web-side 2000 AD surface was removed intentionally and its behaviour generalised
-into Folder View (Custom Tabs, `CUSTOM_TABS_SPEC.md` §9), but Flutter was explicitly
-out of scope for v2.2 — the Flutter tab was not replaced, just left broken.
-
-**Not fixed.** Flutter app development is on hold until web-side work is complete
-(per `ROADMAP.md`). To be picked up as part of that Flutter work — fix would be
-either removing the 2000 AD tab from the Flutter app, or adding a Folder View
-equivalent for Flutter once the web Folder View is settled.
-
----
-
----
-
-## FIXED
 
 ---
 
