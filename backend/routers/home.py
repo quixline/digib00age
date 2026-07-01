@@ -246,6 +246,9 @@ def get_nav_config(db: Session = Depends(get_db)):
         .order_by(CustomTab.created_at)
         .all()
     )
-    return {"custom_tabs": [{"id": t.id, "name": t.name, "view_mode": t.view_mode} for t in tabs]}
+    return {"custom_tabs": [
+        {"id": t.id, "name": t.name, "view_mode": t.view_mode, "basis_type": t.basis_type}
+        for t in tabs
+    ]}
 
 

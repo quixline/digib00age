@@ -148,11 +148,20 @@ def save_editor_fields(
     xml_content = build_xml_from_fields(field_values, original_xml)
 
     try:
-        write_comicinfo_to_cbz(issue.file_path, xml_content)
+        new_path = write_comicinfo_to_cbz(issue.file_path, xml_content)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to write archive: {exc}")
 
-    scan_single_file(issue.file_path, db)
+    # CBR source rebuilds as a sibling .cbz (EDITOR_SPEC.md §3.2, v2.4 Item
+    # 5/11) — update this row's tracking to the new path *and flush* before
+    # rescanning, since the session is autoflush=False and scan_single_file
+    # looks up the row by file_path.
+    if new_path != issue.file_path:
+        issue.file_path = new_path
+        issue.container_format = "cbz"
+        db.flush()
+
+    scan_single_file(new_path, db)
 
     updated = db.query(Issue).filter(Issue.id == issue_id).first()
     return {

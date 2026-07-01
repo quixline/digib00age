@@ -68,18 +68,19 @@ async def lifespan(app: FastAPI):
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _warmup_db)
 
-    from backend.scheduler import auto_scan_loop, backup_loop, maybe_scan_on_launch
+    from backend.scheduler import auto_scan_loop, backup_loop, maybe_scan_on_launch, processing_folder_loop
 
     # Fire-and-forget — must not block startup waiting for a full scan.
     asyncio.create_task(maybe_scan_on_launch())
     scan_task = asyncio.create_task(auto_scan_loop())
     backup_task = asyncio.create_task(backup_loop())
+    processing_folder_task = asyncio.create_task(processing_folder_loop())
 
     yield
 
-    for task in (scan_task, backup_task):
+    for task in (scan_task, backup_task, processing_folder_task):
         task.cancel()
-    for task in (scan_task, backup_task):
+    for task in (scan_task, backup_task, processing_folder_task):
         try:
             await task
         except asyncio.CancelledError:
@@ -111,6 +112,7 @@ from fastapi import Depends  # noqa: E402
 from backend.auth import is_local_request, is_remote_admin_enabled, require_admin_auth  # noqa: E402
 from backend.routers import (  # noqa: E402
     library, reader, progress, admin, home, editor_basic, editor_full, admin_auth,
+    rename, convert, convert_images, processing_folder,
 )
 
 app.include_router(library.router, prefix="/api")
@@ -127,6 +129,10 @@ _auth_gate = [Depends(require_admin_auth)]
 app.include_router(admin.router,        prefix="/api", dependencies=_auth_gate)
 app.include_router(editor_basic.router, prefix="/api", dependencies=_auth_gate)
 app.include_router(editor_full.router,  prefix="/api", dependencies=_auth_gate)
+app.include_router(rename.router,       prefix="/api/admin", dependencies=_auth_gate)
+app.include_router(convert.router,      prefix="/api/admin", dependencies=_auth_gate)
+app.include_router(convert_images.router, prefix="/api/admin", dependencies=_auth_gate)
+app.include_router(processing_folder.router, prefix="/api/admin", dependencies=_auth_gate)
 
 # ---------------------------------------------------------------------------
 # Serve frontend static files

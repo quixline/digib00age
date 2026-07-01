@@ -270,7 +270,39 @@ function applyFavoriteToDom(ids, value) {
   for (const id of ids) {
     const node = document.querySelector(`[data-issue-id="${id}"]`);
     if (node) node.classList.toggle('is-favorite', value);
-    const lib = allLibrary.find(s => s.series_anchor_id === id);
+    _patchFavoritesInCaches(id, value);
+  }
+
+  // CUSTOM_TABS_SPEC.md §10.5 — un-favouriting while viewing the Favourites
+  // tab (or with the All-tab Favourites filter active) must remove the card
+  // live, not just toggle its star. Fixed once here so both surfaces benefit.
+  if (!value) {
+    // A favourites-tab's cached pool was already scoped server-side at fetch
+    // time (§10.3) — patching the flag alone doesn't re-exclude an entry the
+    // way the client-side activeFavorites filter below does on every render,
+    // so drop it from the cache outright (best-effort, same tolerance the
+    // rest of this bulk-patch family already accepts — a reload reflects
+    // true server state, e.g. if another issue in the same series is still
+    // favourited).
+    for (const tabId of Object.keys(tabLibraryCache)) {
+      if (tabBasisTypes[tabId] !== 'favorites') continue;
+      tabLibraryCache[tabId] = tabLibraryCache[tabId].filter(s => !ids.includes(s.series_anchor_id));
+    }
+  }
+
+  if (!value && (activeFavorites || isFavoritesTab(activeSurface))) {
+    renderBrowse();
+  }
+}
+
+// Every cache getFilteredLibrary() might read favorites from — a bulk
+// favourite/unfavourite only has a DOM node for series-aggregate cards
+// (series_anchor_id), so this patches every pool that could contain one.
+function _patchFavoritesInCaches(id, value) {
+  const pools = [allLibrary, ...Object.values(tabLibraryCache),
+    ...Object.values(viewLibraryCache), ...Object.values(searchLibraryCache)];
+  for (const pool of pools) {
+    const lib = (pool || []).find(s => s.series_anchor_id === id);
     if (lib) lib.favorites = value;
   }
 }
@@ -326,6 +358,7 @@ let searchLibraryCache = {};    // query (lowercased) -> /api/library?q=… resp
 
 // Folder View (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9)
 let tabViewModes        = {};   // custom tab id (string) -> 'flat' | 'folder', from /nav/config
+let tabBasisTypes       = {};   // custom tab id (string) -> 'folder' | 'favorites', from /nav/config
 let viewTabPath         = '';   // relative path within the active folder-view tab
 let folderViewCache     = {};   // cache key `${tabId}:${path}` -> folder-contents response
 let folderViewSearchActive = false;
@@ -410,6 +443,7 @@ async function loadCustomTabsNav() {
       btn.setAttribute('aria-selected', 'false');
       container.appendChild(btn);
       tabViewModes[String(tab.id)] = tab.view_mode || 'flat';
+      tabBasisTypes[String(tab.id)] = tab.basis_type || 'folder';
     }
   } catch (_) {
     // Fixed-tab nav still works if this fails; not fatal.
@@ -418,6 +452,10 @@ async function loadCustomTabsNav() {
 
 function isFolderViewTab(surface) {
   return surface.startsWith('tab-') && tabViewModes[surface.slice(4)] === 'folder';
+}
+
+function isFavoritesTab(surface) {
+  return surface.startsWith('tab-') && tabBasisTypes[surface.slice(4)] === 'favorites';
 }
 
 // Menu bar controls (sort/rated/favourites) act on whichever surface is
@@ -902,9 +940,14 @@ function _renderBrowsePage() {
   grid.innerHTML = '';
 
   if (!filtered.length) {
+    // CUSTOM_TABS_SPEC.md §10.6 — a Favourites tab with nothing in it yet
+    // reads as broken with the generic filters message; give it its own.
+    const emptyMsg = isFavoritesTab(activeSurface)
+      ? 'No favourites yet — star some issues to see them here.'
+      : 'No comics match these filters.';
     grid.innerHTML =
       '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
-      '<p>No comics match these filters.</p></div>';
+      `<p>${emptyMsg}</p></div>`;
     if (pagEl) pagEl.innerHTML = '';
     return;
   }

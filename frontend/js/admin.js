@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadCustomTabs();
   document.getElementById('ctAddBtn').addEventListener('click', addCustomTab);
+  document.getElementById('ctAddFavouritesBtn').addEventListener('click', addFavouritesTab);
   document.getElementById('ctBrowseBtn').addEventListener('click', () => openCtPicker('ctPathInput'));
   document.getElementById('ctPickerCloseBtn').addEventListener('click', closeCtPicker);
   document.getElementById('ctPickerSelectBtn').addEventListener('click', selectCtPickerFolder);
@@ -763,11 +764,15 @@ function renderCustomTabs() {
   const atCap   = visibleCount >= MAX_VISIBLE_CUSTOM_TABS;
   document.getElementById('ctAddBtn').disabled  = atCap;
   document.getElementById('ctCapHint').hidden    = !atCap;
+
+  const hasFavouritesTab = customTabs.some(t => t.basis_type === 'favorites');
+  document.getElementById('ctAddFavouritesBtn').disabled = hasFavouritesTab || atCap;
 }
 
 function makeCustomTabRow(tab) {
   const row = document.createElement('div');
   row.className = 'ct-tab-row';
+  const isFavourites = tab.basis_type === 'favorites';
 
   const info = document.createElement('div');
   info.className = 'ct-tab-info';
@@ -782,13 +787,14 @@ function makeCustomTabRow(tab) {
   }
   const pathLine = document.createElement('div');
   pathLine.className = 'ct-tab-path';
-  pathLine.textContent = tab.folder_path;
+  pathLine.textContent = isFavourites ? 'Library-wide (Favourites)' : tab.folder_path;
   info.append(nameLine, pathLine);
 
   const viewModeSelect = document.createElement('select');
   viewModeSelect.className = 'ct-viewmode-select admin-select';
   viewModeSelect.innerHTML = '<option value="flat">Flat</option><option value="folder">Folder View</option>';
   viewModeSelect.value = tab.view_mode || 'flat';
+  viewModeSelect.disabled = isFavourites;
   viewModeSelect.addEventListener('change', () => updateCustomTabViewMode(tab, viewModeSelect.value));
 
   const toggleBtn = document.createElement('button');
@@ -892,6 +898,25 @@ async function addCustomTab() {
     await loadCustomTabs();
   } catch (e) {
     showToast('Could not add tab: ' + e.message, true);
+  }
+}
+
+async function addFavouritesTab() {
+  try {
+    const r = await fetch(`${API}/admin/custom-tabs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ basis_type: 'favorites' }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      showToast(d.detail || 'Could not add Favourites tab', true);
+      return;
+    }
+    showToast('Favourites tab added');
+    await loadCustomTabs();
+  } catch (e) {
+    showToast('Could not add Favourites tab: ' + e.message, true);
   }
 }
 
@@ -1510,6 +1535,12 @@ async function refreshAuthSettingsUi() {
     document.getElementById('authSaveBtn').disabled = false;
     remoteLabel.querySelector('input').disabled = !status.protection_enabled;
     document.getElementById('passwordResetBtn').disabled = false;
+  }
+
+  // Processing Tools (§12 shared notes) — local-only regardless of
+  // protection/remote-admin state, same tier as the controls above.
+  if (typeof refreshProcessingToolsLocalGate === 'function') {
+    refreshProcessingToolsLocalGate(status.is_local);
   }
 }
 

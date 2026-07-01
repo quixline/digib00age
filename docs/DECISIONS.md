@@ -4,6 +4,160 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### v2.4 Item 10/15 — File Rename dropped from Processing Folder Automation
+
+**Decided:** 2026-07-01, dedicated re-scoping session (Chat + Tez).
+**Why:** Item 15 flagged §12.1 File Rename as needing a bigger re-scope before Item
+10 could build, on the assumption automation needed a saved naming-convention
+template system. Before building that, the session tested the actual parser
+(`filename_parser.py`) against two real filename sets pulled from the library (323
+periodical-style releases, 319 creator-prefixed OGN/collection files) rather than
+reasoning about it in the abstract.
+
+That testing found the re-scope's real problem wasn't missing features, it was a
+live bug: `extract_year()` has a hardcoded `present_year = 2025` validity ceiling,
+so every 2026-dated file silently fails year extraction — which cascades into
+series/issue extraction failing too, since a rejected year's bracket never gets
+stripped from the series string. Measured against the sample: 64% failure rate.
+Two smaller bugs also found (a zero-issue string collapsing to empty via
+`lstrip('0')`; whitespace/text artifacts left behind by volume+subtitle patterns
+like `v05 - Twisting Loyalties`). All three are fixed in the §12.1.3 Change Log.
+
+The creator-prefixed sample also confirmed something structural, not a bug:
+`"Cyberpunk 2077 - Chrome 03"` and `"Abby Howard - The Crossroads at Midnight"` are
+structurally identical strings to a regex parser — there's no reliable way to know
+one is an umbrella-series/sub-title pair and the other is an author/book-title
+pair. Trying to auto-split these was the actual source of "too many variables" —
+the fix wasn't smarter parsing, it was accepting the parser can't resolve this
+class of ambiguity and routing it to the existing manual Title field + All
+checkbox instead (which already existed for exactly this purpose).
+
+Once that was settled, the automation question answered itself: Rename's *only*
+correction mechanism is the human reviewing its live preview before committing (no
+undo — §12.1.6). That's specifically the thing Processing Folder Automation
+removes by running unattended. And the ambiguous Series/Title cases above need a
+human decision no saved template could supply — automating Rename would mean
+silently applying the "good enough" fallback output to every file that would have
+benefited from a manual Title entry, with no signal in the log distinguishing which
+files got which treatment. Tez agreed dropping Rename from automation entirely was
+the right call rather than trying to make both work — matches the session's
+recurring theme of catching scope before it compounded (see "Pattern worth naming"
+below).
+
+**Knock-on effect:** §12.4 Processing Folder Automation is amended from a
+three-stage to a two-stage pipeline (Convert Archives → Convert Images). The
+saved-naming-convention-template requirement raised in Item 15 scoping (`INBOX.md`)
+is dropped entirely, not deferred — nothing to build. `INBOX.md`'s §12.1 re-scope
+entry is struck as resolved; the separate §12.2 backup-model re-scope entry is
+unrelated to this decision and remains open.
+
+**Pattern worth naming:** the session started as "make the rename parser smarter"
+and nearly expanded to cover ComicTagger-integration timing and XML-driven
+renaming before Tez caught it and pulled back to KISS. The eventual real fix (one
+hardcoded constant) was far smaller than the scope that was almost built instead —
+worth remembering next time a "just needs to be smarter" feeling shows up: test
+against real data before assuming the gap is in the logic rather than a stale
+constant or a genuinely unparseable ambiguity.
+
+### v2.4 Item 8 — Flatten Archive dropped, reclassified as BUG-018
+
+**Decided:** 2026-06-30, mid-scoping session (Chat + Code).
+**Why:** Item 8 went in as a routine CAPT-tool port, same pattern as Items 6/7.
+Scoping it started with the normal "why does this tool exist" check, and Tez
+couldn't recall the original reason — he knew he'd built Flatten Archive for a
+concrete problem, just not which one. Handed to Code to investigate; Code traced
+it to a real, still-open scanner bug (BUG-018, `BUGS.md`): `_parse_cbz()` only
+matches `ComicInfo.xml` at the zip root, so archives with the xml nested inside a
+subfolder import with filename-guessed metadata instead of real data. That
+symptom — exactly what a Flatten tool would visually "fix" by restructuring the
+archive — was the actual reason the tool got built originally.
+
+Once that was clear, the question stopped being "how do we scope this tool" and
+became "does this tool still have a job once the bug's fixed." It doesn't:
+editors already read nested xml correctly (`find_xml_in_archive()` matches any
+depth) and already flatten on save (`_rebuild_archive()`, existing behavior,
+unchanged) — so a fixed scanner means nested archives import correctly without
+any manual intervention, and editing one (for any reason) flattens it as a side
+effect anyway. Confirmed with Tez no independent use case survives this (e.g. no
+bulk-hygiene or Flutter-local-mode need distinct from the bug). Item 8 and Item
+14 (its build counterpart) are both struck from `comicvault-changes-v2.4.md`
+rather than scoped/built.
+
+**Knock-on effect:** Item 15 (Processing Folder Automation) listed Item 8 as a
+hard dependency and counted Flatten Archive as one of four CAPT tools it would
+orchestrate unattended. With Item 8 gone, Item 15's dependency note was revised
+to drop that blocker — it now depends only on Items 10–13. Whether unattended
+automation still needs a flatten step (and if so, calling `_rebuild_archive`
+directly the way Item 7 already does, with no standalone tool behind it) is left
+for Item 15's own scoping session, not decided here.
+
+**Pattern worth naming:** a CAPT tool's original existence is itself a strong
+signal there was a real problem behind it — "why was this built" is now a
+standing first question for any remaining unscoped CAPT-tool item, not just a
+one-off for Item 8.
+
+### v2.4 Item 5 — CBR support reversed back in, EPUB and PDF dropped from scope
+
+**Decided:** 2026-06-30, eng-review + scoping session (Chat).
+**Why:** Item 5 went in scoped as one decision ("add CBR/PDF/EPUB"). An eng-review
+pass before scoping (`/eng-review`) surfaced that each format is actually a
+separate problem with a different right answer, and that two of the original three
+had a materially cheaper existing solution the original scope didn't weigh against
+native support — read `cap_toolkit/processors/arc_conv_cb_proc.py` and
+`arc_conv_pdf_proc.py` directly before concluding this, both already exist and
+work.
+- **EPUB dropped entirely.** Confirmed with Tez it was a speculative carry-over
+  from another app, not a confirmed need, and the sample file he has (HTML pages +
+  cover.jpg inside a plain archive) doesn't generalize to the EPUB spec anyway.
+  Structurally incompatible with the page-indexed reading model every other part
+  of the app depends on (`page_count`, `/issue/{id}/pages`,
+  `/page/{issue_id}/{page_number}`, Flutter's `comic_page_view.dart`) — supporting
+  it for real would mean a second, genuinely different reader, not an extension of
+  the existing one. Too much cost for a feature that was never confirmed wanted.
+- **PDF dropped from native scanner/library scope**, redirected entirely to CAPT's
+  existing PDF↔CBZ converter (delete-original option already built) plus the Full
+  Editor for tagging. PDF has no ComicInfo.xml-equivalent metadata standard —
+  natively indexed, every PDF would land `metadata_source = "filename"` with none
+  of the genre/writer/story-arc filtering working. Converting first gets a fully-
+  capable CBZ for free; native PDF support would have meant real scanner/thumbnail
+  work for a permanently second-class result.
+- **CBR reinstated as full native support, read-only at the archive level.** The
+  original "library is all-CBZ" decision (`EDITOR_SPEC.md` §2/§9, made when CAPT
+  was ported) was correct *for that scope* — personal project, already-converted
+  collection. It no longer fits the current goal: Tez's thinking has shifted toward
+  a possible public release, and he knows from seeing other users' collections that
+  large mixed CBZ/CBR libraries are common (some over 100,000 issues). Forcing a
+  bulk pre-conversion before the library is even browsable isn't viable at that
+  scale or for a public audience who didn't curate their collection the way Tez
+  curated his own.
+  - **Read CBR everywhere, never write it.** `rarfile` (extraction-only) is already
+    a proven dependency via CAPT's own CBR↔CBZ converter — no new library, and no
+    `7-Zip` dependency either, contrary to the original v2.4 doc's note (verified
+    by reading `arc_conv_helpers.py` directly: it's `rarfile`/`unrar` for
+    extraction, a `rar` CLI shell-out for creation).
+  - **Why never write:** RAR archive *creation* requires a paid WinRAR install —
+    confirmed by reading `create_rar_archive()`, which shells out to `rar` and
+    raises if it's missing. That's not a dependency a public app can carry.
+  - **So editing a CBR's metadata rebuilds it as `.cbz`, not `.cbr`.** This isn't
+    new code — the editor's rebuild path (`shutil.make_archive(..., "zip", ...)`)
+    already only ever produces a zip, even before this change. Adding CBR support
+    only meant adding a `rarfile` *read* branch; the existing rebuild path needed
+    no change at all, it just now sometimes has a `.cbr` source feeding into the
+    same zip-only output. Confirmed with Tez this applies uniformly across Basic
+    Editor, Full Editor single-file, and Full Editor batch/Process All — no
+    per-surface exception.
+  - **Net effect, confirmed as the actual goal:** a user's library is fully
+    browsable/readable on day one regardless of CBZ/CBR mix, no bulk conversion
+    required: the library trends toward all-CBZ over time as files happen to get
+    edited, rather than needing a separate batch-conversion pass.
+  - **Known accepted gap:** Flutter local/offline mode (the `archive` Dart package
+    has no RAR support) won't open a `.cbr` copied to a device for travel reading.
+    Server mode is unaffected — page-serving already abstracts the container format
+    away from the client. Left for whoever revisits Mobile Reader work
+    (`ROADMAP.md` "Paused indefinitely"), not addressed by this item.
+**Where:** `SPEC.md` §6/§6.1/§7/§13/§17/§21, `EDITOR_SPEC.md` §2/§3.1/3.2/§9 +
+Change Log, `v2.4/comicvault-changes-v2.4.md` Item 5/11.
+
 ### v2.4 Item 3 (empty-results logo) extended to all emoji empty/error states
 
 **Decided:** 2026-06-29, build session (Code), Tez's explicit call after seeing
@@ -650,3 +804,48 @@ Tez chose to proceed using Item 2's own bullet list (A–Z / Newest / Recent / #
 Issues / # of Pages + ascend/descend toggle) together with `MENU_BAR_SPEC.md` as the
 full spec.
 **Where:** `comicvault-changes-v2.3.md` Item 2, `MENU_BAR_SPEC.md`.
+
+### Convert Archives: background-job progress instead of Rename's blocking pattern
+**Decided:** 2026-06-30, v2.4 Item 6 scoping session.
+**Why:** Rename's apply step blocks the request and shows a summary modal at the
+end, which works because renaming is a near-instant string operation. Archive
+conversion does real per-file work (extract, rezip, PDF page rasterization at
+300 DPI) that can take meaningful time over a batch — a blocking request risked
+long hangs or timeouts on larger batches. Rather than invent new infrastructure,
+reused the module-level progress-singleton + polling-endpoint pattern
+`backend/scanner.py` already established for scan jobs.
+**Where:** `admin-spec-section-12-processing-tools.md` §12.2.5, `backend/scanner.py`
+`scan_progress`.
+
+### Convert Archives: CBR CRC errors surfaced, not silently skipped
+**Decided:** 2026-06-30, v2.4 Item 6 scoping session.
+**Why:** CAPT's original RAR extraction silently drops unreadable pages and still
+reports the conversion as a clean success. That's inconsistent with the
+no-partial-silent-failure principle already established for Rename (§12.1.6) —
+carrying it over unchanged would mean a damaged CBR could convert to an
+incomplete CBZ with no indication anything was lost. Kept the tolerant
+extraction itself (still produces a CBZ rather than failing outright) but added
+a `pages_skipped` count surfaced in both the result summary and the audit log.
+**Where:** `admin-spec-section-12-processing-tools.md` §12.2.4.
+
+### Convert Archives: PDF render DPI as an isolated constant, not an Admin setting
+**Decided:** 2026-06-30, v2.4 Item 6 scoping session.
+**Why:** CAPT's original PDF→CBZ rendering used 72 DPI (`fitz.Matrix(1,1)`),
+which produces visibly blurry pages compared to native CBR/CBZ scans, and isn't
+fixable after the fact short of re-converting from the source PDF. Raised to 300
+DPI (Tez's call, print-scan-grade sharpness over file size). Deliberately kept as
+a single code constant (`PDF_RENDER_DPI`) rather than an Admin-UI setting — a
+rarely-changed technical knob doesn't need a settings-table entry, and an
+isolated constant is already a one-line change if the value needs revisiting.
+**Where:** `admin-spec-section-12-processing-tools.md` §12.2.4.
+
+### Convert Archives lands in the existing Processing Tools section, not a new "Archive Tools" section
+**Decided:** 2026-06-30, v2.4 Item 6 scoping session.
+**Why:** Tez's initial framing proposed a new "Archive Tools" admin section. The
+Processing Tools section (§12) already exists for exactly this category of work —
+CAPT-ported, pre-ingest filesystem utilities — and File Rename already lives
+there as §12.1, with Convert Images and Flatten Archive (Items 7/8) also slated
+for the same section. A second parallel section would split functionally
+identical tools across two admin headers for no structural reason.
+**Where:** `admin-spec-section-12-processing-tools.md` §12.2 (placed under the
+existing §12 header), `comicvault-changes-v2.4.md` Item 6.

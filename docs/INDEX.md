@@ -46,26 +46,24 @@ the same: both span every version by design.
 | `EDITOR_SPEC.md` | Editor integration (Basic + Full editor) | Built and verified (2026-06-18) |
 | `CUSTOM_TABS_SPEC.md` | Custom Tabs feature | Built and verified (2026-06-19) |
 | `HOME_STRIPS_SPEC.md` | Home Page Strips feature | Built and verified (2026-06-19) |
-| `ADMIN_SPEC.md` | Admin page — existing behaviour + new items (password, logs, backup scheduling, etc.) | Items 1–13 (admin scope) built and code-verified (2026-06-24/27); manually tested 2026-06-28, one failure — Restore Database (`BUGS.md` BUG-016) |
-| `admin-spec-section-12-processing-tools.md` | Processing Tools (§12) — File Rename fully scoped 2026-06-27 | §12.1 File Rename is v2.4 Item 1, ready for Code. Convert/Convert Images/Flatten not yet scoped. Orphan fragment — see note below. |
+| `ADMIN_SPEC.md` | Admin page — existing behaviour + new items (password, logs, backup scheduling, Processing Tools §11, etc.) | Items 1–13 (admin scope) built and code-verified (2026-06-24/27); manually tested 2026-06-28, one failure — Restore Database (`BUGS.md` BUG-016). §11 Processing Tools: §11.1 File Rename built and manually tested (v2.4 Item 10, 2026-07-01); §11.2/§11.3/§11.4 scoped, build in progress. |
 | `MENU_BAR_SPEC.md` | Unified menu bar (sort, filters, search, view toggle) across Flat and Folder View | Built (2026-06-23) |
-| `BUGS.md` | Live, **open-only** bug register | Active — 5 open (BUG-016, 015, 014, 013, 008). Fixed-bug history split out 2026-06-29, see `archive/bugs-fixed-archive.md` |
+| `BUGS.md` | Live, **open-only** bug register | Active — 6 open (BUG-018, 016, 015, 014, 013, 008). Fixed-bug history split out 2026-06-29, see `archive/bugs-fixed-archive.md` |
 | `ROADMAP.md` | Paused/future work, explicitly out of scope until unblocked | Active |
 | `INBOX.md` | Raw, untriaged capture (bugs/changes/features) before they're placed in the docs above | Active — see `meta/working-rules.md` for the full workflow |
 | `TESTING.md` | Standing verification approach/runbook | Active |
 | `CHANGELOG.md` | Terse one-line-per-entry index, points back to the current version's `progress.md` | Active |
 
-*`admin-spec-section-12-processing-tools.md` is logically part of `ADMIN_SPEC.md` §12
-but lives as a separate file — treat as authoritative for §12 until it's merged into
-`ADMIN_SPEC.md` proper. Resolution plan settled 2026-06-29: gets folded into
-`ADMIN_SPEC.md` §12 directly when v2.4 Item 10 (File Rename Tool) is actually
-built — not a vague future cleanup, a specific trigger.*
+**`admin-spec-section-12-processing-tools.md` retired 2026-07-01** — folded into
+`ADMIN_SPEC.md` §11 (renumbered from its own §12.1–§12.4 to §11.1–§11.4) as part of
+v2.4 Item 10's build, per the resolution plan settled 2026-06-29. No longer a
+separate file; `ADMIN_SPEC.md` is the sole authority for Processing Tools now.
 
 ## `docs/v2.4/` — current version's working set
 
 | Doc | Purpose | Status |
 |---|---|---|
-| `comicvault-changes-v2.4.md` | v2.4: active build queue | 14 items, closed list agreed 2026-06-29. Items 1–3 built and manually tested 2026-06-29. Items 4–8 scope-then-build, one at a time. Item 10 (File Rename) already scoped, no dependency on others. |
+| `comicvault-changes-v2.4.md` | v2.4: active build queue | 16 items (Item 15 pulled forward from v2.5 2026-06-30; Item 16 added 2026-07-01 as Item 15's missing build counterpart). Items 1–3 built and manually tested 2026-06-29. Items 4–8 and 15 all scoped as of 2026-07-01 (Item 8 scoped to a drop, along with Item 14). Items 9–13/16 ready to build — Code's own review pass at the start of the build session covers the cross-review the cluster's spec calls for. |
 | `progress.md` | Narrative build history, scoped to v2.4 sessions only | Active, append-only, just started 2026-06-29 |
 
 ## Reference docs

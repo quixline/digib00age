@@ -1,9 +1,11 @@
 """
-archive_io.py — CBZ archive I/O for the editor core.
+archive_io.py — CBZ/CBR archive I/O for the editor core.
 
 Ported from CAPT's utils/archive_xml_loader.py + utils/xml_archive_unpacker.py
-(see v2_investigation_report.md). CBR support is dropped entirely per
-EDITOR_SPEC.md Section 2 — the library is all-CBZ.
+(see v2_investigation_report.md). CBR support reinstated v2.4 Item 5/11
+(EDITOR_SPEC.md Section 3.1/3.2) — read-only at the archive level; a rebuild
+always produces a `.cbz`, never a `.cbr` (RAR creation needs a paid WinRAR
+install, deliberately never a ComicVault dependency).
 """
 
 import logging
@@ -11,8 +13,10 @@ import os
 import shutil
 import tempfile
 import uuid
-import zipfile
+from pathlib import Path
 from typing import Optional
+
+from backend import archive_formats
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +26,7 @@ IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp")
 def find_xml_in_archive(archive_path: str) -> list[str]:
     """Return the names of any .xml entries in the archive."""
     try:
-        with zipfile.ZipFile(archive_path, "r") as z:
+        with archive_formats._opener(archive_path) as z:
             return [f for f in z.namelist() if f.lower().endswith(".xml")]
     except Exception as exc:
         logger.error("Error reading archive %s: %s", archive_path, exc)
@@ -32,9 +36,8 @@ def find_xml_in_archive(archive_path: str) -> list[str]:
 def extract_xml_from_archive(archive_path: str, xml_filename: str) -> Optional[str]:
     """Return the decoded contents of one XML entry, or None on failure."""
     try:
-        with zipfile.ZipFile(archive_path, "r") as z:
-            with z.open(xml_filename) as f:
-                return f.read().decode("utf-8")
+        with archive_formats._opener(archive_path) as z:
+            return z.read(xml_filename).decode("utf-8")
     except Exception as exc:
         logger.error(
             "Error extracting %s from %s: %s", xml_filename, archive_path, exc
@@ -45,7 +48,7 @@ def extract_xml_from_archive(archive_path: str, xml_filename: str) -> Optional[s
 def get_archive_page_count(archive_path: str) -> int:
     """Count image entries in the archive (used to auto-populate PageCount)."""
     try:
-        with zipfile.ZipFile(archive_path, "r") as z:
+        with archive_formats._opener(archive_path) as z:
             return sum(
                 1 for f in z.namelist() if f.lower().endswith(IMAGE_EXTENSIONS)
             )
@@ -54,43 +57,79 @@ def get_archive_page_count(archive_path: str) -> int:
         return 0
 
 
-def _rebuild_archive(extract_dir: str, archive_path: str) -> None:
+def flatten_and_zip(extract_dir: str, target_dir: str) -> str:
     """
-    Shared final stage of every archive rewrite (EDITOR_SPEC.md Section 3.2):
-    flatten extract_dir (archive members may be nested; the rebuilt zip
-    stores everything flat at the root, matching CAPT's existing behaviour),
-    rebuild a new zip, and replace the original file with it.
+    Flatten extract_dir (archive members may be nested; the rebuilt zip
+    stores everything flat at the root, matching CAPT's existing behaviour)
+    and zip it into a new staged archive inside target_dir. Does **not**
+    move/replace anything — purely builds the staged file and returns its
+    path, so callers with different replace semantics (an in-place editor
+    rewrite vs. Convert Images' stage/validate/backup flow, §11.3.4) can
+    share this step without also sharing what happens after it.
 
-    The rebuilt zip is staged in the *same directory* as the original file
-    before the final replace, not in the OS temp directory — `os.replace` is
-    only atomic within a single filesystem, and the library lives on a
-    different drive (L:) than the OS temp dir (C:).
+    Staged in target_dir (normally the same directory as the eventual
+    destination), not the OS temp directory — a later `os.replace` is only
+    atomic within a single filesystem, and the library commonly lives on a
+    different drive than the OS temp dir.
     """
-    flat_dir = tempfile.mkdtemp(prefix="cv_editor_flat_")
+    flat_dir = tempfile.mkdtemp(prefix="cv_flatten_")
     try:
         for root, _dirs, files in os.walk(extract_dir):
             for name in files:
                 shutil.copy2(os.path.join(root, name), os.path.join(flat_dir, name))
 
-        target_dir = os.path.dirname(archive_path)
-        staging_base = os.path.join(target_dir, f".cv_editor_tmp_{uuid.uuid4().hex}")
-        staged_zip = shutil.make_archive(staging_base, "zip", flat_dir)
-        os.replace(staged_zip, archive_path)
+        staging_base = os.path.join(target_dir, f".cv_tmp_{uuid.uuid4().hex}")
+        return shutil.make_archive(staging_base, "zip", flat_dir)
     finally:
         shutil.rmtree(flat_dir, ignore_errors=True)
 
 
-def write_comicinfo_to_cbz(archive_path: str, xml_content: str) -> None:
+def _rebuild_archive(extract_dir: str, archive_path: str) -> str:
     """
-    Write ComicInfo.xml into a CBZ via full archive rebuild — extract,
+    Shared final stage of every editor archive rewrite (EDITOR_SPEC.md
+    Section 3.2): flatten + zip (see flatten_and_zip), then replace the
+    original file with it.
+
+    **CBR source → CBZ output (EDITOR_SPEC.md Section 3.2, v2.4 Item 5/11).**
+    The rebuild always produces a zip archive — when `archive_path` is a
+    `.cbr`, the rebuilt zip is written to a sibling `.cbz` path instead of
+    overwriting the `.cbr` in place, and the original `.cbr` is deleted only
+    once the new `.cbz` is confirmed written. Returns the final path
+    (unchanged for a `.cbz` source, the new sibling path for a `.cbr` one) —
+    callers whose archive is tracked elsewhere (a DB row, a working-set dict)
+    must update that tracking to the returned path.
+
+    :raises FileExistsError: source is `.cbr` and a sibling `.cbz` already
+        exists — no silent clobber, same guard principle used elsewhere.
+    """
+    is_cbr = archive_path.lower().endswith(".cbr")
+    final_path = str(Path(archive_path).with_suffix(".cbz")) if is_cbr else archive_path
+
+    if is_cbr and os.path.exists(final_path):
+        raise FileExistsError(f"{final_path} already exists")
+
+    staged_zip = flatten_and_zip(extract_dir, os.path.dirname(final_path))
+    os.replace(staged_zip, final_path)
+
+    if is_cbr:
+        os.remove(archive_path)
+
+    return final_path
+
+
+def write_comicinfo_to_cbz(archive_path: str, xml_content: str) -> str:
+    """
+    Write ComicInfo.xml into an archive via full archive rebuild — extract,
     overwrite ComicInfo.xml, rebuild (see _rebuild_archive). No in-place
     patching.
+
+    Returns the final archive path (see _rebuild_archive's CBR→CBZ note).
 
     :raises: on any I/O failure — callers are expected to handle/report it.
     """
     extract_dir = tempfile.mkdtemp(prefix="cv_editor_unpack_")
     try:
-        with zipfile.ZipFile(archive_path, "r") as archive:
+        with archive_formats._opener(archive_path) as archive:
             archive.extractall(extract_dir)
 
         with open(
@@ -98,23 +137,25 @@ def write_comicinfo_to_cbz(archive_path: str, xml_content: str) -> None:
         ) as f:
             f.write(xml_content)
 
-        _rebuild_archive(extract_dir, archive_path)
+        return _rebuild_archive(extract_dir, archive_path)
     finally:
         shutil.rmtree(extract_dir, ignore_errors=True)
 
 
-def keep_single_xml(archive_path: str, keep_filename: str) -> None:
+def keep_single_xml(archive_path: str, keep_filename: str) -> str:
     """
     Resolve a multi-ComicInfo.xml archive (EDITOR_SPEC.md Section 3.5, Full
     Editor only): delete every *.xml entry except keep_filename, renaming it
     to ComicInfo.xml if it wasn't already named that, then rebuild.
+
+    Returns the final archive path (see _rebuild_archive's CBR→CBZ note).
 
     :raises: on any I/O failure, or if keep_filename isn't actually in the
         archive.
     """
     extract_dir = tempfile.mkdtemp(prefix="cv_editor_unpack_")
     try:
-        with zipfile.ZipFile(archive_path, "r") as archive:
+        with archive_formats._opener(archive_path) as archive:
             archive.extractall(extract_dir)
 
         keep_path = os.path.join(extract_dir, keep_filename)
@@ -133,6 +174,6 @@ def keep_single_xml(archive_path: str, keep_filename: str) -> None:
             ):
                 os.remove(candidate)
 
-        _rebuild_archive(extract_dir, archive_path)
+        return _rebuild_archive(extract_dir, archive_path)
     finally:
         shutil.rmtree(extract_dir, ignore_errors=True)

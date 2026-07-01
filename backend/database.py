@@ -79,19 +79,29 @@ def _add_missing_issue_columns():
             conn.execute(text("ALTER TABLE issues ADD COLUMN favorites BOOLEAN NOT NULL DEFAULT 0"))
         if "personal_rating" not in cols:
             conn.execute(text("ALTER TABLE issues ADD COLUMN personal_rating INTEGER"))
+        if "container_format" not in cols:
+            conn.execute(text("ALTER TABLE issues ADD COLUMN container_format TEXT"))
+            # Backfill every already-scanned row from its file_path extension —
+            # not just new ones (SPEC.md §7, v2.4 Item 5/11).
+            conn.execute(text(
+                "UPDATE issues SET container_format = "
+                "CASE WHEN lower(file_path) LIKE '%.cbr' THEN 'cbr' ELSE 'cbz' END"
+            ))
         conn.commit()
 
 
 def _add_missing_custom_tab_columns():
     """
     create_all() only creates missing *tables* — it never adds columns to a
-    table that already exists. The additive CustomTab.view_mode column needs
-    a manual ALTER TABLE here, run once (idempotent).
+    table that already exists. The additive CustomTab.view_mode/basis_type
+    columns need a manual ALTER TABLE here, run once each (idempotent).
     """
     with engine.connect() as conn:
         cols = {row[1] for row in conn.execute(text("PRAGMA table_info(custom_tabs)"))}
         if "view_mode" not in cols:
             conn.execute(text("ALTER TABLE custom_tabs ADD COLUMN view_mode TEXT NOT NULL DEFAULT 'flat'"))
+        if "basis_type" not in cols:
+            conn.execute(text("ALTER TABLE custom_tabs ADD COLUMN basis_type TEXT NOT NULL DEFAULT 'folder'"))
         conn.commit()
 
 

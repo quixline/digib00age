@@ -379,3 +379,44 @@ timing was unaffected by the fix (~5 seconds for all 5,429 files, matching pre-f
 skip-path timing).
 
 **Status:** Fixed in V2. V1 retains the original (unfixed) logic by design.
+
+---
+
+### BUG-017 — All-tab Favourites filter only checks one issue per series, misses favourited issues elsewhere in that series
+
+**Found:** 2026-06-30, scoping session for the new Favourites Tab (v2.4 Item 4 —
+see `CUSTOM_TABS_SPEC.md` §10.7).
+
+**Where:** `backend/routers/library.py`, `get_library()` — the per-series result dict
+sets `"favorites": cover_issue.favorites`, where `cover_issue` is whichever single
+issue in the series sorts first by issue number (typically issue #1). The existing
+Black & White flag two lines below does the structurally correct thing for the same
+kind of series-wide aggregation: `has_bw = any(i.black_and_white for i in issues)` —
+"does *any* issue in this series have it." Favourites copies one issue's flag
+instead of aggregating across the series.
+
+**What happens:** Favouriting issue #14 of a 20-issue series (without ever touching
+issue #1) leaves the series card's `favorites` flag `false`. The All-tab Favourites
+menu-bar filter (`activeFavorites`, `MENU_BAR_SPEC.md` §2.3) then hides the entire
+series, even though it contains a favourited issue. Singles are unaffected — a
+Single is its own one-issue series, so the one issue's flag is always the correct
+one to check. Confirmed live by Tez: filtering by Genre: Crime shows both series and
+singles cards as expected; toggling Favourites on top of that only shows the
+favourited Singles, silently dropping a series known to contain a favourited issue.
+
+**Impact:** The Favourites filter has been understating results for series (not
+singles) since it shipped — anyone who favourites issues that aren't a series'
+lowest-numbered issue won't see that series under the Favourites filter at all.
+
+**Does not affect the new Favourites Tab** (`CUSTOM_TABS_SPEC.md` §10) — that tab
+filters issues by `Issue.favorites == True` *before* grouping into series cards, so
+every series card it builds is already known to contain a favourited issue. This bug
+is specific to the existing All-tab filter's group-first-check-second order.
+
+**Fixed, 2026-07-01 — v2.4 Item 9 build session, bundled with the new Favourites
+Tab (same file, same function, same data model).** Changed
+`"favorites": cover_issue.favorites` to
+`"favorites": any(i.favorites for i in issues)`, matching the existing `has_bw`
+pattern immediately below it in the same function. Verified against a scratch
+library: favourited issue #2 of a 3-issue scratch series (not #1), confirmed the
+series now surfaces under the All-tab Favourites filter.

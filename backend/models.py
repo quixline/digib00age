@@ -66,6 +66,7 @@ class Issue(Base):
 
     # File tracking
     file_path       = Column(Text, nullable=False, unique=True)
+    container_format = Column(Text, nullable=True)          # "cbz" or "cbr" — SPEC.md §7, v2.4 Item 5/11
     cover_path      = Column(Text, nullable=True)           # path to generated thumbnail
     metadata_source = Column(Text, nullable=True)           # "xml" or "filename"
     missing         = Column(Boolean, default=False, nullable=False)
@@ -171,9 +172,10 @@ class CustomTab(Base):
 
     id          = Column(Integer, primary_key=True, autoincrement=True)
     name        = Column(Text, nullable=False)
-    folder_path = Column(Text, nullable=False)          # stored normalized — see backend.path_utils
+    folder_path = Column(Text, nullable=False)          # stored normalized — see backend.path_utils; "" for basis_type='favorites'
     visible     = Column(Boolean, default=True, nullable=False)
     view_mode   = Column(Text, nullable=False, default="flat")   # 'flat' | 'folder'
+    basis_type  = Column(Text, nullable=False, default="folder")  # 'folder' | 'favorites' — CUSTOM_TABS_SPEC.md §10
     created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     def __repr__(self):

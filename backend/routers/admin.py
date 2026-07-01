@@ -186,8 +186,8 @@ def scan_single_file(
     if not Path(path).exists():
         raise HTTPException(status_code=404, detail=f"File not found: {path}")
 
-    if not path.lower().endswith(".cbz"):
-        raise HTTPException(status_code=400, detail="Only CBZ files are supported")
+    if not path.lower().endswith((".cbz", ".cbr")):
+        raise HTTPException(status_code=400, detail="Only CBZ/CBR files are supported")
 
     try:
         from backend.scanner import scan_single_file as _scan_file
@@ -550,6 +550,7 @@ def _custom_tab_to_dict(tab: CustomTab) -> dict:
         "folder_path": tab.folder_path,
         "visible": tab.visible,
         "view_mode": tab.view_mode,
+        "basis_type": tab.basis_type,
         "created_at": tab.created_at.isoformat() if tab.created_at else None,
     }
 
@@ -585,6 +586,32 @@ def list_custom_tabs(db: Session = Depends(get_db)):
 
 @router.post("/admin/custom-tabs")
 def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
+    basis_type = (payload.get("basis_type") or "folder").strip()
+    if basis_type not in ("folder", "favorites"):
+        raise HTTPException(status_code=400, detail="basis_type must be 'folder' or 'favorites'")
+
+    if basis_type == "favorites":
+        # CUSTOM_TABS_SPEC.md §10.2 — no name/folder_path required, server
+        # assigns fixed values, at most one such tab ever.
+        existing = db.query(CustomTab).filter(CustomTab.basis_type == "favorites").first()
+        if existing:
+            raise HTTPException(status_code=409, detail="A Favourites tab already exists.")
+
+        visible_count = db.query(func.count(CustomTab.id)).filter(CustomTab.visible == True).scalar()  # noqa: E712
+        if visible_count >= MAX_VISIBLE_CUSTOM_TABS:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
+            )
+
+        tab = CustomTab(
+            name="Favourites", folder_path="", visible=True,
+            view_mode="flat", basis_type="favorites",
+        )
+        db.add(tab)
+        db.commit()
+        return _custom_tab_to_dict(tab)
+
     name = (payload.get("name") or "").strip()
     folder_path = (payload.get("folder_path") or "").strip()
     view_mode = (payload.get("view_mode") or "flat").strip()
@@ -602,7 +629,10 @@ def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
             detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
         )
 
-    tab = CustomTab(name=name, folder_path=normalize_path(folder_path), visible=True, view_mode=view_mode)
+    tab = CustomTab(
+        name=name, folder_path=normalize_path(folder_path), visible=True,
+        view_mode=view_mode, basis_type="folder",
+    )
     db.add(tab)
     db.commit()
 
@@ -617,6 +647,18 @@ def update_custom_tab(tab_id: int, payload: dict = Body(...), db: Session = Depe
     tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
     if not tab:
         raise HTTPException(status_code=404, detail="Custom tab not found")
+
+    if tab.basis_type == "favorites":
+        # CUSTOM_TABS_SPEC.md §10.4 — favourites-basis rows only allow name/
+        # visible edits; folder_path, basis_type, and view_mode are locked.
+        locked_keys = {"folder_path", "basis_type"} & payload.keys()
+        if locked_keys:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Favourites tab does not allow changing: {', '.join(sorted(locked_keys))}",
+            )
+        if "view_mode" in payload and payload["view_mode"] != "flat":
+            raise HTTPException(status_code=400, detail="Favourites tab must stay in Flat view")
 
     warning = None
 

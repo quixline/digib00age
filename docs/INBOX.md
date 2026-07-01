@@ -40,6 +40,8 @@ until triaged — only processed lines ever leave.
 
 (empty — add lines below this heading as they come to you)
 
+[change] Admin page, remove the custom/editable path text input field from Add Custom Tabs. The user has the ability to Choose a folder with the custom folder nav-picker no need for both.
+
 ---
 
 ## Processed (awaiting Sunday prune)
@@ -127,3 +129,7 @@ until triaged — only processed lines ever leave.
 - ~~Work with Claude Design for redesign options...~~ → duplicate of existing parked item, no new entry
 
 - ~~Mobile Reader App **On Hold**... [both sub-items]~~ → folded into existing on-hold Mobile Reader ROADMAP note as future scope detail
+
+- ~~[re-scope] **§12.1 File Rename needs re-scoping before Item 10 is built.** Current spec is a CAPT port (four fields + checkboxes). Automation (Item 15) requires a template-based naming convention system: user defines format (e.g. `{series} #{issue} ({year})`), tests it against real files in the manual tool with live preview, saves it; automation pipeline then applies the saved template. Cloned rename tool available for logic inspection as part of this pass. Default template for automation ("Default Parsing") also needs to be defined. `[AUTO]` prefix log behaviour and `processing_folder_rename_template` config key already specified in §12.4 — §12.1 re-scope must align with those.~~ → re-scoped 2026-07-01: found and fixed three real parser bugs (stale hardcoded year ceiling, zero-issue stripping, volume/subtitle whitespace loss) instead of building a template system. Rename stays manual-only, dropped from Item 15's automation entirely (`DECISIONS.md`, `admin-spec-section-12-processing-tools.md` §12.1.3/§12.4 Change Log)
+
+- ~~[re-scope] **§12.2 Convert Archives backup model amendment.** Item 15 scoping settled a unified backup model that supersedes §12.2's current "Delete Original File" checkbox. Amendments needed: (1) remove "Delete Original File" checkbox (§12.2.3) entirely; (2) replace "Output file already exists" guard (§12.2.4) with "refuse if `.bak` already exists for this file"; (3) add the clean-success/success-with-warnings/failure `.bak` table from §12.4.6. Also confirm core conversion function is specified as a router-independent callable (same requirement as §12.3.8 — needed for Item 15 to invoke it directly).~~ → written into `admin-spec-section-12-processing-tools.md` §12.2/§12.4.6 2026-07-01, during the pre-build v2.4 doc sanity check (all three amendments applied, plus the callable requirement added to §12.2.7)

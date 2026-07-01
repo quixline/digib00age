@@ -4,12 +4,60 @@ Terse, one-line-per-entry index, newest first. Each line is a pointer into the
 current version's `progress.md` matching section heading — read there for the full
 narrative, what was verified, and any gotchas. Bug fixes already logged in
 `BUGS.md` aren't repeated here unless they also got their own `progress.md` session
-entry. **Entries dated 2026-06-29 or earlier point into `archive/v2.3/progress.md`**
+entry. **Entries dated 2026-06-28 or earlier point into `archive/v2.3/progress.md`**
 (progress.md became version-scoped starting with v2.4, archived alongside v2.3's
 close) — entries from 2026-06-29 onward point into `v2.4/progress.md`.
 
 ---
 
+- **2026-07-01** — v2.4 Item 16: Processing Folder Automation built — closes
+  out the CAPT-tooling cluster. Two-stage scheduled/on-demand pipeline
+  (Convert Archives → Convert Images, fixed order) invoking Items 12/13's
+  callables directly, wall-clock scheduler (daily/weekly), `[AUTO]`-tagged
+  audit-log lines. Manual test confirmed folder-level chaining (Stage 2
+  picks up Stage 1's freshly-produced output, not just pre-existing files)
+  and that leftover `.bak` files are never reprocessed across repeated runs.
+  Found and fixed a response-shape bug affecting "already running"
+  rejections on all three Processing Tools run endpoints (Items 12, 13, 16)
+  — the rejection was indistinguishable from success in the JSON response,
+  so the UI's rejection toast could never actually display. → `progress.md`
+  "Session — 2026-07-01: v2.4 Item 16 — Processing Folder Automation"
+- **2026-07-01** — v2.4 Item 13: Convert Images built — WebP conversion for
+  CBZ/CBR (CBR always rebuilds as CBZ), reusing the Editor's flatten logic
+  and Item 12's unified backup model (`backend/backup_model.py`). Caught and
+  fixed a stale doc sample: `ADMIN_SPEC.md` §11.3.7's audit-log example
+  still showed the pre-unification "always backed up" wording. Manual test
+  passed. → `progress.md` "Session — 2026-07-01: v2.4 Item 13 — Convert
+  Images"
+- **2026-07-01** — v2.4 Item 12: Convert Archives built — CBR→CBZ and
+  PDF→CBZ, background job + live progress, unified backup model
+  (`backend/backup_model.py`, shared with Item 13). Cross-review fix folded
+  in: the picker now excludes `*.bak` files, matching Convert Images. Caught
+  and fixed a real bug during UI testing (picker URL construction broke when
+  the browse endpoint already had its own query string). Manual test passed.
+  → `progress.md` "Session — 2026-07-01: v2.4 Item 12 — Convert Archives"
+- **2026-07-01** — v2.4 Item 11: native CBR support built — scanner, reader,
+  Basic Editor, and Full Editor all read/scan/thumbnail/serve `.cbr` files;
+  editing a CBR rebuilds it as `.cbz` on save (original deleted only after
+  the rebuild is confirmed written, guarded against clobbering an existing
+  sibling `.cbz`), same rule across all three editing surfaces. New shared
+  `backend/archive_formats.py` dispatch, new `Issue.container_format`
+  column. Manual test passed (including a caught-and-fixed missing-`flush()`
+  bug that would've duplicated the DB row on a CBR→CBZ save). → `progress.md`
+  "Session — 2026-07-01: v2.4 Item 11 — native CBR support (build)"
+- **2026-07-01** — v2.4 Item 10: File Rename Tool built (batch/single-file
+  renaming based on parsed Series/Issue/Title/Year, no undo). Three parser
+  bugs fixed (stale year ceiling, zero-issue stripping, whitespace/dash
+  artifacts). Built the shared Processing Tools picker/log infrastructure
+  reused by Items 12/13/16. `admin-spec-section-12-processing-tools.md`
+  folded into `ADMIN_SPEC.md` §11, standalone file retired. Manual test
+  passed. → `progress.md` "Session — 2026-07-01: v2.4 Item 10 — File Rename
+  Tool"
+- **2026-07-01** — v2.4 Item 9: Favourites as a library-wide Custom Tab
+  category, plus bundled BUG-017 fix (All-tab Favourites filter now correctly
+  aggregates across a whole series, not just its #1 issue). Manual test
+  passed. → `progress.md` "Session — 2026-07-01: v2.4 Item 9 — Favourites as a
+  Custom Tab category"
 - **2026-06-29** — v2.4 Item 3: empty-results 📚 icon replaced with the
   ComicVault logo image; extended (Tez's call, beyond original item scope) to
   all 10 other emoji-based empty/error states in `app.js` for consistency.

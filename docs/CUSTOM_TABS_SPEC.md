@@ -52,13 +52,16 @@ New table: `custom_tabs`
 |---|---|---|
 | `id` | INTEGER PRIMARY KEY | |
 | `name` | TEXT NOT NULL | Admin-set label, shown in nav when `visible = true` |
-| `folder_path` | TEXT NOT NULL | Absolute path on disk. Must resolve under a configured library root (see Section 4) |
+| `basis_type` | TEXT NOT NULL DEFAULT 'folder' | `'folder'` (original v2.1 behaviour) or `'favorites'` (v2.4 — see Section 10). Existing rows get `'folder'` via migration default, no behaviour change |
+| `folder_path` | TEXT NOT NULL | Absolute path on disk when `basis_type = 'folder'`. Must resolve under a configured library root (see Section 4). For `basis_type = 'favorites'` rows, stored as `""` (empty string) and never read — see Section 10.1 for why the column stays `NOT NULL` rather than being migrated to nullable |
 | `visible` | BOOLEAN NOT NULL DEFAULT 1 | Controls nav display only — does not affect storage |
 | `created_at` | TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP | Sort key for nav order among visible tabs |
 
-No new columns on `issues`. No scanner changes. A custom tab's content is computed
-**at query time** — filter already-scanned issues by file path prefix — not a new
-ingestion rule.
+No new columns on `issues` (the favourites tab reuses the existing `Issue.favorites`
+boolean). No scanner changes. A folder tab's content is computed **at query time** —
+filter already-scanned issues by file path prefix; a favourites tab's content is
+computed the same way, filtering by `Issue.favorites == True` instead — neither is a
+new ingestion rule.
 
 ---
 
@@ -66,9 +69,14 @@ ingestion rule.
 
 - **Maximum 4 tabs with `visible = 1` at any time.** This is a nav-space limit, not a
   storage limit.
-- **No cap on total stored rows.** Admin can create as many tab definitions as they
-  like; toggling `visible` off frees a slot for another to be shown without losing the
-  definition.
+- **No cap on total stored rows** for folder-based tabs. Admin can create as many tab
+  definitions as they like; toggling `visible` off frees a slot for another to be
+  shown without losing the definition.
+- **Maximum 1 favourites-basis tab, stored or visible, ever.** Unlike folder tabs
+  (which differ by path), every favourites tab would have identical content —
+  allowing more than one only wastes visible-tab slots on duplicates. The "Add
+  Favourites Tab" button (Section 10.2) disables itself once one exists, in either
+  visibility state.
 - Enforce the visible-cap server-side (reject/409 on attempting to set a 5th tab
   visible) — don't rely on the admin UI alone to prevent it.
 
@@ -143,6 +151,12 @@ Contents:
     (with a short explanatory note, e.g. "4 tabs already visible — hide one first")
     whenever 4 tabs are already visible. Admin must hide an existing tab before adding
     a new one — no hidden-on-creation path.
+- **"Add Favourites Tab" button (v2.4 — see Section 10.2)**: a separate, single-click
+  control next to "Add Tab" — no form, no folder picker. Creates a `basis_type =
+  'favorites'` row directly, pre-filled name "Favourites" (renameable afterward via
+  the same row controls as any other tab). Disabled once a favourites-basis tab
+  already exists (stored or visible — Section 3), and counts toward the same
+  4-visible cap as folder tabs.
 
 ### 5.2 Nav bar
 
@@ -201,6 +215,7 @@ layout.
 | 2026-06-22 | Added `view_mode` (`flat`/`folder`) to `custom_tabs`. Folder View generalises 2000 AD's old hardcoded two-level year-grid into a reusable per-tab mode: recursive folder/file mixed-grid browsing with real history-backed navigation, depth-agnostic search, and recursive Mark All Read. The 2000 AD fixed tab is fully removed; 2000 AD becomes an ordinary custom tab (Folder View) post-build, consuming a normal visible-tab slot. | v2.2 planning — 2000 AD's bespoke view was always meant to be removed before the app went public; Folder View captures the part of its behaviour that was actually useful and makes it available to any custom tab. |
 | 2026-06-23 | Resolved the folder-card image gap flagged 2026-06-22 (§9.2): random cached issue thumbnail from anywhere in the folder's subtree, re-rolled every request. Considered and rejected an explicit `folder.jpg`/`cover.jpg`/`poster.jpg` convention with its own thumbnail pipeline — reusing existing per-issue thumbnails achieves the same goal (better than a blank icon) with no new pipeline, file convention, or invalidation logic. | Design discussion 2026-06-23 session; see `comicvault-changes-v2.3.md`. |
 | 2026-06-23 | Built the above same day: `get_tab_folder_contents()` (`library.py`) now returns a `cover_path` per subfolder (random choice over issue ids already collected in its single pass); `buildFolderCard()` (`app.js`) renders it image-on-top/info-below (new `.folder-card.has-cover` CSS), falling back to the 📁 icon on no-cover or image load error. | Implementation session 2026-06-23; see `progress.md`. |
+| 2026-06-30 | Added §10 Favourites Tab (v2.4 Item 4) — new `basis_type` column (`'folder'`/`'favorites'`), library-wide favourites filtering reusing the existing flat-tab render path and client-side filter bar, dedicated "Add Favourites Tab" one-click control, `folder_path = ""` convention (no nullable-column migration), `view_mode` locked to `'flat'`, server-side guards rejecting Folder View endpoints/edits on favourites-basis rows, live-removal-on-unfavourite fix scoped to the shared toggle handler (benefits the existing All-tab filter too), and BUG-017 (All-tab Favourites filter missing favourited issues inside series) bundled into the same build. | Scoping session 2026-06-30 — `comicvault-changes-v2.4.md` Item 4; code read directly (`models.py`, `library.py`, `path_utils.py`, `admin.py`, `app.js`) before design decisions were made. |
 
 ---
 
@@ -305,3 +320,127 @@ matching what the folder's displayed issue count represents.
 - Folder View flat file cards plug into the existing multi-select mechanism
   (`makeSelectable()`) the same way the old 2000 AD prog cards did — no new
   mechanism needed.
+
+---
+
+## 10. Favourites Tab (v2.4)
+
+**Built and manually tested 2026-07-01 — `comicvault-changes-v2.4.md` Item 9.**
+
+Scoped 2026-06-30 (`comicvault-changes-v2.4.md` Item 4). A library-wide custom tab
+showing every issue with `Issue.favorites = true`, regardless of which folder it
+lives in. Reuses the existing flat-tab rendering path wholesale — the filter bar
+(Genre, Publisher, Format, Rating, Decade, Year, B&W, Stars, and the existing
+Favourites menu-bar toggle) already runs client-side on top of whatever pool the
+active surface fetched (`getFilteredLibrary()`, confirmed by reading `app.js`
+directly), so "Genre: Crime within Favourites" needs no new filter-bar code —
+it's the existing mechanism applied to a favourites-only pool.
+
+### 10.1 Why `folder_path` stays `NOT NULL`
+
+`custom_tabs.folder_path` was created `NOT NULL` in the original migration, and this
+codebase's only proven migration pattern (`_add_missing_custom_tab_columns()`,
+`database.py`) is additive-column-only — it has never relaxed a constraint, and
+doing so in SQLite means a full table rebuild, not a simple `ALTER TABLE`. Given
+BUG-016 was exactly this class of risk (something that read correctly in the code
+but broke on first real exercise), favourites-basis rows store `folder_path = ""`
+rather than attempting a nullable migration. Every code path branches on
+`basis_type`, never on whether `folder_path` is truthy — `""` is never read or
+relied upon as a sentinel beyond "this row isn't folder-based."
+
+### 10.2 Admin — "Add Favourites Tab"
+
+Separate button next to "Add Tab" (§5.1), no form. One click:
+`POST /admin/custom-tabs {"basis_type": "favorites"}` — no `name` or `folder_path`
+required in the payload (`create_custom_tab` gets a `basis_type` branch that skips
+the existing `if not name or not folder_path` requirement entirely for this case).
+Server assigns `name = "Favourites"`, `folder_path = ""`, `view_mode = "flat"`,
+`visible = true` (subject to the existing 4-visible cap, §3). Name is renameable
+afterward through the same row controls every other tab uses — no new UI needed
+for that.
+
+Button disables itself once a favourites-basis tab already exists, in either
+visibility state (§3) — checked the same way the "Add Tab" button already checks
+the 4-visible cap.
+
+### 10.3 Backend — query resolution
+
+`GET /api/library`'s `tab_id` resolution (`backend/routers/library.py`,
+`get_library()`) gains a `basis_type` branch:
+
+```python
+if tab_id is not None:
+    tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
+    if not tab:
+        raise HTTPException(status_code=404, detail="Custom tab not found")
+    if tab.basis_type == "favorites":
+        all_issues = [i for i in all_issues if i.favorites]
+    else:
+        tab_folder = tab.folder_path
+# existing `if tab_folder:` block continues unchanged for folder-basis tabs
+```
+
+Filtering happens before the per-series groupby, same as the existing folder/field/
+search filters — a series card only ever reflects issues that actually matched (same
+principle as BUG-010's fix, and the reason BUG-017 below doesn't affect this new tab).
+
+### 10.4 Backend — guards on favourites-basis rows
+
+- `view_mode` is forced to `"flat"` at creation and **locked** — `PATCH
+  /admin/custom-tabs/{id}` must reject any attempt to set `view_mode = "folder"` on a
+  favourites-basis row (Folder View has no meaning without a real `folder_path`).
+- `PATCH /admin/custom-tabs/{id}` must reject any attempt to edit `folder_path` or
+  `basis_type` on a favourites-basis row — same protection pattern
+  `HOME_STRIPS_SPEC.md` §4.3 already uses for `is_default` rows (only specific fields
+  mutable, clear error otherwise, not silent ignoring).
+- The three Folder View endpoints (`GET /library/tab/{id}/folder`,
+  `POST /library/tab/{id}/folder/mark-read`, `GET /library/tab/{id}/search`) must
+  return `400` if called against a `basis_type = "favorites"` tab, rather than
+  evaluating `is_under(file_path, "")` against an empty `folder_path` (undefined
+  behaviour — not a safe "matches nothing"). This is a server-side guard, not just a
+  frontend one — `view_mode` locking (above) should prevent the frontend from ever
+  calling these for a favourites tab, but the backend must not trust that.
+
+### 10.5 Live removal on un-favourite
+
+Un-favouriting a card while viewing the Favourites tab should remove it from view
+immediately, without a page reload or surface switch. This is **not** new behaviour
+scoped to this tab alone — today, un-favouriting a card while the existing All-tab
+Favourites menu-bar filter (`activeFavorites`, `MENU_BAR_SPEC.md` §2.3) is active
+also fails to remove it live; the toggle handler (`applyFavoriteToDom()`, `app.js`)
+updates the in-memory `favorites` flag but never re-runs `getFilteredLibrary()` +
+re-render. Fix once, in the shared favourite-toggle handler, so both the existing
+All-tab filter and the new Favourites tab get consistent live removal — building it
+for the new tab only would leave the older, already-shipped filter looking broken by
+comparison.
+
+### 10.6 Empty state
+
+Zero favourites anywhere in the library (e.g. fresh install) — the tab's empty-state
+message should read something Favourites-specific ("No favourites yet — star some
+issues to see them here"), not the generic "No comics match these filters," or it
+reads as broken rather than simply empty.
+
+### 10.7 Related fix bundled into this build — BUG-017
+
+Scoping this tab surfaced an existing bug in the *current* All-tab Favourites filter
+(not the new tab — see 10.3's note on why the new tab doesn't inherit it). Full
+write-up: `BUGS.md` BUG-017. Bundled into the same build session (v2.4 Item 9) since
+it's the same file, same function, same data model, and shipping a new Favourites
+tab while the existing Favourites filter stays subtly broken elsewhere would be a
+confusing place to leave things.
+
+### 10.8 Out of scope (this build)
+
+- Combining a folder restriction with the favourites filter on one tab row (e.g.
+  "favourites within my Marvel folder") — considered and rejected during scoping;
+  nobody asked for it and it breaks the single-criterion pattern `HomeStrip` already
+  established for the same reason.
+- Generic field-based custom tabs (Genre/Publisher/etc. as a tab's own scoping
+  criterion, the way `HomeStrip` supports for strips) — `basis_type` as a column
+  doesn't preclude adding a third value later, but no admin UI for it is being built
+  now.
+- Removing the "Add Tab" form's manual-path text input now that the Browse picker
+  works reliably — flagged during scoping as redundant, but unrelated to this
+  feature; tracked separately via `INBOX.md`.
+

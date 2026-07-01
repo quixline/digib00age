@@ -8,13 +8,13 @@ GET /api/cover/{id}         Serve the pre-generated cover thumbnail
 from __future__ import annotations
 
 import io
-import zipfile
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response, FileResponse
 from sqlalchemy.orm import Session
 
+from backend import archive_formats
 from backend.database import get_db
 from backend.models import Issue
 from backend.config import get_config
@@ -29,21 +29,21 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff", "
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _sorted_pages(cbz_path: str) -> list[str]:
+def _sorted_pages(archive_path: str) -> list[str]:
     """
-    Return filenames inside the CBZ that look like images, sorted alphabetically.
-    This is the canonical page order — same logic as the scanner uses for covers.
+    Return filenames inside the CBZ/CBR that look like images, sorted
+    alphabetically. This is the canonical page order — same logic as the
+    scanner uses for covers.
     """
     try:
-        with zipfile.ZipFile(cbz_path, "r") as zf:
-            names = [
-                n for n in zf.namelist()
-                if Path(n).suffix.lower() in IMAGE_EXTENSIONS
-                and not Path(n).name.startswith(".")  # skip hidden files
-            ]
+        names = [
+            n for n in archive_formats.archive_namelist(archive_path)
+            if Path(n).suffix.lower() in IMAGE_EXTENSIONS
+            and not Path(n).name.startswith(".")  # skip hidden files
+        ]
         return sorted(names)
-    except (zipfile.BadZipFile, FileNotFoundError) as exc:
-        raise HTTPException(status_code=500, detail=f"Cannot read CBZ: {exc}")
+    except (*archive_formats.BAD_ARCHIVE_EXCEPTIONS, FileNotFoundError) as exc:
+        raise HTTPException(status_code=500, detail=f"Cannot read archive: {exc}")
 
 
 def _mime_for(filename: str) -> str:
@@ -115,9 +115,8 @@ def get_page(issue_id: int, page_number: int, db: Session = Depends(get_db)):
     mime = _mime_for(target)
 
     try:
-        with zipfile.ZipFile(issue.file_path, "r") as zf:
-            data = zf.read(target)
-    except (zipfile.BadZipFile, KeyError) as exc:
+        data = archive_formats.archive_read_bytes(issue.file_path, target)
+    except (*archive_formats.BAD_ARCHIVE_EXCEPTIONS, *archive_formats.ENTRY_NOT_FOUND_EXCEPTIONS) as exc:
         raise HTTPException(status_code=500, detail=f"Cannot read page: {exc}")
 
     return Response(content=data, media_type=mime)
@@ -159,9 +158,8 @@ def get_cover(issue_id: int, db: Session = Depends(get_db)):
     mime = _mime_for(target)
 
     try:
-        with zipfile.ZipFile(issue.file_path, "r") as zf:
-            data = zf.read(target)
-    except (zipfile.BadZipFile, KeyError) as exc:
+        data = archive_formats.archive_read_bytes(issue.file_path, target)
+    except (*archive_formats.BAD_ARCHIVE_EXCEPTIONS, *archive_formats.ENTRY_NOT_FOUND_EXCEPTIONS) as exc:
         raise HTTPException(status_code=500, detail=f"Cannot read cover page: {exc}")
 
     return Response(content=data, media_type=mime)

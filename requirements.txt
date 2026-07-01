@@ -6,3 +6,6 @@ pystray
 pywin32
 watchdog
 lxml
+rarfile          # CBR extraction — added v2.4 Item 5/11 (2026-06-30/07-01), requires an
+                 # unrar-compatible backend (UnRAR.dll/unrar.exe) on the host
+pymupdf          # PDF->CBZ page rendering — added v2.4 Item 12 (2026-07-01), Convert Archives

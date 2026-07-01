@@ -11,11 +11,39 @@ active queues — current active queue is `v2.4/comicvault-changes-v2.4.md`.
 
 ## Active build queue
 
-`v2.4/comicvault-changes-v2.4.md` is the current active queue (Status: Active).
-14 items, closed list agreed 2026-06-29: Items 1–3 are small standalone changes;
-Items 4–8 are scope-then-build pairs (one tool at a time, build→test→fix before
-the next); Item 10 (File Rename Tool) is already fully scoped with no dependency
-on the others. No items built yet.
+`v2.4/comicvault-changes-v2.4.md` is the current active queue (Status: Active —
+scoping phase extended, builds on hold for the CAPT-tooling cluster). 15 items —
+revised 2026-06-30 to pull "Processing Folder Automation" forward from the v2.5
+holding list as Item 15 (see that doc's header note for the full reasoning).
+**Items 1–3 built and manually verified 2026-06-29:**
+
+- Item 1: restrict all admin access for remote users when Remote Administration
+  is off — cog stays visible but inert (dimmed, pointer-events: none) for non-local
+  sessions; every `/api/admin/*` and `/api/editor/*` endpoint and the `/admin`/
+  `/editor` pages now block remote requests unconditionally when the toggle is off,
+  not just the handful previously decorated with `is_local_request()`.
+- Item 2: default server port changed from 8000 to 9424, resolving the Windows
+  port-exclusion conflict at the source. (See "Resolved" section below.)
+- Item 3: empty-results `📚` emoji replaced with the ComicVault logo image,
+  extended at Tez's call to all 11 empty/error states in `app.js`.
+
+**Scoping phase for the CAPT-tooling cluster is now complete** — Items 4–8
+(Favourites, CBR support, Convert Files, Convert Images, Flatten Archive) and
+Item 15 (Processing Folder Automation) are all scoped as of 2026-07-01; Item 8
+scoped to a drop (superseded by BUG-018), Item 14 (its build counterpart)
+dropped with it. Item 15's scoping surfaced a cross-cutting backup-model gap
+between §12.2 and §12.3, which was written into the spec 2026-07-01 (pre-build
+doc sanity check) — no longer outstanding. The "dedicated cross-review pass
+across the whole cluster's specs" originally planned as a separate Chat session
+is instead folded into Code's own review-and-Plan-mode pass at the start of the
+build session (Tez's call, 2026-07-01) — not skipped, just relocated.
+
+**Remaining to build:** Item 9 (Favourites — no dependency on the cluster,
+build-ready), Item 10 (File Rename Tool — build-ready, manual-only), Item 11
+(CBR support), Item 12 (Convert Files/Archives), Item 13 (Convert Images), and
+Item 16 (Processing Folder Automation — depends on Items 11–13 being built
+first, since it orchestrates Convert Archives + Convert Images). Items 8 and 14
+are dropped.
 
 **v2.3 closed 2026-06-29.** Items 1–9 built (Items 1–5 on 2026-06-23, Items 6–9 on
 2026-06-24) and verified via the manual test pass on 2026-06-26 (9 fixes same day).
@@ -117,7 +145,9 @@ whenever this gets picked back up.
 
 ## v2.5 — scoped for the version after next (not started)
 
-Seven items, agreed 2026-06-29. None scoped yet — this is a holding list, not a
+Six items remaining, agreed 2026-06-29 (originally seven — "Processing Folder
+automation" moved to `v2.4/comicvault-changes-v2.4.md` Item 15 on 2026-06-30, see
+that doc's header note for why). None scoped yet — this is a holding list, not a
 build queue; per the version lifecycle in `meta/working-rules.md`, real scoping
 won't start until v2.4 closes and a `docs/v2.5/` working folder is created.
 
@@ -128,15 +158,11 @@ won't start until v2.4 closes and a `docs/v2.5/` working folder is created.
   partial-Komga-API-compatibility idea into one research note; both solve the
   same underlying goal (external reader apps connecting to ComicVault) and should
   be evaluated together rather than as two separate efforts.
-- **Scope: Processing Folder automation** (new Admin area — `ADMIN_SPEC.md` is the
-  future home once scoped): scheduled folder monitor; convert-to-cbz via 7zip,
-  custom rename pattern, image-to-WebP conversion, flatten archive folders — all
-  four reusing the CAPT tooling built in v2.4. Needs its own dedicated scoping
-  session (trigger conditions, conflict handling, action ordering).
-- **Scope: running custom scripts on the Processing Folder.** Same area as the
-  item above — likely worth scoping together rather than separately, since both
-  touch the same automation trigger/conflict-handling design, but kept as its own
-  line per Tez's list rather than pre-merged.
+- **Scope: running custom scripts on the Processing Folder.** Originally listed
+  alongside Processing Folder Automation as "likely worth scoping together" —
+  stays here in v2.5 on its own (Tez's explicit call, 2026-06-30) even though
+  Processing Folder Automation itself moved forward into v2.4 Item 15. Revisit
+  whether this still makes sense to scope together once Item 15's design exists.
 - **Add: user guide.** Not yet scoped at all — first mention. `ADMIN_SPEC.md`
   §7.1.7's Password Recovery popup (v2.3 Item 10) already explicitly said the
   guide, once built, should link to that popup rather than duplicating its

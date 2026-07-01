@@ -332,6 +332,7 @@
                 </div>
                 <div class="ct-add-actions">
                   <button type="button" class="btn-primary" id="ctAddBtn">Add Tab</button>
+                  <button type="button" class="btn-admin-action" id="ctAddFavouritesBtn">Add Favourites Tab</button>
                   <span class="admin-hint" id="ctCapHint" hidden>4 tabs already visible — hide one first.</span>
                 </div>
               </div>
@@ -460,6 +461,216 @@
       </div>
     </section>
 
+    <!-- ── Processing Tools (admin-spec-section-12-processing-tools.md §12) ─── -->
+    <section class="admin-section" id="processingToolsSection">
+      <h2 class="admin-section-heading">Processing Tools</h2>
+      <p class="admin-card-hint" id="ptLocalOnlyHint" hidden>
+        Processing Tools perform real, irreversible filesystem changes and are only
+        available from a local (127.0.0.1) session.
+      </p>
+
+      <!-- ── File Rename (§12.1) ────────────────────────────────────────── -->
+      <div class="admin-subsection">
+        <h3 class="admin-subsection-heading">File Rename</h3>
+        <p class="admin-card-hint">
+          Batch or single-file renaming of any file type, based on parsed/edited
+          Series, Issue, Title, and Year values. No library scan is triggered.
+          There is no undo — review the preview before applying.
+        </p>
+        <div class="admin-card" id="renameToolCard">
+          <div class="pt-toolbar">
+            <button type="button" class="btn-admin-action" id="renameBrowseBtn">Browse…</button>
+            <button type="button" class="btn-admin-action" id="renameClearBtn">Clear Loaded Files</button>
+            <span class="admin-hint" id="renameLoadedCount">0 files loaded</span>
+          </div>
+
+          <div class="pt-rename-filelist" id="renameFileList"></div>
+
+          <table class="pt-rename-fields">
+            <thead><tr><th>Field</th><th>Value</th><th>File</th><th>All</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Series</td>
+                <td><input type="text" class="admin-input" id="renameSeriesInput"></td>
+                <td><input type="checkbox" id="renameSeriesFile"></td>
+                <td><input type="checkbox" id="renameSeriesAll"></td>
+              </tr>
+              <tr>
+                <td>Title</td>
+                <td><input type="text" class="admin-input" id="renameTitleInput"></td>
+                <td><input type="checkbox" id="renameTitleFile"></td>
+                <td><input type="checkbox" id="renameTitleAll"></td>
+              </tr>
+              <tr>
+                <td>Issue</td>
+                <td><input type="text" class="admin-input" id="renameIssueInput"></td>
+                <td><input type="checkbox" id="renameIssueFile"></td>
+                <td><input type="checkbox" id="renameIssueAll"></td>
+              </tr>
+              <tr>
+                <td>Year</td>
+                <td><input type="text" class="admin-input" id="renameYearInput"></td>
+                <td><input type="checkbox" id="renameYearFile"></td>
+                <td><input type="checkbox" id="renameYearAll"></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="pt-rename-batch-options">
+            <label><input type="checkbox" id="renameAutoIncrement" disabled> Auto-Increment Issue Numbers (only when Issue → All is checked)</label>
+            <div class="pt-rename-case-style">
+              <label><input type="radio" name="renameCaseStyle" value="" checked> No case change</label>
+              <label><input type="radio" name="renameCaseStyle" value="title"> Title Case</label>
+              <label><input type="radio" name="renameCaseStyle" value="upper"> ALL UPPER</label>
+              <label><input type="radio" name="renameCaseStyle" value="lower"> all lower</label>
+            </div>
+          </div>
+
+          <h4 class="pt-preview-heading">Preview</h4>
+          <div class="pt-rename-preview-list" id="renamePreviewList"></div>
+          <div class="pt-toolbar">
+            <button type="button" class="btn-admin-action" id="renameClearPreviewBtn">Clear Preview</button>
+            <button type="button" class="btn-primary" id="renameApplyBtn">Apply Rename</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Convert Archives (§11.2) ─────────────────────────────────────── -->
+      <div class="admin-subsection">
+        <h3 class="admin-subsection-heading">Convert Archives</h3>
+        <p class="admin-card-hint">
+          Converts CBR or PDF files to CBZ. The original is kept as a <code>.bak</code>
+          only if some pages were skipped during conversion — a clean conversion
+          removes it automatically.
+        </p>
+        <div class="admin-card">
+          <div class="pt-rename-batch-options">
+            <div class="pt-rename-case-style">
+              <label><input type="radio" name="convertFromFormat" value="cbr" checked> From CBR</label>
+              <label><input type="radio" name="convertFromFormat" value="pdf"> From PDF</label>
+              <span class="admin-hint">→ CBZ</span>
+            </div>
+          </div>
+          <div class="pt-toolbar">
+            <button type="button" class="btn-admin-action" id="convertBrowseBtn">Browse…</button>
+            <button type="button" class="btn-admin-action" id="convertClearBtn">Clear Loaded Files</button>
+            <span class="admin-hint" id="convertLoadedCount">0 files loaded</span>
+          </div>
+          <div class="pt-rename-filelist" id="convertFileList"></div>
+          <div class="pt-toolbar">
+            <button type="button" class="btn-primary" id="convertRunBtn">Run Conversion</button>
+          </div>
+          <div id="convertProgressWrap" hidden>
+            <p class="admin-card-hint" id="convertProgressLabel"></p>
+            <progress id="convertProgressBar" max="100" value="0" style="width:100%"></progress>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Convert Images (§11.3) ───────────────────────────────────────── -->
+      <div class="admin-subsection">
+        <h3 class="admin-subsection-heading">Convert Images</h3>
+        <p class="admin-card-hint">
+          Converts images inside a CBZ or CBR to WebP and repacks the archive
+          (CBR input always rebuilds as CBZ). The original is kept as a
+          <code>.bak</code> only if some images were skipped during conversion.
+        </p>
+        <div class="admin-card">
+          <div class="pt-rename-batch-options">
+            <label><input type="checkbox" id="convertImagesLossless"> Lossless</label>
+            <div class="pt-rename-case-style">
+              <label for="convertImagesQuality">Quality</label>
+              <input type="range" id="convertImagesQuality" min="1" max="100" value="95">
+              <span id="convertImagesQualityValue">95</span>
+            </div>
+          </div>
+          <div class="pt-toolbar">
+            <button type="button" class="btn-admin-action" id="convertImagesBrowseBtn">Browse…</button>
+            <button type="button" class="btn-admin-action" id="convertImagesClearBtn">Clear Loaded Files</button>
+            <span class="admin-hint" id="convertImagesLoadedCount">0 files loaded</span>
+          </div>
+          <div class="pt-rename-filelist" id="convertImagesFileList"></div>
+          <div class="pt-toolbar">
+            <button type="button" class="btn-primary" id="convertImagesRunBtn">Run Conversion</button>
+          </div>
+          <div id="convertImagesProgressWrap" hidden>
+            <p class="admin-card-hint" id="convertImagesProgressLabel"></p>
+            <progress id="convertImagesProgressBar" max="100" value="0" style="width:100%"></progress>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Processing Folder Automation (§11.4) ─────────────────────────── -->
+      <div class="admin-subsection">
+        <h3 class="admin-subsection-heading">Processing Folder Automation</h3>
+        <p class="admin-card-hint">
+          Runs Convert Archives then Convert Images (fixed order) against a single
+          folder, on a schedule or on demand. File Rename is not part of this
+          pipeline — its live-preview review is the only thing that safely catches
+          a mis-parsed filename, and unattended automation removes that check.
+        </p>
+        <div class="admin-card">
+          <div class="admin-field-row">
+            <label class="admin-field-label">Processing Folder</label>
+            <div class="admin-field-input-wrap">
+              <div class="admin-field-input-row">
+                <input type="text" class="admin-input" id="pfFolderInput" readonly placeholder="No folder selected" />
+                <button class="btn-admin-action" id="pfBrowseBtn">Choose…</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-field-row">
+            <label class="admin-field-label"><input type="checkbox" id="pfConvertArchivesEnabled"> Convert Archives</label>
+            <div class="pt-rename-case-style">
+              <label><input type="radio" name="pfConvertArchivesFrom" value="cbr" checked> From CBR</label>
+              <label><input type="radio" name="pfConvertArchivesFrom" value="pdf"> From PDF</label>
+            </div>
+          </div>
+
+          <div class="admin-field-row">
+            <label class="admin-field-label"><input type="checkbox" id="pfConvertImagesEnabled"> Convert Images</label>
+            <div class="pt-rename-case-style">
+              <label><input type="checkbox" id="pfConvertImagesLossless"> Lossless</label>
+              <label for="pfConvertImagesQuality">Quality</label>
+              <input type="range" id="pfConvertImagesQuality" min="1" max="100" value="95">
+              <span id="pfConvertImagesQualityValue">95</span>
+            </div>
+          </div>
+
+          <div class="admin-field-row">
+            <label class="admin-field-label" for="pfScheduleSelect">Schedule</label>
+            <div class="admin-field-input-wrap">
+              <select class="admin-select" id="pfScheduleSelect" aria-label="Schedule">
+                <option value="off">Off (Run Now only)</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
+              <input type="time" id="pfScheduleTime" value="00:00">
+              <select class="admin-select" id="pfScheduleDay" aria-label="Day of week">
+                <option value="0">Monday</option>
+                <option value="1">Tuesday</option>
+                <option value="2">Wednesday</option>
+                <option value="3">Thursday</option>
+                <option value="4">Friday</option>
+                <option value="5">Saturday</option>
+                <option value="6">Sunday</option>
+              </select>
+              <button class="btn-admin-action" id="pfSaveScheduleBtn">Save</button>
+            </div>
+          </div>
+          <p class="admin-card-hint" id="pfNextRunHint"></p>
+
+          <div class="pt-toolbar">
+            <button type="button" class="btn-primary" id="pfRunNowBtn">Run Now</button>
+          </div>
+          <div id="pfProgressWrap" hidden>
+            <p class="admin-card-hint" id="pfProgressLabel"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- ── Scan log viewer modal (shared, parameterized by log name) ──────────── -->
@@ -553,7 +764,45 @@
     </div>
   </div>
 
+  <!-- ── Shared Processing Tools file/folder picker (§12 shared notes) ────── -->
+  <div id="ptPickerOverlay" class="editor-overlay" hidden>
+    <div class="editor-modal fe-picker-modal">
+      <div class="editor-modal-header">
+        <h2 class="editor-modal-title" id="ptPickerTitle">Choose Files</h2>
+        <button type="button" class="editor-close-btn" id="ptPickerCloseBtn" aria-label="Close">&times;</button>
+      </div>
+      <div class="fe-picker-breadcrumb" id="ptPickerBreadcrumb"></div>
+      <div class="fe-picker-controls">
+        <button type="button" class="btn-admin-action" id="ptPickerHomeBtn">Home</button>
+        <button type="button" class="btn-admin-action" id="ptPickerUpBtn">Up One Level</button>
+        <button type="button" class="btn-admin-action" id="ptPickerSelectAllBtn">Select All</button>
+        <button type="button" class="btn-admin-action" id="ptPickerDeselectAllBtn">Deselect All</button>
+        <span class="fe-picker-selected-count" id="ptPickerSelectedCount">0 items selected</span>
+      </div>
+      <div class="fe-picker-tree" id="ptPickerTree"></div>
+      <div class="editor-actions">
+        <button type="button" class="btn-primary" id="ptPickerConfirmBtn">Select</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Processing Tools summary modal (shared shape, feProcessErrorModal pattern) -->
+  <div id="ptSummaryOverlay" class="editor-overlay" hidden>
+    <div class="editor-modal">
+      <div class="editor-modal-header">
+        <h2 class="editor-modal-title" id="ptSummaryTitle">Result</h2>
+        <button type="button" class="editor-close-btn" id="ptSummaryCloseBtn" aria-label="Close">&times;</button>
+      </div>
+      <div style="margin: 0 20px 20px;">
+        <p id="ptSummaryHeadline"></p>
+        <ul id="ptSummaryErrorList" class="pt-summary-error-list"></ul>
+      </div>
+    </div>
+  </div>
+
   <script src="/static/js/admin.js"></script>
+  <script src="/static/js/filePicker.js"></script>
+  <script src="/static/js/processingTools.js"></script>
   <script src="/static/js/auth.js"></script>
 </body>
 </html>

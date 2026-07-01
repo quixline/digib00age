@@ -69,7 +69,12 @@ should be updated to open `http://localhost:8000/editor` instead of the old `:80
 once this is built (flagged here so it isn't missed — it's a one-line change in `tray_app.py`).
 
 **What gets dropped entirely during the port** (confirmed in planning, not carried forward):
-- CBR/.rar support (`rarfile`, external `rar.exe` shell-out) — library is all-CBZ
+- ~~CBR/.rar support (`rarfile`, external `rar.exe` shell-out) — library is all-CBZ~~
+  **Reversed 2026-06-30, v2.4 Item 5 — see §3.1/3.2 and Change Log.** CBR support is
+  back in, on different terms than CAPT's: read/extraction only via `rarfile`, never
+  written. Editing a CBR's metadata rebuilds it as `.cbz`. No `rar.exe` shell-out is
+  introduced — that was specifically the write-path dependency, and the write path
+  for CBR is deliberately not being built.
 - `Flask-Limiter` — present in CAPT's requirements but never actually used
 - `login.html` / `/api/login` — vestigial dead code, posts to a route that doesn't exist
 
@@ -92,8 +97,15 @@ wanted here either.
 
 ## 3. Shared Editor Core (`backend/editor/`)
 
-### 3.1 Reading
-- Open the CBZ with `zipfile.ZipFile` (no CBR branch).
+### 3.1 Reading *(built and manually tested — v2.4 Item 11, 2026-07-01)*
+- Open the archive with `zipfile.ZipFile` (`.cbz`) or `rarfile.RarFile` (`.cbr` —
+  added v2.4 Item 5, 2026-06-30, reversing the original "no CBR branch" decision
+  above). Branch via the shared `backend/archive_formats.py` dispatch (falls back
+  to the file extension when no `container_format` is available — Full Editor's
+  pre-library intake, where the file isn't in the DB yet). Read-only — see §3.2 for
+  what happens on save. Full Editor's own picker (`ALLOWED_EXTENSIONS`,
+  `editor_full.py`) now accepts `.cbr` alongside `.cbz`, so a CBR can be loaded
+  into the working set/queue at all.
 - Locate `ComicInfo.xml` at the archive root.
 - Parse with `lxml.etree` in recovery mode (`recover=True`), matching CAPT's existing
   tolerant-parsing behaviour.
@@ -105,7 +117,7 @@ wanted here either.
 
 ### 3.2 Writing — full archive rebuild (confirmed, not changing)
 Ported as-is from `utils/xml_archive_unpacker.py`:
-1. Extract entire CBZ to a temp directory
+1. Extract entire archive to a temp directory (using the `.cbz`/`.cbr` branch from §3.1)
 2. Overwrite `ComicInfo.xml` in that temp directory with merged field values
 3. Flatten to a second temp directory
 4. `shutil.make_archive(..., "zip", ...)` to rebuild a new zip from scratch
@@ -113,6 +125,35 @@ Ported as-is from `utils/xml_archive_unpacker.py`:
 
 No in-place patching. This was a deliberate decision — full-rebuild is simple and proven;
 the collection isn't large enough per-file for rebuild speed to be a problem in practice.
+
+**CBR source → CBZ output (scoped v2.4 Item 5, 2026-06-30 — built and manually
+tested v2.4 Item 11, 2026-07-01).** Step 4 always produces a `.zip`/
+`.cbz` — this was already true before CBR support existed, since the rebuild path never
+had a RAR-creation branch. So when the *source* file in step 1 is a `.cbr`, saving
+produces a new `.cbz` at a sibling path (same directory, same filename stem, `.cbz`
+extension) rather than overwriting the original — step 5's `os.replace()` targets the
+new `.cbz` path, and the original `.cbr` is deleted once the new file is confirmed
+written successfully (`_rebuild_archive()`, `backend/editor/archive_io.py`, now
+returns the final path so every caller can propagate it). **Guard:** if a sibling
+`.cbz` already exists, the rebuild raises before touching anything — no clobber, the
+original `.cbr` is left in place, verified live (two colliding files, save attempt
+errors cleanly, both files unchanged on disk afterward). The issue's `file_path` and
+`container_format` (`SPEC.md` §7)
+update to match in the same operation (single rescan/DB-update step, not two) — the
+caller sets both on the ORM row and explicitly `db.flush()`s before the rescan call,
+since the session runs `autoflush=False` and the rescan looks the row up by
+`file_path`; without the flush the old path wouldn't resolve and a duplicate row
+would be created instead of updating the existing one (caught and fixed during this
+item's manual testing, not by design review — worth flagging for the next time a
+save path is touched).
+Applies identically to Basic Editor, Full Editor single-file saves, and Full Editor
+batch/Process All — confirmed with Tez, no special-casing by editor surface, and
+manually verified via all three paths this session. Reason:
+RAR archive *creation* requires a paid WinRAR install (`arc_conv_helpers.py`'s
+`create_rar_archive()` shells out to a `rar` CLI and errors without it) — not a
+viable app dependency, especially given the possible-public-release direction. CBR is
+therefore read-only at the archive level throughout ComicVault; editing it is what
+moves a file from CBR to CBZ, not a separate conversion step the user has to ask for.
 
 ### 3.3 Field write logic — selective overwrite, not a smart merge
 - Ported from `widgets/xml_editor.py`'s `build_xml_from_fields`.
@@ -496,7 +537,10 @@ Explicitly deferred, not part of this spec:
 - Admin-page UI for adding/removing genres by click (Genre list stays a hand-edited JSON
   file for now, per planning — confirmed acceptable)
 - Collision guardrails on the increment-number batch feature
-- CBR/.rar support of any kind
+- ~~CBR/.rar support of any kind~~ **Reversed 2026-06-30, v2.4 Item 5 — see §3.1/3.2.**
+  Read-only CBR support (extraction via `rarfile`) is now in scope; RAR *creation*
+  remains out of scope permanently, not just for this build round — see §3.2's
+  rationale.
 - Remote/cross-network file browsing for the Full Editor
 - A series-level overview field (unrelated, already deferred in `SPEC.md` 20.14)
 - Login/password protection on the editor (matches the rest of V1's admin area — deferred
@@ -558,3 +602,4 @@ they aren't lost:
 | 2026-06-20 | Corrected §3.5's "library already known to be clean" assumption — `thanksgiving.cbz`/`tales of ruination.cbz` found already in the library with both ComicInfo.xml and MetronInfo.xml present. ComicInfo.xml confirmed as sole authoritative source wherever both exist; scanner still gets no new detection logic, cleanup handled via an external one-off script instead. | Discovered during live testing of the Full Editor's multi-XML side-by-side picker against a real already-scanned file; see `DECISIONS.md`. |
 | 2026-06-18 | **Full Editor (Section 5.2) and Basic Editor (Section 6.2) layout polish from live use**, committed as `cc772ba`: Image Viewer column narrowed and its preview image capped smaller; `.fe-layout` reworked so the XML Editor column is the flexible track instead of File Management/Image Viewer; Genre grid column counts changed (Full Editor settled on 5 columns, Basic Editor on 4 with the popup widened to 720px to fit); Increment Number checkbox relabelled "Increment #" and moved into the Issue Number/Year row; zoom controls moved to their own row below Prev/Next; B&W checkbox moved onto the Format/Age Rating row in Basic Editor. None of these change the field sets, validation rules, or behaviour defined in Sections 3–6 — layout/wording only. Full before/after detail in `progress.md`. | Tez's live-use feedback across both the desktop PC (primary editing machine) and a laptop with a smaller screen. |
 | 2026-06-26 | **Full Editor — Process All error display** (§5.2). When `result.errors.length > 0`, a new dismissible modal (`#feProcessErrorOverlay`, styled like the existing log viewer modal) now opens instead of dumping a pipe-delimited wall of repeated validation messages into the inline `#feError` div. Shows a `Processed X of Y files` summary, the first file's full error, and — if more files failed — a count + guidance note pointing at the "Apply to All" checkboxes. `#feError`/`showError()`/`clearError()` are unchanged and still used for short single-line cases (network errors, "select a file first"). | Post-test fix pass (`docs/2.3-fixes.md` Fix 3) — manual test pass found the inline error display unreadable against a large batch of files sharing the same missing-required-field error. |
+| 2026-06-30 | **CBR support reversed back in (read-only), §2/§3.1/3.2/§9 — v2.4 Item 5.** This file's original §2/§9 deliberately dropped CBR/.rar support on the basis that "library is all-CBZ." That basis no longer holds — Tez's direction has shifted toward a possible public release, and users with large mixed CBZ/CBR collections (some >100,000 issues) can't reasonably be required to bulk-convert before their library is browsable. §3.1 gains a `rarfile.RarFile` read branch alongside `zipfile.ZipFile`. §3.2's rebuild path is **unchanged** — it always produced a `.zip`/`.cbz` regardless of source format, so no RAR-creation code is added; when the source file is a `.cbr`, the existing rebuild simply lands at a new `.cbz` path and the original `.cbr` is deleted once the new file is verified written. Confirmed with Tez to apply uniformly across Basic Editor, Full Editor single-file saves, and Full Editor batch/Process All — no per-surface special-casing. RAR archive *creation* remains permanently out of scope (not just deferred) — it requires a paid WinRAR install, which CAPT's own `create_rar_archive()` already depends on and is exactly the dependency this reversal is designed to avoid reintroducing. Full rationale and the original eng-review that surfaced this in `DECISIONS.md`; `SPEC.md` §6.1/§7/§13/§21 carries the scanner/schema/dependency side of the same change; build item `v2.4/comicvault-changes-v2.4.md` Item 5/11. | v2.4 Item 5, eng-reviewed and scoped 2026-06-30. |

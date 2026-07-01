@@ -154,13 +154,22 @@ def get_library(
         query = query.filter(Issue.format_group == group)
 
     tab_folder = folder_path
+    tab_is_favorites = False
     if tab_id is not None:
         tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
         if not tab:
             raise HTTPException(status_code=404, detail="Custom tab not found")
-        tab_folder = tab.folder_path
+        if tab.basis_type == "favorites":
+            tab_is_favorites = True
+        else:
+            tab_folder = tab.folder_path
 
     all_issues = query.all()
+    if tab_is_favorites:
+        # CUSTOM_TABS_SPEC.md §10.3 — library-wide, filtered by Issue.favorites
+        # before the per-series groupby (same principle as BUG-010's fix), so
+        # every series card this builds already contains a favourited issue.
+        all_issues = [i for i in all_issues if i.favorites]
     if tab_folder:
         all_issues = [i for i in all_issues if is_under(i.file_path, tab_folder)]
     if field and value is not None:
@@ -222,7 +231,10 @@ def get_library(
             "age_ratings": age_ratings,
             "has_bw": has_bw,
             "series_anchor_id": cover_issue.id,
-            "favorites": cover_issue.favorites,
+            # BUG-017 fix: aggregate across the whole series (matches has_bw
+            # above), not just the cover issue — favouriting issue #14 of a
+            # 20-issue series must still surface the series under Favourites.
+            "favorites": any(i.favorites for i in issues),
             "personal_rating": cover_issue.personal_rating,
         })
 
@@ -266,6 +278,8 @@ def get_tab_folder_contents(
     tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
     if not tab:
         raise HTTPException(status_code=404, detail="Custom tab not found")
+    if tab.basis_type == "favorites":
+        raise HTTPException(status_code=400, detail="Folder View is not available for a favourites-basis tab")
 
     target_dir = _resolve_tab_path(tab, path)
 
@@ -326,6 +340,8 @@ def mark_tab_folder_read(
     tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
     if not tab:
         raise HTTPException(status_code=404, detail="Custom tab not found")
+    if tab.basis_type == "favorites":
+        raise HTTPException(status_code=400, detail="Folder View is not available for a favourites-basis tab")
 
     target_dir = _resolve_tab_path(tab, path)
     all_issues = db.query(Issue).filter(Issue.missing == False).all()
@@ -355,6 +371,8 @@ def search_tab_folder(
     tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
     if not tab:
         raise HTTPException(status_code=404, detail="Custom tab not found")
+    if tab.basis_type == "favorites":
+        raise HTTPException(status_code=400, detail="Folder View is not available for a favourites-basis tab")
 
     pattern = f"%{q}%"
     issues = (

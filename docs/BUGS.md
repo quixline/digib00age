@@ -11,6 +11,66 @@ one).
 
 ## OPEN
 
+### BUG-018 — Scanner misses ComicInfo.xml nested in a subfolder inside the archive
+
+**Found:** 2026-06-30, investigated by Code while scoping v2.4 Item 8 (Flatten
+Archive). Originated as a feature-scoping session, turned into root-cause work
+when Tez recalled Flatten Archive had been built for a reason he couldn't
+remember at the time — this is that reason.
+
+**Where:** `backend/scanner.py:275-276` — `_parse_cbz()` does an exact-equality
+check (`n.lower() == "comicinfo.xml"`) against the zip's `namelist()`, which only
+matches root-level entries. An archive with `ComicInfo.xml` inside a subfolder
+(alongside its images, rather than at the zip root) never matches, so the scanner
+falls back to filename-guessed metadata — no series/credits/etc. — and the issue
+looks "broken" in the library and Basic Editor.
+
+Confirmed narrower than it first looked: the **editors are not affected**. Both
+Basic Editor (`backend/routers/editor_basic.py:100-103`) and Full Editor
+(`backend/routers/editor_full.py:216-244`) already use `find_xml_in_archive()` /
+`extract_xml_from_archive()` (`backend/editor/archive_io.py:22-42`), which match
+`*.xml` anywhere in the archive regardless of folder depth. And saving through
+either editor already flattens the archive on write
+(`write_comicinfo_to_cbz()` → `_rebuild_archive()`,
+`backend/editor/archive_io.py:57-103`) — existing, intentional behavior, not
+changed by this fix. So a nested-folder archive that somehow got linked to an
+issue record loads and edits fine; the bug is purely in the scanner's *initial*
+read, not in editing or in the flatten-on-save path.
+
+**Why this stayed hidden:** Tez's own library was already fully processed (flat
+archives only) by the time this app was in regular use, so the bug never
+surfaced against real data — only found by digging into why Flatten Archive had
+been built as a CAPT tool in the first place.
+
+**Impact:** Anyone adding unedited/freshly-downloaded archives with nested
+ComicInfo.xml gets silently-wrong metadata on import, with no error — looks like
+a normal but unusually sparse issue. Confirmed by code reading, not yet by a
+live reproduction against the real library.
+
+**Fix, already scoped and ready to build** (Code's investigation produced a
+complete plan, not just a diagnosis — see full detail in
+`docs/v2.4/code-handoffs/bug-018-nested-comicinfo-scanner-fix.md` for the exact
+change): reuse `find_xml_in_archive()` / `extract_xml_from_archive()` in the
+scanner's `_parse_cbz()` instead of the current direct `namelist()` check, parsing
+with `ET.fromstring()` instead of `ET.parse()` since the helper returns decoded
+string content. No other files change; no rebuild/flatten-at-scan-time — that
+would risk real delay across ~5,500 archives for no benefit, since flattening
+already happens naturally the moment anyone saves through an editor. Pure
+read-side fix.
+
+**Supersedes v2.4 Item 8 (Flatten Archive).** Confirmed with Tez this bug is the
+reason Flatten Archive was built as a CAPT tool originally — once this is fixed,
+nested-folder archives read correctly on import (this fix) and self-flatten on
+first edit (existing behavior), so there's no remaining case a standalone Flatten
+tool would still need to handle. See `DECISIONS.md` and
+`comicvault-changes-v2.4.md` Item 8.
+
+**Not fixed** — scoped and ready, build deferred until v2.4's scoping day is
+complete (Tez's call, 2026-06-30: finish scoping Item 15 before any building
+resumes).
+
+---
+
 ### BUG-016 — Restore Database: restore completes but does not revert DB to backup state
 
 **Found:** 2026-06-28, manual test pass (Items 10–13).

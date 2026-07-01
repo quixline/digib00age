@@ -24,7 +24,13 @@
 > state (BUG-016, open). Item 14 (site-wide header unification) moved to `ROADMAP.md`
 > 2026-06-28 — not admin-page scope, blocked on Claude Design exploration.
 >
-> §11.1 File Rename scoped 2026-06-27 — design complete, build not yet started.
+> **§11 Processing Tools, folded 2026-07-01** — the standalone
+> `admin-spec-section-12-processing-tools.md` scoping file is retired; its
+> content lives here as §11.1–§11.4 (renumbered from its own §12.1–§12.4).
+> §11.1 File Rename is **built and manually tested (v2.4 Item 10, 2026-07-01)**.
+> §11.2 Convert Archives, §11.3 Convert Images, and §11.4 Processing Folder
+> Automation are fully scoped, build in progress (v2.4 Items 12, 13, 16) —
+> check each subsection's own build-status note before assuming it's live.
 >
 > **Note on authority:** `SPEC.md` §11 and §20.13 contain earlier admin descriptions.
 > Where they conflict with this file, **this file is authoritative** — it consolidates
@@ -593,6 +599,8 @@ everything else when that happens, not before.)
 
 ### 11.1 File Rename
 
+**Built and manually tested 2026-07-01 — `comicvault-changes-v2.4.md` Item 10.**
+
 Ported from CAPT's standalone File Renamer (`gui/rename_window.py`,
 `widgets/rename_options_widget.py`, `utils/rename_logic.py`, `utils/rename_u.py`,
 `utils/filename_parser.py`). Batch and single-file renaming of arbitrary files based on
@@ -612,6 +620,14 @@ parsed/edited Series, Issue, Title, and Year values.
   `_parse_filename()`) used when a file lacks `ComicInfo.xml` — once a file is tagged
   and scanned, the filename is purely cosmetic. Renaming here never touches the DB and
   never needs to.
+- **Not part of Processing Folder Automation (§11.4).** Re-scoped 2026-07-01: Rename
+  stays a manual-only tool. Automation removes the live-preview safety net Rename
+  depends on as its only correction mechanism (no undo — 11.1.6), and the
+  ambiguous Series/Title-split cases surfaced during re-scope (11.1.3) specifically
+  need a human decision automation can't supply. The "saved naming convention
+  template" requirement originally raised by Item 15 (`INBOX.md`, `DECISIONS.md`) is
+  dropped along with this — see §11.4's Change Log entry for the corresponding
+  pipeline amendment.
 
 #### 11.1.2 File Loading
 
@@ -638,12 +654,54 @@ parsed/edited Series, Issue, Title, and Year values.
 
 #### 11.1.3 Filename Parsing
 
-Ports `filename_parser.py`'s `parse_comic_filename()` unchanged — regex-based
-extraction of Series / Issue Number / Year (Title is left blank; CAPT never parsed it
-out either) from the current filename, used to pre-populate the edit panel when a file
-is selected. Tolerant of scene-release-style tags via bracket-stripping heuristics, but
-not exhaustive — this is acceptable because nothing is committed until the user reviews
-the live preview (§11.1.5) and corrects anything mis-parsed.
+Ports `filename_parser.py`'s `parse_comic_filename()` — regex-based extraction of
+Series / Issue Number / Year from the current filename, used to pre-populate the edit
+panel when a file is selected. Tolerant of scene-release-style tags via
+bracket-stripping heuristics, but not exhaustive — this is acceptable because nothing
+is committed until the user reviews the live preview (11.1.5) and corrects anything
+mis-parsed.
+
+**Re-scoped 2026-07-01** — dedicated session, sample-tested against two real filename
+sets (323 periodical-style filenames, 319 creator-prefixed OGN/collection filenames)
+before deciding anything. Three concrete bugs found and fixed, output shape decided,
+and a firm scope boundary drawn around what the parser is and isn't expected to solve:
+
+- **`present_year` bug (the big one).** `extract_year()` hardcoded
+  `present_year = 2025` as its validity ceiling — any year above that was silently
+  rejected, which cascaded into series/issue extraction also failing (a rejected year
+  leaves its bracket un-stripped, which breaks the issue-number fallback pattern too).
+  Sample-tested: this alone broke parsing on 64% of the periodical sample (every
+  2026-dated file). **Fix: compute the ceiling dynamically at runtime**, not a
+  hardcoded number — this class of bug otherwise just recurs every January.
+- **Zero-issue bug.** `issue_num.lstrip('0')` turns an all-zero issue string
+  (`"000"`) into `''`, indistinguishable from "no issue found." Fix: only strip
+  leading zeros when the result wouldn't be empty.
+- **Volume/subtitle whitespace artifact.** Patterns like `Conan the Barbarian v05 -
+  Twisting Loyalties` currently leave a double space and dangling dash after the
+  `v05` token is stripped (`"Conan the Barbarian  - Twisting Loyalties"`). Fix:
+  collapse whitespace after any token/bracket removal, every time, not just once
+  up front.
+- **No auto-splitting of Series and Title.** Confirmed during re-scope: the parser
+  does not, and should not, try to separate an umbrella series name from a sub-title
+  or a creator name from a book title (`Cyberpunk 2077 - Chrome`, `Abby Howard - The
+  Crossroads at Midnight`) — both are structurally identical strings to a regex, and
+  guessing wrong is worse than not guessing. These stay as one glued Series string by
+  design. Where the desired final filename genuinely needs a distinct, human-decided
+  Title (recurring sub-series titles consistent across a run of issues, e.g. "Dirk
+  Gently's Holistic Detective Agency: A Spoon Too Short") — that's a manual entry in
+  the Title field, applied via the existing Title→All checkbox once per batch
+  (11.1.4). This is the intended tool for that case, not a parser gap.
+- **One-shots/OGNs with no issue number in the filename** parse correctly today —
+  Series and Year populate, Issue stays empty, and the output template omits the
+  `#Issue` segment entirely rather than inventing one.
+- **Output separator, decided:** `Series - Title #Issue (Year)`, dash-joined. No
+  conditional separator logic — the dash is always present when Title is non-empty,
+  omitted along with Title when it's blank.
+
+Sample-tested clean-parse rate once the three bugs above are fixed: ~88% of the
+323-file periodical sample requires no manual correction at all. The remaining ~12%
+is genuine one-shots (handled correctly, see above) and the ambiguous-split cases
+(handled manually, see above) — not a parser deficiency.
 
 #### 11.1.4 Edit Panel
 
@@ -733,12 +791,600 @@ Not binding design, but worth flagging before the build session:
 
 ---
 
+### 11.2 Convert Archives
+
+**Built and manually tested 2026-07-01 — `comicvault-changes-v2.4.md` Item 12.**
+Cross-review fix applied during this build: the picker now excludes `*.bak`
+files by filename suffix, same as §11.3 already did — see the Change Log
+entry for detail.
+
+Ported from CAPT's standalone Archive Converter (`gui/convert_window.py`,
+`processors/arc_convert_worker.py`, `processors/arc_conv_cb_proc.py`,
+`processors/arc_conv_pdf_proc.py`, `utils/arc_conv_helpers.py`,
+`utils/arc_convert_util.py`). Converts CBR or PDF files into CBZ.
+
+#### 11.2.1 Scope
+
+- **Only two conversion directions are ported: CBR → CBZ and PDF → CBZ.** CAPT's
+  other two directions (CBZ → CBR, CBZ → PDF) are dropped entirely, not just
+  hidden — there is no UI path to them and their underlying code is not ported.
+  This follows directly from Item 5's resolution (`SPEC.md`): CBR is now read
+  natively by the scanner, so there's no remaining reason to convert a CBZ down to
+  CBR, and PDF was dropped from the scanner/library entirely in favour of always
+  converting to CBZ first. The user's only choice is **From format** (CBR or
+  PDF) — the target is always CBZ and isn't shown as a separate control.
+- Same local-only gating, in-app folder-tree picker pattern, and audit-log
+  pattern as §11.1 File Rename — see §11 shared notes above. Same
+  pre-ingest/staging positioning (not restricted to any folder).
+- Format detection is **content-based**, reused unchanged from
+  `arc_convert_util.py`'s `detect_archive_format()` — `.pdf` suffix check, then
+  `zipfile.is_zipfile()` / `rarfile.is_rarfile()` magic-byte checks for CBZ/CBR.
+  Filenames and extensions are never trusted on their own.
+
+#### 11.2.2 File Loading
+
+- Same in-app folder-tree picker as 11.1.2 — no native dialog, no
+  `library_root` restriction, Up climbs to a drive-letter list, no recursion,
+  multi-select within one folder.
+- **Difference from Rename:** once a From format (CBR or PDF) is selected, the
+  picker's file list is filtered server-side to only files whose **detected**
+  format matches the selection — content-detected, not extension-filtered.
+  Resolved this session (filter, not grey-out): a mislabeled file (e.g. a
+  `.zip` renamed to `.cbr`) simply won't appear under "CBR", consistent with
+  the format detector's whole purpose of not trusting extensions.
+
+#### 11.2.3 Conversion Options
+
+- **From format** — single choice (CBR or PDF) applied to the whole loaded
+  batch, not per-file. Target is always CBZ, shown as a static "→ CBZ" label,
+  not a control.
+- **No "Delete Original File" checkbox.** Removed 2026-07-01 — superseded by
+  the unified backup model (11.2.4, 11.4.6). Original-file disposition is no
+  longer a user choice; it's determined automatically by the conversion
+  outcome, same as Convert Images (11.3.3 has carried no such checkbox from
+  the start, for the same reason).
+
+#### 11.2.4 Conversion Engine
+
+- **CBR → CBZ:** extract via `rarfile` to a temp directory, rezip with
+  `zipfile.ZIP_DEFLATED`. Ported from `arc_conv_cb_proc.py`'s
+  `convert_archive()` / `FORMAT_MAP['CBR']` branch only — the CBZ → CBR branch
+  and its `create_rar_archive()` dependency (shells out to a `rar` CLI /
+  requires paid WinRAR) is **not ported**. This confirms RAR creation is never
+  required anywhere in ComicVault — consistent with `EDITOR_SPEC.md`'s CBR-edit
+  path, which also never writes RAR.
+- **PDF → CBZ:** rendered via PyMuPDF (`fitz`), one page per image. New
+  **`PDF_RENDER_DPI = 300`** module-level constant (resolved this session,
+  print-scan-grade sharpness over CAPT's original 72 DPI), driving
+  `fitz.Matrix(PDF_RENDER_DPI / 72, PDF_RENDER_DPI / 72)` in place of CAPT's
+  hardcoded `Matrix(1, 1)`. Isolated single-constant change — adjusting DPI
+  later needs no other code or schema changes. Pages written as PNG (CAPT's
+  existing `page_{i+1:03d}.png` naming retained), then zipped the same way as
+  the CBR path.
+- **Output path:** same folder, same base filename, `.cbz` extension
+  (`Path.with_suffix('.cbz')`) — matches CAPT's default.
+- **Backup & Safety — amended 2026-07-01, unified with Convert Images (11.3.5)
+  per 11.4.6.** The converted output is staged, then validated (opens as a
+  valid archive; image-entry count matches the expected count, accounting for
+  any `pages_skipped`). **On successful validation:** the original is renamed
+  to `original.ext.bak` (e.g. `Batman #1.cbr.bak`) and the staged output is
+  moved into place as `original.cbz`. The `.bak`'s disposition then follows
+  11.4.6's unified table: clean success (`pages_skipped = 0`) auto-deletes
+  it; success-with-warnings (`pages_skipped > 0`) keeps it permanently, since
+  a skipped page means the original is the only recovery path. **On failed
+  validation:** the staged output is discarded and the original is left
+  completely untouched — no rename, no `.bak` created. **Guard:** if a `.bak`
+  already exists for that filename, the run fails for that file with "Backup
+  file already exists" — no overwrite, no auto-renaming, same no-silent-clobber
+  principle as 11.3.5's equivalent guard. This replaces the old "Output file
+  already exists" guard, which checked the wrong thing (the *target* `.cbz`
+  colliding) relative to the model Convert Images and Processing Folder
+  Automation both already use.
+- **CBR CRC errors:** `rarfile`'s tolerant extraction
+  (`ignore_crc_errors=True`, ported unchanged from `arc_conv_helpers.py`'s
+  `extract_rar_archive()`) is kept — a damaged page is skipped rather than
+  aborting the whole file. **Resolved this session — no longer silent:** the
+  per-file result now carries a `pages_skipped` count. The conversion still
+  counts as a **success** (a CBZ is produced) but is flagged
+  success-with-warning in the summary and audit log, e.g. "converted, 2 pages
+  missing/corrupted" — differs from CAPT's original fully-silent behaviour.
+
+#### 11.2.5 Progress & Status
+
+- **Resolved this session — background job with live polling, not a blocking
+  request like Rename.** Rename is a near-instant string operation; archive
+  conversion involves real extract/rezip/rasterize work per file and can take
+  meaningful time over a batch, so it follows the **existing scan-progress
+  pattern already established in `backend/scanner.py`** (`scan_progress`
+  module-level singleton + `GET /api/scan/status`) rather than a new
+  architecture.
+- New `convert_progress` singleton tracking `running`, `current_file_index`,
+  `total_files`, `current_filename`, `finished_at`, and the accumulating
+  per-file results list.
+- `POST /api/admin/convert/run` starts the batch via FastAPI's
+  `BackgroundTasks` and returns immediately (acknowledgement only).
+- `GET /api/admin/convert/status` polled by the frontend at the same cadence
+  as the existing scan-progress UI, driving a live "Converting file 3 of 20 —
+  filename.cbr" label and progress bar.
+- On completion: same summary-modal pattern as Rename's `feProcessErrorModal`
+  — "Converted X of Y files", per-file status (success / success-with-warning
+  / failed) with error or pages-skipped detail. Failed files stay in the
+  working list for retry; succeeded files (with or without warning) clear.
+
+#### 11.2.6 Audit Log
+
+New `convert_log.md` in `/logs/`, same append-only pattern and same
+independent 1MB cap as `rename_log.md` (11.1.7) — not governed by the
+configurable Log Size Limit (§8). One line per attempted file:
+
+```
+DD/MM/YYYY HH:MM — old_filename.cbr → new_filename.cbz [OK]
+DD/MM/YYYY HH:MM — old_filename.cbr → new_filename.cbz [OK, 2 pages skipped] (backed up to old_filename.cbr.bak)
+DD/MM/YYYY HH:MM — old_filename.pdf → FAILED: Backup file already exists
+```
+
+**Updated 2026-07-01**, matching the 11.2.4 backup-model amendment: a
+success-with-warnings line now notes the retained `.bak` (same format as
+`convert_images_log.md`, 11.3.7); the failure example now reflects the
+`.bak`-collision guard rather than the retired "output file already exists"
+check.
+
+#### 11.2.7 Implementation Notes (for Code)
+
+Not binding design, but worth flagging before the build session:
+
+- New backend router (e.g. `backend/routers/convert.py`). The browse /
+  working-file-list endpoints can likely share most of Rename's picker code
+  directly — 11.1.8 already flagged the picker as duplicated three times
+  (Editor, Custom Tabs, Rename); Convert Archives makes it a fourth. Worth
+  factoring into a shared component now rather than carrying it further —
+  still not a hard blocker either way.
+- Port `detect_archive_format()` from `arc_convert_util.py` unchanged.
+- Port the CBR-only branch of `convert_archive()` / `FORMAT_MAP` from
+  `arc_conv_cb_proc.py` — drop the CBZ → CBR half and `create_rar_archive()`
+  entirely.
+- Port `convert_pdf_to_cbz()` from `arc_conv_pdf_proc.py`, swapping
+  `fitz.Matrix(1, 1)` for `fitz.Matrix(PDF_RENDER_DPI / 72, PDF_RENDER_DPI / 72)`
+  with `PDF_RENDER_DPI = 300` as a module-level constant. Drop
+  `convert_cbz_to_pdf()` entirely — not needed.
+- New `convert_progress` singleton + status endpoint, modelled directly on
+  `backend/scanner.py`'s existing `scan_progress` — reuse the shape rather
+  than inventing a new one.
+- **Write the core conversion function as a plain, router-independent
+  callable** — e.g. `convert_archive_file(source_path, from_format) ->
+  ConvertResult` — taking a file path and format, returning a result object,
+  with no FastAPI/request coupling. Confirmed 2026-07-01 during Item 15
+  scoping as a requirement here too (same pattern 11.3.8 already specified
+  for Convert Images) — Processing Folder Automation (§11.4) invokes this
+  directly, not through the admin UI's HTTP layer.
+- `rarfile` is already a dependency (Item 5, native CBR read support) — no new
+  dependency for the CBR side. `PyMuPDF` (`fitz`) and `Pillow` are **new**
+  dependencies for the PDF side — confirm both install cleanly in the existing
+  Python environment before the build session.
+- New `convert_log.py`, parallel to `rename_log.py` / `scan_logs.py`, fixed
+  1MB ceiling.
+
+---
+
+### 11.3 Convert Images
+
+**Built and manually tested 2026-07-01 — `comicvault-changes-v2.4.md` Item 13.**
+
+Ported from CAPT's standalone Convert Images tool (`gui/convert_images_window.py`,
+`utils/convert_images.py`). Converts supported raster images inside a CBZ or CBR
+(jpg/jpeg/tiff/gif/png/bmp) to WebP and repacks the archive.
+
+#### 11.3.1 Scope
+
+- **Pre-ingest staging only** — same positioning as §11.1 Rename and §11.2 Convert
+  Archives, not a library-wide bulk-conversion tool. (A future, separately-scoped
+  Auto Processing Folder feature is expected to run this same conversion logic
+  unattended on files landing in a watched folder — see 11.3.7 — but that doesn't
+  change today's scope: this section covers the manually-triggered admin-UI tool
+  only.)
+- **Both CBZ and CBR accepted as input**, content-detected the same way as 11.2.2
+  (`detect_archive_format()`, not extension-trusted). Unlike Convert Archives,
+  there's no "From format" selector — the operation (convert images, repack) is
+  identical regardless of source container, so both formats simply load into the
+  same working list together.
+- **CBR is never written.** A CBR source has its images converted exactly like a
+  CBZ source, but the rebuilt output is always `.cbz` — same rule as the Editor's
+  existing CBR-edit-rebuilds-as-CBZ path (`EDITOR_SPEC.md`, Item 5/11.2.1).
+  CAPT's original CBR repack via a `rar` CLI shell-out is **not ported** — it
+  depended on a paid WinRAR install, the exact dependency already ruled out
+  everywhere else in the app.
+- Same local-only gating, in-app folder-tree picker (no `library_root`
+  restriction, no recursion, Up climbs to a drive-letter list), and audit-log
+  pattern as §11.1/§11.2 — see §11 shared notes.
+- **The picker excludes `*.bak` files explicitly**, by filename suffix, not just
+  content-detection. A `.bak` backup (11.3.5) is still a structurally valid
+  zip/rar by content, so without this exclusion a previous run's backups would
+  reappear as convertible inputs in their own right.
+
+#### 11.3.2 File Loading
+
+Same in-app folder-tree picker as 11.1.2/11.2.2. Picker's file list is filtered
+to content-detected CBZ or CBR only, minus any `*.bak` files (11.3.1).
+Multi-select within one folder, no recursion.
+
+#### 11.3.3 Conversion Options
+
+- **Quality** — user-facing setting at conversion time, applied batch-wide (not
+  per-file): a **Lossless** toggle, and when off, a **quality slider** (default
+  95, matching CAPT's original value). This replaces CAPT's hardcoded
+  `quality=95` and corrects the docstring/code mismatch in the original
+  (`"keeping original quality"` vs. an undocumented lossy 95 — CAPT's own
+  in-app label even disagreed with itself, saying "90% quality"). Lossless is a
+  real option now, not implied by the marketing text.
+- No "Delete Original" checkbox — doesn't apply here the way it does to Convert
+  Archives. This tool doesn't produce a separate output file the user chooses to
+  keep or discard; it rewrites the archive in place under the same filename, with
+  its own backup mechanism (11.3.5) standing in for that role instead.
+
+#### 11.3.4 Conversion Engine
+
+- Extract via `zipfile` (CBZ) or `rarfile` (CBR, `ignore_crc_errors=True` —
+  already a dependency per Item 5, no new dependency for the CBR side).
+- Convert each image whose extension is in `{.jpg, .jpeg, .tiff, .gif, .png,
+  .bmp}` to WebP via Pillow, per the quality/lossless setting (11.3.3). Files
+  already in `.webp` are left untouched (they simply aren't in the convert set).
+  `ComicInfo.xml` and any other non-image entries are extracted and repacked
+  unchanged, same as CAPT's original.
+- **Per-image failures don't abort the archive.** A corrupted/unreadable image
+  is skipped and left in its original format in the rebuilt archive (matches
+  CAPT's existing fallback — the only change is making it visible). The result
+  is flagged success-with-warning and carries an **`images_skipped`** count,
+  same pattern as 11.2.4's `pages_skipped` for Convert Archives.
+- **Flatten-and-rebuild reuses the Editor's existing logic**
+  (`backend/editor/archive_io.py`'s `_rebuild_archive` flatten step), not
+  CAPT's separate flatten implementation. This is a deliberate consolidation,
+  not a coincidence — Tez confirmed during scoping that nested-folder archives
+  are a known, previously-hit problem (the original reason `_rebuild_archive`
+  flattens at all), and having two slightly different flatten implementations
+  drift apart over time is exactly the kind of risk worth avoiding up front.
+  Code should factor the flatten-and-zip step into something both
+  `archive_io.py` and the new Convert Images module can call, rather than
+  duplicating it a second time.
+- **Known limitation, not addressed:** an animated GIF converts via its first
+  frame only (Pillow's default `Image.open` behaviour) — flagged for awareness,
+  not expected to matter for comic page content.
+
+#### 11.3.5 Backup & Safety
+
+This tool rewrites the archive's contents in place under the same filename —
+structurally different from Rename (only a filename changes, trivially
+reversible) and Convert Archives (creates a new file, original only deleted
+after the new one's confirmed good). There's no equivalent "kept until you
+choose to discard it" margin here unless one is built in explicitly:
+
+- The rebuilt archive is staged in the same directory as the original (matching
+  `_rebuild_archive`'s existing same-filesystem-atomic-replace approach), then
+  **validated** — confirms it opens as a valid archive and that its image-entry
+  count matches the pre-conversion count (accounting for any `images_skipped`
+  originals retained in their source format).
+- **On successful validation:** the original is renamed to `original.ext.bak`
+  (e.g. `Batman #1.cbr.bak`), the staged rebuild is moved into place as
+  `original.cbz`, and **the `.bak` is kept — not auto-deleted.** This was
+  raised explicitly during scoping: a future Auto Processing Folder feature is
+  expected to run this same conversion unattended on files landing in a watched
+  folder, with no one necessarily checking results in real time. An
+  auto-delete-on-success policy is fine for a human watching the screen, but
+  not for a backlog of unattended runs where a silent bad conversion could go
+  unnoticed. The `.bak` therefore persists until the user manually deletes it,
+  regardless of which trigger (manual admin UI today, or the watched folder
+  later) produced it.
+- **If a `.bak` already exists** for that filename (e.g. converted twice without
+  cleanup), the run fails for that file with "Backup file already exists" —
+  no overwrite, no auto-renaming, same no-silent-clobber principle as Convert
+  Archives' output-exists guard (11.2.4).
+- **On failed validation:** the staged rebuild is discarded, the original file
+  is left completely untouched (no rename, no `.bak` created — there was never
+  a need to touch the original in the first place), and the failure is reported
+  in the summary/audit log.
+
+#### 11.3.6 Progress & Status
+
+Background job with live polling, same reasoning and same shape as 11.2.5 —
+per-image extract/convert/rezip work is meaningfully slower than Rename's string
+operations and scales with image count, not just file count. New
+`convert_images_progress` singleton (own module, not shared with §11.2's
+`convert_progress` — separate tools, separate endpoints), tracking `running`,
+`current_file_index`, `total_files`, `current_filename`, `finished_at`, and the
+accumulating per-file results list (status: success / success-with-warning /
+failed, plus `images_skipped` where relevant).
+
+- `POST /api/admin/convert-images/run` starts the batch via `BackgroundTasks`,
+  returns immediately.
+- `GET /api/admin/convert-images/status` polled by the frontend, same cadence
+  and UI pattern as §11.2's live "Converting file X of Y" label.
+- On completion: same summary-modal pattern as Rename/Convert Archives —
+  "Converted X of Y files", per-file status with `images_skipped` or error
+  detail. Failed files stay in the working list for retry.
+
+#### 11.3.7 Audit Log
+
+New `convert_images_log.md` in `/logs/`, same append-only pattern and
+independent 1MB cap as `rename_log.md`/`convert_log.md` — not governed by the
+configurable Log Size Limit (§8). One line per attempted file:
+
+```
+DD/MM/YYYY HH:MM — filename.cbz [OK]
+DD/MM/YYYY HH:MM — filename.cbr → filename.cbz [OK, 3 images skipped] (backed up to filename.cbr.bak)
+DD/MM/YYYY HH:MM — filename.cbz [FAILED] — Backup file already exists
+```
+
+**Corrected 2026-07-01, during the build session.** The clean-success line
+above originally read `filename.cbz [OK] (backed up to filename.cbz.bak)` —
+stale relative to the unified backup model (§11.4.6): a clean success
+auto-deletes the `.bak`, so claiming one exists was wrong. Only the
+success-with-warnings line legitimately mentions a `.bak`, since that's the
+only outcome that keeps one. Same pattern `convert_log.md` (§11.2.6) already
+had right.
+
+#### 11.3.8 Implementation Notes (for Code)
+
+Not binding design, but worth flagging before the build session:
+
+- New backend router (e.g. `backend/routers/convert_images.py`). Picker/
+  working-file-list endpoints can share code with §11.1/§11.2's pickers — same
+  factoring opportunity already flagged twice now (11.1.8, 11.2.7).
+- **Write the core conversion function as a plain, router-independent
+  callable** — e.g. `convert_images_in_archive(archive_path, quality, lossless)
+  -> ConvertImagesResult` — taking a file path and options, returning a result
+  object, with no FastAPI/request coupling. This is a deliberate forward-looking
+  call, not speculative gold-plating: a future Auto Processing Folder feature
+  (not yet scoped) is expected to invoke this exact logic on files landing in a
+  watched folder, and it should be able to call the function directly rather
+  than needing to go through the admin UI's HTTP layer.
+- Port `convert_images_to_webp()`'s image-loop logic from
+  `comic_file_editing_toolkit/src/cap_toolkit/utils/convert_images.py`, but:
+  drop the bespoke flatten block in favour of calling into
+  `backend/editor/archive_io.py`'s flatten-and-zip step (factor it out as
+  shared, per 11.3.4); replace the hardcoded `quality=95` with the
+  quality/lossless parameters; drop the CBR repack branch entirely (the `rar`
+  CLI shell-out) since CBR sources always rebuild as CBZ now.
+- `backend/editor/archive_io.py`'s module docstring currently states "CBR
+  support is dropped entirely... library is all-CBZ" — stale relative to
+  Item 5's reversal of that decision. Not this item's job to fix (Item 11 — CBR
+  support — owns that correction), just flagging so it isn't mistaken for
+  current truth while building this.
+- New `convert_images_log.py`, parallel to `convert_log.py`/`rename_log.py`,
+  fixed 1MB ceiling.
+- `Pillow` is already a dependency (thumbnail generation). No new dependency
+  for the WebP side — Pillow's WebP support covers both lossy-with-quality and
+  lossless via the same `save(..., format="WEBP", lossless=True/False,
+  quality=N)` call.
+
+---
+
+### 11.4 Processing Folder Automation
+
+**Built and manually tested 2026-07-01 — `comicvault-changes-v2.4.md` Item 16,
+closing out the CAPT-tooling cluster.**
+
+Automates the two ported CAPT tools (§11.2 Convert Archives, §11.3 Convert Images)
+against a single configured folder, triggered either on a schedule or on demand via a
+"Run Now" button. **§11.1 File Rename is deliberately not part of this pipeline** —
+dropped 2026-07-01, see the Change Log entry below and 11.1.1.
+
+#### 11.4.1 Scope
+
+- **Not a file-system watcher.** No real-time monitoring of folder contents — all
+  processing is triggered by the configured schedule or by "Run Now". The file-watcher
+  model was evaluated during scoping (v2.4 Item 15) and rejected: it requires a new
+  `watchdog` dependency, a debounce mechanism (files take time to fully copy before
+  they can safely be processed), a persistent work queue to survive server restarts, and
+  protection against processing 200 simultaneous arrivals in parallel — meaningful
+  architecture cost for a personal staging workflow where batch arrival is the norm. A
+  scheduler + "Run Now" covers the real use case with none of that complexity.
+- **Two-stage pipeline** — Convert Archives → Convert Images, fixed order, not
+  configurable. Each stage is independently toggleable but the order never changes.
+  See 11.4.3 for the dependency rationale. (Originally a three-stage pipeline that
+  also included Rename — dropped 2026-07-01, see Change Log.)
+- Same local-only gating as all Processing Tools (§11 shared notes). The section is
+  greyed out with an explanatory hint for remote sessions.
+- Same pre-ingest/staging positioning as §11.1–12.3. Not restricted to any specific
+  folder; not a library-wide bulk tool.
+
+#### 11.4.2 Folder Selection
+
+- Single folder selection — same in-app folder-tree picker as §11.1–12.3 (no native
+  OS dialog, no `library_root` restriction, Up climbs to a drive-letter list, no
+  recursion).
+- One folder applies to the whole pipeline. There is no per-stage folder override.
+- Persisted in `config.json` as `processing_folder_path`.
+
+#### 11.4.3 Pipeline Execution Order
+
+Fixed, always in this sequence:
+
+1. **Convert Archives (§11.2)** — processes CBR and/or PDF files in the folder,
+   produces CBZ output. After this stage the folder contains the new CBZ files
+   alongside (or replacing, per 11.4.6's backup model) the originals.
+2. **Convert Images (§11.3)** — processes CBZ and CBR files in the folder (excluding
+   `.bak` files), converts images to WebP and repacks. After this stage all processed
+   archives contain WebP images.
+
+**Why this order is fixed:** Stage 1 may produce new CBZ files that Stage 2 should
+then process — running Stage 2 first would miss them. Running the stages in the
+other order creates a compounding conflict with no benefit.
+
+**Rename is not part of this pipeline** (dropped 2026-07-01 — see Change Log). Files
+land in the processing folder converted and image-optimized; renaming remains a
+deliberate manual step via §11.1's admin tool, same as the pre-automation workflow —
+Rename's only safety net is the human reviewing its live preview before committing,
+which unattended automation would remove.
+
+**Folder-level, not per-file chaining.** Each stage operates on the folder contents
+as they exist at that point in the pipeline — it does not receive an explicit list of
+files from the previous stage. Stage 2 simply picks up whatever CBZ/CBR files are
+present after Stage 1 finishes. This means:
+
+- A CBR that **failed** Stage 1 (conversion failed, original untouched) will still be
+  picked up by Stage 2 if Convert Images is enabled — §11.3 accepts CBR input and
+  rebuilds as CBZ, so Stage 2 can still process it.
+- A file that was already CBZ before the run is ignored by Stage 1 and picked up
+  normally by Stage 2.
+
+**Per-stage failures do not abort the pipeline.** If Stage 1 fails on a subset of
+files, Stage 2 runs on whatever Stage 1 left in a valid state. A complete stage
+failure (the stage itself errors out, not just individual files) logs the error and
+moves to the next stage — the pipeline always runs all enabled stages.
+
+#### 11.4.4 Per-Stage Configuration
+
+Each stage has an **enabled/disabled toggle** and its own settings, all persisted
+in `config.json`.
+
+**Convert Archives:**
+
+- Toggle: enabled/disabled (`processing_folder_convert_archives_enabled`)
+- From format: CBR or PDF (`processing_folder_convert_archives_from`) — same content-
+  detected format choice as 11.2.2. Applied batch-wide to the whole folder run.
+- Backup model: see 11.4.6.
+
+**Convert Images:**
+
+- Toggle: enabled/disabled (`processing_folder_convert_images_enabled`)
+- Quality: lossless toggle or quality slider (default 95) —
+  (`processing_folder_convert_images_lossless`, `processing_folder_convert_images_quality`)
+  — same options as 11.3.3. Applied batch-wide.
+- Backup model: see 11.4.6.
+
+#### 11.4.5 Schedule
+
+- **Options:** Off, Daily (at a configured wall-clock time HH:MM), Weekly (on a
+  configured day of the week at a configured HH:MM). Persisted in `config.json` as
+  `processing_folder_schedule` (`"off"` / `"daily"` / `"weekly"`),
+  `processing_folder_schedule_time` (`"HH:MM"`),
+  `processing_folder_schedule_day` (0–6, Monday–Sunday, weekly only).
+- **Implementation:** new `processing_folder_loop()` async task in `scheduler.py`,
+  registered in `main.py`'s `lifespan` alongside `auto_scan_loop` and `backup_loop`.
+  Unlike those two (which use elapsed-time polling), this loop uses **wall-clock
+  scheduling**: on each poll cycle it computes the next scheduled run datetime from
+  the configured day/time and fires when `now >= next_run`. `next_processing_run` is
+  persisted in `config.json` so a server restart does not lose the scheduled time or
+  cause a missed run to fire immediately on restart.
+- **If a run is already in progress** when the scheduled time arrives: log and skip
+  this cycle — same guard as `auto_scan_loop`'s "scan already running" check.
+
+#### 11.4.6 Unified Backup Model
+
+**Cross-cutting change — written into §11.2 2026-07-01.** §11.3 already matched
+this model from its own original scoping; §11.2 was amended to match on the
+same date (see that section's 2026-07-01 notes and the Change Log entry below).
+
+The backup policy agreed during Item 15 scoping replaces §11.3's "permanent `.bak`,
+never auto-deleted" rationale and §11.2's "Delete Original" checkbox. The unified
+model applies to both tools, whether triggered manually or by the automation pipeline:
+
+| Outcome | `.bak` disposition |
+|---|---|
+| **Clean success** — validated, `pages_skipped = 0` and `images_skipped = 0` | `.bak` is **auto-deleted** |
+| **Success with warnings** — validated, but `pages_skipped > 0` or `images_skipped > 0` | `.bak` is **kept permanently** — content was lost in conversion; the original is the only recovery path |
+| **Failure** — validation failed or conversion errored | No `.bak` was created; original file is **completely untouched** |
+
+**Why success-with-warnings keeps the `.bak`:** a skipped page or image means the
+output is degraded relative to the original. The user may not notice immediately —
+particularly in an unattended automation run — and the `.bak` is the only way to
+recover the missing content. The cost of a stale `.bak` is a few MB of disk space;
+the cost of losing it is unrecoverable.
+
+**§11.2 amendment:** the "Delete Original File" checkbox (11.2.3) is **removed
+entirely** — superseded by this model. The "Output file already exists" guard
+(11.2.4) becomes "refuse if `.bak` already exists for this file," consistent with
+§11.3's existing guard. Both amendments to be written into §11.2 during the
+re-scoping session.
+
+**Known limitation:** validation confirms the output opens as a valid archive and
+that its entry count matches the expected count (accounting for any skipped items),
+but cannot verify visual quality — a WebP conversion could pass validation while
+producing visually degraded output. Accepted limitation for both manual and automated
+use; noted here for public-release awareness.
+
+#### 11.4.7 Run Now
+
+- Single "Run Now" button — starts the full pipeline immediately using all currently
+  enabled stages and the current folder and settings.
+- Disabled while any pipeline run is in progress (scheduled or manual).
+- Does not affect `next_processing_run` — the scheduled cadence is unchanged.
+- Available regardless of whether a schedule is configured (works with schedule set
+  to "Off").
+
+#### 11.4.8 Progress & Status
+
+- New `processing_folder_progress` singleton tracking overall pipeline state:
+  `running`, `current_stage` (`convert_archives` / `convert_images`), and
+  `stage_results` (accumulating per-stage summary).
+- The active stage's own progress singleton (`convert_progress`,
+  `convert_images_progress`) drives the per-file detail within each stage — the
+  pipeline does not duplicate that tracking.
+- `POST /api/admin/processing-folder/run` — starts the pipeline via `BackgroundTasks`,
+  returns immediately.
+- `GET /api/admin/processing-folder/status` — polled by the frontend, returns pipeline
+  state including current stage, the active stage's per-file progress, and completed
+  stage summaries.
+- On completion: summary per stage — "Converted X of Y archives", "Converted images in
+  X of Y files" — with per-file detail expandable for each stage. Failed files per
+  stage are listed for manual follow-up; no automatic retry.
+
+#### 11.4.9 Audit Logs
+
+No new automation-specific log file. Each of the two tools' existing logs captures
+its own entries regardless of trigger source, distinguished by an `[AUTO]` prefix on
+log lines produced by the automation pipeline vs. the plain format used by manual
+runs:
+
+```
+DD/MM/YYYY HH:MM — [AUTO] filename.cbr → filename.cbz [OK]
+DD/MM/YYYY HH:MM — [AUTO] filename.cbz [OK, 3 images skipped] (backed up to filename.cbz.bak)
+```
+
+Manual runs continue to use the existing untagged format (11.2.6, 11.3.7).
+`rename_log.md` (11.1.7) never carries an `[AUTO]` line — Rename isn't triggered by
+automation. This keeps the existing logs as the single source of truth for their
+respective tools while still making automation runs distinguishable in review.
+
+#### 11.4.10 Implementation Notes (for Code)
+
+Not binding design, but worth flagging before the build session:
+
+- New backend router `backend/routers/processing_folder.py` — run endpoint, status
+  endpoint, and settings persistence (read/write `config.json` keys listed in
+  11.4.4–11.4.5).
+- New `processing_folder_loop()` in `scheduler.py` alongside `auto_scan_loop` and
+  `backup_loop`; registered in `main.py`'s `lifespan` startup block. Wall-clock
+  scheduling: compute `next_run` from configured day/time on startup and after each
+  completed run; persist to `config.json`; on each 60s poll check `now >= next_run`.
+- New `processing_folder_progress` singleton — own module or top of
+  `backend/routers/processing_folder.py`; not shared with the per-tool singletons.
+- The two tool callables are invoked **directly** (not via HTTP) — this is exactly
+  what 11.3.8 specified when it required a "plain, router-independent callable."
+  §11.2's equivalent callable should be confirmed to follow the same pattern during
+  its re-scoping session.
+- The picker/folder-selection endpoint is the **fifth** near-identical in-app picker
+  implementation. The shared-component refactor flagged in 11.1.8 and 11.2.7 should
+  be treated as a hard prerequisite for this item's build, not optional cleanup — five
+  near-identical implementations is the point where duplication meaningfully raises
+  maintenance risk.
+- `config.json` gains the keys listed in 11.4.4–11.4.5. No schema migration needed
+  (config is a plain JSON file, not the SQLite DB) — new keys default to `"off"` /
+  `false` / `""` on first read, same pattern as existing optional config keys.
+
+---
+
 ## 12. Change Log
 
 > Record any deviations from this spec here with date and reason.
 
 | Date | Change | Reason |
 |---|---|---|
+| 2026-06-27 | Added §11 Processing Tools (new top-level section) and §11.1 File Rename — full scope, picker behaviour, checkbox model, live preview, error handling, and audit log design. Ported from CAPT's standalone File Renamer per `ROADMAP.md`'s "CAPT extra tools" entry, brought in one tool at a time starting with Rename. | Dedicated scoping session 2026-06-27 — CAPT source code and `Processing/` folder structure inspected directly to ground design decisions. |
+| 2026-06-30 | Added §11.2 Convert Archives — full scope. Only CBR→CBZ and PDF→CBZ ported (CBZ→CBR/CBZ→PDF dropped, per Item 5's CBR-native-read and PDF-dropped-from-scanner resolutions). Content-based From-format filtering in the picker, `PDF_RENDER_DPI = 300` isolated constant (replaces CAPT's 72 DPI default), CBR CRC errors now surfaced as a `pages_skipped` warning instead of silently dropped, background-job + polling progress modelled on `backend/scanner.py`'s existing `scan_progress` pattern (not a blocking request like Rename), own `convert_log.md` audit log. | v2.4 Item 6 — dedicated scoping session 2026-06-30, CAPT source (`arc_convert_worker.py`, `arc_conv_cb_proc.py`, `arc_conv_pdf_proc.py`, `arc_conv_helpers.py`, `arc_convert_util.py`) and `backend/scanner.py` inspected directly to ground design decisions. |
+| 2026-06-30 | Added §11.3 Convert Images — full scope. Pre-ingest staging only (not library-wide). CBZ and CBR both accepted as input; CBR images convert but the archive always rebuilds as `.cbz` (CAPT's `rar`-CLI CBR repack dropped entirely — same WinRAR-dependency problem already ruled out for §11.2). User-facing lossless/quality-slider setting replaces CAPT's undocumented hardcoded `quality=95`. Flatten-on-rebuild reuses the Editor's existing `_rebuild_archive` flatten logic rather than CAPT's separate implementation. New backup model: rebuilt archive validated before replacing, original kept as a permanent `.bak` (never auto-deleted) — raised by Tez because a future, separately-scoped Auto Processing Folder feature will run this same conversion unattended on watched-folder files, where a silent bad conversion with no kept original could go unnoticed. Core conversion logic specified as a router-independent callable for that same future reuse. Background-job + polling progress (own `convert_images_progress` singleton), own `convert_images_log.md` audit log. | v2.4 Item 7 — dedicated scoping session 2026-06-30, CAPT source (`convert_images_window.py`, `utils/convert_images.py`, `widgets/file_management_widget.py`) and `backend/editor/archive_io.py` inspected directly to ground design decisions. |
+| 2026-07-01 | Added §11.4 Processing Folder Automation — full scope. Scheduler + Run Now model (file-system watcher rejected — debounce/queue/restart-survival complexity not justified for a personal batch-staging workflow). Single unified pipeline: Convert Archives → Convert Images → Rename, fixed order, independently toggleable. One schedule for the whole pipeline (daily or weekly at a configured wall-clock time), not per-tool schedules. New wall-clock `processing_folder_loop()` in `scheduler.py` (differs from `auto_scan_loop`'s elapsed-time model). Unified backup model agreed: clean success = auto-delete `.bak`; success-with-warnings = keep `.bak`; failure = original untouched. This replaces §11.2's "Delete Original" checkbox and §11.3's "permanent `.bak`, never auto-deleted" policy — both marked ⚠️ for amendment in the re-scoping session. §11.1 Rename also flagged for re-scoping: the CAPT-port model (four fields + checkboxes) is insufficient for automation; needs a template-based naming convention system with save/load, to be expanded before Item 10 is built. `[AUTO]` prefix on log lines distinguishes automation runs from manual runs across all three existing audit logs — no new log file. Shared picker refactor (now fifth duplication) promoted from optional cleanup to hard prerequisite for this item's build. | v2.4 Item 15 — dedicated scoping session 2026-07-01. `backend/scheduler.py` and `backend/main.py` inspected directly to ground scheduling design. File-watcher vs. scheduler trade-off evaluated, file-watcher rejected. Backup model unified across §11.2 and §11.3 as a cross-cutting decision surfaced by this item. §11.1 rename-tool re-scope need surfaced when evaluating what "automation-safe rename" actually requires. |
+| 2026-07-01 | §11.1 File Rename re-scoped and §11.4 amended. Three parser bugs found and fixed: hardcoded `present_year = 2025` ceiling in `extract_year()` was silently breaking 64% of a real 323-file sample (every 2026-dated file, cascading into series/issue extraction too) — fixed to compute the ceiling dynamically; `"000"`-style zero-issue numbers were stripped to an empty string — fixed; volume/subtitle patterns (`v05 - Subtitle`) left double-space/dangling-dash artifacts — fixed. Output separator decided: `Series - Title #Issue (Year)`, dash-joined, no auto-splitting of Series/Title. One-shot/OGN handling confirmed: no issue segment when no number is found. **Also decided: Rename is dropped from Processing Folder Automation entirely** — its live-preview review is its only correction mechanism (no undo), which unattended automation removes, and the ambiguous-split cases specifically need a human decision automation can't supply. §11.4 amended to a two-stage pipeline (Convert Archives → Convert Images); Rename's toggle, config keys, and the saved-naming-convention-template requirement are dropped, not deferred. | v2.4 Item 10 re-scope + Item 15 amendment — dedicated session 2026-07-01, sample-tested against two real filename sets (323 periodical-style, 319 creator-prefixed OGN/collection) before any decision was made. |
+| 2026-07-01 | §11.2 Convert Archives amended to match the unified backup model. "Delete Original File" checkbox removed entirely. Backup handling moved to a new "Backup & Safety" bullet mirroring §11.3's — stage, validate, rename original to `.bak`, then clean-success auto-delete / warnings keep permanently / failure leaves original untouched (full table: §11.4.6). The old "Output file already exists" collision guard replaced with "refuse if `.bak` already exists" (matches §11.3). Audit-log sample updated to show a retained-`.bak` note on warnings and the new failure wording. Gained the explicit "plain, router-independent callable" requirement already specified for §11.3, confirming Item 15/16 can invoke Convert Archives directly. | v2.4 sanity-check pass ahead of handing the CAPT cluster to Code — this amendment was agreed during Item 15 scoping (previous row, same date) and flagged as outstanding, but never actually written into §11.2 until now. |
 | 2026-06-23 | `ADMIN_SPEC.md` created — consolidates `SPEC.md` §11 and §20.13's admin descriptions plus all new admin items scoped in the 2026-06-23 inbox triage session. `SPEC.md` §11/§20.13 are superseded by this file for admin-page specifics. | Inbox triage 2026-06-23; EDITOR_SPEC.md precedent for a standalone admin spec. |
 | 2026-06-24 | §7.1 and §7.2 stubs replaced with full design: scope expanded to cover `/editor` and all `/api/admin/*` + `/api/editor/*` endpoints (not just `/admin`); local-only security boundary; stateless signed-cookie session; brute-force lockout; sliding expiry; no-built forgot-password recovery; §7.2 remote toggle dependency tightened. §1 Access gate wording updated to point at §7.1, drop §5.1 reference and "deferred to V2" framing. | Design session 2026-06-24; `comicvault-changes-v2.3.md` Item 6 updated to pointer-only. |
 | 2026-06-26 | Post-test fix pass (`docs/2.3-fixes.md`, Fixes 4–9): §7.1.2/§7.1.5 — login popup gated to protected pages only, auth button always visible with Login/Logout label, new no-password-set explanation dialog; §7.1.1 — disabling password protection now requires re-entering the current password via an inline confirm row; §4 — Last Scan card falls back to the persisted log on server restart instead of showing "Never"; §8 — changed-files log now distinguishes "metadata updated" vs. "archive changed (pages: X → Y)"; §9 — new Last Backup indicator + scheduler failure surfacing in the Scheduled Backup block. | Manual test pass 2026-06-26 (`docs/2.3-testing-notes.md`) surfaced all six issues. |
@@ -748,3 +1394,4 @@ Not binding design, but worth flagging before the build session:
 | 2026-06-27 | §9 — Scheduled Backup frequency dropdown cut from ~20 entries down to 6 (Off/day/week/month/6 months/1 year), V2.3 Item 11. Backend frequency map left untouched (still recognises old values). | `comicvault-changes-v2.3.md` Item 11; Tez's call, excessive list for a single-user home app. |
 | 2026-06-27 | §9 renamed from "Scheduled Database Backup" to "Database Backup", split into §9.1 Scheduled Backup (unchanged content) and new §9.2 Restore Database (V2.3 Item 12) — native file picker, `pre-restore-{timestamp}.db` safety snapshot via a now-parameterised `run_database_backup()`, full server restart via a new shared `_schedule_delayed_exit()` helper. | `comicvault-changes-v2.3.md` Item 12. |
 | 2026-06-27 | §6 — Card Size dropdown gains a 75% option (between 50% and 100%), V2.3 Item 13. `CARD_SIZE_PX` (`frontend/js/app.js`) maps it to `190px`. | `comicvault-changes-v2.3.md` Item 13. |
+| 2026-07-01 | `admin-spec-section-12-processing-tools.md` folded into this file as §11 directly (§11.1-§11.4, renumbered from its standalone §12.1-§12.4), per the resolution plan in `INDEX.md` and the v2.4 build queue's Item 10 entry — the standalone file is retired. §11.1 File Rename built and manually tested (v2.4 Item 10): three filename-parser bugs fixed (dynamic year ceiling, zero-issue stripping, whitespace/dash collapse after token removal), output format `Series - Title #Issue (Year)`, shared in-app picker (`backend/file_picker.py`, `frontend/js/filePicker.js`) built as the foundation for §11.2-§11.4's pickers too. | v2.4 Item 10 build session. |

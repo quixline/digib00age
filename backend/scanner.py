@@ -16,7 +16,6 @@ Rules:
 import logging
 import os
 import re
-import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -26,7 +25,7 @@ from xml.etree import ElementTree as ET
 from PIL import Image
 from sqlalchemy.orm import Session
 
-from backend import config, scan_logs
+from backend import archive_formats, config, scan_logs
 from backend.models import Issue, IssueCredit, IssueGenre, Person, ReadingProgress
 
 logger = logging.getLogger(__name__)
@@ -153,7 +152,7 @@ def _credits(element: Optional[ET.Element]) -> dict[str, list[str]]:
 
 _FILENAME_RE = re.compile(
     r"^(?P<series>.+?)\s*#(?P<number>[\w½]+)\s*(?:\((?P<year>\d{4})\))?"
-    r"(?:\s*.+)?\.cbz$",
+    r"(?:\s*.+)?\.(?:cbz|cbr)$",
     re.IGNORECASE,
 )
 
@@ -210,9 +209,9 @@ def _generate_thumbnail(cbz_path: str, issue_id: int) -> Optional[str]:
 
     img = None
     try:
-        with zipfile.ZipFile(cbz_path, "r") as zf:
+        with archive_formats._opener(cbz_path) as archive:
             image_files = sorted(
-                name for name in zf.namelist()
+                name for name in archive.namelist()
                 if name.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".gif"))
                 and "comicinfo" not in name.lower()
             )
@@ -223,8 +222,7 @@ def _generate_thumbnail(cbz_path: str, issue_id: int) -> Optional[str]:
             # Try images in order until one succeeds — first may be corrupt
             for cover_name in image_files[:3]:
                 try:
-                    with zf.open(cover_name) as img_file:
-                        raw = img_file.read()  # read all bytes first — avoids zip-entry-closed issues
+                    raw = archive.read(cover_name)
                     from io import BytesIO
                     img = Image.open(BytesIO(raw))
                     img.load()
@@ -248,8 +246,8 @@ def _generate_thumbnail(cbz_path: str, issue_id: int) -> Optional[str]:
         img.save(str(thumb_path), "JPEG", quality=85, optimize=True)
         return str(thumb_path)
 
-    except zipfile.BadZipFile:
-        logger.error("Thumbnail skipped — bad zip: %s", cbz_path)
+    except archive_formats.BAD_ARCHIVE_EXCEPTIONS:
+        logger.error("Thumbnail skipped — bad archive: %s", cbz_path)
         return None
     except Exception as exc:
         logger.error("Thumbnail failed for %s: %s", cbz_path, exc)
@@ -262,7 +260,9 @@ def _generate_thumbnail(cbz_path: str, issue_id: int) -> Optional[str]:
 
 def _parse_cbz(file_path: str) -> tuple[dict, str]:
     """
-    Open a CBZ and parse its ComicInfo.xml.
+    Open a CBZ or CBR and parse its ComicInfo.xml (SPEC.md §6.1 — CBR added
+    v2.4 Item 5/11, scanner treats both identically except which extraction
+    backend opens the archive).
     Returns (metadata_dict, metadata_source) where source is "xml" or "filename".
     """
     filename = Path(file_path).name
@@ -270,18 +270,21 @@ def _parse_cbz(file_path: str) -> tuple[dict, str]:
     root_el = None
 
     try:
-        with zipfile.ZipFile(file_path, "r") as zf:
+        with archive_formats._opener(file_path) as archive:
             # ComicInfo.xml must be at the root of the archive (case-insensitive)
-            xml_names = [n for n in zf.namelist()
+            xml_names = [n for n in archive.namelist()
                          if n.lower() == "comicinfo.xml"]
             if xml_names:
-                with zf.open(xml_names[0]) as xml_file:
-                    tree = ET.parse(xml_file)
-                    root_el = tree.getroot()
+                xml_bytes = archive.read(xml_names[0])
+                root_el = ET.fromstring(xml_bytes)
             else:
                 metadata_source = "filename"
-    except zipfile.BadZipFile:
-        logger.warning("Bad zip file: %s", file_path)
+    except archive_formats.BAD_ARCHIVE_EXCEPTIONS:
+        # Fail soft (SPEC.md §6.1) — a damaged archive (CBZ or CBR) falls back
+        # to filename metadata rather than crashing the whole scan pass, same
+        # "can't fully trust this row" spirit as the missing=True handling
+        # elsewhere in this module.
+        logger.warning("Bad archive: %s", file_path)
         metadata_source = "filename"
     except ET.ParseError:
         logger.warning("Corrupt ComicInfo.xml in: %s", file_path)
@@ -327,9 +330,9 @@ def _parse_cbz(file_path: str) -> tuple[dict, str]:
     # Verify actual image count vs XML page_count
     actual_page_count = None
     try:
-        with zipfile.ZipFile(file_path, "r") as zf:
+        with archive_formats._opener(file_path) as archive:
             actual_page_count = sum(
-                1 for n in zf.namelist()
+                1 for n in archive.namelist()
                 if n.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".gif"))
             )
     except Exception:
@@ -403,6 +406,7 @@ def _apply_metadata(issue: Issue, meta: dict, source: str,
     issue.page_count      = meta["page_count"]
     issue.count           = meta["count"]
     issue.metadata_source = source
+    issue.container_format = archive_formats.format_for_path(file_path)
     issue.date_modified   = mtime
     issue.missing         = False
 
@@ -451,7 +455,7 @@ def _ensure_progress(db: Session, issue: Issue):
 
 def scan_single_file(file_path: str, db: Session, details: dict | None = None) -> str:
     """
-    Scan or rescan one CBZ file.
+    Scan or rescan one CBZ or CBR file.
     Returns one of: "new", "updated", "skipped", "error"
 
     `details`, if passed, is filled in with extra info the caller may want —
@@ -576,12 +580,12 @@ def scan_library(db: Session):
             continue
 
         for fname in filenames:
-            if fname.lower().endswith(".cbz"):
+            if fname.lower().endswith((".cbz", ".cbr")):
                 full = str(Path(dirpath) / fname)
                 disk_paths.add(full)
 
     scan_progress.total = len(disk_paths)
-    scan_progress.add_log(f"Found {len(disk_paths)} CBZ files on disk")
+    scan_progress.add_log(f"Found {len(disk_paths)} CBZ/CBR files on disk")
 
     # ---- Process each file ----
     for file_path in sorted(disk_paths):

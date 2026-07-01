@@ -162,7 +162,7 @@ L:\Comic Archives\
 | `Singles\` in path | Sets `format_group = "Singles"` |
 | Series CBZ files | Sit directly in the series folder — no sub-folders |
 | Singles CBZ files | One CBZ per folder — always |
-| No CBR files | All files are CBZ — `rarfile` dependency not required |
+| CBR files | Supported alongside CBZ since v2.4 Item 5 (2026-06-30) — same folder rules apply, scanner treats `.cbz`/`.cbr` identically for folder-structure purposes. Was previously "none" in V1; see §6.1 |
 
 ---
 
@@ -172,10 +172,54 @@ L:\Comic Archives\
 
 ### How it works
 - Uses `os.walk()` from each configured root folder
-- Matches files ending in `.cbz` (case-insensitive)
-- Opens each CBZ as a zip archive
-- Finds `ComicInfo.xml` at the root of the zip
+- Matches files ending in `.cbz` or `.cbr` (case-insensitive) — CBR support added
+  v2.4 Item 5, see §6.1 below
+- Opens each archive as a zip (`.cbz`) or RAR (`.cbr`) archive accordingly
+- Finds `ComicInfo.xml` at the root of the archive
 - Parses XML → writes to DB
+
+### 6.1 CBR support (scoped v2.4 Item 5, 2026-06-30 — built and manually tested
+v2.4 Item 11, 2026-07-01)
+
+CBR files are scanned, thumbnailed, and served identically to CBZ — the only
+difference is which library opens the archive. `.cbz` uses Python's built-in
+`zipfile`; `.cbr` uses `rarfile` (extraction-only — already a proven dependency via
+CAPT's converter, `arc_conv_cb_proc.py`/`arc_conv_helpers.py`, no new library
+introduced). Requires an `unrar`-compatible extraction backend (UnRAR.dll or
+unrar.exe) present on the host — **confirmed present and resolvable** on the
+dev machine (`C:\Program Files\WinRAR\unrar.exe`, on PATH, `rarfile.UNRAR_TOOL`
+resolves it with no explicit override needed) as the first build sub-step, before
+any CBR-dependent code was written. Shared dispatch lives in
+`backend/archive_formats.py` (`archive_namelist()`/`archive_read_bytes()`), used
+by `scanner.py`, `reader.py`, and `backend/editor/archive_io.py` so the
+zipfile-vs-rarfile branch isn't repeated three times.
+
+**CBR is read-only at the archive level — ComicVault (scanner, editor, any
+future tool) never writes a `.cbr` file.** RAR archive *creation* requires a paid
+WinRAR install (CAPT's `create_rar_archive()` shells out to a `rar` CLI tool and
+errors if missing) — not viable as an app dependency, especially given the
+possible-public-release direction. See `EDITOR_SPEC.md` §3.1/3.2 for what this
+means for the metadata editor (short version: editing a CBR's metadata rebuilds it
+as `.cbz` on save, the original `.cbr` is deleted once the new file is verified
+written) and `DECISIONS.md` for the full rationale, including why this reverses
+`EDITOR_SPEC.md`'s original "library is all-CBZ, CBR support dropped" decision.
+
+**Damaged/CRC-error archives:** unlike CAPT's converter (which has a tolerant
+extraction path, `ignore_crc_errors`), the scanner fails soft on a damaged
+CBR — flag/skip the file rather than crashing the whole scan pass, same
+`zipfile.BadZipFile` fallback-to-filename-metadata path already used for a bad
+CBZ, extended to `rarfile`'s equivalent exceptions
+(`archive_formats.BAD_ARCHIVE_EXCEPTIONS`). Verified: a truncated/corrupt CBR
+scans in with `metadata_source="filename"` and the scan completes normally
+(no crash, no error count) — same "can't fully trust this row" spirit as the
+`missing = True` pattern for files that vanish from disk.
+
+**Flutter local/offline mode is a known, accepted gap.** The Flutter app's
+`archive` package (server-mode page-serving is unaffected — it calls the REST API,
+which is already format-agnostic from the client's side) has no RAR support, so a
+`.cbr` copied to a device for offline/travel reading won't open locally. Not
+addressed by v2.4 Item 5; flagged for whoever revisits Mobile Reader work
+(`ROADMAP.md` "Paused indefinitely").
 
 ### Incremental rescan (never full rebuild)
 | Case | Action |
@@ -246,7 +290,8 @@ elif "Series" in file_path:
 | `manga` | TEXT DEFAULT 'No' | "No" / "Yes" / "YesAndRightToLeft" — drives reader page direction |
 | `page_count` | INTEGER | From XML — verify against actual image count in CBZ |
 | `count` | INTEGER | Total issues in series if known |
-| `file_path` | TEXT NOT NULL UNIQUE | Full absolute path to CBZ |
+| `file_path` | TEXT NOT NULL UNIQUE | Full absolute path to CBZ/CBR file |
+| `container_format` | TEXT | `"cbz"` or `"cbr"` — scoped v2.4 Item 5 (2026-06-30), **built v2.4 Item 11 (2026-07-01)**. Distinct from `format` above, which holds ComicInfo's `<Format>` value ("One Shot"/"TPB"/etc.) and drives the existing Format filter dropdown — do not conflate the two. Derived from file extension at scan time; not user-editable. Drives which extraction backend (`zipfile`/`rarfile`) the scanner/reader use for a given row without re-checking the extension every call. Column + backfill (`_add_missing_issue_columns()`, `database.py`) verified against a scratch DB: existing rows backfilled from `file_path`'s extension, new CBR rows populate correctly on scan. Not currently exposed via the `/api/issue`/`/api/library` response JSON — nothing reads it client-side yet. |
 | `cover_path` | TEXT | Path to generated thumbnail |
 | `metadata_source` | TEXT | "xml" or "filename" |
 | `missing` | BOOLEAN DEFAULT FALSE | True if file no longer found on disk |
@@ -503,9 +548,13 @@ sqlalchemy
 pillow
 pystray
 watchdog
+rarfile          # CBR extraction — added v2.4 Item 5 (2026-06-30), requires an
+                 # unrar-compatible backend (UnRAR.dll/unrar.exe) on the host
 ```
 
-No `rarfile` needed — all files are CBZ (zip format).
+Extraction-only — no archive-creation dependency. RAR archive creation needs a
+paid WinRAR install and is deliberately never done by ComicVault (see §6.1);
+editing a CBR's metadata rebuilds it as `.cbz` instead.
 Flask is used by the existing editor app — managed separately.
 
 ---
@@ -587,7 +636,7 @@ The Read button links out to the Flutter app via deep link rather than to a `rea
 | Multi-value credits | Raw CSV string | No filtering needed, display-only split |
 | Series grouping key | `Series` XML field | Consistent even if folder name varies |
 | Format groups | Two: "Series" / "Singles" | Detected from folder path, not XML |
-| CBR support | None in V1 | All files confirmed CBZ |
+| CBR support | Full native support, read-only at archive level (v2.4 Item 5, 2026-06-30) | Public-release direction + large mixed CBZ/CBR collections (>100k issues for some users) make bulk-conversion-before-use unviable. Never written — RAR creation needs paid WinRAR; editing rebuilds as CBZ instead. Originally "None in V1" — see `DECISIONS.md` and §6.1 |
 | Autostart method | Startup folder shortcut (V1) | Simple, no install needed |
 | Path storage | `config.json` only | HDD-failure resilient, one edit to re-point |
 | Missing files | Flag, don't delete | Protects against temporary disconnects |
@@ -1023,3 +1072,4 @@ per-series aggregate (untouched, out of scope for this item).
 | 2026-06-23 | **Section 20.17 added** — card behaviour additions: favourite star size +5px with 1px black border; issue-page star rating row padding fix; favourited card thin gold border (coexists with read-state gradient); dark/light theme auto-matches Windows system theme with manual override in Settings. Not yet built. | Inbox triage session 2026-06-23. |
 | 2026-06-23 | Section 20.17 built. Theme override control lives in Admin → Appearance, a new ungated section (not inside the existing Advanced Settings unlock) since it's a plain preference, not a destructive or technical setting. | v2.3 build plan Item 3. |
 | 2026-06-22 | **Section 20.9's hardcoded 2000 AD section removed (v2.2)**, exactly as anticipated by that section's own "removable later if the app ever goes public" note. Its behaviour is generalised into Folder View, a new `view_mode` on Custom Tabs — see `CUSTOM_TABS_SPEC.md` §9 (current authoritative design) and `comicvault-changes-v2.2.md` (build record). Section 20.15's multi-select scope bullet updated: `buildAdProgCard()` → `buildFolderFileCard()`. | `comicvault-changes-v2.2.md` Part A — 2000 AD's bespoke view was always meant to come out before the app went public; this was the planned removal, not a regression. |
+| 2026-06-30 | **CBR support added (v2.4 Item 5), reversing V1's "all files confirmed CBZ" assumption.** Scanner (§6/§6.1) now matches `.cbr` alongside `.cbz`, opening via `rarfile` instead of `zipfile`. New `issues.container_format` column (§7) distinguishes container type from the unrelated ComicInfo `format` field. `rarfile` added to dependencies (§13), extraction-only — CBR is never written by any part of ComicVault; RAR creation needs a paid WinRAR install, so editing a CBR's metadata rebuilds it as `.cbz` instead (see `EDITOR_SPEC.md` §3.1/3.2/§2/§9 for the corresponding reversal there). Driven by a shift toward a possible public release — forcing users with large mixed CBZ/CBR collections (some >100,000 issues) to bulk-convert before their library is browsable was judged unviable. PDF and EPUB, originally scoped alongside CBR in the same v2.4 item, were dropped — PDF is handled by CAPT's existing convert-to-CBZ tool instead (v2.4 Item 6) rather than native scanner support; EPUB was dropped entirely as structurally incompatible with the page-indexed reading model and not a confirmed need. Full rationale in `DECISIONS.md`, build item in `v2.4/comicvault-changes-v2.4.md` Item 5/11. | v2.4 Item 5, eng-reviewed and scoped 2026-06-30. |

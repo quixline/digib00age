@@ -154,3 +154,495 @@ roadmap.html`'s Now lane updated — Item 3's card removed, remaining 11 cards
 renumbered 1–11.
 
 ---
+
+## Session — 2026-07-01: CAPT-tooling cluster (Items 9, 10, 11, 12, 13, 16) — build session
+
+**Scratch environment, used for every item below.** `config.json` was
+temporarily swapped for a scratch copy pointing `library_root`/`db_path`/
+`thumbnail_dir`/`backup_folder`/`reader_port` (9425) at
+`C:\Users\tezdr\AppData\Local\Temp\claude\...\scratchpad\` — a handful of
+synthetic CBZ fixtures, never `L:\Comic Archives` or the real
+`backend/comicvault_v2.db`. The real `config.json` (and `logs/*.md`, which
+`scan_logs.py` writes to a hardcoded repo-relative path regardless of the
+active config) were backed up before the swap and restored exactly once this
+whole build round closed out. Any per-item "verified against a scratch
+library/DB" note below refers to this same environment, not a fresh one
+per item.
+
+## Session — 2026-07-01: v2.4 Item 9 — Favourites as a Custom Tab category
+
+**Goal.** Build the design from `CUSTOM_TABS_SPEC.md` §10 (scoped 2026-06-30):
+a library-wide Custom Tab showing every favourited issue regardless of folder,
+plus the bundled BUG-017 fix (`BUGS.md`) in the same session since both touch
+`get_library()`'s per-series aggregation.
+
+**What changed.**
+- `backend/models.py` / `backend/database.py` — new `CustomTab.basis_type`
+  column (`'folder'`/`'favorites'`, default `'folder'`), added via the same
+  idempotent `ALTER TABLE` pattern already used for `view_mode`.
+- `backend/routers/admin.py` — `create_custom_tab()` gained a `basis_type`
+  branch: `basis_type="favorites"` skips the name/folder_path requirement,
+  server-assigns `name="Favourites"`/`folder_path=""`/`view_mode="flat"`, and
+  is blocked (409) if a favourites tab already exists — server-side, not just
+  the button-disable in the UI. `update_custom_tab()` rejects (400) any
+  attempt to change `folder_path`, `basis_type`, or set `view_mode` off
+  `"flat"` on a favourites-basis row, same protection style
+  `HOME_STRIPS_SPEC.md` §4.3 uses for `is_default` rows.
+- `backend/routers/library.py` — `get_library()` gained the `basis_type`
+  branch from §10.3 (filters to `Issue.favorites` before the per-series
+  groupby, same principle as BUG-010's fix); the three Folder View endpoints
+  (`GET .../folder`, `POST .../folder/mark-read`, `GET .../search`) now 400 on
+  a favourites-basis tab rather than evaluating against an empty
+  `folder_path`.
+- **BUG-017 fixed** in the same function: `"favorites": cover_issue.favorites`
+  → `"favorites": any(i.favorites for i in issues)`, matching the existing
+  `has_bw` aggregation two lines below. Favouriting a non-#1 issue in a series
+  now correctly surfaces that series under the All-tab Favourites filter.
+- `backend/routers/home.py` — `/api/nav/config` now includes `basis_type` per
+  tab, so the frontend can tell a favourites tab apart from a folder tab
+  without a second fetch.
+- `frontend/admin.html` / `frontend/js/admin.js` — new "Add Favourites Tab"
+  button next to "Add Tab" (disables once one exists or the 4-visible cap is
+  hit); `makeCustomTabRow()` special-cases favourites rows (shows "Library-wide
+  (Favourites)" instead of a path, view-mode selector disabled).
+- `frontend/js/app.js` — new `tabBasisTypes` map + `isFavoritesTab()` helper
+  (mirrors the existing `tabViewModes`/`isFolderViewTab()` pair). Favourites-
+  specific empty-state text (§10.6). **Live-removal fix (§10.5) — went through
+  one correction during manual testing:** the first pass re-ran
+  `getFilteredLibrary()` + re-render after patching the `.favorites` flag, on
+  the assumption that would re-exclude the item — this works for the All-tab
+  `activeFavorites` filter (which re-evaluates `pool.filter(s => !!s.favorites)`
+  on every render) but silently did nothing for the Favourites tab itself,
+  since `tabLibraryCache[tabId]` was already scoped server-side at fetch time
+  and nothing re-filters it client-side. Caught by testing the actual DOM
+  output, not just reading the diff. Fixed by explicitly dropping the matching
+  entry from any favourites-basis tab's cache on unfavourite, same best-effort
+  tolerance the rest of this bulk-patch family already accepts (a reload
+  reflects true server state).
+
+**Verified — manual test, this session, against a scratch library/DB (never
+`L:\Comic Archives`).** Favourited issue #2 of a 3-issue scratch series
+(deliberately not #1); confirmed the series surfaced under both the new
+Favourites tab and the existing All-tab Favourites filter (BUG-017); confirmed
+un-favouriting live-removed the card from both surfaces without a reload;
+confirmed the Favourites-specific empty-state text renders when nothing is
+favourited; confirmed a second favourites tab is rejected (409) and direct
+PATCH attempts against `folder_path`/`basis_type`/`view_mode` on the
+favourites row are rejected (400); confirmed renaming the tab still works.
+Real library/config untouched — see the session's scratch-environment note at
+the top of this build round.
+
+**Docs.** `CUSTOM_TABS_SPEC.md` §10 marked built. `BUGS.md` BUG-017 moved to
+`archive/bugs-fixed-archive.md`.
+
+---
+
+## Session — 2026-07-01: v2.4 Item 10 — File Rename Tool
+
+**Goal.** Build the File Rename Tool per `admin-spec-section-12-processing-
+tools.md` §12.1 (re-scoped 2026-07-01), and — since this is the first
+Processing Tool built — the shared in-app picker/log/backup infrastructure
+the rest of the CAPT-tooling cluster (Items 12, 13, 16) will reuse rather than
+duplicating a fourth and fifth time, per the cross-review finding at the start
+of this build session.
+
+**Shared infrastructure built this session:**
+- `backend/file_picker.py` — `list_directory()` / `list_drives()`, no
+  `library_root` restriction. Each tool's router mounts its own thin
+  `browse`/`drives` wrapper with its own extension/content filter on top.
+- `backend/tool_logs.py` — append-only log writer with a fixed 1MB cap,
+  independent of the configurable Log Size Limit (§8). `rename_log.py` is a
+  thin wrapper over it.
+- `frontend/js/filePicker.js` — one configurable picker component (Home/Up
+  with a "This PC" drive-letter listing as the Up terminus, single-folder or
+  multi-file select modes), reusing the existing `.fe-picker-*` CSS classes
+  from the Full Editor's picker. One shared overlay in `admin.html`
+  (`#ptPickerOverlay`), reconfigured per `openFilePicker()` call — same
+  pattern `admin.js`'s existing `#ctPickerOverlay` already uses for Custom
+  Tabs + Home Strips.
+
+**File Rename Tool:**
+- `backend/rename_tool.py` — ported `parse_comic_filename()`/`build_filename()`
+  from CAPT's `filename_parser.py`/`rename_u.py`, with the three bugs fixed
+  per the 2026-07-01 re-scope (dynamic year ceiling instead of hardcoded
+  `present_year = 2025`; zero-issue strings no longer stripped to empty;
+  whitespace/dangling-dash collapsed after every token/bracket removal, not
+  just once) and `build_filename()` rewritten to the decided
+  `Series - Title #Issue (Year)` dash-joined format (CAPT's original was
+  space-joined, different field order — not a straight port).
+- `backend/routers/rename.py` — browse/drives (shared picker), in-memory
+  working-file-list (mirrors `editor_full.py`'s `_working_files` pattern),
+  `parse`/`preview` endpoints (parsing and filename-building logic stays
+  server-side, not duplicated in JS — matches how the Full Editor already
+  keeps its business logic backend-side), and `apply`. Whole router local-
+  only gated at the `APIRouter(dependencies=...)` level, not per-endpoint —
+  per §11's shared notes, the whole section is inert remotely, not just the
+  destructive Apply step.
+- `frontend/js/processingTools.js` + `admin.html`/`admin.js` — edit panel
+  with independent File/All checkboxes per field, Auto-Increment (Issue→All
+  only), case-style radio group, live preview (no explicit Preview button),
+  Apply + summary modal. Per-file accumulation across selections implemented
+  via a `renameFileOverrides` map so re-selecting a previously-edited file
+  restores its checkbox/value state. Combined File+All edits across
+  different fields (e.g. Series→All + Issue→File on one specific file) merge
+  correctly per file; Auto-Increment falls back to one shared batch call
+  (sequential numbering doesn't combine meaningfully with a per-file
+  override anyway). Reorder via Move Up/Down buttons rather than full
+  drag-and-drop — same practical effect (auto-increment respects display
+  order) with far less implementation risk.
+- `backend/rename_log.py` — `rename_log.md`, `DD/MM/YYYY HH:MM — old → new`.
+
+**Verified — manual test, this session, against scratch fixture files (never
+`L:\Comic Archives`).** Confirmed all three parser bugs fixed directly via
+`POST /rename/parse` against the spec's own sample patterns (a 2026-dated
+file, a `000`-numbered file, `Conan the Barbarian v05 - Twisting Loyalties`).
+Loaded 4 scratch files via the picker; tested single-file edits accumulating
+across two files simultaneously; tested re-selecting a file restores its
+edited-field state; tested batch (All) mode correctly resets prior single-file
+accumulation and applies to every loaded file; tested a combined Series→All +
+Title→File(selected file) edit computing correctly per file; tested
+Auto-Increment sequential numbering, including after a Move Up/Down reorder;
+tested Clear Preview; tested Apply — confirmed the file was actually renamed
+on disk and `rename_log.md` got the correct entry; tested the already-exists
+collision guard (no partial-silent-failure, failed file remains in the
+working set). Local-only gating verified by code (same `is_local_request()`
+primitive already proven in v2.4 Item 1's testing) rather than a live remote
+simulation, since a `curl` from this machine can't spoof a non-loopback peer
+address.
+
+**Docs.** `admin-spec-section-12-processing-tools.md` **folded into
+`ADMIN_SPEC.md` §11** (renumbered §12.1–§12.4 → §11.1–§11.4) per the
+resolution plan in `INDEX.md` and this item's own "on build" note in
+`comicvault-changes-v2.4.md` — the standalone file is retired. `INDEX.md` and
+`CLAUDE.md`'s doc tables updated to drop the now-nonexistent file.
+`ADMIN_SPEC.md` §11.1 marked built; its status block updated.
+
+---
+
+## Session — 2026-07-01: v2.4 Item 11 — native CBR support (build)
+
+**Goal.** Build the CBR design Item 5 scoped 2026-06-30 (`SPEC.md` §6.1/§7,
+`EDITOR_SPEC.md` §3.1/§3.2) — full native read support across the scanner,
+reader, and both editors. Biggest item in this batch: this is scanner/reader/
+editor work, not a Processing Tools item.
+
+**What changed.**
+- `requirements.txt` — added `rarfile`. Confirmed as the first build sub-step
+  (before writing any CBR-dependent code): `unrar` resolves via PATH
+  (`C:\Program Files\WinRAR\unrar.exe`), no explicit `rarfile.UNRAR_TOOL`
+  override needed on this machine.
+- `backend/archive_formats.py` (new, shared) — `archive_namelist()` /
+  `archive_read_bytes()` dispatch on `.cbz`/`.cbr`, plus
+  `BAD_ARCHIVE_EXCEPTIONS` and `ENTRY_NOT_FOUND_EXCEPTIONS` tuples so callers
+  don't hand-roll the zipfile-vs-rarfile exception handling three times.
+  (`rarfile.RarFile.read()` raises its own `NoRarEntry` for a missing entry,
+  not `KeyError` like `zipfile` — caught during review before it became a
+  live bug in `reader.py`'s page-serving.)
+- `backend/models.py` / `backend/database.py` — new `Issue.container_format`
+  column (`"cbz"`/`"cbr"`), added via the same idempotent `ALTER TABLE`
+  pattern as `favorites`/`personal_rating`, with a backfill `UPDATE` deriving
+  the value from each existing row's `file_path` extension.
+- `backend/scanner.py` — disk walk now matches `.cbz` **or** `.cbr`;
+  `_parse_cbz()` (kept its name — still the single per-file parse entry
+  point) branches via `archive_formats`, fails soft on a corrupt archive of
+  either format (falls back to filename metadata, same as the existing bad-
+  CBZ path, doesn't crash the scan pass); `_generate_thumbnail()` same
+  dispatch; `_apply_metadata()` sets `container_format`; the filename-fallback
+  regex now matches `.cbr` too.
+- `backend/routers/reader.py` — `_sorted_pages()` and both page/cover byte-
+  reads branch via `archive_formats`.
+- `backend/editor/archive_io.py` — `find_xml_in_archive()` /
+  `extract_xml_from_archive()` / `get_archive_page_count()` branch via
+  `archive_formats`. `_rebuild_archive()` (shared by `write_comicinfo_to_cbz()`
+  and `keep_single_xml()`) now detects a `.cbr` source, rebuilds to a sibling
+  `.cbz` path instead of overwriting in place, deletes the original `.cbr`
+  only after the new `.cbz` is confirmed written, guards against a sibling
+  `.cbz` that already exists (raises, no clobber), and **returns the final
+  path** so every caller can propagate it. Stale module docstring ("CBR
+  support is dropped entirely... library is all-CBZ") corrected — this item
+  was flagged as the one that owns that correction (§11.3.8's implementation
+  note in the now-folded processing-tools scoping).
+- `backend/routers/editor_basic.py` (`save_editor_fields`) and
+  `backend/routers/editor_full.py` (`process_batch`, plus `resolve_file_xml`,
+  `get_file_preview`, `get_file_page`) — capture `write_comicinfo_to_cbz()`'s
+  returned path; when it differs from the original, Basic Editor updates the
+  `Issue` row's `file_path`/`container_format` and **`db.flush()`s before**
+  calling `scan_single_file()` (session is `autoflush=False` — without the
+  flush, the rescan's `file_path` lookup wouldn't see the change and would
+  insert a duplicate row instead of updating the existing one). Full Editor
+  updates the in-memory working/queue entry's `path`/`filename` instead,
+  since pre-library files have no DB row yet. `editor_full.py`'s
+  `ALLOWED_EXTENSIONS` extended to `.cbr` so the picker actually surfaces CBR
+  files for pre-library tagging.
+- `backend/routers/admin.py` — `POST /api/scan/file`'s extension check
+  extended to accept `.cbr`.
+
+**Verified — manual test, this session, against the scratch environment
+(never `L:\Comic Archives`).** Built a real CBR fixture with `Rar.exe`
+(WinRAR trial, already installed) containing a `ComicInfo.xml` + one image.
+Scanned it in: confirmed XML metadata parsed correctly, `container_format`
+stored as `'cbr'` in the DB (not currently surfaced via the API response —
+nothing client-side reads it yet, left as-is), thumbnail generated, cover and
+page endpoints served correctly. Built a truncated/corrupt CBR: confirmed it
+scanned in with `metadata_source="filename"` (fail-soft) and the scan
+completed with `errors=0` — no crash. Edited the good CBR's metadata via
+Basic Editor: confirmed the `.cbr` became a `.cbz`, the original was deleted,
+and the DB row (same `id`, not a duplicate) updated its `file_path`/
+`container_format`/edited fields correctly — this is what caught the missing-
+`db.flush()` bug before it shipped. Repeated via Full Editor: add-to-working-
+set, load XML fields, preview, single-page fetch, and Process All all worked
+against a CBR, and Process All correctly updated the working-set entry's path
+after the rebuild. Tested the no-clobber guard directly: pre-created a
+colliding `.cbz` next to a `.cbr` with the same stem, attempted to save via
+Full Editor, confirmed a clean error and both files left completely
+untouched on disk.
+
+**Docs.** `SPEC.md` §6.1 and its `container_format` schema row marked built.
+`EDITOR_SPEC.md` §3.1/§3.2 marked built, with the `db.flush()` gotcha and the
+no-clobber guard documented for anyone touching a save path later.
+
+---
+
+## Session — 2026-07-01: v2.4 Item 12 — Convert Archives
+
+**Goal.** Build CBR→CBZ and PDF→CBZ conversion per `ADMIN_SPEC.md` §11.2
+(re-scoped 2026-07-01 to the unified backup model). **Includes the cross-
+review finding from the start of this build session** — Convert Archives'
+picker was missing the same `*.bak` filename-suffix exclusion Convert Images
+already had, which would let a permanently-kept `.bak` from a warned run get
+silently reprocessed as a fresh input on the next pass (most relevant for
+Item 16's automation, which re-runs Stage 1 on a schedule).
+
+**What changed.**
+- `requirements.txt` — added `pymupdf`. Confirmed it imports cleanly
+  (`import fitz`) before writing any PDF-dependent code.
+- `backend/backup_model.py` (new, shared with Item 13) —
+  `stage_validate_and_replace()` implements the unified three-outcome table
+  (§11.4.6): clean success auto-deletes the `.bak`; warnings keep it
+  permanently; failure discards the staged file and leaves the original
+  untouched. Takes `original_path`/`staged_path`/`target_path` as three
+  separate arguments (not two) — Convert Archives always produces a
+  *different* filename (`.cbr`/`.pdf` → `.cbz`), unlike an in-place same-
+  filename rewrite, so "what gets renamed to `.bak`" and "where the staged
+  file lands" are genuinely different paths, not one. `bak_already_exists()`
+  is a separate pre-flight guard, checked before any conversion work starts
+  (no point extracting/rezipping a file that's just going to be rejected).
+- `backend/archive_convert.py` (new) — `convert_archive_file(source_path,
+  from_format) -> ConvertResult`, router-independent (Item 16 will call it
+  directly). `detect_archive_format()` ported unchanged from
+  `arc_convert_util.py`. CBR→CBZ ports `arc_conv_helpers.py`'s tolerant RAR
+  extraction (`ignore_crc_errors=True`, tracking a `crc_errors` list →
+  `pages_skipped`); CBZ→CBR dropped entirely, no `create_rar_archive()` port.
+  PDF→CBZ ports `arc_conv_pdf_proc.py`'s page-render loop, swapping CAPT's
+  hardcoded `fitz.Matrix(1, 1)` for `fitz.Matrix(PDF_RENDER_DPI / 72, ...)`
+  with `PDF_RENDER_DPI = 300` as a module constant.
+- `backend/convert_log.py` — `convert_log.md`, three line formats (OK /
+  OK-with-skips-and-bak-note / FAILED), with an `[AUTO]`-prefix parameter
+  ready for Item 16 to use (not exercised yet — no automated trigger exists
+  before Item 16).
+- `backend/routers/convert.py` (new) — picker (`.bak` exclusion fix applied
+  here), `convert_progress` singleton modelled on `scanner.py`'s
+  `ScanProgress`, working file list, `POST /run` (background task) /
+  `GET /status` polling.
+- `frontend/admin.html` / `frontend/js/processingTools.js` — From-format
+  radio (CBR/PDF), static "→ CBZ" label, Browse/Run buttons, live progress
+  bar, summary modal reusing the shared `showPtSummary()` helper from Item 10.
+- **Bug caught and fixed during manual testing** (not by review):
+  `filePicker.js`'s `loadPtPickerDirectory()` built its URL as
+  `` `${browseUrl}?path=...` `` unconditionally — correct for Rename's plain
+  `browseUrl`, but Convert Archives' `browseUrl` already carries its own
+  `?from_format=cbr` query string, so the result was a malformed
+  double-`?` URL. The browser folded everything after the first `?` into a
+  single `from_format` value and dropped `path` entirely, silently falling
+  back to the Home directory instead of erroring — easy to miss without
+  actually clicking through the picker. Fixed to join with `&` when the base
+  URL already has a `?`.
+
+**Verified — manual test, this session, against scratch fixture files (never
+`L:\Comic Archives`).** Built real fixtures: a valid CBR (via `Rar.exe`,
+already installed — WinRAR trial), a CBR with one entry corrupted by flipping
+bytes near the end of the archive (to exercise `pages_skipped`), a 2-page PDF
+(built with `fitz` itself), and a `.bak` file to prove the cross-review fix.
+Confirmed the picker's CBR and PDF filters both correctly exclude the `.bak`
+file. Ran both conversion directions: clean CBR→CBZ and PDF→CBZ each auto-
+deleted their `.bak` (net effect: original replaced, no leftover); the
+corrupted CBR converted with `pages_skipped=1`, flagged `success_with_
+warning`, and kept its `.bak` permanently. Tested the `.bak`-already-exists
+guard directly: re-attempting a conversion against a filename whose `.bak`
+already existed failed cleanly with "Backup file already exists" before any
+conversion work ran, original left completely untouched. Drove the full
+picker→working-set→run→summary-modal flow through actual browser clicks
+(not just API calls) — this is what caught the malformed-URL bug above,
+since the API-level tests alone (hitting `/convert/browse` directly with a
+correctly-built URL) wouldn't have exercised the buggy client-side
+construction.
+
+**Docs.** `ADMIN_SPEC.md` §11.2 marked built, cross-review fix noted.
+
+**Amendment, same day, found during Item 16's build:** `POST /convert/run`'s
+"already in progress" rejection returned `{running: true}` — indistinguishable
+from the success response's `{running: true}`, since `running` reflects actual
+state either way, not "did your request just start something." The frontend's
+`if (res.running === false)` check could never fire, so the rejection toast
+silently never displayed. Fixed by adding an explicit `started` field
+(`true`/`false`) and updating the frontend to check that instead — same fix
+applied to Item 13's `convert-images/run` (identical pattern) and Item 16's
+own `processing-folder/run`. Not caught during this session's own testing
+because the manual test never actually double-clicked Run while a conversion
+was in flight — worth remembering for future background-job endpoints:
+"is my request accepted" and "what's the current state" are two different
+questions and need two different fields.
+
+---
+
+## Session — 2026-07-01: v2.4 Item 13 — Convert Images
+
+**Goal.** Build WebP image conversion per `ADMIN_SPEC.md` §11.3, reusing
+Item 12's `backend/backup_model.py` (the unified backup model is genuinely
+shared, not just similar) and the Editor's flatten logic rather than porting
+CAPT's separate implementation.
+
+**What changed.**
+- `backend/editor/archive_io.py` refactor — extracted `flatten_and_zip
+  (extract_dir, target_dir) -> str` (builds a staged zip, doesn't move/replace
+  anything) out of `_rebuild_archive()`, which is now a thin wrapper: call
+  `flatten_and_zip()`, then `os.replace()` (its existing in-place-rewrite
+  behaviour, unchanged for editor callers). This is the shared flatten step
+  §11.3.4 calls for — Convert Images calls the same function directly rather
+  than carrying a second implementation.
+- `backend/image_convert.py` (new) — `convert_images_in_archive(archive_path,
+  quality, lossless) -> ConvertImagesResult`, router-independent (Item 16
+  target). Extracts via `archive_formats` (CBZ or CBR, content-detected, both
+  load into the same working list — no From-format selector, unlike Convert
+  Archives). Converts each `{.jpg,.jpeg,.tiff,.gif,.png,.bmp}` entry to WebP
+  via Pillow; a per-image failure is skipped (counted, not aborting);
+  `ComicInfo.xml`/already-`.webp` entries pass through unchanged. Rebuilds via
+  `flatten_and_zip()` — always `.cbz` output, even for a CBR source (CBR is
+  never written). Backup/safety via the same `backup_model.py` Item 12 uses.
+- `backend/convert_images_log.py` — **line format decided independently of
+  the doc sample**, which turned out to be stale (see below).
+- `backend/routers/convert_images.py` (new) — picker (content-detected
+  CBZ/CBR, `.bak` excluded — this one was already correctly scoped from the
+  start, unlike Convert Archives), own `convert_images_progress` singleton
+  (separate from Convert Archives'), quality/lossless options, run/status.
+- `frontend/admin.html` / `frontend/js/processingTools.js` — Lossless
+  checkbox + quality slider (default 95, slider disables when Lossless is
+  checked), Run button, progress UI, summary modal.
+- **Doc drift caught and fixed, not by review — by writing the log module
+  and noticing it contradicted the spec it was implementing.**
+  `ADMIN_SPEC.md` §11.3.7's audit-log sample still showed a clean-success
+  line as `filename.cbz [OK] (backed up to filename.cbz.bak)` — left over
+  from before the Item 15 backup-model unification, when Convert Images'
+  original model kept every `.bak` permanently. The unified model auto-
+  deletes a clean success's `.bak`, so that sample line was actively wrong.
+  Implemented `convert_images_log.py` to match the *correct*, already-
+  updated §11.3.5 body text and `convert_log.md`'s (§11.2.6) already-correct
+  pattern instead of the stale sample, then fixed the sample itself in the
+  same session.
+
+**Verified — manual test, this session, against scratch fixture files (never
+`L:\Comic Archives`).** Built a nested-folder CBZ (image entries two levels
+deep, mixed jpg/png/gif) to exercise flatten; a CBZ with one entry replaced
+by garbage bytes under a `.jpg` name to exercise `images_skipped`; a CBR.
+Ran all three in one batch: the nested archive came back flattened
+(`ComicInfo.xml`, `page001.webp`, `page002.webp`, `page003.webp`, no
+`subfolder/` prefixes) with a clean `[OK]` and no `.bak`; the corrupt-image
+archive converted its good image to WebP, left the corrupted one in its
+original `.jpg` format untouched, flagged `success_with_warning` with
+`images_skipped=1`, and kept its `.bak` permanently; the CBR came back as a
+`.cbz` with a clean `[OK]` and no `.bak`. Tested the `.bak`-already-exists
+guard directly and via the full picker→run→summary-modal UI flow — failed
+cleanly, original untouched, file stayed in the working set for retry.
+Confirmed Lossless correctly disables the quality slider in the UI.
+
+**Docs.** `ADMIN_SPEC.md` §11.3 marked built; §11.3.7's stale audit-log
+sample corrected to match the unified backup model.
+
+**Amendment, same day, found during Item 16's build:** same `started`-vs-
+`running` fix as Item 12's amendment above — `convert-images/run`'s
+"already in progress" rejection was indistinguishable from success in the
+JSON response, so the frontend's rejection toast could never fire. Fixed
+alongside Item 12's and Item 16's.
+
+---
+
+## Session — 2026-07-01: v2.4 Item 16 — Processing Folder Automation
+
+**Goal.** Build the two-stage scheduler/Run Now pipeline per `ADMIN_SPEC.md`
+§11.4 — the final item in the CAPT-tooling cluster, depending on Items 11-13
+being built first since it invokes their callables directly.
+
+**What changed.**
+- `backend/routers/processing_folder.py` (new) — settings (`GET`/`POST
+  /processing-folder/config`, the keys listed in §11.4.4/§11.4.5), a
+  folder-only picker (shared `file_picker.py`, `mode: 'folder'` on the
+  frontend), `processing_folder_progress` singleton (`running`,
+  `current_stage`, `stage_results`), and `run_pipeline()` — the actual
+  two-stage orchestration, called by both "Run Now" and the scheduler.
+  Re-implements the same content-detection + `.bak`-exclusion filtering
+  Items 12/13's pickers use (`_convertible_archives()`/`_convertible_images()`)
+  as plain filesystem listing, since automation doesn't go through the
+  admin UI's HTTP picker endpoints at all. Per-stage exceptions are caught
+  and logged without aborting the pipeline — the next enabled stage still
+  runs. Saving a new schedule/time/day clears `next_processing_run` so the
+  scheduler recomputes it fresh rather than firing against a stale time.
+- `backend/scheduler.py` — new `processing_folder_loop()`, wall-clock
+  scheduling (differs from `auto_scan_loop`/`backup_loop`'s elapsed-time
+  polling): `_compute_next_processing_run()` computes the next daily/weekly
+  fire time from the configured day/time, persisted to `config.json` as
+  `next_processing_run` so a restart doesn't lose the schedule or fire
+  immediately on catch-up. Skips a cycle if a run is already in progress,
+  same guard shape as `auto_scan_loop`.
+- `backend/main.py` — `processing_folder_loop()` registered as a background
+  task in `lifespan`, alongside `auto_scan_loop`/`backup_loop`, with the
+  same cancel-on-shutdown handling.
+- `frontend/admin.html` / `frontend/js/processingTools.js` — folder picker,
+  per-stage enable checkboxes + settings, schedule dropdown (Off/Daily/
+  Weekly) + time/day inputs with a Save button, Next Run hint, Run Now
+  button, progress label, summary modal.
+- **`[AUTO]` tag semantics clarified during manual testing.** Initially
+  wired "Run Now" to log as a plain (untagged) run and only the scheduled
+  trigger as `[AUTO]` — re-reading §11.4.9 against the actual test output
+  showed this was backwards: the tag distinguishes "came through the
+  Processing Folder pipeline" (§11.4, either trigger) from "manual run via
+  Convert Archives'/Convert Images' own admin-UI tools" (§11.2/§11.3 used
+  directly) — not "scheduled vs. clicked." Both `run_pipeline()` call sites
+  (Run Now's endpoint and the scheduler loop) now pass `auto=True`.
+- **Two more instances of Item 12/13's `started`-vs-`running` bug (see
+  those items' amendment notes above), caught here first.** `POST
+  /processing-folder/run`'s "already in progress" rejection had the same
+  `{running: true}` ambiguity, plus a second related bug in the frontend:
+  the "No stages enabled" case is a raised `HTTPException`, which FastAPI
+  serializes as `{detail: "..."}`, not the `{message: ...}` shape the
+  success/rejection responses use — `postJSON()` doesn't check `res.ok`, so
+  that response shape reaches the caller too, and the original check
+  (`res.message.includes('No stages')`) could never match a `detail` field.
+  Fixed `runPfNow()` to check both `res.started === false` and `res.detail`.
+
+**Verified — manual test, this session, against a scratch processing folder
+(never `L:\Comic Archives`).** Built a mixed folder: a CBR (Stage 1 input),
+an already-CBZ file (Stage-1-ignored, Stage-2 input), and a leftover `.bak`
+(must never be touched by either stage). Ran the full pipeline: confirmed
+Stage 1 converted the CBR to CBZ; confirmed Stage 2 picked up **both** the
+pre-existing CBZ **and** the CBZ Stage 1 had just produced — this is the
+folder-level, not per-file, chaining behaviour §11.4.3 specifies, and it's
+the one behaviour that's easy to get wrong (per-file chaining would have
+missed Stage 1's output). Confirmed the `.bak` file appeared in neither
+stage's results across two separate runs (proving it survives repeated
+scheduled-style re-runs, not just one pass). Confirmed `[AUTO]`-tagged lines
+in both `convert_log.md` and `convert_images_log.md` after fixing the tag
+logic. Unit-tested `_compute_next_processing_run()` directly against six
+cases (daily before/after today's slot, weekly before/after this week's
+slot including a same-day boundary, and "off") — all correct; did not run
+the actual 60-second-poll async loop live end-to-end (would require waiting
+through real wall-clock time), relying instead on the same reviewed
+polling-loop pattern already proven in `auto_scan_loop`/`backup_loop` plus
+the isolated unit test of the one genuinely new piece of logic (the next-run
+computation). Tested the already-running guard and the no-stages-enabled
+guard through the actual UI, which is what caught both response-shape bugs
+above — confirmed via a deterministic stubbed-response test that the fixed
+`runPfNow()` correctly shows each toast once the right field is present.
+
+**Docs.** `ADMIN_SPEC.md` §11.4 marked built.
+
+---

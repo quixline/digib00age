@@ -30,11 +30,10 @@ Batch:
 import base64
 import io
 import os
-import zipfile
 
 from fastapi import APIRouter, Body, HTTPException
 
-from backend import config
+from backend import archive_formats, config
 from backend.editor.archive_io import (
     IMAGE_EXTENSIONS,
     extract_xml_from_archive,
@@ -50,7 +49,9 @@ from backend.editor.xml_parser import COMICINFO_TAGS, parse_comicinfo_xml
 
 router = APIRouter(tags=["editor-full"])
 
-ALLOWED_EXTENSIONS = {".cbz"}
+# CBR added v2.4 Item 5/11 (EDITOR_SPEC.md §3.1) — Full Editor's pre-library
+# intake needs to handle CBR the same as CBZ; saving rebuilds it as .cbz.
+ALLOWED_EXTENSIONS = {".cbz", ".cbr"}
 
 # In-memory working set + queue — Full Editor is desktop-only, single-session,
 # never persisted (matches CAPT's existing model, Section 5).
@@ -253,10 +254,11 @@ def resolve_file_xml(file_id: str, payload: dict = Body(...)):
         raise HTTPException(status_code=400, detail="No filename specified to keep")
 
     try:
-        keep_single_xml(entry["path"], keep)
+        entry["path"] = keep_single_xml(entry["path"], keep)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to resolve XML: {exc}")
 
+    entry["filename"] = os.path.basename(entry["path"])
     entry["xml_files"] = find_xml_in_archive(entry["path"])
     return get_file_xml(file_id)
 
@@ -265,10 +267,9 @@ def resolve_file_xml(file_id: str, payload: dict = Body(...)):
 def get_file_preview(file_id: str):
     entry = _get_working_file_or_404(file_id)
     try:
-        with zipfile.ZipFile(entry["path"], "r") as archive:
-            image_files = sorted(
-                f for f in archive.namelist() if f.lower().endswith(IMAGE_EXTENSIONS)
-            )
+        image_files = sorted(
+            f for f in archive_formats.archive_namelist(entry["path"]) if f.lower().endswith(IMAGE_EXTENSIONS)
+        )
         return {"image_list": image_files, "total_pages": len(image_files)}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
@@ -278,31 +279,29 @@ def get_file_preview(file_id: str):
 def get_file_page(file_id: str, page_num: int):
     entry = _get_working_file_or_404(file_id)
     try:
-        with zipfile.ZipFile(entry["path"], "r") as archive:
-            image_files = sorted(
-                f for f in archive.namelist() if f.lower().endswith(IMAGE_EXTENSIONS)
-            )
-            if page_num < 0 or page_num >= len(image_files):
-                raise HTTPException(status_code=404, detail="Page number out of range")
+        image_files = sorted(
+            f for f in archive_formats.archive_namelist(entry["path"]) if f.lower().endswith(IMAGE_EXTENSIONS)
+        )
+        if page_num < 0 or page_num >= len(image_files):
+            raise HTTPException(status_code=404, detail="Page number out of range")
 
-            img_file = image_files[page_num]
-            with archive.open(img_file) as f:
-                img_bytes = f.read()
+        img_file = image_files[page_num]
+        img_bytes = archive_formats.archive_read_bytes(entry["path"], img_file)
 
-            from PIL import Image
+        from PIL import Image
 
-            img = Image.open(io.BytesIO(img_bytes))
-            width, height = img.size
-            mime_ext = img_file.split(".")[-1].lower()
-            data_uri = f"data:image/{mime_ext};base64,{base64.b64encode(img_bytes).decode('utf-8')}"
+        img = Image.open(io.BytesIO(img_bytes))
+        width, height = img.size
+        mime_ext = img_file.split(".")[-1].lower()
+        data_uri = f"data:image/{mime_ext};base64,{base64.b64encode(img_bytes).decode('utf-8')}"
 
-            return {
-                "filename": img_file,
-                "data": data_uri,
-                "width": width,
-                "height": height,
-                "page_num": page_num,
-            }
+        return {
+            "filename": img_file,
+            "data": data_uri,
+            "width": width,
+            "height": height,
+            "page_num": page_num,
+        }
     except HTTPException:
         raise
     except Exception as exc:
@@ -420,7 +419,17 @@ def process_batch(payload: dict = Body(...)):
 
         try:
             xml_content = build_xml_from_fields(clean_fields, original_xml)
-            write_comicinfo_to_cbz(path, xml_content)
+            new_path = write_comicinfo_to_cbz(path, xml_content)
+            # CBR source rebuilds as a sibling .cbz (EDITOR_SPEC.md §3.2,
+            # v2.4 Item 5/11) — applies identically here as it does to
+            # single-file saves. Full Editor tracks files pre-library (no DB
+            # row yet), so update the in-memory working/queue entry's own
+            # path so it doesn't keep pointing at the now-deleted .cbr.
+            if new_path != path:
+                target_dict = _queue_files if mode == "queue" else _working_files
+                if file_id in target_dict:
+                    target_dict[file_id]["path"] = new_path
+                    target_dict[file_id]["filename"] = os.path.basename(new_path)
             processed += 1
             succeeded_ids.append(file_id)
         except Exception as exc:
