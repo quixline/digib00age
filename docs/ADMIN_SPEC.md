@@ -1307,6 +1307,21 @@ in `config.json`.
   cause a missed run to fire immediately on restart.
 - **If a run is already in progress** when the scheduled time arrives: log and skip
   this cycle — same guard as `auto_scan_loop`'s "scan already running" check.
+- **Verified 2026-07-02** — investigated a report that scheduled runs weren't firing
+  (Weekly, day matching today, time a few minutes out; manual Run Now worked fine).
+  Live-reproduced three times against a running server: Daily, Weekly+today's
+  weekday, and again via the actual admin UI Save button — all three fired exactly
+  on time and correctly rolled `next_processing_run` forward afterward (Daily → next
+  day, Weekly → next occurrence of the same weekday). The wall-clock mechanism has
+  no bug. The reported non-firing traced to the **Schedule dropdown being left on
+  "Off"** while Day/Time were the only fields actually changed — the loop's first
+  check (`if schedule not in ("daily","weekly"): continue`) means Day/Time are
+  irrelevant whenever Schedule reads Off, matching "Run Now works, scheduled
+  doesn't" exactly. Unlike every other Processing Folder Automation setting on the
+  page (which auto-save on change), Schedule/Time/Day require a separate explicit
+  **Save** click with no "unsaved changes" indicator — easy to adjust Time/Day and
+  assume it's live the way everything else on the page behaves. Flagged as a
+  worthwhile UX fix, not yet built (`ROADMAP.md` candidate).
 
 #### 11.4.6 Unified Backup Model
 

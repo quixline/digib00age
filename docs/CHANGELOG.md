@@ -10,6 +10,15 @@ close) — entries from 2026-06-29 onward point into `v2.4/progress.md`.
 
 ---
 
+- **2026-07-02** — Processing Folder Automation: investigated a report
+  that scheduled runs weren't firing. No bug found — live-reproduced the
+  wall-clock scheduler firing correctly (Daily, Weekly, and via the real
+  admin UI). Root cause was the Schedule dropdown being left on "Off"
+  while Day/Time were changed and saved — that row is the one setting on
+  the page that doesn't auto-save, unlike everything else. Logged as a
+  `[change]` candidate in `INBOX.md`, not fixed this session. → `progress.md`
+  "Session — 2026-07-02: Processing Folder Automation — scheduler
+  investigation (Item 16 post-test)"
 - **2026-07-02** — File Rename: restored the "Add to Queue" workflow lost
   in the 2026-07-01 build — explicit Add to Queue button (single-file or
   batch), Queued Files list doubles as the preview (new-filename-only),

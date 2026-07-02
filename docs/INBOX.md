@@ -42,6 +42,8 @@ until triaged — only processed lines ever leave.
 
 [change] Admin page, remove the custom/editable path text input field from Add Custom Tabs. The user has the ability to Choose a folder with the custom folder nav-picker no need for both.
 
+[change] Processing Folder Automation's Schedule/Time/Day row needs a separate "Save" click, unlike every other setting on that page (Convert Archives/Images toggles, quality slider) which auto-save on change. Found 2026-07-02 investigating a "scheduled run isn't firing" report — the Schedule dropdown had silently stayed on "Off" while Time/Day were being changed and saved, with no unsaved-changes indicator to catch it. The wall-clock mechanism itself is confirmed correct (ADMIN_SPEC.md §11.4.5). Candidate fix: make Schedule/Time/Day auto-save like the rest of the page, or add a clear unsaved-changes indicator. (-> ROADMAP.md or comicvault-changes-vN.M.md)
+
 ---
 
 ## Processed (awaiting Sunday prune)

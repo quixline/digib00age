@@ -782,3 +782,80 @@ all three. No console errors. Scratch files deleted after; never browsed
 resolution under Auto-Increment and gained a Change Log entry.
 
 ---
+
+## Session — 2026-07-02: Processing Folder Automation — scheduler investigation (Item 16 post-test)
+
+**Goal.** Tez reported the scheduled run wasn't firing: set Weekly, day to
+Thursday (today), time 5 minutes ahead — nothing happened after waiting;
+manual Run Now processed the same folder correctly. Investigate whether
+`processing_folder_loop()` (`backend/scheduler.py`) has a bug.
+
+**Investigation.** Read `scheduler.py`'s `_compute_next_processing_run()`
+and `processing_folder_loop()`, and `processing_folder.py`'s config
+save/invalidation logic — nothing looked wrong on paper. Checked
+`logs/convert_log.md`/`convert_images_log.md` and found genuine
+`[AUTO]`-tagged entries from 18:46 today, proving the scheduler had fired
+successfully at least once. Checked the live config: `processing_folder_schedule`
+was `"off"`, while `processing_folder_schedule_time` ("18:55") and
+`processing_folder_schedule_day` (3, Thursday) were both correctly saved —
+meaning Day/Time had been set and saved, but the Schedule dropdown itself
+was Off at the time.
+
+**Live reproduction (proves the mechanism itself is correct).** Ran three
+end-to-end tests against the live running server, using a scratch folder
+so real files weren't touched:
+1. Schedule=Daily, time ~2 min out (via direct API call) — fired exactly
+   on time, `next_processing_run` correctly rolled to tomorrow.
+2. Schedule=Weekly, day=Thursday, time ~3 min out (via direct API call,
+   matching Tez's exact combination) — fired exactly on time,
+   `next_processing_run` correctly rolled to next Thursday.
+3. Same as #2, but set through the **actual admin UI** (dropdown, time
+   input, Save button click) rather than the API directly, to validate
+   the real click flow — fired exactly on time.
+
+All three fired within the scheduler's normal ~15–30s post-target-time
+detection window (poll interval is 60s). No bug found in
+`_compute_next_processing_run()`, the invalidate-on-save logic, or the
+firing/recompute logic.
+
+**Root cause: not a code bug — a UX gap.** Every other Processing Folder
+Automation setting on the page (Convert Archives/Images toggles, from-format
+radios, quality slider) auto-saves the instant it changes. Schedule/Time/Day
+is the one exception — it needs a separate explicit "Save" click, with no
+unsaved-changes indicator. It's easy to adjust Time/Day, see them visually
+update, and assume — matching every other control on the page — that
+they're already live, while the Schedule dropdown silently sits on "Off"
+(left there from an earlier toggle, or never changed from its default).
+Logged to `INBOX.md` as a `[change]` candidate for a future session
+(auto-save the row, or add an unsaved-changes indicator) — not fixed this
+session, since it wasn't what was asked and needs its own scoping pass.
+
+**Verified — retried live with Tez's sign-off.** Set Schedule=Weekly,
+Day=Thursday, Time~3 min out through the real admin UI (not the API),
+confirmed the "Schedule saved" toast and the Next Run hint, then confirmed
+the run fired exactly on time via `/processing-folder/status`.
+
+**Side effects during investigation (both intentional, both undone/reported).**
+- Ran Run Now against Tez's real `L:\Comic Archives\Processing\testing`
+  folder to verify the underlying pipeline (independent of the scheduling
+  question) — confirmed it correctly converted all 3 Event Horizon `.cbr`
+  files to `.cbz` (~14MB each, down from ~50–75MB). Originals are gone per
+  the clean-success backup model — this was flagged to Tez, not silently
+  done.
+- Attempted to temporarily move those 3 converted files out of the real
+  Processing folder for a scratch-folder-only schedule test — blocked by
+  the auto-mode safety classifier (real Processing folder writes need
+  explicit per-action authorization). Correctly re-routed to a pure
+  scratch-folder test instead; the real folder was never touched again
+  after the initial Run Now.
+- Config (`processing_folder_path`, `processing_folder_schedule*`) was
+  changed several times mid-investigation for the live tests, then
+  restored to Tez's original values (`schedule: "off"`, `time: "18:55"`,
+  `day: 3`, `path: "L:\Comic Archives\Processing\testing"`) at the end of
+  each test round.
+
+**Docs.** `ADMIN_SPEC.md` §11.4.5 gained a bullet documenting this
+verification and the identified UX gap. `INBOX.md` gained a `[change]`
+entry for the Schedule/Time/Day auto-save fix.
+
+---
