@@ -478,59 +478,70 @@
           There is no undo — review the preview before applying.
         </p>
         <div class="admin-card" id="renameToolCard">
-          <div class="pt-toolbar">
-            <button type="button" class="btn-admin-action" id="renameBrowseBtn">Browse…</button>
-            <button type="button" class="btn-admin-action" id="renameClearBtn">Clear Loaded Files</button>
-            <span class="admin-hint" id="renameLoadedCount">0 files loaded</span>
-          </div>
-
-          <div class="pt-rename-filelist" id="renameFileList"></div>
-
-          <table class="pt-rename-fields">
-            <thead><tr><th>Field</th><th>Value</th><th>File</th><th>All</th></tr></thead>
-            <tbody>
-              <tr>
-                <td>Series</td>
-                <td><input type="text" class="admin-input" id="renameSeriesInput"></td>
-                <td><input type="checkbox" id="renameSeriesFile"></td>
-                <td><input type="checkbox" id="renameSeriesAll"></td>
-              </tr>
-              <tr>
-                <td>Title</td>
-                <td><input type="text" class="admin-input" id="renameTitleInput"></td>
-                <td><input type="checkbox" id="renameTitleFile"></td>
-                <td><input type="checkbox" id="renameTitleAll"></td>
-              </tr>
-              <tr>
-                <td>Issue</td>
-                <td><input type="text" class="admin-input" id="renameIssueInput"></td>
-                <td><input type="checkbox" id="renameIssueFile"></td>
-                <td><input type="checkbox" id="renameIssueAll"></td>
-              </tr>
-              <tr>
-                <td>Year</td>
-                <td><input type="text" class="admin-input" id="renameYearInput"></td>
-                <td><input type="checkbox" id="renameYearFile"></td>
-                <td><input type="checkbox" id="renameYearAll"></td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div class="pt-rename-batch-options">
-            <label><input type="checkbox" id="renameAutoIncrement" disabled> Auto-Increment Issue Numbers (only when Issue → All is checked)</label>
-            <div class="pt-rename-case-style">
-              <label><input type="radio" name="renameCaseStyle" value="" checked> No case change</label>
-              <label><input type="radio" name="renameCaseStyle" value="title"> Title Case</label>
-              <label><input type="radio" name="renameCaseStyle" value="upper"> ALL UPPER</label>
-              <label><input type="radio" name="renameCaseStyle" value="lower"> all lower</label>
+          <div class="pt-rename-row">
+            <div class="pt-rename-col-buttons">
+              <button type="button" class="btn-admin-action" id="renameBrowseBtn">Browse…</button>
+              <button type="button" class="btn-admin-action" id="renameClearBtn">Clear Loaded Files</button>
+            </div>
+            <div class="pt-rename-col-list">
+              <h4 class="pt-preview-heading">Loaded Files <span class="admin-hint" id="renameLoadedCount">0 files loaded</span></h4>
+              <div class="pt-rename-filelist" id="renameFileList"></div>
+            </div>
+            <div class="pt-rename-col-fields">
+              <table class="pt-rename-fields">
+                <thead><tr><th>Field</th><th>Value</th><th>File</th><th>All</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td>Series</td>
+                    <td><input type="text" class="admin-input" id="renameSeriesInput"></td>
+                    <td><input type="checkbox" id="renameSeriesFile"></td>
+                    <td><input type="checkbox" id="renameSeriesAll"></td>
+                  </tr>
+                  <tr>
+                    <td>Title</td>
+                    <td><input type="text" class="admin-input" id="renameTitleInput"></td>
+                    <td><input type="checkbox" id="renameTitleFile"></td>
+                    <td><input type="checkbox" id="renameTitleAll"></td>
+                  </tr>
+                  <tr>
+                    <td>Issue</td>
+                    <td><input type="text" class="admin-input" id="renameIssueInput"></td>
+                    <td><input type="checkbox" id="renameIssueFile"></td>
+                    <td><input type="checkbox" id="renameIssueAll"></td>
+                  </tr>
+                  <tr>
+                    <td>Year</td>
+                    <td><input type="text" class="admin-input" id="renameYearInput"></td>
+                    <td><input type="checkbox" id="renameYearFile"></td>
+                    <td><input type="checkbox" id="renameYearAll"></td>
+                  </tr>
+                </tbody>
+              </table>
+              <button type="button" class="btn-admin-action" id="renameAddToQueueBtn">Add to Queue</button>
             </div>
           </div>
 
-          <h4 class="pt-preview-heading">Preview</h4>
-          <div class="pt-rename-preview-list" id="renamePreviewList"></div>
-          <div class="pt-toolbar">
-            <button type="button" class="btn-admin-action" id="renameClearPreviewBtn">Clear Preview</button>
-            <button type="button" class="btn-primary" id="renameApplyBtn">Apply Rename</button>
+          <div class="pt-rename-row">
+            <div class="pt-rename-col-buttons">
+              <button type="button" class="btn-admin-action" id="renameClearPreviewBtn">Clear Preview</button>
+              <button type="button" class="btn-primary" id="renameApplyBtn">Apply Rename</button>
+            </div>
+            <div class="pt-rename-col-list">
+              <h4 class="pt-preview-heading">Queued Files</h4>
+              <div class="pt-rename-preview-list" id="renamePreviewList"></div>
+            </div>
+            <div class="pt-rename-col-fields">
+              <div class="pt-rename-batch-options">
+                <span class="pt-preview-heading">Batch Rename Options</span>
+                <label><input type="checkbox" id="renameAutoIncrement" disabled> Auto-Increment Issue Numbers (only when Issue → All is checked)</label>
+                <div class="pt-rename-case-style">
+                  <label><input type="radio" name="renameCaseStyle" value="" checked> No case change</label>
+                  <label><input type="radio" name="renameCaseStyle" value="title"> Title Case</label>
+                  <label><input type="radio" name="renameCaseStyle" value="upper"> ALL UPPER</label>
+                  <label><input type="radio" name="renameCaseStyle" value="lower"> all lower</label>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

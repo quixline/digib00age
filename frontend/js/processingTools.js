@@ -85,8 +85,14 @@ function computeRenameFileData(entry) {
   return data;
 }
 
-async function handleRenameFieldChange() {
+function handleRenameFieldChange() {
   updateRenameAutoIncrementAvailability();
+}
+
+// Adds the current edit-panel state to the queue (renamePreviewMap /
+// renamePreviewNames), which also serves as the Preview list. Only fires on
+// an explicit "Add to Queue" click — fields no longer auto-preview on edit.
+async function addRenameToQueue() {
   const batchMode = isRenameBatchMode();
   const anyFileChecked = RENAME_FIELDS.some(f => renameFieldEls(f).file.checked);
   const batchOptions = currentRenameBatchOptions();
@@ -96,7 +102,6 @@ async function handleRenameFieldChange() {
     // the backend can compute sequential numbers (§12.1.4) — a File-scoped
     // per-file override doesn't combine with sequential numbering, an
     // inherently ambiguous combination the spec doesn't ask for.
-    renamePreviewMap = {};
     const renameData = {};
     for (const f of RENAME_FIELDS) {
       const els = renameFieldEls(f);
@@ -108,7 +113,6 @@ async function handleRenameFieldChange() {
       for (const p of res.previews) { renamePreviewNames[p.file_id] = p.new_name; renamePreviewMap[p.file_id] = true; }
     }
   } else if (batchMode) {
-    renamePreviewMap = {};
     for (const entry of renameFiles) {
       const renameData = computeRenameFileData(entry);
       const res = await postJSON('/rename/preview', { file_ids: [entry.id], rename_data: renameData, batch_options: { title_style: batchOptions.title_style } });
@@ -128,8 +132,19 @@ async function handleRenameFieldChange() {
       renamePreviewNames[renameSelectedId] = res.previews[0].new_name;
       renamePreviewMap[renameSelectedId] = true;
     }
+  } else {
+    showToast('Check a File or All box first', true);
+    return;
   }
 
+  renderRenamePreviewList();
+  renderRenameFileList();
+}
+
+function removeFromRenameQueue(id) {
+  delete renamePreviewMap[id];
+  delete renamePreviewNames[id];
+  delete renameFileOverrides[id];
   renderRenamePreviewList();
   renderRenameFileList();
 }
@@ -159,7 +174,6 @@ function moveRenameFile(id, dir) {
   if (idx === -1 || newIdx < 0 || newIdx >= renameFiles.length) return;
   [renameFiles[idx], renameFiles[newIdx]] = [renameFiles[newIdx], renameFiles[idx]];
   renderRenameFileList();
-  if (currentRenameBatchOptions().auto_increment) handleRenameFieldChange();
 }
 
 function renderRenameFileList() {
@@ -200,7 +214,7 @@ function renderRenamePreviewList() {
   list.innerHTML = '';
   const ids = Object.keys(renamePreviewMap);
   if (!ids.length) {
-    list.innerHTML = '<p class="admin-empty-hint">No pending changes.</p>';
+    list.innerHTML = '<p class="admin-empty-hint">No files queued.</p>';
     return;
   }
   for (const id of ids) {
@@ -208,7 +222,20 @@ function renderRenamePreviewList() {
     if (!entry) continue;
     const row = document.createElement('div');
     row.className = 'pt-preview-row';
-    row.textContent = `${entry.filename} → ${renamePreviewNames[id] || '…'}`;
+
+    const name = document.createElement('span');
+    name.className = 'pt-preview-name';
+    name.textContent = renamePreviewNames[id] || '…';
+    row.appendChild(name);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'pt-remove-btn';
+    removeBtn.textContent = '×';
+    removeBtn.title = 'Remove from queue';
+    removeBtn.addEventListener('click', (e) => { e.stopPropagation(); removeFromRenameQueue(id); });
+    row.appendChild(removeBtn);
+
     list.appendChild(row);
   }
 }
@@ -282,6 +309,7 @@ async function applyRename() {
 function initRenameTool() {
   document.getElementById('renameBrowseBtn').addEventListener('click', openRenameBrowse);
   document.getElementById('renameClearBtn').addEventListener('click', clearRenameFiles);
+  document.getElementById('renameAddToQueueBtn').addEventListener('click', addRenameToQueue);
   document.getElementById('renameClearPreviewBtn').addEventListener('click', clearRenamePreview);
   document.getElementById('renameApplyBtn').addEventListener('click', applyRename);
 

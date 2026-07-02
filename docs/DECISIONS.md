@@ -4,6 +4,28 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### File Rename — kept Year over the mockup's Publisher field; added per-item queue removal
+
+**Decided:** 2026-07-02, planning session with Tez ahead of the "Add to Queue" fix
+(see `progress.md` "Session — 2026-07-02").
+**Why:** Restoring the queue workflow surfaced two mismatches against the original
+mockup (`images/Filename-Editor.pdf`) that needed a call, not just a mechanical
+port:
+- The mockup's 4th field is "Publisher"; the shipped build (and `ADMIN_SPEC.md`
+  §11.1.4) uses "Year". Publisher isn't parsed by `filename_parser.py` or included
+  in the `Series - Title #Issue (Year)` output format — adopting it would mean new
+  backend parsing work, not just a frontend relabel. Tez chose to keep Year,
+  since it matches what the parser and output format already do; Publisher stays
+  unbuilt rather than half-matched to the mockup.
+- The mockup only shows a whole-queue "Clear Preview" control, no per-row removal.
+  Tez chose to add per-item removal anyway, since without it a single mis-added
+  file would force clearing (and re-queuing) everything else in the batch.
+
+**How to apply:** If Publisher ever gets scoped in, it needs its own parsing +
+output-format decision first — don't just add a text field. The per-item queue
+removal control is intentional scope beyond the mockup, not an oversight to trim
+back toward it.
+
 ### v2.4 Item 10/15 — File Rename dropped from Processing Folder Automation
 
 **Decided:** 2026-07-01, dedicated re-scoping session (Chat + Tez).

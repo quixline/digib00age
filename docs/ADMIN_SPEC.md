@@ -27,7 +27,8 @@
 > **§11 Processing Tools, folded 2026-07-01** — the standalone
 > `admin-spec-section-12-processing-tools.md` scoping file is retired; its
 > content lives here as §11.1–§11.4 (renumbered from its own §12.1–§12.4).
-> §11.1 File Rename is **built and manually tested (v2.4 Item 10, 2026-07-01)**.
+> §11.1 File Rename is **built and manually tested (v2.4 Item 10, 2026-07-01; queue
+> workflow corrected 2026-07-02)**.
 > §11.2 Convert Archives, §11.3 Convert Images, and §11.4 Processing Folder
 > Automation are fully scoped, build in progress (v2.4 Items 12, 13, 16) —
 > check each subsection's own build-status note before assuming it's live.
@@ -599,7 +600,8 @@ everything else when that happens, not before.)
 
 ### 11.1 File Rename
 
-**Built and manually tested 2026-07-01 — `comicvault-changes-v2.4.md` Item 10.**
+**Built and manually tested 2026-07-01 — `comicvault-changes-v2.4.md` Item 10.
+Queue workflow corrected 2026-07-02 — see §11.1.5.**
 
 Ported from CAPT's standalone File Renamer (`gui/rename_window.py`,
 `widgets/rename_options_widget.py`, `utils/rename_logic.py`, `utils/rename_u.py`,
@@ -732,24 +734,49 @@ edited per-file.
   (single-choice group, unchanged from CAPT). Applies only to Series and Title text
   values — Issue and Year are never case-styled.
 
-#### 11.1.5 Live Preview
+#### 11.1.5 Queue (also serves as Preview)
 
-No explicit "Preview Changes" button. The Preview list updates immediately on every
-field edit or checkbox change. Single-file edits **accumulate** across file
-selections — select File A, tick a field, edit it; select File B, tick a different
-field, edit it; both A and B now sit in the Preview list simultaneously, each carrying
-only its own edited field(s) with everything else left as originally parsed. This
-matches CAPT's existing accumulation behaviour exactly, just without the manual Preview
-button. Switching into a batch ("All") edit, or pressing **Clear Preview**, resets the
-list. Clear Preview button is retained.
+**Re-scoped 2026-07-02** — the original 2026-07-01 build used an implicit
+auto-accumulate-on-edit model with no explicit "add" gesture and no way to pull a
+single file back out (only a whole-list Clear Preview). Manual testing against the
+original mockup (`Filename-Editor.pdf`) found this dropped the tool's core intended
+workflow, so it's replaced with the explicit queue below.
+
+Editing a field or toggling a File/All checkbox only updates the edit panel's own
+state — nothing is sent to the backend yet. An explicit **Add to Queue** button
+commits the current edit-panel state:
+
+- **Single-file mode** (any field's File box checked, a file selected) — adds just
+  the selected file to the queue, computed from its File-checked overrides plus its
+  own parsed baseline for everything else.
+- **Batch mode** (any field's All box checked) — adds every currently loaded file to
+  the queue in one click, each computed from the shared All-checked values plus its
+  own parsed baseline for anything not All-checked. If Auto-Increment is also on
+  (only available when Issue→All is checked), sequential numbering is computed
+  across the whole loaded-files list in its current display order (respects Move
+  Up/Down reordering — done *before* clicking Add to Queue, since the queue is a
+  one-shot commit, not a live recomputation).
+- Neither box checked — nothing to add; a toast prompts to check a File or All box
+  first.
+
+The **Queued Files** list doubles as the preview — each row shows only the resulting
+new filename (the old name is already visible at the same row position in Loaded
+Files, so it isn't repeated). Repeat Add to Queue per file (single-file mode) to
+build up a queue file-by-file, or once in batch mode to queue everything at once —
+both can be mixed across separate Add to Queue clicks.
+
+Each queued row has its own remove control to drop just that file back out of the
+queue without affecting the rest. **Clear Preview** empties the whole queue at once.
+Switching the selected Loaded File without clicking Add to Queue discards the
+unsaved edit — this is intentional: Add to Queue is the deliberate commit point.
 
 #### 11.1.6 Apply Rename
 
-Attempts every file currently in the Preview list. On completion, shows a summary modal
+Attempts every file currently in the queue. On completion, shows a summary modal
 matching the Full Editor's existing Process-error pattern (`feProcessErrorModal`):
 "Renamed X of Y files", plus a per-file error list for any failures (permission denied,
 filename collision, file no longer present on disk, etc.). Files that succeed clear
-from the Preview list; files that fail remain so the user can retry or adjust. No
+from the queue; files that fail remain so the user can retry or adjust. No
 partial-silent-failure — every attempted file is accounted for in the summary.
 
 There is **no undo**. This is consistent with the tool's nature (a basic log, not a
@@ -1395,3 +1422,4 @@ Not binding design, but worth flagging before the build session:
 | 2026-06-27 | §9 renamed from "Scheduled Database Backup" to "Database Backup", split into §9.1 Scheduled Backup (unchanged content) and new §9.2 Restore Database (V2.3 Item 12) — native file picker, `pre-restore-{timestamp}.db` safety snapshot via a now-parameterised `run_database_backup()`, full server restart via a new shared `_schedule_delayed_exit()` helper. | `comicvault-changes-v2.3.md` Item 12. |
 | 2026-06-27 | §6 — Card Size dropdown gains a 75% option (between 50% and 100%), V2.3 Item 13. `CARD_SIZE_PX` (`frontend/js/app.js`) maps it to `190px`. | `comicvault-changes-v2.3.md` Item 13. |
 | 2026-07-01 | `admin-spec-section-12-processing-tools.md` folded into this file as §11 directly (§11.1-§11.4, renumbered from its standalone §12.1-§12.4), per the resolution plan in `INDEX.md` and the v2.4 build queue's Item 10 entry — the standalone file is retired. §11.1 File Rename built and manually tested (v2.4 Item 10): three filename-parser bugs fixed (dynamic year ceiling, zero-issue stripping, whitespace/dash collapse after token removal), output format `Series - Title #Issue (Year)`, shared in-app picker (`backend/file_picker.py`, `frontend/js/filePicker.js`) built as the foundation for §11.2-§11.4's pickers too. | v2.4 Item 10 build session. |
+| 2026-07-02 | §11.1.5/§11.1.6 corrected: the 2026-07-01 build's implicit auto-accumulate-on-edit Preview model is replaced with an explicit **Add to Queue** step (Queued Files list doubles as the preview, new-filename-only per row) plus per-file queue removal. Manual testing against the original mockup (`Filename-Editor.pdf`) found the implicit model had no deliberate "add" gesture and no way to pull a single file back out short of clearing the whole list — a functional regression from what was actually intended, not a design choice. Frontend-only change (`frontend/js/processingTools.js`, `frontend/admin.html`, `frontend/css/style.css`); backend `/rename/preview` and `/rename/apply` unchanged. Layout also reshaped into the mockup's two-row grouping (toolbar + list + edit-panel on top, toolbar + list + batch-options below). | v2.4 Item 10 post-build manual test session, 2026-07-02 — Tez tested against `Filename-Editor.pdf`/`filename-editor-description.txt` and flagged the missing queue workflow. |

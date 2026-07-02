@@ -646,3 +646,72 @@ above — confirmed via a deterministic stubbed-response test that the fixed
 **Docs.** `ADMIN_SPEC.md` §11.4 marked built.
 
 ---
+
+## Session — 2026-07-02: File Rename — restore the "Add to Queue" workflow (post-Item 10 manual test fix)
+
+**Goal.** During the v2.4 manual test pass, Item 10 (File Rename) tested
+functionally sound but was found to have lost a piece of its intended
+workflow somewhere between the original design and the 2026-07-01 build:
+there was no way to deliberately add a file to a batch-apply list, and no
+way to remove a single file from that list short of clearing it entirely.
+Tez confirmed this against the original mockup
+(`images/Filename-Editor.pdf`, described in
+`images/digib00age/filename-editor-description.txt`): select a file →
+parse/edit its fields → **explicitly** add it to a queue → the queue
+doubles as the preview → Apply Rename processes everything queued. The
+built version instead auto-accumulated into the Preview list on every
+keystroke, with no explicit "add" gesture.
+
+**What changed (frontend-only, `frontend/js/processingTools.js` +
+`frontend/admin.html` + `frontend/css/style.css`).** No backend changes —
+`/rename/preview` and `/rename/apply` already operated on file-id lists
+exactly as this needed; only the frontend's timing/orchestration around
+those calls changed.
+
+- Removed the auto-preview-on-edit behaviour. Typing into a field or
+  toggling File/All now only updates the edit panel's own state.
+- New **Add to Queue** button (`addRenameToQueue()`): single-file mode
+  (File-checked) queues just the selected file; batch mode (All-checked)
+  queues every loaded file in one click, including the existing
+  Auto-Increment-across-current-display-order behaviour. Neither box
+  checked shows a toast instead of silently no-op'ing.
+- Queued Files list (renamed from "Preview") now shows only the resulting
+  new filename per row, not `old → new` — the old name is already visible
+  at the same row position in Loaded Files, so the pairing is implicit.
+- New per-row remove control (`removeFromRenameQueue()`) drops a single
+  file back out of the queue without clearing the rest. "Clear Preview"
+  keeps its existing whole-queue-wipe behaviour and label (matches the
+  original mockup's own labelling).
+- `moveRenameFile()` no longer re-triggers a live preview recompute on
+  reorder (nothing to recompute anymore) — reordering now happens before
+  clicking Add to Queue, which captures the display order at that moment.
+- Layout reshaped into the mockup's two-row grouping (toolbar + list +
+  edit-panel on top; toolbar + list + batch-options below) using the
+  existing `pt-toolbar`/`pt-rename-*` CSS conventions, plus new
+  `.pt-rename-row`/`.pt-rename-col-*` wrapper classes and a
+  `.pt-remove-btn` style following the existing `.pt-reorder-btn` pattern.
+- Fields stay Series/Title/Issue/Year (not the mockup's "Publisher" —
+  confirmed with Tez; Year matches the current parser/spec and switching
+  would need new backend parsing work, out of scope here).
+
+**Verified — manual test, this session, against scratch files (never the
+real library or `L:\Comic Archives`).** Loaded 3 scratch `.cbz` files via
+the in-app picker. Single-file flow: selected a file, checked Title→File,
+typed a new title, clicked Add to Queue — confirmed it appeared in Queued
+Files showing only the new filename, and the matching Loaded Files row
+picked up the queued highlight. Confirmed the per-row remove control drops
+just that file back out (queue and Loaded Files both update, nothing else
+affected). Batch flow: checked Series→All and Issue→All with
+Auto-Increment on, clicked Add to Queue once — confirmed all 3 files
+queued in one click with correctly sequential issue numbers in display
+order. Clicked Apply Rename — got "Renamed 3 of 3 files", confirmed via
+filesystem listing that the scratch files were actually renamed on disk,
+confirmed `L:\Comic Archives` was never touched (never browsed there this
+session). No console errors throughout. Deleted the scratch test files and
+an unused `.claude/launch.json` created during testing as cleanup.
+
+**Docs.** `ADMIN_SPEC.md` §11.1.5/§11.1.6 rewritten to describe the queue
+workflow; §11.1 status line and `INDEX.md`'s `ADMIN_SPEC.md` row both note
+the 2026-07-02 correction; Change Log entry added.
+
+---

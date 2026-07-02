@@ -46,7 +46,7 @@ the same: both span every version by design.
 | `EDITOR_SPEC.md` | Editor integration (Basic + Full editor) | Built and verified (2026-06-18) |
 | `CUSTOM_TABS_SPEC.md` | Custom Tabs feature | Built and verified (2026-06-19) |
 | `HOME_STRIPS_SPEC.md` | Home Page Strips feature | Built and verified (2026-06-19) |
-| `ADMIN_SPEC.md` | Admin page — existing behaviour + new items (password, logs, backup scheduling, Processing Tools §11, etc.) | Items 1–13 (admin scope) built and code-verified (2026-06-24/27); manually tested 2026-06-28, one failure — Restore Database (`BUGS.md` BUG-016). §11 Processing Tools: §11.1 File Rename built and manually tested (v2.4 Item 10, 2026-07-01); §11.2/§11.3/§11.4 scoped, build in progress. |
+| `ADMIN_SPEC.md` | Admin page — existing behaviour + new items (password, logs, backup scheduling, Processing Tools §11, etc.) | Items 1–13 (admin scope) built and code-verified (2026-06-24/27); manually tested 2026-06-28, one failure — Restore Database (`BUGS.md` BUG-016). §11 Processing Tools: §11.1 File Rename built and manually tested (v2.4 Item 10, 2026-07-01); queue workflow corrected 2026-07-02 after manual testing found the missing Add to Queue step. §11.2/§11.3/§11.4 scoped, build in progress. |
 | `MENU_BAR_SPEC.md` | Unified menu bar (sort, filters, search, view toggle) across Flat and Folder View | Built (2026-06-23) |
 | `BUGS.md` | Live, **open-only** bug register | Active — 6 open (BUG-018, 016, 015, 014, 013, 008). Fixed-bug history split out 2026-06-29, see `archive/bugs-fixed-archive.md` |
 | `ROADMAP.md` | Paused/future work, explicitly out of scope until unblocked | Active |
