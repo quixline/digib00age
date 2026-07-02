@@ -15,8 +15,9 @@ within a single doc, a later-dated or higher-numbered section overrides an earli
 - **`docs/vN.M/`** — the *current* version's own working set, created fresh each
   version: `comicvault-changes-vN.M.md` (the build queue) and `progress.md`
   (narrative log, scoped to just this version's sessions). When a version closes,
-  the whole folder moves into `docs/archive/vN.M/` as one bundle. Currently:
-  `docs/v2.4/`.
+  the whole folder moves into `docs/archive/vN.M/` as one bundle. **v2.4 closed
+  2026-07-02** — no active version folder right now; `docs/v2.5/` gets created
+  whenever real v2.5 scoping begins (see `ROADMAP.md` "v2.5").
 - **`docs/archive/`** (renamed from `historical/` 2026-06-29) — closed-out build
   queues, their matching `progress.md`, one-time setup/research docs, and the fixed
   bug history. **Out of focus for Cowork's nightly scan, not out of reach** —
@@ -46,7 +47,7 @@ the same: both span every version by design.
 | `EDITOR_SPEC.md` | Editor integration (Basic + Full editor) | Built and verified (2026-06-18) |
 | `CUSTOM_TABS_SPEC.md` | Custom Tabs feature | Built and verified (2026-06-19) |
 | `HOME_STRIPS_SPEC.md` | Home Page Strips feature | Built and verified (2026-06-19) |
-| `ADMIN_SPEC.md` | Admin page — existing behaviour + new items (password, logs, backup scheduling, Processing Tools §11, etc.) | Items 1–13 (admin scope) built and code-verified (2026-06-24/27); manually tested 2026-06-28, one failure — Restore Database (`BUGS.md` BUG-016). §11 Processing Tools: §11.1 File Rename built and manually tested (v2.4 Item 10, 2026-07-01); queue workflow corrected 2026-07-02 after manual testing found the missing Add to Queue step. §11.2/§11.3/§11.4 scoped, build in progress. |
+| `ADMIN_SPEC.md` | Admin page — existing behaviour + new items (password, logs, backup scheduling, Processing Tools §11, etc.) | Items 1–13 (admin scope) built and code-verified (2026-06-24/27); manually tested 2026-06-28, one failure — Restore Database (`BUGS.md` BUG-016). §11 Processing Tools all built and manually verified: §11.1 File Rename (v2.4 Item 10, 2026-07-01; queue workflow and Auto-Increment field-wiping bug both corrected 2026-07-02), §11.2 Convert Archives and §11.3 Convert Images (v2.4 Items 12/13, 2026-07-01), §11.4 Processing Folder Automation (v2.4 Item 16, 2026-07-01; scheduler verified correct 2026-07-02 after a false-alarm "not firing" report — see `archive/v2.4/progress.md`). |
 | `MENU_BAR_SPEC.md` | Unified menu bar (sort, filters, search, view toggle) across Flat and Folder View | Built (2026-06-23) |
 | `BUGS.md` | Live, **open-only** bug register | Active — 6 open (BUG-018, 016, 015, 014, 013, 008). Fixed-bug history split out 2026-06-29, see `archive/bugs-fixed-archive.md` |
 | `ROADMAP.md` | Paused/future work, explicitly out of scope until unblocked | Active |
@@ -58,13 +59,6 @@ the same: both span every version by design.
 `ADMIN_SPEC.md` §11 (renumbered from its own §12.1–§12.4 to §11.1–§11.4) as part of
 v2.4 Item 10's build, per the resolution plan settled 2026-06-29. No longer a
 separate file; `ADMIN_SPEC.md` is the sole authority for Processing Tools now.
-
-## `docs/v2.4/` — current version's working set
-
-| Doc | Purpose | Status |
-|---|---|---|
-| `comicvault-changes-v2.4.md` | v2.4: active build queue | 16 items (Item 15 pulled forward from v2.5 2026-06-30; Item 16 added 2026-07-01 as Item 15's missing build counterpart). Items 1–3 built and manually tested 2026-06-29. Items 4–8 and 15 all scoped as of 2026-07-01 (Item 8 scoped to a drop, along with Item 14). Items 9–13/16 ready to build — Code's own review pass at the start of the build session covers the cross-review the cluster's spec calls for. |
-| `progress.md` | Narrative build history, scoped to v2.4 sessions only | Active, append-only, just started 2026-06-29 |
 
 ## Reference docs
 
@@ -93,6 +87,9 @@ gone, it's just not part of the day-to-day working set.
 | Doc | What it was for |
 |---|---|
 | `bugs-fixed-archive.md` | Fixed-bug history, split out of `BUGS.md` 2026-06-29 to keep the live file lean. Not version-scoped — append-only, any fixed bug lands here regardless of which version found or fixed it. |
+| `v2.4/comicvault-changes-v2.4.md` | v2.4's build queue — closed 2026-07-02. Items 1–7, 9–13, 15–16 built and manually verified; Items 8/14 dropped, superseded by BUG-018 (open, tracked independently — not blocking this close-out). |
+| `v2.4/progress.md` | Narrative build history, scoped to v2.4 sessions (2026-06-29 through 2026-07-02) — the first version to use the per-version `progress.md` pattern. |
+| `v2.4/code-handoffs/bug-018-nested-comicinfo-scanner-fix.md` | BUG-018's scoped fix plan — moved here with the rest of the v2.4 folder; the bug itself stays open and tracked in `BUGS.md`, unaffected by the archive move. |
 | `v2.3/comicvault-changes-v2.3.md` | v2.3's build queue — closed 2026-06-29. Items 1–13 built; Item 14 moved to `ROADMAP.md`. |
 | `v2.3/progress.md` | Full project narrative history through v2.3's close (covers V1 through v2.3 — predates the per-version `progress.md` pattern, which starts with v2.4). |
 | `v2.3/2.3-testing-notes.md` | Manual test pass notes from the 2026-06-26 v2.3 test session |

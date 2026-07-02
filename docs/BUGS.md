@@ -49,8 +49,8 @@ live reproduction against the real library.
 
 **Fix, already scoped and ready to build** (Code's investigation produced a
 complete plan, not just a diagnosis — see full detail in
-`docs/v2.4/code-handoffs/bug-018-nested-comicinfo-scanner-fix.md` for the exact
-change): reuse `find_xml_in_archive()` / `extract_xml_from_archive()` in the
+`docs/archive/v2.4/code-handoffs/bug-018-nested-comicinfo-scanner-fix.md` for the
+exact change): reuse `find_xml_in_archive()` / `extract_xml_from_archive()` in the
 scanner's `_parse_cbz()` instead of the current direct `namelist()` check, parsing
 with `ET.fromstring()` instead of `ET.parse()` since the helper returns decoded
 string content. No other files change; no rebuild/flatten-at-scan-time — that
@@ -65,9 +65,11 @@ first edit (existing behavior), so there's no remaining case a standalone Flatte
 tool would still need to handle. See `DECISIONS.md` and
 `comicvault-changes-v2.4.md` Item 8.
 
-**Not fixed** — scoped and ready, build deferred until v2.4's scoping day is
-complete (Tez's call, 2026-06-30: finish scoping Item 15 before any building
-resumes).
+**Not fixed** — scoped and ready. v2.4 closed 2026-07-02 (see `ROADMAP.md`); this
+fix was never tied to a numbered v2.4 item (Items 8/14, the tools it superseded,
+were dropped rather than replaced by it) and stays open here, tracked
+independently of any version, per `INDEX.md`/`BUGS.md`'s convention that bug fixes
+aren't version-scoped. Ready to pick up whenever a session has room for it.
 
 ---
 

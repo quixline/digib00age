@@ -3,47 +3,27 @@
 Paused, deferred, or future work — explicitly out of scope until unblocked or
 prioritized. If a request seems to fall under something listed here, flag it rather
 than building it; `archive/comicvault-changes-2.1.md` and
-`archive/comicvault-changes-v2.2.md` (both closed 2026-06-22) and
-`archive/v2.3/comicvault-changes-v2.3.md` (closed 2026-06-29) covered the prior
-active queues — current active queue is `v2.4/comicvault-changes-v2.4.md`.
+`archive/comicvault-changes-v2.2.md` (both closed 2026-06-22),
+`archive/v2.3/comicvault-changes-v2.3.md` (closed 2026-06-29), and
+`archive/v2.4/comicvault-changes-v2.4.md` (closed 2026-07-02) covered the prior
+active queues. No active build queue right now — `docs/v2.5/` hasn't been created
+yet; real scoping starts whenever that triage session happens (see "v2.5" below).
 
 ---
 
-## Active build queue
+## v2.4 — closed 2026-07-02
 
-`v2.4/comicvault-changes-v2.4.md` is the current active queue (Status: Active —
-scoping phase extended, builds on hold for the CAPT-tooling cluster). 15 items —
-revised 2026-06-30 to pull "Processing Folder Automation" forward from the v2.5
-holding list as Item 15 (see that doc's header note for the full reasoning).
-**Items 1–3 built and manually verified 2026-06-29:**
-
-- Item 1: restrict all admin access for remote users when Remote Administration
-  is off — cog stays visible but inert (dimmed, pointer-events: none) for non-local
-  sessions; every `/api/admin/*` and `/api/editor/*` endpoint and the `/admin`/
-  `/editor` pages now block remote requests unconditionally when the toggle is off,
-  not just the handful previously decorated with `is_local_request()`.
-- Item 2: default server port changed from 8000 to 9424, resolving the Windows
-  port-exclusion conflict at the source. (See "Resolved" section below.)
-- Item 3: empty-results `📚` emoji replaced with the ComicVault logo image,
-  extended at Tez's call to all 11 empty/error states in `app.js`.
-
-**Scoping phase for the CAPT-tooling cluster is now complete** — Items 4–8
-(Favourites, CBR support, Convert Files, Convert Images, Flatten Archive) and
-Item 15 (Processing Folder Automation) are all scoped as of 2026-07-01; Item 8
-scoped to a drop (superseded by BUG-018), Item 14 (its build counterpart)
-dropped with it. Item 15's scoping surfaced a cross-cutting backup-model gap
-between §12.2 and §12.3, which was written into the spec 2026-07-01 (pre-build
-doc sanity check) — no longer outstanding. The "dedicated cross-review pass
-across the whole cluster's specs" originally planned as a separate Chat session
-is instead folded into Code's own review-and-Plan-mode pass at the start of the
-build session (Tez's call, 2026-07-01) — not skipped, just relocated.
-
-**Remaining to build:** Item 9 (Favourites — no dependency on the cluster,
-build-ready), Item 10 (File Rename Tool — build-ready, manual-only), Item 11
-(CBR support), Item 12 (Convert Files/Archives), Item 13 (Convert Images), and
-Item 16 (Processing Folder Automation — depends on Items 11–13 being built
-first, since it orchestrates Convert Archives + Convert Images). Items 8 and 14
-are dropped.
+All 16 items resolved: Items 1–7, 9–13, 15–16 built and manually verified; Items 8
+and 14 (Flatten Archive, scope + build) dropped, superseded by BUG-018 (open —
+tracked independently in `BUGS.md`, not blocking this close-out since bug fixes
+aren't version-scoped). Items 1–3 (remote-admin gating, default port 9424,
+empty-state logo) verified 2026-06-29; the CAPT-tooling cluster (Favourites, CBR
+support, File Rename, Convert Archives, Convert Images, Processing Folder
+Automation — Items 4–7/9–13/15–16) scoped through 2026-07-01 and built/verified
+2026-07-01–02, including two post-test fixes to File Rename (the "Add to Queue"
+workflow and an Auto-Increment field-wiping bug) found during the manual test
+pass. Full detail archived at `archive/v2.4/comicvault-changes-v2.4.md`;
+`archive/v2.4/progress.md` holds the full session narrative.
 
 **v2.3 closed 2026-06-29.** Items 1–9 built (Items 1–5 on 2026-06-23, Items 6–9 on
 2026-06-24) and verified via the manual test pass on 2026-06-26 (9 fixes same day).
@@ -143,13 +123,16 @@ whenever this gets picked back up.
 
 ---
 
-## v2.5 — scoped for the version after next (not started)
+## v2.5 — holding list (v2.4 closed 2026-07-02, real scoping not yet begun)
 
-Six items remaining, agreed 2026-06-29 (originally seven — "Processing Folder
-automation" moved to `v2.4/comicvault-changes-v2.4.md` Item 15 on 2026-06-30, see
-that doc's header note for why). None scoped yet — this is a holding list, not a
-build queue; per the version lifecycle in `meta/working-rules.md`, real scoping
-won't start until v2.4 closes and a `docs/v2.5/` working folder is created.
+Six items agreed 2026-06-29 (originally seven — "Processing Folder automation"
+moved to `v2.4/comicvault-changes-v2.4.md` Item 15 on 2026-06-30, see that doc's
+header note for why). None scoped yet — this is still a holding list, not a build
+queue. `meta/roadmap.html`'s Now lane moved the first three items here (ComicTagger
++ ComicVine, OPDS, Processing Folder custom scripts) up from Next on 2026-07-02, but
+that's a sequencing signal only — per the version lifecycle in
+`meta/working-rules.md`, real scoping (and a `docs/v2.5/` working folder) still
+needs its own triage session before any of these move to an actual build queue.
 
 - **Scope: ComicTagger + ComicVine API integration.** Large project. Tez has
   flagged this explicitly as needing its own planning session before scoping

@@ -1,15 +1,26 @@
 # ComicVault — Changelog
 
 Terse, one-line-per-entry index, newest first. Each line is a pointer into the
-current version's `progress.md` matching section heading — read there for the full
+matching version's `progress.md` section heading — read there for the full
 narrative, what was verified, and any gotchas. Bug fixes already logged in
 `BUGS.md` aren't repeated here unless they also got their own `progress.md` session
 entry. **Entries dated 2026-06-28 or earlier point into `archive/v2.3/progress.md`**
 (progress.md became version-scoped starting with v2.4, archived alongside v2.3's
-close) — entries from 2026-06-29 onward point into `v2.4/progress.md`.
+close) — **entries from 2026-06-29 through 2026-07-02 point into
+`archive/v2.4/progress.md`** (v2.4 closed 2026-07-02, folder moved to `archive/`).
+No active version folder right now — see `ROADMAP.md` "v2.5".
 
 ---
 
+- **2026-07-02** — v2.4 closed. All 16 items resolved: Items 1–7, 9–13, 15–16
+  built and manually verified; Items 8/14 (Flatten Archive) dropped, superseded
+  by BUG-018 (open, tracked independently — not blocking this close-out). Two
+  post-test fixes landed the same day as close-out: File Rename's "Add to
+  Queue" workflow and an Auto-Increment field-wiping bug (both below), and a
+  Processing Folder Automation scheduler investigation that found no bug (see
+  below). `docs/v2.4/` moved to `docs/archive/v2.4/` as one bundle; tagged
+  `v2.4` locally. `meta/roadmap.html`'s Now lane updated with the first three
+  v2.5 holding-list items. → `archive/v2.4/progress.md`
 - **2026-07-02** — Processing Folder Automation: investigated a report
   that scheduled runs weren't firing. No bug found — live-reproduced the
   wall-clock scheduler firing correctly (Daily, Weekly, and via the real
