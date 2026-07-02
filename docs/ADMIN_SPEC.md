@@ -756,12 +756,19 @@ commits the current edit-panel state:
   the selected file to the queue, computed from its File-checked overrides plus its
   own parsed baseline for everything else.
 - **Batch mode** (any field's All box checked) — adds every currently loaded file to
-  the queue in one click, each computed from the shared All-checked values plus its
-  own parsed baseline for anything not All-checked. If Auto-Increment is also on
-  (only available when Issue→All is checked), sequential numbering is computed
-  across the whole loaded-files list in its current display order (respects Move
-  Up/Down reordering — done *before* clicking Add to Queue, since the queue is a
-  one-shot commit, not a live recomputation).
+  the queue in one click, each computed from the shared All-checked values, its own
+  File-checked override where applicable, and its own parsed baseline for anything
+  else. If Auto-Increment is also on (only available when Issue→All is checked),
+  Series/Title/Year still resolve the same per-file way — only Issue is replaced
+  with a sequential number computed from the display order at Add to Queue time
+  (respects Move Up/Down reordering done *beforehand*, since the queue is a
+  one-shot commit, not a live recomputation). **Fixed 2026-07-02** — the initial
+  build sent one shared value set for the whole batch when Auto-Increment was on,
+  which blanked any field that wasn't All-checked (Series/Title/Year vanished from
+  every file's preview, leaving only `#N.ext`) instead of falling back to each
+  file's own baseline/File override. Auto-Increment now goes through the same
+  per-file resolution as the rest of batch mode, with only the Issue value
+  overridden per file.
 - Neither box checked — nothing to add; a toast prompts to check a File or All box
   first.
 
@@ -1430,3 +1437,4 @@ Not binding design, but worth flagging before the build session:
 | 2026-07-01 | `admin-spec-section-12-processing-tools.md` folded into this file as §11 directly (§11.1-§11.4, renumbered from its standalone §12.1-§12.4), per the resolution plan in `INDEX.md` and the v2.4 build queue's Item 10 entry — the standalone file is retired. §11.1 File Rename built and manually tested (v2.4 Item 10): three filename-parser bugs fixed (dynamic year ceiling, zero-issue stripping, whitespace/dash collapse after token removal), output format `Series - Title #Issue (Year)`, shared in-app picker (`backend/file_picker.py`, `frontend/js/filePicker.js`) built as the foundation for §11.2-§11.4's pickers too. | v2.4 Item 10 build session. |
 | 2026-07-02 | §11.1.5/§11.1.6 corrected: the 2026-07-01 build's implicit auto-accumulate-on-edit Preview model is replaced with an explicit **Add to Queue** step (Queued Files list doubles as the preview, new-filename-only per row) plus per-file queue removal. Manual testing against the original mockup (`Filename-Editor.pdf`) found the implicit model had no deliberate "add" gesture and no way to pull a single file back out short of clearing the whole list — a functional regression from what was actually intended, not a design choice. Frontend-only change (`frontend/js/processingTools.js`, `frontend/admin.html`, `frontend/css/style.css`); backend `/rename/preview` and `/rename/apply` unchanged. Layout also reshaped into the mockup's two-row grouping (toolbar + list + edit-panel on top, toolbar + list + batch-options below). | v2.4 Item 10 post-build manual test session, 2026-07-02 — Tez tested against `Filename-Editor.pdf`/`filename-editor-description.txt` and flagged the missing queue workflow. |
 | 2026-07-02 | §11.1.2 amended, same-day follow-up: "Clear Loaded Files" renamed **Clear All** and now also resets the edit panel's field values/checkboxes (not just the file/queue lists), and Loaded Files rows gained a per-file remove control matching Queued Files'. | Tez follow-up request same session as the row above. |
+| 2026-07-02 | §11.1.5 bug fix: Auto-Increment was sending one shared value set across the whole batch, which blanked Series/Title/Year on every file the moment Auto-Increment was checked (only the incremented `#N` survived in the output filename) instead of falling back to each file's own baseline/File override the way plain batch mode already did correctly. Fixed by routing Auto-Increment through the same per-file `computeRenameFileData` resolution as the rest of batch mode, with only the Issue value overridden per file using a frontend-computed sequential number. | Found by Tez testing against `L:\Comic Archives\Processing\Tagging Done` (Judge Dredd - Day of Chaos v01-03) — screenshots showed the wipe happening specifically when Auto-Increment was toggled on. |

@@ -98,19 +98,26 @@ async function addRenameToQueue() {
   const batchOptions = currentRenameBatchOptions();
 
   if (batchMode && batchOptions.auto_increment) {
-    // Auto-Increment needs one shared call across the whole ordered list so
-    // the backend can compute sequential numbers (§12.1.4) — a File-scoped
-    // per-file override doesn't combine with sequential numbering, an
-    // inherently ambiguous combination the spec doesn't ask for.
-    const renameData = {};
-    for (const f of RENAME_FIELDS) {
-      const els = renameFieldEls(f);
-      renameData[f.dataKey] = els.all.checked ? els.input.value : '';
-    }
-    const fileIds = renameFiles.map(x => x.id);
-    if (fileIds.length) {
-      const res = await postJSON('/rename/preview', { file_ids: fileIds, rename_data: renameData, batch_options: batchOptions });
-      for (const p of res.previews) { renamePreviewNames[p.file_id] = p.new_name; renamePreviewMap[p.file_id] = true; }
+    // preview_renames() (backend) takes one shared rename_data dict per
+    // call — any field not in it comes back blank, it has no per-file
+    // fallback to that file's own parsed baseline. So this can't be one
+    // shared call across every file the way the old design assumed (that
+    // wiped Series/Title/Year the moment Auto-Increment was on). Instead,
+    // go per-file like the plain batchMode branch below — computing each
+    // file's own baseline/File/All values via computeRenameFileData — and
+    // just override the Issue value with a sequential number computed
+    // here on the frontend (mirrors preview_renames()'s own
+    // `num_start + idx`), based on the file's position in the current
+    // loaded-files order.
+    const issueField = RENAME_FIELDS.find(f => f.dataKey === 'issue_num');
+    const startNum = parseInt(renameFieldEls(issueField).input.value, 10);
+    for (let idx = 0; idx < renameFiles.length; idx++) {
+      const entry = renameFiles[idx];
+      const renameData = computeRenameFileData(entry);
+      if (!Number.isNaN(startNum)) renameData.issue_num = String(startNum + idx);
+      const res = await postJSON('/rename/preview', { file_ids: [entry.id], rename_data: renameData, batch_options: { title_style: batchOptions.title_style } });
+      renamePreviewNames[entry.id] = res.previews[0].new_name;
+      renamePreviewMap[entry.id] = true;
     }
   } else if (batchMode) {
     for (const entry of renameFiles) {

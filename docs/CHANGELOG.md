@@ -13,12 +13,16 @@ close) — entries from 2026-06-29 onward point into `v2.4/progress.md`.
 - **2026-07-02** — File Rename: restored the "Add to Queue" workflow lost
   in the 2026-07-01 build — explicit Add to Queue button (single-file or
   batch), Queued Files list doubles as the preview (new-filename-only),
-  per-file queue removal. Same-session follow-up: "Clear Loaded Files"
-  renamed **Clear All** and now also resets the edit panel's fields, and
-  Loaded Files rows gained a per-file remove control. Frontend-only fix,
-  found during post-build manual testing against the original mockup. →
-  `progress.md` "Session — 2026-07-02: File Rename — restore the 'Add to
-  Queue' workflow"
+  per-file queue removal. Same-session follow-ups: "Clear Loaded Files"
+  renamed **Clear All** and now also resets the edit panel's fields,
+  Loaded Files rows gained a per-file remove control, and a bug fix where
+  enabling Auto-Increment wiped Series/Title/Year from every queued file
+  (backend's shared-batch-call preview endpoint has no per-file baseline
+  fallback — fixed by routing Auto-Increment through the same per-file
+  resolution the rest of batch mode already used). Frontend-only fix,
+  found during post-build manual testing against the original mockup and
+  real (non-library) test files. → `progress.md` "Session — 2026-07-02:
+  File Rename — restore the 'Add to Queue' workflow"
 - **2026-07-01** — v2.4 Item 16: Processing Folder Automation built — closes
   out the CAPT-tooling cluster. Two-stage scheduled/on-demand pipeline
   (Convert Archives → Convert Images, fixed order) invoking Items 12/13's

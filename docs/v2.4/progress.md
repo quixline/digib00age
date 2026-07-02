@@ -736,4 +736,49 @@ deleted after.
 **Docs.** `ADMIN_SPEC.md` §11.1.2 gained a Change Log entry and two new
 bullets describing Clear All and per-file removal.
 
+**Second same-session follow-up — Auto-Increment bug.** Tez tested against
+real (but non-library) files at `L:\Comic Archives\Processing\Tagging
+Done\Judge Dredd - Day of Chaos v01-03 (2013-2014)` and found Auto-Increment
+broke the moment it was turned on: with Series→File and Year→File set on
+the selected file plus Issue→All (typed "1"), toggling Auto-Increment
+wiped Series and Year from every queued preview, leaving only `#1.cbz`,
+`#2.cbz`, `#3.cbz`.
+
+**Root cause.** `preview_renames()` (`backend/rename_tool.py`) takes one
+shared `rename_data` dict per call — there's no server-side per-file
+fallback to a file's own parsed baseline. The Auto-Increment branch of
+`addRenameToQueue()` made exactly one such shared call across the whole
+file list (needed so the backend could compute sequential numbers), and
+built that shared `rename_data` from only the All-checked fields, sending
+`''` for everything else — including Series/Year, which were File-checked
+(not All-checked) and so came back blank for every file, not just the
+files that hadn't been individually overridden.
+
+**Fix.** Auto-Increment no longer makes one shared call. It now loops
+per-file exactly like the plain batch-mode branch — calling
+`computeRenameFileData(entry)` for each file (which already correctly
+resolves File-checked override → All-checked shared value → that file's
+own parsed baseline, in priority order) — and only overrides the
+resulting `issue_num` with a sequential number computed on the frontend
+(`startNum + idx`, mirroring `preview_renames()`'s own arithmetic) based
+on each file's position in the current Loaded Files order. Trades one
+batched backend call for N per-file calls; negligible for realistic batch
+sizes, and correctness matters more here than the round-trip count.
+
+**Verified — manual test, this session, against 3 scratch files named to
+match Tez's exact scenario** (`Judge Dredd - Day of Chaos v1 The Fourth
+Faction (2013).cbz`, `v2 - Endgame (2013).cbz`, `v3 - Fallout
+(2014).cbz`). Selected file 1, set Series→File (typed "Judge Dredd - Day
+of Chaos The Fourth Faction"), Issue→All (typed "1"), Year→File, enabled
+Auto-Increment, clicked Add to Queue — confirmed all three files queued
+correctly: `...The Fourth Faction #1 (2013).cbz`, `...Day of Chaos -
+Endgame #2 (2013).cbz`, `...Day of Chaos - Fallout #3 (2014).cbz` — file
+1 carries its File-checked overrides, files 2/3 fall back correctly to
+their own parsed Series/Year, and Issue increments sequentially across
+all three. No console errors. Scratch files deleted after; never browsed
+`L:\Comic Archives` this session.
+
+**Docs.** `ADMIN_SPEC.md` §11.1.5 rewritten to describe per-file
+resolution under Auto-Increment and gained a Change Log entry.
+
 ---
