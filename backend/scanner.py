@@ -26,6 +26,7 @@ from PIL import Image
 from sqlalchemy.orm import Session
 
 from backend import archive_formats, config, scan_logs
+from backend.editor.archive_io import extract_xml_from_archive, find_xml_in_archive
 from backend.models import Issue, IssueCredit, IssueGenre, Person, ReadingProgress
 
 logger = logging.getLogger(__name__)
@@ -270,22 +271,22 @@ def _parse_cbz(file_path: str) -> tuple[dict, str]:
     root_el = None
 
     try:
-        with archive_formats._opener(file_path) as archive:
-            # ComicInfo.xml must be at the root of the archive (case-insensitive)
-            xml_names = [n for n in archive.namelist()
-                         if n.lower() == "comicinfo.xml"]
-            if xml_names:
-                xml_bytes = archive.read(xml_names[0])
-                root_el = ET.fromstring(xml_bytes)
+        # ComicInfo.xml can be anywhere in the archive, not just the root
+        # (BUG-018) — find_xml_in_archive()/extract_xml_from_archive() are
+        # the same helpers the editors already use, matching by full path at
+        # any folder depth. Filtered to names actually ending in
+        # "comicinfo.xml" (case-insensitive) to keep today's semantics of
+        # only trusting that exact filename, not any stray .xml sidecar.
+        xml_names = [n for n in find_xml_in_archive(file_path)
+                     if n.lower().endswith("comicinfo.xml")]
+        if xml_names:
+            xml_content = extract_xml_from_archive(file_path, xml_names[0])
+            if xml_content is not None:
+                root_el = ET.fromstring(xml_content)
             else:
                 metadata_source = "filename"
-    except archive_formats.BAD_ARCHIVE_EXCEPTIONS:
-        # Fail soft (SPEC.md §6.1) — a damaged archive (CBZ or CBR) falls back
-        # to filename metadata rather than crashing the whole scan pass, same
-        # "can't fully trust this row" spirit as the missing=True handling
-        # elsewhere in this module.
-        logger.warning("Bad archive: %s", file_path)
-        metadata_source = "filename"
+        else:
+            metadata_source = "filename"
     except ET.ParseError:
         logger.warning("Corrupt ComicInfo.xml in: %s", file_path)
         metadata_source = "filename"

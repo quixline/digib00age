@@ -12,15 +12,24 @@ No active version folder right now — see `ROADMAP.md` "v2.5".
 
 ---
 
+- **2026-07-02** — BUG-018 fixed (off-cycle, after v2.4's close — never tied
+  to a numbered version item). Scanner's `_parse_cbz()` now finds
+  `ComicInfo.xml` at any folder depth in an archive, not just the root, by
+  reusing the same `find_xml_in_archive()`/`extract_xml_from_archive()`
+  helpers the Basic/Full Editors already used. Verified unit-level (nested/
+  root/no-xml scratch archives), end-to-end via `scan_single_file()` against
+  a temporary DB row, and live in the UI + Basic Editor — all cleaned up
+  after. `SPEC.md` §6 corrected. → `archive/bugs-fixed-archive.md` BUG-018
 - **2026-07-02** — v2.4 closed. All 16 items resolved: Items 1–7, 9–13, 15–16
   built and manually verified; Items 8/14 (Flatten Archive) dropped, superseded
-  by BUG-018 (open, tracked independently — not blocking this close-out). Two
-  post-test fixes landed the same day as close-out: File Rename's "Add to
-  Queue" workflow and an Auto-Increment field-wiping bug (both below), and a
-  Processing Folder Automation scheduler investigation that found no bug (see
-  below). `docs/v2.4/` moved to `docs/archive/v2.4/` as one bundle; tagged
-  `v2.4` locally. `meta/roadmap.html`'s Now lane updated with the first three
-  v2.5 holding-list items. → `archive/v2.4/progress.md`
+  by BUG-018 (fixed same day, off-cycle — see above; did not block this
+  close-out). Two post-test fixes landed the same day as close-out: File
+  Rename's "Add to Queue" workflow and an Auto-Increment field-wiping bug
+  (both below), and a Processing Folder Automation scheduler investigation
+  that found no bug (see below). `docs/v2.4/` moved to `docs/archive/v2.4/`
+  as one bundle; tagged `v2.4` locally. `meta/roadmap.html`'s Now lane
+  updated with the first three v2.5 holding-list items. →
+  `archive/v2.4/progress.md`
 - **2026-07-02** — Processing Folder Automation: investigated a report
   that scheduled runs weren't firing. No bug found — live-reproduced the
   wall-clock scheduler firing correctly (Daily, Weekly, and via the real

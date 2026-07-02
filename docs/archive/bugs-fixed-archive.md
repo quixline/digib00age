@@ -420,3 +420,83 @@ Tab (same file, same function, same data model).** Changed
 pattern immediately below it in the same function. Verified against a scratch
 library: favourited issue #2 of a 3-issue scratch series (not #1), confirmed the
 series now surfaces under the All-tab Favourites filter.
+
+---
+
+### BUG-018 — Scanner misses ComicInfo.xml nested in a subfolder inside the archive
+
+**Found:** 2026-06-30, investigated by Code while scoping v2.4 Item 8 (Flatten
+Archive). Originated as a feature-scoping session, turned into root-cause work
+when Tez recalled Flatten Archive had been built for a reason he couldn't
+remember at the time — this is that reason.
+
+**Where:** `backend/scanner.py:275-276` — `_parse_cbz()` does an exact-equality
+check (`n.lower() == "comicinfo.xml"`) against the zip's `namelist()`, which only
+matches root-level entries. An archive with `ComicInfo.xml` inside a subfolder
+(alongside its images, rather than at the zip root) never matches, so the scanner
+falls back to filename-guessed metadata — no series/credits/etc. — and the issue
+looks "broken" in the library and Basic Editor.
+
+Confirmed narrower than it first looked: the **editors are not affected**. Both
+Basic Editor (`backend/routers/editor_basic.py:100-103`) and Full Editor
+(`backend/routers/editor_full.py:216-244`) already use `find_xml_in_archive()` /
+`extract_xml_from_archive()` (`backend/editor/archive_io.py:22-42`), which match
+`*.xml` anywhere in the archive regardless of folder depth. And saving through
+either editor already flattens the archive on write
+(`write_comicinfo_to_cbz()` → `_rebuild_archive()`,
+`backend/editor/archive_io.py:57-103`) — existing, intentional behavior, not
+changed by this fix. So a nested-folder archive that somehow got linked to an
+issue record loads and edits fine; the bug is purely in the scanner's *initial*
+read, not in editing or in the flatten-on-save path.
+
+**Why this stayed hidden:** Tez's own library was already fully processed (flat
+archives only) by the time this app was in regular use, so the bug never
+surfaced against real data — only found by digging into why Flatten Archive had
+been built as a CAPT tool in the first place.
+
+**Impact:** Anyone adding unedited/freshly-downloaded archives with nested
+ComicInfo.xml gets silently-wrong metadata on import, with no error — looks like
+a normal but unusually sparse issue.
+
+**Supersedes v2.4 Item 8 (Flatten Archive).** Confirmed with Tez this bug is the
+reason Flatten Archive was built as a CAPT tool originally — once fixed,
+nested-folder archives read correctly on import (this fix) and self-flatten on
+first edit (existing behavior), so there's no remaining case a standalone Flatten
+tool would still need to handle. See `DECISIONS.md` and
+`archive/v2.4/comicvault-changes-v2.4.md` Item 8.
+
+**Fixed, 2026-07-02 — off-cycle session after v2.4's close** (never tied to a
+numbered version item; Items 8/14, the tools it superseded, were dropped rather
+than replaced by it). Implemented the scoped plan exactly as written in
+`archive/v2.4/code-handoffs/bug-018-nested-comicinfo-scanner-fix.md`:
+`_parse_cbz()` (`backend/scanner.py`) now calls `find_xml_in_archive()` /
+`extract_xml_from_archive()` (the same helpers both editors already used),
+filtered to entries ending in `comicinfo.xml` (case-insensitive) and taking the
+first match, instead of the old exact-equality `namelist()` check that only ever
+matched root-level entries. Parses via `ET.fromstring()` on the extracted string
+content instead of `ET.parse()` on a zip file handle. No other files changed —
+`archive_io.py`'s flatten-on-save behavior is untouched, and no rebuild happens
+at scan time, per the plan's explicit decision.
+
+Verified three ways against scratch files only (never the real library):
+1. **Unit-level**, calling `_parse_cbz()` directly against three constructed
+   archives — nested-folder XML now correctly returns `metadata_source="xml"`
+   with the real series/number/writer fields (previously would have
+   filename-fallen-back); a root-level-XML archive still parses correctly
+   (regression check); a no-XML archive still falls back to filename parsing
+   correctly (regression check).
+2. **End-to-end via `scan_single_file()`** against a real (temporary) DB row:
+   inserted a nested-XML scratch archive, confirmed the resulting `Issue` row
+   had `metadata_source == "xml"` and the correct series/number/credits, then
+   deleted the row (cascade-deleted genres/credits/progress) to leave the DB
+   exactly as found.
+3. **Live UI check** — the temporary issue displayed correctly on `/issue/{id}`
+   (title, issue number, writer credit all correct) and opened correctly
+   pre-filled in the Basic Editor, confirming the "editable without needing
+   Full Editor first" requirement from the fix plan. Closed without saving,
+   then deleted the scratch DB row as in step 2.
+
+No CBR-specific test was needed — `find_xml_in_archive()`/
+`extract_xml_from_archive()` already dispatch through `archive_formats._opener()`,
+the same CBZ/CBR-agnostic helper both editors use, so the fix covers CBR
+identically to CBZ with no separate code path.

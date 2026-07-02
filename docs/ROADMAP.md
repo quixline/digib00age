@@ -14,9 +14,10 @@ yet; real scoping starts whenever that triage session happens (see "v2.5" below)
 ## v2.4 — closed 2026-07-02
 
 All 16 items resolved: Items 1–7, 9–13, 15–16 built and manually verified; Items 8
-and 14 (Flatten Archive, scope + build) dropped, superseded by BUG-018 (open —
-tracked independently in `BUGS.md`, not blocking this close-out since bug fixes
-aren't version-scoped). Items 1–3 (remote-admin gating, default port 9424,
+and 14 (Flatten Archive, scope + build) dropped, superseded by BUG-018 (fixed
+off-cycle 2026-07-02, after this close-out — tracked independently in `BUGS.md`,
+never blocking the close-out since bug fixes aren't version-scoped; see
+`archive/bugs-fixed-archive.md`). Items 1–3 (remote-admin gating, default port 9424,
 empty-state logo) verified 2026-06-29; the CAPT-tooling cluster (Favourites, CBR
 support, File Rename, Convert Archives, Convert Images, Processing Folder
 Automation — Items 4–7/9–13/15–16) scoped through 2026-07-01 and built/verified
