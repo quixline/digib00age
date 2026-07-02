@@ -653,6 +653,12 @@ parsed/edited Series, Issue, Title, and Year values.
   behaviour, and from the Editor's recursive folder-add). Loading files from a
   subfolder requires navigating into it and selecting from there. Multi-select
   individual files from within one folder is also supported via the same picker.
+- **Per-file removal (added 2026-07-02).** Each row in Loaded Files has its own
+  remove control — same pattern and placement as the Queued Files remove control
+  (§11.1.5) — to drop a single mis-loaded file without clearing the rest.
+- **Clear All (renamed from "Clear Loaded Files" 2026-07-02).** Clears Loaded
+  Files, Queued Files, and resets the edit panel (all four field values and their
+  File/All checkboxes) back to empty — a full reset, not just an empty file list.
 
 #### 11.1.3 Filename Parsing
 
@@ -1423,3 +1429,4 @@ Not binding design, but worth flagging before the build session:
 | 2026-06-27 | §6 — Card Size dropdown gains a 75% option (between 50% and 100%), V2.3 Item 13. `CARD_SIZE_PX` (`frontend/js/app.js`) maps it to `190px`. | `comicvault-changes-v2.3.md` Item 13. |
 | 2026-07-01 | `admin-spec-section-12-processing-tools.md` folded into this file as §11 directly (§11.1-§11.4, renumbered from its standalone §12.1-§12.4), per the resolution plan in `INDEX.md` and the v2.4 build queue's Item 10 entry — the standalone file is retired. §11.1 File Rename built and manually tested (v2.4 Item 10): three filename-parser bugs fixed (dynamic year ceiling, zero-issue stripping, whitespace/dash collapse after token removal), output format `Series - Title #Issue (Year)`, shared in-app picker (`backend/file_picker.py`, `frontend/js/filePicker.js`) built as the foundation for §11.2-§11.4's pickers too. | v2.4 Item 10 build session. |
 | 2026-07-02 | §11.1.5/§11.1.6 corrected: the 2026-07-01 build's implicit auto-accumulate-on-edit Preview model is replaced with an explicit **Add to Queue** step (Queued Files list doubles as the preview, new-filename-only per row) plus per-file queue removal. Manual testing against the original mockup (`Filename-Editor.pdf`) found the implicit model had no deliberate "add" gesture and no way to pull a single file back out short of clearing the whole list — a functional regression from what was actually intended, not a design choice. Frontend-only change (`frontend/js/processingTools.js`, `frontend/admin.html`, `frontend/css/style.css`); backend `/rename/preview` and `/rename/apply` unchanged. Layout also reshaped into the mockup's two-row grouping (toolbar + list + edit-panel on top, toolbar + list + batch-options below). | v2.4 Item 10 post-build manual test session, 2026-07-02 — Tez tested against `Filename-Editor.pdf`/`filename-editor-description.txt` and flagged the missing queue workflow. |
+| 2026-07-02 | §11.1.2 amended, same-day follow-up: "Clear Loaded Files" renamed **Clear All** and now also resets the edit panel's field values/checkboxes (not just the file/queue lists), and Loaded Files rows gained a per-file remove control matching Queued Files'. | Tez follow-up request same session as the row above. |

@@ -714,4 +714,26 @@ an unused `.claude/launch.json` created during testing as cleanup.
 workflow; §11.1 status line and `INDEX.md`'s `ADMIN_SPEC.md` row both note
 the 2026-07-02 correction; Change Log entry added.
 
+**Same-session follow-up.** Tez asked for two more small changes after
+reviewing the queue fix:
+- "Clear Loaded Files" renamed to **Clear All**, and its behaviour
+  (`clearRenameFiles()`) now also resets the edit panel — all four field
+  values and their File/All checkboxes — via a new
+  `resetRenameFieldsPanel()`, not just the file/queue lists as before.
+- Loaded Files rows gained the same per-file remove control Queued Files
+  already had (`removeLoadedRenameFile()`), calling the existing
+  `DELETE /rename/files/{file_id}` backend endpoint (previously unused by
+  the frontend) to keep the backend's in-memory working set in sync.
+  Removing the currently-selected file also resets the edit panel.
+
+Verified live: loaded 2 scratch files, removed one via its row's remove
+control (confirmed only that file dropped, count updated), selected the
+remaining file, populated fields via parsing plus a manual Title→File
+check, clicked Clear All (confirmed loaded files, queue, and all field
+values/checkboxes reset to empty). No console errors. Scratch files
+deleted after.
+
+**Docs.** `ADMIN_SPEC.md` §11.1.2 gained a Change Log entry and two new
+bullets describing Clear All and per-file removal.
+
 ---

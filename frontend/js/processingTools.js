@@ -203,7 +203,14 @@ function renderRenameFileList() {
     downBtn.disabled = idx === renameFiles.length - 1;
     downBtn.addEventListener('click', (e) => { e.stopPropagation(); moveRenameFile(entry.id, 1); });
 
-    row.append(upBtn, downBtn);
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'pt-remove-btn';
+    removeBtn.textContent = '×';
+    removeBtn.title = 'Remove file';
+    removeBtn.addEventListener('click', (e) => { e.stopPropagation(); removeLoadedRenameFile(entry.id); });
+
+    row.append(upBtn, downBtn, removeBtn);
     row.addEventListener('click', () => selectRenameFile(entry.id));
     list.appendChild(row);
   });
@@ -248,6 +255,30 @@ function clearRenamePreview() {
   renderRenameFileList();
 }
 
+function resetRenameFieldsPanel() {
+  for (const f of RENAME_FIELDS) {
+    const els = renameFieldEls(f);
+    els.input.value = '';
+    els.file.checked = false;
+    els.all.checked = false;
+  }
+  updateRenameAutoIncrementAvailability();
+}
+
+async function removeLoadedRenameFile(id) {
+  await fetch(`${API}/admin/rename/files/${id}`, { method: 'DELETE' });
+  renameFiles = renameFiles.filter(x => x.id !== id);
+  delete renamePreviewMap[id];
+  delete renamePreviewNames[id];
+  delete renameFileOverrides[id];
+  if (renameSelectedId === id) {
+    renameSelectedId = null;
+    resetRenameFieldsPanel();
+  }
+  renderRenameFileList();
+  renderRenamePreviewList();
+}
+
 function openRenameBrowse() {
   openFilePicker({
     browseUrl: `${API}/admin/rename/browse`,
@@ -268,6 +299,7 @@ async function clearRenameFiles() {
   await fetch(`${API}/admin/rename/files/clear`, { method: 'DELETE' });
   renameFiles = [];
   renameSelectedId = null;
+  resetRenameFieldsPanel();
   clearRenamePreview();
 }
 
