@@ -329,3 +329,113 @@ still fully undiagnosed, no stack trace or repro detail beyond "select a CBZ,
 it crashes." BUG-008 (2000 AD tab) and the broader Custom-Tabs-equivalent
 scoping question are still parked behind it, per the previous session's
 scoping note.
+
+---
+
+## Session — 2026-07-04 (later same day): BUG-020 diagnosis and fix — CBZ-select crash
+
+**Goal.** Diagnose BUG-020 (Flutter app crashes selecting a CBZ on the tablet).
+Tez asked directly whether it could be a file-association problem.
+
+**Diagnosis, by live repro on the tablet with logcat capture** — reachable via
+the "Open local CBZ file" button (`library_screen.dart`), the app's only
+local-file path, shown whenever the server reads offline. Forced the tablet
+offline (`svc wifi disable`) to reach it. Two independent, both-real bugs:
+
+- **Cause 1 (the actual crash):** picking a real 346MB CBZ from the tablet's
+  own library died instantly — captured `FATAL EXCEPTION:
+  java.lang.OutOfMemoryError` inside `file_selector_android`'s
+  `FileSelectorApiImpl.toFileResponse`. That plugin loads the entire picked
+  document into one Java byte array before returning it to Dart; Android's
+  default per-app heap ceiling is 256MB, so any CBZ over ~200–250MB blew it
+  every time.
+- **Cause 2 (Tez's "file association" hunch, confirmed correct):**
+  `content query` against `content://media/external/file` showed two `.cbz`
+  files on the same device carrying two different OS-assigned MIME types
+  (`application/x-cbz` vs `application/vnd.comicbook+zip`), depending on
+  when/how each was indexed. The picker's `XTypeGroup(extensions: ['cbz'])`
+  filter only matched one — files with the other MIME type showed in the
+  picker (generic icon, no thumbnail) but tapping them did nothing at all,
+  confirmed via `uiautomator dump` (real clickable grid item) and
+  `dumpsys activity activities` (tap never left the picker activity).
+
+**Fix, three rounds, each round caught by testing on the real tablet rather
+than by reasoning alone:**
+
+1. Replaced `file_selector` with a native `MethodChannel`
+   (`comicvault/local_file_picker`, handled in `MainActivity.kt`): launches
+   `ACTION_OPEN_DOCUMENT` with `type = "*/*"` (fixes Cause 2 — no OS MIME
+   filter left to drift) and streams the result to a cache file in fixed
+   64KB chunks via `ContentResolver.openInputStream()` (fixes Cause 1 — flat
+   memory regardless of file size). Removed `file_selector` and its platform
+   packages from `pubspec.yaml`.
+2. Testing round 1 revealed a second problem: `LocalCbzService` re-read and
+   re-decoded the *entire* archive from disk on every `listPages()`/
+   `readPage()` call — 136 full reads of a 346MB file for a 136-page issue,
+   not 136 reads of one page. This was invisible before because the old
+   picker crashed before this code ever ran. Fixed by caching the decoded
+   `Archive` per file path, decoding once and reusing it.
+3. Testing round 2 revealed a third problem: even with the archive cached,
+   `LocalReaderScreen._load()` still eagerly extracted every page into a
+   `List<Uint8List>` up front — all 136 pages' decompressed bytes held in
+   memory at once, which was enough sustained pressure that Android's
+   system-wide low-memory killer terminated the app ~30–45s after opening
+   (not an app-level crash — `dumpsys` showed ~2GB RSS at kill time, "device
+   is not responding"). Fixed by making `LocalComicPageView` read each page
+   on demand inside its `itemBuilder`s instead of pre-loading everything, and
+   capping `Image.memory`'s `cacheWidth` to the device's physical screen
+   width (this issue's pages were 1988×3056px — ~24MB per page once decoded
+   at full source resolution, which Flutter uses by default regardless of
+   display size). Added `LocalCbzService.clear()`, called from
+   `LocalReaderScreen.dispose()`, so the cached archive doesn't outlive the
+   reader screen.
+
+**Verification — an honest, not-entirely-clean result.** All fixes tested
+against both the original 346MB/136-page file and the MIME-mismatched 56MB
+Cyberpunk file. Both causes are confirmed fixed — MIME mismatch no longer
+blocks selection, and the instant pick-time crash is gone. But a **debug**
+build of the fully-fixed code still got killed by the OS on the 346MB file
+after ~20–45s (~2GB RSS) — the round-3 fix alone wasn't sufficient in debug
+mode. Rebuilt as a **release** build (162.6s, R8/minification) and re-tested
+the same file on the same device: RSS held flat at ~200–212MB through 80+
+seconds idle and through normal-paced scrolling — no kill. Debug builds carry
+substantially heavier baseline memory overhead than release builds (JIT
+runtime, debug metadata, no tree-shaking); that gap explains most of the
+difference. **This was a real, deliberate scope decision made mid-session
+with Tez** (see `AskUserQuestion` exchange) — offered to stop after the first
+two fixes and log the memory issue separately, or push through with a
+release-build verification; Tez chose to push through.
+
+**Caveat for future sessions, written down because it cost real time this
+session:** if a debug build (`flutter run`, `flutter build apk --debug`)
+seems to still struggle with a large local CBZ, that alone isn't evidence the
+fix regressed — verify against a release build first. This tablet's 3.7GB
+total RAM is also unusually tight for its device class; a large enough scan,
+or a lower-RAM device, could in principle still hit this ceiling. The fix
+removes the *reliable, every-time* crash for realistic file sizes — it isn't
+a hard guaranteed ceiling for arbitrarily large files.
+
+**Gradle build slowness (unrelated aside, noted for future sessions):**
+both this session's release build and an earlier one (during BUG-019's
+on-device work) ran unusually slowly at times, apparently I/O-bound rather
+than CPU-bound in the slow stretches (CPU-time deltas near zero while the
+Gradle daemon reported BUSY). Root cause not confirmed — Windows Defender
+real-time scanning of build output is the leading suspect but wasn't
+verified (no admin access to check exclusions this session). A stuck/BUSY
+daemon left over from a killed build (via `TaskStop`) also silently blocked
+a subsequent build from starting once this session — `./gradlew --stop`
+before retrying a build after killing one mid-flight avoids this.
+
+**BUG-020 is fixed and closed** — moved from `BUGS.md` to
+`archive/bugs-fixed-archive.md` with both causes and all three fix rounds
+documented, including the debug-vs-release caveat.
+
+**Docs updated this session:** `BUGS.md` (BUG-020 entry removed, BUG-008's
+cross-reference updated), `archive/bugs-fixed-archive.md` (BUG-020 fixed
+entry appended), `CHANGELOG.md`, `ROADMAP.md`, this file.
+
+**Next session:** `BUG-008` (Flutter's 2000 AD tab calling endpoints removed
+in v2.2) is the last open item from the original mobile-bugs report. The
+broader Custom-Tabs-equivalent scoping question for Flutter (replacing the
+hardcoded 2000 AD tab) is still parked behind it, per earlier sessions'
+scoping notes.

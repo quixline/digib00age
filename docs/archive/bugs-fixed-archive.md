@@ -563,3 +563,102 @@ the app's own Settings screen first (`ComicVault server URL` field) before
 assuming a code regression — this bug was two independent causes stacked
 together, and the simpler one (a stale saved address) is easy to miss if you
 only look at the harder one (the auth-gating logic).
+
+---
+
+### BUG-020 — Flutter app crashes when selecting a CBZ on the tablet
+
+**Found:** 2026-07-04, OPDS/3rd-party-reader scoping session — Tez reported the
+app has been in this state "a while," not caught earlier because all recent
+attention was on server/web dev.
+
+**Root cause confirmed 2026-07-04 (later session), by live repro on Tez's real
+Lenovo tablet with logcat capture** — the "Open local CBZ file" flow
+(`library_screen.dart` `_openLocalFile()` → `LocalCbzService.pickFile()` →
+`file_selector`'s system document picker), the only local-file path in the app,
+reachable whenever the server shows offline. Tez asked "could it be file
+association?" — two independent, both-real bugs turned up; one is exactly
+that, the other isn't:
+
+- **Cause 1 (the actual "crash"):** picking a real 346 MB CBZ died instantly
+  with a captured `FATAL EXCEPTION`:
+  ```
+  java.lang.OutOfMemoryError: Failed to allocate a 345506792 byte allocation
+    with 2753277 free bytes ... growth limit 268435456
+      at dev.flutter.packages.file_selector_android.FileSelectorApiImpl.toFileResponse
+  ```
+  `file_selector_android` materializes the whole picked document into a single
+  Java byte array before returning it to Dart, rather than streaming it.
+  Android's default per-app heap ceiling is 256 MB; any CBZ over ~200–250 MB
+  (not unusual for a high-res scan) blew this every time.
+- **Cause 2 (the "file association" one):** `content query` against
+  `content://media/external/file` showed two different `.cbz` files on the same
+  device carrying two different OS-assigned MIME types
+  (`application/x-cbz` vs `application/vnd.comicbook+zip`, depending on when/how
+  each was indexed). `LocalCbzService`'s `XTypeGroup(extensions: ['cbz'])` only
+  matched one of these in the system picker's filter — files with the other
+  MIME type were visible in the picker (generic icon, no thumbnail) but tapping
+  them did nothing at all: confirmed via `uiautomator dump` the grid item was
+  genuinely clickable, and via `dumpsys activity activities` that the tap never
+  left the picker activity. No crash, no error — just a dead tap.
+
+**Fix, built and verified 2026-07-04 (same session as diagnosis) — three
+rounds, each caught by testing on Tez's real tablet rather than by reasoning
+alone:**
+
+1. **Native streaming picker.** Replaced `file_selector` with a custom
+   `MethodChannel` (`comicvault/local_file_picker`) handled in
+   `MainActivity.kt`: launches `ACTION_OPEN_DOCUMENT` with `type = "*/*"`
+   (fixes Cause 2 directly — no OS-level MIME filter left to drift out of sync)
+   and streams the result to a cache file via `ContentResolver.openInputStream()`
+   in fixed 64KB chunks (fixes Cause 1 — memory use is flat regardless of file
+   size, never materializes the whole file at once). `file_selector` and all
+   its platform packages removed from `pubspec.yaml`.
+2. **Archive caching, `LocalCbzService`.** `listPages()`/`readPage()` used to
+   independently re-read and re-decode the entire file from disk on *every*
+   call — for a 136-page issue, that's 136 full reads of a 346 MB file, not
+   136 reads of one page each. Fixing Cause 1 got far enough to actually reach
+   this code path for the first time (it never ran before — the old picker
+   crashed first), which is how this was found: the app now survived the pick
+   but was killed by Android's system-wide low-memory killer ~30–45s later,
+   RSS around 2 GB. Now decodes the archive once per file, cached by path, and
+   reuses it for every subsequent page read.
+3. **Lazy per-page reads + resolution-capped decode.** Even with caching,
+   `LocalReaderScreen._load()` still eagerly extracted *every* page up front
+   into a `List<Uint8List>` before showing anything — for this issue, all 136
+   pages' worth of decompressed image bytes held in memory at once. Changed to
+   count pages only; `LocalComicPageView` now calls `LocalCbzService.readPage()`
+   on demand inside its `ListView.builder`/`PageView.builder` `itemBuilder`s, so
+   only pages actually built are decoded. Also added `Image.memory(...,
+   cacheWidth: ...)` capped to the device's own physical screen width — this
+   issue's pages happened to be 1988×3056px (~24 MB per page once decoded raw),
+   and Flutter decodes at full source resolution by default regardless of
+   display size. `LocalCbzService.clear()` added and called from
+   `LocalReaderScreen.dispose()` so the cached archive doesn't outlive the
+   reader screen (it's otherwise a long-lived singleton for the app's whole
+   session).
+
+**Verified on Tez's real Lenovo tablet (`HGR3SJY1`, 3.7 GB total RAM) against
+both the originally-broken 346 MB / 136-page CBZ and the MIME-mismatched 56 MB
+Cyberpunk 2077 file:**
+- Both files now pick successfully (Cause 2 confirmed fixed — the previously
+  dead tap now works).
+- **Debug builds still struggle with the 346 MB file** — even after all three
+  fixes, a debug build held ~2 GB RSS and still got killed by the OS after
+  ~20–45s, whether idle or scrolling. Debug builds carry substantially heavier
+  baseline memory overhead (JIT runtime, debug metadata, no tree-shaking) than
+  release builds.
+- **The release build is stable** — same file, same device: RSS held flat
+  around 200–212 MB through 80+ seconds idle and through normal-paced
+  scrolling, versus the ~800 MB–2 GB that triggered kills before. This is the
+  build that actually ships, so this is the number that matters.
+- The smaller 56 MB Cyberpunk file was stable in both debug and release
+  throughout.
+
+**Note for anyone testing this again:** if a debug build (`flutter run` /
+`flutter build apk --debug`) seems to still struggle with a very large local
+CBZ, that's expected given the above — test against a release build before
+concluding the fix regressed. This tablet's 3.7 GB total RAM is also unusually
+tight for this device class; an even larger scan (or a device with less RAM
+still) could in principle still hit this ceiling. The fix removes the
+*reliable, every-time* crash — it doesn't raise a hard guaranteed ceiling.

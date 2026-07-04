@@ -132,8 +132,8 @@ see `ADMIN_SPEC.md` §11.4.5). Neither blocks anything before v2.6 starts.
 crashes when selecting a CBZ on the tablet. Not a new regression as far as
 anyone can tell — it's been in this state a while, just not caught earlier
 because all recent attention was on server/web dev. Full detail: `BUGS.md`
-BUG-020 (CBZ-select crash, still open); BUG-019 (connection failure) is fixed
-and closed — see `archive/bugs-fixed-archive.md`.
+BUG-008 (2000 AD tab, still open); BUG-019 (connection failure) and BUG-020
+(CBZ-select crash) are both fixed and closed — see `archive/bugs-fixed-archive.md`.
 
 This is no longer "paused" — third-party reader connectivity (CDisplayEx/OPDS)
 was scoped and ruled out this same session (`DECISIONS.md`), which makes fixing
@@ -151,13 +151,23 @@ route that 403s over LAN by design (fixed with a new unauthenticated
 port (8000 instead of 9424), fixed through the app's own Settings screen. Full
 detail in `archive/bugs-fixed-archive.md`.
 
-**Not scoped yet — still a lot here.** Next session starts with root-causing
-BUG-020 (the CBZ-select crash — still no stack trace or repro detail beyond
-"select a CBZ, it crashes"; BUG-019's fix didn't touch that code path, so it
-isn't expected to be incidentally resolved), then scoping whatever UI changes
-fall out of replacing the hardcoded 2000 AD tab with a Custom Tabs equivalent.
-Two previously-noted future-scope items remain parked for whenever they come
-up, not part of this fix: (1) Reader → Server progress sync (local reading
+**BUG-020 closed 2026-07-04 (same day), verified on the same tablet against a
+release build** — two independent causes (an OOM crash on any local CBZ over
+~250MB, and a silent MIME-type mismatch that made some `.cbz` files
+unselectable — Tez's own "file association" hunch, confirmed correct).
+Replaced `file_selector` with a native streaming picker, then fixed two
+follow-on memory issues that only surfaced once the picker itself stopped
+crashing (redundant full-archive re-decoding per page, and eager whole-issue
+page loading). Fix holds in a release build; a debug build of the same code
+still struggles with very large files on this particular 3.7GB-RAM tablet —
+see the archive entry's debug-vs-release caveat before assuming a regression
+in a future debug-mode test. Full detail in `archive/bugs-fixed-archive.md`.
+
+**Not scoped yet.** Next session: `BUG-008` (2000 AD tab) is the last item
+from the original mobile-bugs report — scoping whatever UI changes fall out
+of replacing the hardcoded 2000 AD tab with a Custom Tabs equivalent. Two
+previously-noted future-scope items remain parked for whenever they come up,
+not part of this fix: (1) Reader → Server progress sync (local reading
 progress synced back to the ComicVault DB — the local/offline mode has no
 progress persistence at all right now, per `SPEC.md`); (2) a "Browse local
 files" icon next to search so a user can open a local file without

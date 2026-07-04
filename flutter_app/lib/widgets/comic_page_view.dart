@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../services/local_cbz_service.dart';
 
 enum ReadingMode { scroll, page }
 
@@ -169,7 +170,9 @@ class ComicPageViewState extends State<ComicPageView> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class LocalComicPageView extends StatefulWidget {
-  final List<Uint8List> pages;
+  final String filePath;
+  final LocalCbzService localCbz;
+  final int pageCount;
   final ReadingMode mode;
   final bool reversePages;
   final int initialPage;
@@ -177,7 +180,9 @@ class LocalComicPageView extends StatefulWidget {
 
   const LocalComicPageView({
     super.key,
-    required this.pages,
+    required this.filePath,
+    required this.localCbz,
+    required this.pageCount,
     required this.mode,
     required this.reversePages,
     required this.initialPage,
@@ -251,26 +256,49 @@ class LocalComicPageViewState extends State<LocalComicPageView> {
 
   // ── Builders ──────────────────────────────────────────────────────────────
 
+  // Reads each page's bytes on demand rather than holding the whole issue's
+  // worth of decoded images at once — see reader_screen.dart's
+  // LocalReaderScreen._load() for why (BUG-020, archive/bugs-fixed-archive.md).
+  Uint8List _pageAt(int index) => widget.localCbz.readPage(widget.filePath, index);
+
+  // Flutter decodes Image.memory at the source image's full native
+  // resolution by default. Local CBZ scans can run well past the device's
+  // own display resolution (e.g. this fix was written against a 1988x3056px
+  // scan — a ~24MB raw bitmap per page once decoded), and holding several of
+  // those at once was part of what pushed a large issue over this tablet's
+  // available RAM (BUG-020). Capping cacheWidth to the device's own physical
+  // pixel width decodes directly at a size that's actually useful for
+  // unzoomed viewing — never smaller than the screen, so no loss of
+  // sharpness in the common case, but never wastefully larger than the
+  // screen either.
+  int _cacheWidth(BuildContext context) {
+    final physicalWidth = MediaQuery.sizeOf(context).width * MediaQuery.devicePixelRatioOf(context);
+    return physicalWidth.round();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final cacheWidth = _cacheWidth(context);
+
     if (widget.mode == ReadingMode.scroll) {
-      final pages = widget.reversePages
-          ? widget.pages.reversed.toList()
-          : widget.pages;
       return ListView.builder(
-        itemCount: pages.length,
-        itemBuilder: (context, i) => Image.memory(
-          pages[i],
-          fit: BoxFit.fitWidth,
-          width: double.infinity,
-        ),
+        itemCount: widget.pageCount,
+        itemBuilder: (context, i) {
+          final index = widget.reversePages ? widget.pageCount - 1 - i : i;
+          return Image.memory(
+            _pageAt(index),
+            fit: BoxFit.fitWidth,
+            width: double.infinity,
+            cacheWidth: cacheWidth,
+          );
+        },
       );
     }
 
     return PageView.builder(
       controller: _pageController,
       reverse: widget.reversePages,
-      itemCount: widget.pages.length,
+      itemCount: widget.pageCount,
       onPageChanged: (p) {
         resetZoom();
         widget.onPageChanged(p);
@@ -282,7 +310,7 @@ class LocalComicPageViewState extends State<LocalComicPageView> {
             transformationController: _transformController,
             minScale: 0.5,
             maxScale: 5.0,
-            child: Image.memory(widget.pages[i], fit: BoxFit.contain),
+            child: Image.memory(_pageAt(i), fit: BoxFit.contain, cacheWidth: cacheWidth),
           );
         },
       ),

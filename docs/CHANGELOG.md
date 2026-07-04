@@ -13,6 +13,17 @@ created 2026-07-04, alongside Item 1's build).
 
 ---
 
+- **2026-07-04** — BUG-020 fixed and verified on-device (release build):
+  Flutter app crashed when selecting a large local CBZ. Two causes — an
+  OOM crash picking any file over ~250MB (replaced `file_selector` with a
+  native streaming picker), and a silent MIME-type mismatch that made some
+  `.cbz` files unselectable (picker now accepts any file type). A follow-on
+  memory issue surfaced once those were fixed (archive re-decoded per page,
+  all pages eagerly loaded, full-resolution image decode) — fixed with
+  archive caching, lazy per-page reads, and resolution-capped decoding.
+  Confirmed stable on Tez's tablet in a release build; debug builds still
+  show heavier memory use on very large files. → `v2.5/progress.md`
+  "Session — 2026-07-04 (BUG-020 diagnosis and fix)"
 - **2026-07-04** — BUG-019 fixed and verified on-device: Flutter app couldn't
   connect to the server. Two stacked causes — `checkConnection()` was hitting
   an admin-only route that 403s over LAN by design (fixed with a new

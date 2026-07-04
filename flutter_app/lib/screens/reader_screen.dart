@@ -191,7 +191,7 @@ class LocalReaderScreen extends StatefulWidget {
 class _LocalReaderScreenState extends State<LocalReaderScreen> {
   final _pageViewKey = GlobalKey<LocalComicPageViewState>();
 
-  List<Uint8List> _pages = [];
+  int _pageCount = 0;
   bool _loading = true;
   String? _error;
   int _currentPage = 0;
@@ -208,20 +208,23 @@ class _LocalReaderScreenState extends State<LocalReaderScreen> {
   @override
   void dispose() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    widget.localCbz.clear();
     super.dispose();
   }
 
+  // Only counts pages up front — LocalComicPageView reads each page's bytes
+  // on demand as it's built. Eagerly decoding every page here (as this used
+  // to) held the whole issue's worth of image bytes in memory at once; for a
+  // large CBZ that was enough sustained memory pressure to get the app killed
+  // by Android's low-memory killer shortly after opening, even once BUG-020's
+  // pick-time OOM crash was fixed (docs/archive/bugs-fixed-archive.md).
   Future<void> _load() async {
     try {
-      final pageNames = widget.localCbz.listPages(widget.filePath);
-      final pages = List.generate(
-        pageNames.length,
-        (i) => widget.localCbz.readPage(widget.filePath, i),
-      );
+      final pageCount = widget.localCbz.listPages(widget.filePath).length;
       final saved = widget.settings.getLocalProgress(widget.filePath);
       if (!mounted) return;
       setState(() {
-        _pages = pages;
+        _pageCount = pageCount;
         _currentPage = saved?.currentPage ?? 0;
         _loading = false;
       });
@@ -232,7 +235,7 @@ class _LocalReaderScreenState extends State<LocalReaderScreen> {
 
   void _onPageChanged(int page) {
     setState(() => _currentPage = page);
-    widget.settings.saveLocalProgress(widget.filePath, page, _pages.length);
+    widget.settings.saveLocalProgress(widget.filePath, page, _pageCount);
   }
 
   void _onModeChanged(ReadingMode m) {
@@ -269,7 +272,7 @@ class _LocalReaderScreenState extends State<LocalReaderScreen> {
       );
     }
 
-    final pageCount = _pages.length;
+    final pageCount = _pageCount;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -296,7 +299,9 @@ class _LocalReaderScreenState extends State<LocalReaderScreen> {
         ),
         child: LocalComicPageView(
           key: _pageViewKey,
-          pages: _pages,
+          filePath: widget.filePath,
+          localCbz: widget.localCbz,
+          pageCount: pageCount,
           mode: _mode,
           reversePages: false,
           initialPage: _currentPage,
