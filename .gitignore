@@ -80,3 +80,6 @@ build-plan.html
 # Runtime-generated admin logs (scan/backup/changed-files history) — local
 # state, not source, same treatment as the tray app logs above.
 logs/
+
+# /graphify skill output (knowledge-graph cache/report) — regenerable, not source
+graphify-out/
