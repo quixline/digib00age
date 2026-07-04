@@ -64,7 +64,7 @@ desktop.ini
 *.suo
 *.user
 
-# Cowork 
+# Cowork
 doc-scan-issues.md
 doc-scan-state.md
 cowork-notes.md
@@ -72,6 +72,7 @@ working-rules.md
 voice-and-style.md
 about-me.md
 v2_investigation_report.md
+cowork-doc-scan-instructions.md
 
 # Local build tracker (HTML, open in browser — gitignored, lives in docs/meta/)
 build-plan.html
