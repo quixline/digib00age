@@ -205,8 +205,9 @@ and a preference for maintaining ComicVault's own client apps over supporting
 third-party readers even in a future public-release scenario, both OPDS and the
 partial-Komga-API-compatibility idea are dropped, not just deferred. Full
 reasoning in `DECISIONS.md`. Removed as a v2.5 holding-list item — the mobile
-app connectivity fix above (`## Next session`) is `meta/roadmap.html`'s Now #1
-replacement once Code regenerates it.
+app connectivity fix above (`## Mobile app connectivity fix`) replaced it as
+`meta/roadmap.html`'s Now #1, since fixed and closed 2026-07-04; `meta/
+roadmap.html` regenerated 2026-07-05 to drop OPDS and reflect the fix.
 - **Scope: running custom scripts on the Processing Folder.** Originally listed
   alongside Processing Folder Automation as "likely worth scoping together" —
   stays here in v2.5 on its own (Tez's explicit call, 2026-06-30) even though

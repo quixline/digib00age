@@ -100,14 +100,18 @@ session; click any card for detail and its source doc.</p>
 (CAPT-tooling cluster completed), 2026-07-02 (v2.4 closed, Items 1-3 of the
 v2.5 holding list pulled into Now), 2026-07-04 midday (Now #1 updated — ComicTagger
 + ComicVine integration built and verified, card tracking the remaining
-low-confidence-match testing), and 2026-07-04 close-of-session (Now #1 card
+low-confidence-match testing), 2026-07-04 close-of-session (Now #1 card
 removed entirely — item fully built and tested, remaining two cards renumbered
-1-2, OPDS now Now #1) · bug count corrected 2026-07-02 (BUG-018
-fixed off-cycle) — see footnote</p>
+1-2, OPDS now Now #1), and 2026-07-05 (OPDS removed — ruled out 2026-07-04,
+never actually pulled from this page; custom-scripts scoping now Now #1;
+v2.6 — UI Redesign and the Flutter app pulled from Later into Now as #2/#3 —
+mobile connectivity/crash/2000-AD-tab bugs all fixed 2026-07-04, decision made
+to keep developing the Flutter app rather than pursue third-party readers) ·
+bug count corrected 2026-07-05 (BUG-019/020/008 fixed 2026-07-04) — see footnote</p>
 
 <div class="bugs-strip">
   <i class="ti ti-bug"></i>
-  <span><span class="count">5</span> open bugs — not on this sequence, ride along
+  <span><span class="count">4</span> open bugs — not on this sequence, ride along
   with whatever's being built. See <code>BUGS.md</code>.</span>
 </div>
 
@@ -118,9 +122,9 @@ fixed off-cycle) — see footnote</p>
     <div class="lane-head">
       <div>
         <div class="lane-title">Now</div>
-        <div class="lane-sub">v2.5 Item 1 (ComicTagger + ComicVine) built, tested, and closed 2026-07-04 — next up is OPDS scoping</div>
+        <div class="lane-sub">OPDS ruled out 2026-07-04 (DECISIONS.md); mobile connectivity/crash/2000-AD-tab bugs fixed same day — next up is custom-scripts scoping, the v2.6 redesign, and continued Flutter development</div>
       </div>
-      <div class="lane-count">2</div>
+      <div class="lane-count">3</div>
     </div>
     <div class="cards">
 
@@ -128,8 +132,8 @@ fixed off-cycle) — see footnote</p>
         <div class="card-top">
           <div class="order-badge ob-now">1</div>
           <div>
-            <div class="c-title">Scope: OPDS — connecting 3rd-party readers</div>
-            <div class="c-sub">Merged with the existing Komga-compatibility research note</div>
+            <div class="c-title">Scope: running custom scripts on the Processing Folder</div>
+            <div class="c-sub">Same area as v2.4's Processing Folder Automation — likely worth scoping together</div>
           </div>
         </div>
         <div class="c-detail">
@@ -141,12 +145,38 @@ fixed off-cycle) — see footnote</p>
         <div class="card-top">
           <div class="order-badge ob-now">2</div>
           <div>
-            <div class="c-title">Scope: running custom scripts on the Processing Folder</div>
-            <div class="c-sub">Same area as v2.4's Processing Folder Automation — likely worth scoping together</div>
+            <div class="c-title">v2.6 — UI Redesign</div>
+            <div class="c-sub">Header unification (v2.3 Item 14) + BUG-014, bundled</div>
+            <span class="chip blocked">blocked — Claude Design</span>
           </div>
         </div>
         <div class="c-detail">
-          <div class="ref">ROADMAP.md — "v2.5"</div>
+          Blocked on a parked exploration with Claude Design on overall UI
+          redesign direction. Both items share a root cause (the four main
+          surface tabs never call <code>pushState</code>) — revisit together
+          once that direction exists.
+          <div class="ref">ROADMAP.md — "v2.6 — UI Redesign" · BUGS.md BUG-014</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">3</div>
+          <div>
+            <div class="c-title">Flutter app — continued development</div>
+            <div class="c-sub">OPDS/3rd-party-reader route ruled out 2026-07-04 — decision made to keep developing this instead</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          Connection failure, CBZ-select crash, and the broken 2000 AD tab
+          (BUG-019/020/008 — all found in the same 2026-07-04 report) are all
+          fixed and verified on Tez's real tablet. Next scope not yet
+          triaged — candidates: Reader → Server progress sync for local/
+          offline mode, a "Browse local files" icon next to search. A
+          Custom-Tabs-equivalent for Flutter is <em>not</em> committed to —
+          BUG-008's fix chose removing the broken 2000 AD tab over building
+          one.
+          <div class="ref">ROADMAP.md — "Mobile app connectivity fix" · DECISIONS.md · archive/bugs-fixed-archive.md</div>
         </div>
       </div>
 
@@ -218,42 +248,9 @@ fixed off-cycle) — see footnote</p>
         <div class="lane-title">Later</div>
         <div class="lane-sub">No version assigned, no committed order</div>
       </div>
-      <div class="lane-count">5</div>
+      <div class="lane-count">3</div>
     </div>
     <div class="cards">
-
-      <div class="card" onclick="this.classList.toggle('open')">
-        <div class="card-top">
-          <div>
-            <div class="c-title">v2.6 — UI Redesign</div>
-            <div class="c-sub">Header unification (v2.3 Item 14) + BUG-014, bundled</div>
-            <span class="chip blocked">blocked — Claude Design</span>
-          </div>
-        </div>
-        <div class="c-detail">
-          Blocked on a parked exploration with Claude Design on overall UI
-          redesign direction. Both items share a root cause (the four main
-          surface tabs never call <code>pushState</code>) — revisit together
-          once that direction exists.
-          <div class="ref">ROADMAP.md — "v2.6 — UI Redesign" · BUGS.md BUG-014</div>
-        </div>
-      </div>
-
-      <div class="card" onclick="this.classList.toggle('open')">
-        <div class="card-top">
-          <div>
-            <div class="c-title">Mobile Reader changes</div>
-            <div class="c-sub">Paused indefinitely — reader works as-is</div>
-          </div>
-        </div>
-        <div class="c-detail">
-          May be skipped entirely in favour of a third-party reader app.
-          Reader-launch feature (Admin §7.6) parked alongside it — needs
-          Flutter changes the current EXE doesn't support, plus a
-          same-machine-only limitation; may be dropped rather than built.
-          <div class="ref">ROADMAP.md — "Paused indefinitely"</div>
-        </div>
-      </div>
 
       <div class="card" onclick="this.classList.toggle('open')">
         <div class="card-top">
