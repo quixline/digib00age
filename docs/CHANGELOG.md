@@ -13,6 +13,15 @@ created 2026-07-04, alongside Item 1's build).
 
 ---
 
+- **2026-07-04** — BUG-008 fixed: removed the Flutter app's broken 2000 AD
+  tab entirely (Tez's call — not worth building a Custom Tabs equivalent for
+  Flutter just to replace it). Deleted `two_thousand_ad_screen.dart`, dropped
+  the tab from `library_screen.dart` (4 tabs → 3), removed the dead
+  `get2000adYears()`/`get2000adYear()` API calls. 2000 AD issues themselves
+  are unaffected — still browsable via Series/Singles/All like any other
+  publisher. Verified on Tez's tablet. This closes the last open item from
+  the 2026-07-04 mobile-bugs report. → `v2.5/progress.md` "Session —
+  2026-07-04 (BUG-008 fix — 2000 AD tab removed)"
 - **2026-07-04** — BUG-020 fixed and verified on-device (release build):
   Flutter app crashed when selecting a large local CBZ. Two causes — an
   OOM crash picking any file over ~250MB (replaced `file_selector` with a

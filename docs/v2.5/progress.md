@@ -439,3 +439,60 @@ in v2.2) is the last open item from the original mobile-bugs report. The
 broader Custom-Tabs-equivalent scoping question for Flutter (replacing the
 hardcoded 2000 AD tab) is still parked behind it, per earlier sessions'
 scoping notes.
+
+---
+
+## Session — 2026-07-04 (later same day): BUG-008 fix — 2000 AD tab removed
+
+**Goal.** Fix BUG-008, the last open item from the mobile-bugs report. Tez's
+explicit call up front: remove the 2000 AD tab completely rather than build a
+Custom Tabs equivalent for Flutter — it was removed from the main web library
+when Custom Tabs shipped, and Flutter never got its own version of that
+feature to replace it with.
+
+**Scope check before building:** grepped the whole `lib/` tree for `2000ad`/
+`TwoThousandAd` — confirmed all references were contained in exactly three
+files (`two_thousand_ad_screen.dart`, `library_screen.dart`,
+`api_service.dart`), nothing in `main.dart`'s routes, no test references.
+Clean, self-contained removal.
+
+**Built:**
+- Deleted `flutter_app/lib/screens/two_thousand_ad_screen.dart` entirely
+  (`TwoThousandAdTab`, `TwoThousandAdYearScreen`, `_YearCard`, `_ProgTile`).
+- `library_screen.dart`: `TabController(length: 4, ...)` → `length: 3`;
+  removed `Tab(text: '2000 AD')` from the `TabBar` and the `TwoThousandAdTab`
+  child from the `TabBarView`; removed the now-dead import.
+- `api_service.dart`: removed `get2000adYears()`/`get2000adYear()` — the two
+  methods that called the already-removed backend endpoints.
+- `flutter analyze lib/` — no issues.
+
+**Verified on Tez's real Lenovo tablet** (debug build): library screen now
+shows exactly three tabs — Series, Singles, All — no 2000 AD tab. Confirmed
+2000 AD issues (2000 AD, 2000 AD Sci-Fi Special, 2000 AD Yearbook, 30 Days of
+Night, etc.) still show up normally in Series and All — they're ordinary
+library issues, unaffected by removing the special tab. Tapped through all
+three tabs with no errors or crashes.
+
+**Aside, not a regression:** reinstalling the app during this session's
+testing (`flutter install` uninstalls before reinstalling) reset the saved
+server URL back to a stale value via Android's own auto-backup/restore —
+same as it did once during the BUG-020 session. Fixed the same simple way,
+through the app's own Settings screen. Noting it again here since it'll keep
+happening on every fresh install/uninstall cycle during testing — expected
+platform behaviour, not a code bug.
+
+**BUG-008 is fixed and closed** — moved from `BUGS.md` to
+`archive/bugs-fixed-archive.md`. **This closes out the entire 2026-07-04
+mobile-bugs report** — BUG-019 (connection failure), BUG-020 (CBZ-select
+crash), and BUG-008 (2000 AD tab) were all found in the same report and are
+now all fixed.
+
+**Docs updated this session:** `BUGS.md` (BUG-008 entry removed),
+`archive/bugs-fixed-archive.md` (BUG-008 fixed entry appended),
+`CHANGELOG.md`, `ROADMAP.md`, this file.
+
+**Next session:** no open Flutter bugs remain from this report. Two
+previously-parked future-scope items remain, not urgent: (1) Reader → Server
+progress sync for local/offline mode; (2) a Custom-Tabs-equivalent for
+Flutter, if that's ever wanted (not committed to — this session deliberately
+chose removal over building a replacement).

@@ -8,8 +8,9 @@
 > reader connection was scoped 2026-07-04 and **ruled out** (see
 > `DECISIONS.md` and `ROADMAP.md`) — not built here, removed from the
 > holding list. That same session surfaced two Flutter bugs (`BUGS.md`
-> BUG-019, BUG-020) plus a reactivated one (BUG-008), so next up is
-> scoping and fixing the mobile app instead (`ROADMAP.md` "Next session").
+> BUG-019, BUG-020) plus a reactivated one (BUG-008) — all three fixed and
+> closed the same day (`archive/bugs-fixed-archive.md`, `ROADMAP.md`
+> "Mobile app connectivity fix"). No open Flutter bugs remain.
 >
 > **How to use this document**
 > This is the ordered build queue for v2.5. Paste into a Claude Code session

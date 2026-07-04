@@ -105,18 +105,6 @@ class ApiService {
     return (jsonDecode(res.body) as List).cast<Map<String, dynamic>>();
   }
 
-  Future<List<Map<String, dynamic>>> get2000adYears() async {
-    final res = await http.get(Uri.parse('$apiBase/2000ad/years'));
-    _assertOk(res);
-    return (jsonDecode(res.body) as List).cast<Map<String, dynamic>>();
-  }
-
-  Future<Map<String, dynamic>> get2000adYear(int year) async {
-    final res = await http.get(Uri.parse('$apiBase/2000ad/year/$year'));
-    _assertOk(res);
-    return jsonDecode(res.body) as Map<String, dynamic>;
-  }
-
   Future<Map<String, dynamic>> getAdminStats() async {
     final res = await http.get(Uri.parse('$apiBase/admin/stats'));
     _assertOk(res);

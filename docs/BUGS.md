@@ -173,32 +173,3 @@ reproducing the actual scenario live.
 the scanner's actual "changed" semantics before building the log format around
 them). A real fix would mean comparing file size (or a cheap hash) in addition
 to mtime — flagged here as a candidate for a future scanner-accuracy pass.
-
----
-
-### BUG-008 — Flutter app's 2000 AD tab calls endpoints removed in v2.2
-
-**Reactivated 2026-07-04:** Flutter dev is starting next session (mobile
-connectivity fix, per `ROADMAP.md`), so the 2026-06-29 "ignore until Flutter dev
-starts (if it starts)" note no longer applies. This is now in-scope. Not assumed
-to be the cause of BUG-019/BUG-020 (both now fixed — `archive/bugs-fixed-archive.md`)
-— it's a known-broken tab calling removed endpoints, a separate problem from a
-connection or CBZ-select crash — but it needs fixing in the same pass since it
-touches the same screen set, and the fix now has a real destination: Custom Tabs
-(`CUSTOM_TABS_SPEC.md` §9), which didn't exist yet when this bug was first found.
-
-**Found:** 2026-06-22, flagged by the nightly doc scan.
-
-**Where:** `flutter_app/lib/screens/two_thousand_ad_screen.dart` —
-`TwoThousandAdTab` calls `GET /api/2000ad/years`; `TwoThousandAdYearScreen` calls
-`GET /api/2000ad/year/{year}`. Both endpoints were removed in v2.2 (Part A,
-`backend/routers/home.py`).
-
-**Impact:** The Flutter app's 2000 AD tab would return 404 errors on those calls.
-The web-side 2000 AD surface was removed intentionally and its behaviour generalised
-into Folder View (Custom Tabs, `CUSTOM_TABS_SPEC.md` §9), but Flutter was explicitly
-out of scope for v2.2 — the Flutter tab was not replaced, just left broken.
-
-**Not fixed.** Fix would be either removing the 2000 AD tab from the Flutter app,
-or adding a Custom Tabs equivalent for Flutter now that the web-side feature is
-built and settled — to be decided during next session's scoping pass, not here.

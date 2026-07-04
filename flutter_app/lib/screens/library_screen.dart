@@ -4,7 +4,6 @@ import '../models/series.dart';
 import '../services/api_service.dart';
 import '../services/settings_service.dart';
 import '../services/local_cbz_service.dart';
-import 'two_thousand_ad_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   final ApiService api;
@@ -41,7 +40,7 @@ class _LibraryScreenState extends State<LibraryScreen>
   @override
   void initState() {
     super.initState();
-    _tabs = TabController(length: 4, vsync: this);
+    _tabs = TabController(length: 3, vsync: this);
     _checkAndLoad();
   }
 
@@ -111,7 +110,6 @@ class _LibraryScreenState extends State<LibraryScreen>
                   Tab(text: 'Series'),
                   Tab(text: 'Singles'),
                   Tab(text: 'All'),
-                  Tab(text: '2000 AD'),
                 ],
               )
             : null,
@@ -157,7 +155,6 @@ class _LibraryScreenState extends State<LibraryScreen>
         _buildLibraryTab(_filtered(_seriesList), _seriesList),
         _buildLibraryTab(_filtered(_singlesList), _singlesList),
         _buildLibraryTab(_filtered(_allList), _allList),
-        TwoThousandAdTab(api: widget.api),
       ],
     );
   }

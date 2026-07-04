@@ -125,53 +125,56 @@ see `ADMIN_SPEC.md` §11.4.5). Neither blocks anything before v2.6 starts.
 
 ---
 
-## Next session — Mobile app connectivity fix (moved out of "Paused indefinitely" 2026-07-04)
+## Mobile app connectivity fix — closed 2026-07-04 (moved out of "Paused indefinitely" same day)
 
 **The "Flutter reader works as-is" assumption above was wrong** — Tez reported
-2026-07-04 that the Flutter app currently fails to connect to the server and
-crashes when selecting a CBZ on the tablet. Not a new regression as far as
-anyone can tell — it's been in this state a while, just not caught earlier
-because all recent attention was on server/web dev. Full detail: `BUGS.md`
-BUG-008 (2000 AD tab, still open); BUG-019 (connection failure) and BUG-020
-(CBZ-select crash) are both fixed and closed — see `archive/bugs-fixed-archive.md`.
+2026-07-04 that the Flutter app currently failed to connect to the server,
+crashed selecting a large CBZ, and still had a broken 2000 AD tab left over
+from v2.2. Not new regressions as far as anyone can tell — the app had been
+in this state a while, just not caught earlier because all recent attention
+was on server/web dev. **All three are now fixed and closed** — `BUGS.md`
+BUG-019 (connection failure), BUG-020 (CBZ-select crash), and BUG-008 (2000 AD
+tab) — see `archive/bugs-fixed-archive.md` for full detail on each.
 
 This is no longer "paused" — third-party reader connectivity (CDisplayEx/OPDS)
-was scoped and ruled out this same session (`DECISIONS.md`), which makes fixing
-the Flutter app the only path to reader connectivity going forward, not an
-optional one. Also folded into the same fix pass: BUG-008 (Flutter's 2000 AD
-tab still calls endpoints removed in v2.2) — reactivated now that Flutter dev
-is actually starting, and likely to involve real UI changes since the fixed
-2000 AD tab has since been replaced web-side by user-defined Custom Tabs
-(`CUSTOM_TABS_SPEC.md` §9), which the Flutter app has no equivalent of yet.
+was scoped and ruled out this same session (`DECISIONS.md`), which makes the
+Flutter app the only path to reader connectivity going forward, not an
+optional one.
 
-**BUG-019 closed 2026-07-04 (later same day), verified on Tez's real Lenovo
-tablet** — two stacked causes: `checkConnection()` was hitting an admin-only
-route that 403s over LAN by design (fixed with a new unauthenticated
-`GET /api/ping`), and separately the tablet's saved server URL had a stale
-port (8000 instead of 9424), fixed through the app's own Settings screen. Full
-detail in `archive/bugs-fixed-archive.md`.
+**BUG-019, verified on Tez's real Lenovo tablet** — two stacked causes:
+`checkConnection()` was hitting an admin-only route that 403s over LAN by
+design (fixed with a new unauthenticated `GET /api/ping`), and separately the
+tablet's saved server URL had a stale port (8000 instead of 9424), fixed
+through the app's own Settings screen.
 
-**BUG-020 closed 2026-07-04 (same day), verified on the same tablet against a
-release build** — two independent causes (an OOM crash on any local CBZ over
-~250MB, and a silent MIME-type mismatch that made some `.cbz` files
-unselectable — Tez's own "file association" hunch, confirmed correct).
-Replaced `file_selector` with a native streaming picker, then fixed two
-follow-on memory issues that only surfaced once the picker itself stopped
-crashing (redundant full-archive re-decoding per page, and eager whole-issue
-page loading). Fix holds in a release build; a debug build of the same code
-still struggles with very large files on this particular 3.7GB-RAM tablet —
-see the archive entry's debug-vs-release caveat before assuming a regression
-in a future debug-mode test. Full detail in `archive/bugs-fixed-archive.md`.
+**BUG-020, verified on the same tablet against a release build** — two
+independent causes (an OOM crash on any local CBZ over ~250MB, and a silent
+MIME-type mismatch that made some `.cbz` files unselectable — Tez's own "file
+association" hunch, confirmed correct). Replaced `file_selector` with a
+native streaming picker, then fixed two follow-on memory issues that only
+surfaced once the picker itself stopped crashing (redundant full-archive
+re-decoding per page, and eager whole-issue page loading). Fix holds in a
+release build; a debug build of the same code still struggles with very
+large files on this particular 3.7GB-RAM tablet — see the archive entry's
+debug-vs-release caveat before assuming a regression in a future debug-mode
+test.
 
-**Not scoped yet.** Next session: `BUG-008` (2000 AD tab) is the last item
-from the original mobile-bugs report — scoping whatever UI changes fall out
-of replacing the hardcoded 2000 AD tab with a Custom Tabs equivalent. Two
-previously-noted future-scope items remain parked for whenever they come up,
-not part of this fix: (1) Reader → Server progress sync (local reading
+**BUG-008, verified on the same tablet** — Tez's explicit call: remove the
+broken 2000 AD tab entirely rather than build a Custom Tabs equivalent for
+Flutter (not worth building just to replace one tab). Deleted
+`two_thousand_ad_screen.dart`, dropped the tab from `library_screen.dart` (4
+tabs → 3), removed the dead API calls. 2000 AD issues themselves are
+unaffected — still fully browsable via Series/Singles/All like any other
+publisher's comics.
+
+**Two previously-noted future-scope items remain parked for whenever they
+come up, not committed to:** (1) Reader → Server progress sync (local reading
 progress synced back to the ComicVault DB — the local/offline mode has no
 progress persistence at all right now, per `SPEC.md`); (2) a "Browse local
 files" icon next to search so a user can open a local file without
-disconnecting from server view.
+disconnecting from server view. A Custom-Tabs-equivalent for Flutter is
+*not* one of these — BUG-008's fix deliberately chose removal over building
+one, so it isn't a parked item unless a real need for it comes up separately.
 
 ---
 

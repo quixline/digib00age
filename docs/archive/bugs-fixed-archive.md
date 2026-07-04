@@ -662,3 +662,49 @@ concluding the fix regressed. This tablet's 3.7 GB total RAM is also unusually
 tight for this device class; an even larger scan (or a device with less RAM
 still) could in principle still hit this ceiling. The fix removes the
 *reliable, every-time* crash — it doesn't raise a hard guaranteed ceiling.
+
+---
+
+### BUG-008 — Flutter app's 2000 AD tab calls endpoints removed in v2.2
+
+**Found:** 2026-06-22, flagged by the nightly doc scan.
+
+**Where it was:** `flutter_app/lib/screens/two_thousand_ad_screen.dart` —
+`TwoThousandAdTab` called `GET /api/2000ad/years`; `TwoThousandAdYearScreen`
+called `GET /api/2000ad/year/{year}`. Both endpoints were removed in v2.2
+(Part A, `backend/routers/home.py`) — the web-side 2000 AD surface was
+removed intentionally and its behaviour generalised into Folder View (Custom
+Tabs, `CUSTOM_TABS_SPEC.md` §9), but Flutter was explicitly out of scope for
+v2.2, so the Flutter tab was never replaced or removed — just left calling
+endpoints that no longer existed.
+
+**Fix, 2026-07-04 — Tez's call: remove the tab entirely, not build a Custom
+Tabs equivalent for Flutter.** Custom Tabs is a web-only feature with no
+Flutter counterpart, and wasn't worth building just to replace this one
+broken tab (that scoping question, if it ever comes up, is separate and
+bigger than this fix). Removed:
+- `flutter_app/lib/screens/two_thousand_ad_screen.dart` — deleted entirely
+  (`TwoThousandAdTab`, `TwoThousandAdYearScreen`, and their supporting
+  widgets).
+- `library_screen.dart` — `TabController` changed from `length: 4` to
+  `length: 3`; removed the `Tab(text: '2000 AD')` entry and the
+  `TwoThousandAdTab` child from the `TabBarView`; removed the now-unused
+  import.
+- `api_service.dart` — removed `get2000adYears()`/`get2000adYear()`, the two
+  methods that called the removed backend endpoints.
+
+**Not a data-loss concern:** 2000 AD issues already in the library (progs,
+yearbooks, specials, etc.) aren't affected — they're ordinary series/issues
+and remain fully browsable through the regular Series/Singles/All tabs
+exactly like any other publisher's comics. Only the dedicated year-grouped
+browsing tab (which depended on the removed endpoints) is gone.
+
+**Verified on Tez's real Lenovo tablet** — rebuilt and installed a debug
+APK: the library screen now shows exactly three tabs (Series/Singles/All),
+confirmed the 2000 AD series/issues (2000 AD, 2000 AD Sci-Fi Special,
+30 Days of Night, etc.) still appear normally in Series and All, and tapped
+through all three tabs with no errors or crashes.
+
+**This closes out the last open item from the 2026-07-04 mobile-bugs
+report** (BUG-019 connection failure, BUG-020 CBZ-select crash, and this —
+all found in the same report, all independent root causes, all now fixed).
