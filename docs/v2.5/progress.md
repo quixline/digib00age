@@ -208,3 +208,124 @@ the completed-item convention), remaining two Now cards renumbered 1–2,
 OPDS scoping now Now #1. Docs updated: this file, `comicvault-changes-v2.5.md`
 (Item 1's final status), `ADMIN_SPEC.md` §11.4.4 (new slider documented),
 `EDITOR_SPEC.md` §9 (status line), `CHANGELOG.md`, `meta/roadmap.html`.
+
+
+---
+
+## 2026-07-04 (later same day) — OPDS scoping session: ruled out; mobile app bugs surfaced
+
+**Chat session, no Code/build work.** First scoping pass on the v2.5 "OPDS —
+connecting 3rd-party readers" holding-list item, target reader CDisplayEx on
+Android tablet.
+
+**Research finding that reframed the session:** CDisplayEx doesn't support OPDS
+— it only connects to Komga or Kavita via their own proprietary REST APIs.
+"Add OPDS" as originally conceived wouldn't have gotten CDisplayEx connected at
+all; the only route would've been a Komga-API-compatibility shim against
+another project's undocumented, unstable surface.
+
+**Decision (Tez's call, full reasoning in `DECISIONS.md`):** rule out OPDS and
+the Komga-shim alternative entirely, not just defer them. Reasoning wasn't only
+the CDisplayEx mismatch — this is a single-connection use case, and Tez
+concluded that even in a future public-release scenario, maintaining
+ComicVault's own client apps beats supporting third-party readers he can't
+control. Decision: keep developing the existing Flutter app instead.
+
+**Mobile app bugs surfaced during the same conversation, previously unreported:**
+Tez confirmed the Flutter app currently fails to connect to the server and
+crashes when selecting a CBZ on the tablet — logged as `BUGS.md` BUG-019 and
+BUG-020. Neither is a new regression as far as anyone knows; they weren't
+caught earlier because recent attention was on server/web dev, not Flutter.
+Tez flagged a possible network change as a separate contributing factor for
+BUG-019, explicitly not confirmed and needing its own investigation rather than
+being assumed as the cause. Also reactivated BUG-008 (Flutter's 2000 AD tab
+still calling endpoints removed in v2.2) — dormant since 2026-06-29 pending
+"if Flutter dev starts," which it now is.
+
+**Docs updated this session:** `DECISIONS.md` (OPDS ruling + reasoning),
+`BUGS.md` (BUG-019, BUG-020 added; BUG-008 reactivated), `ROADMAP.md` (Mobile
+Reader entry corrected and moved from "Paused indefinitely" to a new "Next
+session" section; OPDS holding-list entry marked ruled out and removed),
+`comicvault-changes-v2.5.md` (header status updated), this file.
+`meta/roadmap.html` still needs Code to regenerate it to drop the OPDS Now-card
+and add the mobile connectivity fix — not hand-edited here per convention.
+
+**Next session:** root-cause BUG-019/BUG-020 (ruling the network-change theory
+in or out on its own first), then scope the Flutter fixes — likely including
+real UI work since the removed 2000 AD tab now needs a Custom Tabs equivalent
+that didn't exist when the tab was first built. Tez's framing: "there is a lot
+to scope" — expect this to need its own dedicated scoping session before any
+of it goes to Code.
+
+---
+
+## Session — 2026-07-04 (later same day): BUG-019 on-device verification — fixed and closed
+
+**Goal.** Tez's Lenovo tablet was physically connected this session, unblocking
+the on-device confirmation that BUG-019's code-level fix (from earlier the same
+day — see previous session entry) had been waiting on.
+
+**Tablet connection sequence:** `flutter devices` initially showed the tablet
+(`HGR3SJY1`) as detected but "not authorized" — Windows could see it over USB
+but the tablet hadn't approved this computer for debugging yet. Tez accepted
+the on-device USB-debugging authorization prompt; the device then showed as a
+normal authorized target.
+
+**Build detour:** `flutter build apk --release` ran for ~25 minutes with no
+sign of failure — confirmed via `tasklist`/CPU-time deltas that Gradle/Java
+was genuinely still compiling, not hung, but this is far outside normal for
+this project. Killed it (`TaskStop`) and switched to `flutter build apk
+--debug` instead, which is sufficient for a manual verification pass and skips
+R8 minification/resource shrinking. Discovered mid-swap that stopping the
+release build's CLI wrapper hadn't stopped the underlying Gradle daemon — it
+kept running the interrupted release task in the background (`./gradlew
+--status` showed it `BUSY`), which was silently blocking the new debug build
+from starting. Ran `./gradlew --stop` to free the daemon, then the debug build
+completed normally. (Both APKs, oddly, ended up finished on disk afterward —
+the abandoned release build had apparently kept running to completion via the
+daemon despite the CLI kill.) **Worth knowing for next time:** if a Flutter/
+Gradle build seems to hang after switching build modes mid-session, check
+`gradlew --status` for a stuck daemon before assuming the new build itself is
+broken.
+
+**First on-device test still failed** — installed the debug build (with the
+`/api/ping` fix from the earlier session) and the app still showed "Server
+offline". Reading the tablet's actual saved preferences (`adb shell run-as
+com.comicvault.comicvault cat .../shared_prefs/FlutterSharedPreferences.xml`)
+found the real cause of *this* failure: `flutter.server_url` was saved as
+`http://192.168.0.151:8000` — port 8000, not 9424 where the server actually
+listens (confirmed via `netstat` that nothing is listening on 8000 at all).
+This was a second, independent problem stacked on top of the auth-gating bug
+— the earlier session's curl-based verification tested the correct port
+directly and never exercised the app's actual stored configuration, so it
+couldn't have caught this.
+
+**Fixed via the app's own Settings screen** (not a raw prefs edit) — corrected
+the server URL field to `http://192.168.0.151:9424`, tapped "Test connection"
+(confirmed "Connected successfully"), then Save. Force-stopped and relaunched
+the app fresh: the offline banner was gone, the Series/Singles/All/2000 AD
+tabs appeared, and the library loaded real cover thumbnails from the server
+over the LAN — full end-to-end confirmation on the real device. Scratch
+screenshots taken during verification (tablet_check.png etc., in the repo
+root) were deleted afterward per the close-of-session cleanup step.
+
+**BUG-019 is fixed and closed** — moved from `BUGS.md` to
+`archive/bugs-fixed-archive.md` with both root causes documented. `BUG-020`
+(CBZ-select crash) remains open and undiagnosed; nothing in this session's fix
+touched the CBZ-open path, so it isn't expected to have been incidentally
+resolved. `BUG-008` (2000 AD tab calling removed endpoints) also remains open.
+
+**Docs updated this session:** `BUGS.md` (BUG-019 entry removed, BUG-020's
+cross-reference updated to point at the archive), `archive/bugs-fixed-archive.md`
+(BUG-019 fixed entry appended, both root causes documented), `CHANGELOG.md`,
+`ROADMAP.md` ("Next session" section updated to reflect BUG-019 done), this
+file. `meta/roadmap.html` not touched — bug fixes don't get their own
+Now/Next lane card per `working-rules.md`'s Inbox-workflow note ("a bug can go
+straight into `BUGS.md` without touching the roadmap at all"), and no existing
+card referenced BUG-019 specifically to remove.
+
+**Next session:** BUG-020 (CBZ-select crash) is the next open Flutter item —
+still fully undiagnosed, no stack trace or repro detail beyond "select a CBZ,
+it crashes." BUG-008 (2000 AD tab) and the broader Custom-Tabs-equivalent
+scoping question are still parked behind it, per the previous session's
+scoping note.

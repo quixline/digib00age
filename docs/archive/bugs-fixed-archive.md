@@ -500,3 +500,66 @@ No CBR-specific test was needed — `find_xml_in_archive()`/
 `extract_xml_from_archive()` already dispatch through `archive_formats._opener()`,
 the same CBZ/CBR-agnostic helper both editors use, so the fix covers CBR
 identically to CBZ with no separate code path.
+
+---
+
+### BUG-019 — Flutter app doesn't connect to the server
+
+**Found:** 2026-07-04, same report as BUG-020 (still open, see `BUGS.md`).
+
+**Root cause confirmed 2026-07-04**, by reading `backend/auth.py` /
+`backend/main.py` directly plus a live curl reproduction: `ApiService.checkConnection()`
+(`flutter_app/lib/services/api_service.dart`, called at library-screen startup and
+from the Settings "Test Connection" button) pings `GET /api/admin/stats`. That route
+is mounted with `dependencies=_auth_gate` (`main.py` line 129), and `require_admin_auth`
+(`backend/auth.py` line 108) rejects any request whose peer host isn't `127.0.0.1`/`::1`
+with a 403 whenever `remote_admin_enabled` is off — which is the default
+(`config.json` currently has it `false`). This gating was added for v2.4 Item 1
+(remote-admin gating, closed 2026-06-29) — it didn't exist yet the last time the
+Flutter app was actively used, which is why this reads as a new failure now rather
+than something that was always broken. The network-change theory Tez raised was
+ruled out: curl from this machine's LAN IP (192.168.0.151) showed `/api/admin/stats`
+403ing while ordinary data routes (`/api/library`) returned 200 — the server was
+reachable over the LAN exactly as expected; the connectivity *check itself* was
+hitting a route that was never meant to be reachable remotely.
+
+**Fix (code, 2026-07-04):**
+- `backend/routers/home.py` — added `GET /api/ping`, an intentionally unauthenticated
+  liveness route (mounted via `home.router`, which carries no `_auth_gate`), returning
+  `{"status": "ok"}`.
+- `flutter_app/lib/services/api_service.dart` — `checkConnection()` now calls
+  `/api/ping` instead of `/api/admin/stats`.
+
+**Second, independent root cause found during on-device verification (2026-07-04,
+later session):** the auth-gating fix above was correct but not sufficient on its
+own — Tez's tablet had USB debugging authorization sorted out this session
+(previously blocking, per the first pass's notes), enabling a real rebuild +
+install + on-device test for the first time. That first on-device test *still*
+showed "Server offline" despite the `/api/ping` fix being installed. Reading the
+tablet's actual saved settings (`adb shell run-as com.comicvault.comicvault cat
+.../shared_prefs/FlutterSharedPreferences.xml`) showed `flutter.server_url` was
+`http://192.168.0.151:8000` — port **8000**, not **9424** where the server
+actually listens (`netstat` confirmed nothing listening on 8000 at all). This is
+a stale value saved in the app's own local settings from some earlier point,
+unrelated to the auth-gating bug — the first session's curl-based verification
+never caught it because it tested the right port directly rather than exercising
+the app's actual stored configuration. Both causes had to be fixed for the
+tablet to actually connect: the code fix (`/api/ping`) alone would still have
+left the app pointed at a dead port.
+
+**Fixed, 2026-07-04 — verified on the real Lenovo tablet (device `HGR3SJY1`)**:
+built and installed a debug APK (`flutter build apk --debug` /
+`flutter install -d HGR3SJY1 --debug`) with the `/api/ping` fix, launched the
+app, corrected the saved server URL to `http://192.168.0.151:9424` via the
+Settings screen's own text field and "Test connection" button (not a raw prefs
+edit — exercises the real save path), confirmed "Connected successfully",
+saved, and relaunched fresh: the offline banner was gone, the Series/Singles/
+All/2000 AD tabs appeared, and the library loaded real cover images from the
+server over the LAN. Screenshots taken during verification were scratch files,
+deleted after confirming — no repo files retained from the test.
+
+**Note for anyone hitting "offline" again after a server IP/port change:** check
+the app's own Settings screen first (`ComicVault server URL` field) before
+assuming a code regression — this bug was two independent causes stacked
+together, and the simpler one (a stale saved address) is easy to miss if you
+only look at the harder one (the auth-gating logic).

@@ -11,6 +11,31 @@ one).
 
 ## OPEN
 
+### BUG-020 — Flutter app crashes when selecting a CBZ on the tablet
+
+**Found:** 2026-07-04, OPDS/3rd-party-reader scoping session — Tez reported the
+app has been in this state "a while," not caught earlier because all recent
+attention was on server/web dev, not Flutter.
+
+**Where:** Not yet diagnosed — likely `reader_screen.dart` / `comic_page_view.dart`
+or the file-open path feeding them, but not confirmed against the code yet.
+
+**What happens:** Selecting a CBZ on the Android tablet crashes the app. No stack
+trace or repro steps captured yet beyond "select a CBZ, it crashes."
+
+**Relationship to BUG-019 and BUG-008:** three separate-looking Flutter problems
+surfaced in the same report (this crash, the now-fixed connection failure —
+`archive/bugs-fixed-archive.md` — and the stale 2000 AD tab). Not assumed to
+share a root cause — could be one underlying issue or three independent ones.
+Needs its own diagnosis pass, not folded into BUG-019 by assumption. BUG-019's
+fix didn't touch anything in the CBZ-open path, so this crash is still
+unexplained and open on its own.
+
+**Not fixed.** Full diagnosis and fix scoped as the next session's focus (see
+`ROADMAP.md` and `docs/v2.5/progress.md`).
+
+---
+
 ### BUG-016 — Restore Database: restore completes but does not revert DB to backup state
 
 **Found:** 2026-06-28, manual test pass (Items 10–13).
@@ -178,8 +203,14 @@ to mtime — flagged here as a candidate for a future scanner-accuracy pass.
 
 ### BUG-008 — Flutter app's 2000 AD tab calls endpoints removed in v2.2
 
-## Edit 29/6/26 Tez; the fixed 2000 AD tab has been removed completely - Custom tabs
-## This issue could be dead. To be ignored until flutter dev starts (if it starts)
+**Reactivated 2026-07-04:** Flutter dev is starting next session (mobile
+connectivity fix, per `ROADMAP.md`), so the 2026-06-29 "ignore until Flutter dev
+starts (if it starts)" note no longer applies. This is now in-scope. Not assumed
+to be the cause of BUG-019/BUG-020 above — it's a known-broken tab calling
+removed endpoints, a separate problem from a connection or CBZ-select crash —
+but it needs fixing in the same pass since it touches the same screen set, and
+the fix now has a real destination: Custom Tabs (`CUSTOM_TABS_SPEC.md` §9),
+which didn't exist yet when this bug was first found.
 
 **Found:** 2026-06-22, flagged by the nightly doc scan.
 
@@ -193,7 +224,6 @@ The web-side 2000 AD surface was removed intentionally and its behaviour general
 into Folder View (Custom Tabs, `CUSTOM_TABS_SPEC.md` §9), but Flutter was explicitly
 out of scope for v2.2 — the Flutter tab was not replaced, just left broken.
 
-**Not fixed.** Flutter app development is on hold until web-side work is complete
-(per `ROADMAP.md`). To be picked up as part of that Flutter work — fix would be
-either removing the 2000 AD tab from the Flutter app, or adding a Folder View
-equivalent for Flutter once the web Folder View is settled.
+**Not fixed.** Fix would be either removing the 2000 AD tab from the Flutter app,
+or adding a Custom Tabs equivalent for Flutter now that the web-side feature is
+built and settled — to be decided during next session's scoping pass, not here.

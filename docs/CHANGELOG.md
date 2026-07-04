@@ -13,6 +13,13 @@ created 2026-07-04, alongside Item 1's build).
 
 ---
 
+- **2026-07-04** — BUG-019 fixed and verified on-device: Flutter app couldn't
+  connect to the server. Two stacked causes — `checkConnection()` was hitting
+  an admin-only route that 403s over LAN by design (fixed with a new
+  unauthenticated `GET /api/ping`), and separately the tablet's saved server
+  URL had a stale port. Confirmed working on the real Lenovo tablet after
+  both fixes. → `v2.5/progress.md` "Session — 2026-07-04 (BUG-019 on-device
+  verification)"
 - **2026-07-04** — v2.5 Item 1 closed: added a configurable Match Ratio
   Threshold slider (10–100%, default 80) to Processing Folder Automation's
   CT Auto-Tag stage, replacing the previous hardcoded 80% value. Every

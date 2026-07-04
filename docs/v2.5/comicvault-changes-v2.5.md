@@ -4,8 +4,12 @@
 > created this session (Code, per `ROADMAP.md`'s note that the working
 > folder gets created alongside implementation rather than ahead of it —
 > real v2.5 triage/scoping for the remaining holding-list items hasn't
-> happened yet, this queue currently holds Item 1 only). Next up: scoping
-> OPDS / 3rd-party reader connection (`meta/roadmap.html` Now #1).
+> happened yet, this queue currently holds Item 1 only). OPDS / 3rd-party
+> reader connection was scoped 2026-07-04 and **ruled out** (see
+> `DECISIONS.md` and `ROADMAP.md`) — not built here, removed from the
+> holding list. That same session surfaced two Flutter bugs (`BUGS.md`
+> BUG-019, BUG-020) plus a reactivated one (BUG-008), so next up is
+> scoping and fixing the mobile app instead (`ROADMAP.md` "Next session").
 >
 > **How to use this document**
 > This is the ordered build queue for v2.5. Paste into a Claude Code session

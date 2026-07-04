@@ -1,5 +1,7 @@
 """
 ComicVault — Home Router
+GET /api/ping                Unauthenticated liveness check (BUG-019 — client apps need a
+                             connectivity probe that isn't behind require_admin_auth)
 GET /api/home/strips        Home page strips — defaults + admin-added (HOME_STRIPS_SPEC.md)
 """
 
@@ -17,6 +19,11 @@ from backend.path_utils import is_under, matches_field
 router = APIRouter(tags=["home"])
 
 STRIP_SIZE = 15
+
+
+@router.get("/ping")
+async def ping():
+    return {"status": "ok"}
 
 
 # ---------------------------------------------------------------------------

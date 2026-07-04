@@ -13,11 +13,15 @@ class ApiService {
   String coverUrl(int issueId) => '$apiBase/cover/$issueId';
   String pageUrl(int issueId, int pageNumber) => '$apiBase/page/$issueId/$pageNumber';
 
-  // Returns true if the server responds within 3 seconds
+  // Returns true if the server responds within 3 seconds.
+  // Uses /api/ping rather than an /api/admin/* route — the admin routes sit
+  // behind require_admin_auth, which rejects any non-local request outright
+  // when Remote Administration is off (the default), so a LAN client like the
+  // Flutter app would always read as "offline" even with a healthy server (BUG-019).
   Future<bool> checkConnection() async {
     try {
       final res = await http
-          .get(Uri.parse('$apiBase/admin/stats'))
+          .get(Uri.parse('$apiBase/ping'))
           .timeout(const Duration(seconds: 3));
       return res.statusCode == 200;
     } catch (_) {

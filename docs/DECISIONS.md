@@ -4,6 +4,39 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### OPDS / 3rd-party reader connectivity ruled out — continue Flutter app development instead
+
+**Decided:** 2026-07-04, first scoping session for the v2.5 "OPDS" holding-list item.
+
+**Why:** Research carried out ahead of/during scoping found CDisplayEx (the
+target reader, Android tablet) doesn't support OPDS at all — it only connects to
+Komga or Kavita via their own proprietary, undocumented REST APIs. So "add OPDS"
+as originally conceived wouldn't have delivered CDisplayEx support anyway; the
+only path would have been reverse-engineering and maintaining a Komga-API-shim
+against another project's private, unstable surface — a materially different
+and riskier build than a standards-based OPDS server.
+
+Tez's own stated reasoning tipped it beyond just the CDisplayEx-specific
+mismatch: this is a single-connection use case (his own tablet), so building and
+maintaining a generic reader-compatibility layer isn't worth the effort even
+before the CDisplayEx finding. He also raised the possibility of ComicVault
+going public eventually, and concluded that if it does, maintaining ComicVault's
+own client apps will be easier than supporting third-party readers whose
+behaviour/versions/API expectations he can't control — i.e. this isn't just
+"not worth it now," it's "not worth it even in the public-release scenario that
+would otherwise be the strongest argument for it."
+
+**Decision:** no OPDS server, no Komga-API-compatibility shim. Development effort
+goes into the existing Flutter app instead — which turns out to need it anyway
+(see BUG-019/BUG-020, surfaced in this same session: the Flutter app currently
+fails to connect to the server and crashes when selecting a CBZ on the tablet).
+
+**How to apply:** if third-party reader connectivity comes up again later
+(e.g. a different target reader that does speak real OPDS), this decision
+doesn't rule that out categorically — it rules out this specific
+CDisplayEx-driven path. Re-scope fresh against whatever reader/use-case is
+actually being asked for rather than reviving this research wholesale.
+
 ### CT Auto-Tag's "N of M succeeded" summary needed its own outcome breakdown, not a status-semantics change
 
 **Decided:** 2026-07-04, diagnosing a misleading result reported during Tez's

@@ -114,14 +114,6 @@ see `ADMIN_SPEC.md` §11.4.5). Neither blocks anything before v2.6 starts.
 
 ## Paused indefinitely
 
-- **Mobile Reader changes.** The Flutter reader works as-is (tablet connects, reading
-  works). Deferred until all server/web work above is done, and may be skipped
-  entirely in favour of a third-party reader app instead. Two specific future-scope
-  items noted for whenever this is revisited: (1) Reader → Server progress sync
-  (local reading progress synced back to the ComicVault DB); (2) a "Browse local
-  files" icon next to search so a user can open a local file without disconnecting
-  from server view.
-
 - **Reader-launch feature** (`ADMIN_SPEC.md` §7.6 — Reader Location field in
   Advanced Settings + `/issue/{id}` "Read" button wiring). Scoping revealed this
   requires Flutter app changes — the Windows reader EXE doesn't currently accept a
@@ -130,6 +122,46 @@ see `ADMIN_SPEC.md` §11.4.5). Neither blocks anything before v2.6 starts.
   (browser and server on different machines on the LAN won't work as expected). Parked
   pending further thought on practical usage vs. building out all the edge cases —
   may be dropped rather than built.
+
+---
+
+## Next session — Mobile app connectivity fix (moved out of "Paused indefinitely" 2026-07-04)
+
+**The "Flutter reader works as-is" assumption above was wrong** — Tez reported
+2026-07-04 that the Flutter app currently fails to connect to the server and
+crashes when selecting a CBZ on the tablet. Not a new regression as far as
+anyone can tell — it's been in this state a while, just not caught earlier
+because all recent attention was on server/web dev. Full detail: `BUGS.md`
+BUG-020 (CBZ-select crash, still open); BUG-019 (connection failure) is fixed
+and closed — see `archive/bugs-fixed-archive.md`.
+
+This is no longer "paused" — third-party reader connectivity (CDisplayEx/OPDS)
+was scoped and ruled out this same session (`DECISIONS.md`), which makes fixing
+the Flutter app the only path to reader connectivity going forward, not an
+optional one. Also folded into the same fix pass: BUG-008 (Flutter's 2000 AD
+tab still calls endpoints removed in v2.2) — reactivated now that Flutter dev
+is actually starting, and likely to involve real UI changes since the fixed
+2000 AD tab has since been replaced web-side by user-defined Custom Tabs
+(`CUSTOM_TABS_SPEC.md` §9), which the Flutter app has no equivalent of yet.
+
+**BUG-019 closed 2026-07-04 (later same day), verified on Tez's real Lenovo
+tablet** — two stacked causes: `checkConnection()` was hitting an admin-only
+route that 403s over LAN by design (fixed with a new unauthenticated
+`GET /api/ping`), and separately the tablet's saved server URL had a stale
+port (8000 instead of 9424), fixed through the app's own Settings screen. Full
+detail in `archive/bugs-fixed-archive.md`.
+
+**Not scoped yet — still a lot here.** Next session starts with root-causing
+BUG-020 (the CBZ-select crash — still no stack trace or repro detail beyond
+"select a CBZ, it crashes"; BUG-019's fix didn't touch that code path, so it
+isn't expected to be incidentally resolved), then scoping whatever UI changes
+fall out of replacing the hardcoded 2000 AD tab with a Custom Tabs equivalent.
+Two previously-noted future-scope items remain parked for whenever they come
+up, not part of this fix: (1) Reader → Server progress sync (local reading
+progress synced back to the ComicVault DB — the local/offline mode has no
+progress persistence at all right now, per `SPEC.md`); (2) a "Browse local
+files" icon next to search so a user can open a local file without
+disconnecting from server view.
 
 ---
 
@@ -150,11 +182,18 @@ to an actual build queue.
 2026-07-04.** Tracked as `docs/v2.5/comicvault-changes-v2.5.md` Item 1 (✅);
 full build/test/fix narrative in `docs/v2.5/progress.md`, spec detail in
 `EDITOR_SPEC.md` §9 and `ADMIN_SPEC.md` §11.4. `meta/roadmap.html`'s Now lane
-card removed 2026-07-04 (item complete) — OPDS is now Now #1.
-- **Scope: OPDS — connecting 3rd-party readers.** Merge with the existing
-  partial-Komga-API-compatibility idea into one research note; both solve the
-  same underlying goal (external reader apps connecting to ComicVault) and should
-  be evaluated together rather than as two separate efforts.
+card removed 2026-07-04 (item complete).
+
+**OPDS — connecting 3rd-party readers — scoped and ruled out, 2026-07-04.**
+Research found CDisplayEx (the target reader) doesn't support OPDS at all —
+only Komga/Kavita's own proprietary REST APIs — so this wouldn't have delivered
+what it was scoped for. Combined with this being a single-connection use case
+and a preference for maintaining ComicVault's own client apps over supporting
+third-party readers even in a future public-release scenario, both OPDS and the
+partial-Komga-API-compatibility idea are dropped, not just deferred. Full
+reasoning in `DECISIONS.md`. Removed as a v2.5 holding-list item — the mobile
+app connectivity fix above (`## Next session`) is `meta/roadmap.html`'s Now #1
+replacement once Code regenerates it.
 - **Scope: running custom scripts on the Processing Folder.** Originally listed
   alongside Processing Folder Automation as "likely worth scoping together" —
   stays here in v2.5 on its own (Tez's explicit call, 2026-06-30) even though
