@@ -4,6 +4,407 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### ComicTagger integration — field mapping expanded to capture everything CT/ComicVine supplies, not just editor-exposed fields
+
+**Decided:** 2026-07-04, during Tez's live testing of v2.5 Item 1's build.
+
+**Why:** The build's `metadata_to_field_dict()` (`backend/ct_bridge.py`) originally
+only mapped the subset of ComicInfo.xml fields ComicVault's own Basic/Full Editor
+UI exposes (Series, Number, Title, Year, Summary, Publisher, Count, StoryArc,
+Language, Writer, Penciller) — a judgment call made during the build, not confirmed
+with Tez in advance. Live testing surfaced this as real data loss: Tez compared a
+ComicVault-tagged file against the same file tagged by his standalone ComicTagger
+1.5.5 and found Month, Day, Notes, Inker, Colorist, Letterer, and CoverArtist all
+missing. His stated intent: "pull it all... just save the current fields to the db
+and display them in the library" — i.e. capture everything CT/ComicVine supplies
+into the archive's XML, even fields ComicVault's own UI doesn't display, matching
+what a proper auto-tagging tool does. Fixed by reading
+`comicapi/tags/comicrack.py`'s own write mapping directly and mirroring it
+field-for-field, rather than continuing to guess at scope.
+
+**Genre/Format/AgeRating/BlackAndWhite stay excluded — confirmed as a different
+category, not swept up in this reversal.** These were never a "the editor doesn't
+show it" exclusion like the fields above — Genre/Format/AgeRating are
+ComicVault-enforced dropdown fields with a validation gate (`EDITOR_SPEC.md` §4.4);
+ComicVine doesn't reliably supply values matching that vocabulary (confirmed
+2026-07-03 that `md.genres` is never even set by ComicVine's own issue mapper).
+BlackAndWhite has a real semantic-correctness problem: ComicVault's convention is
+the literal text `"on"` for checked (`EDITOR_SPEC.md` §3.3), while CT's own writer
+uses `"Yes"` — writing CT's value would silently fail to register as checked
+anywhere the Editor reads this tag.
+
+A second, related bug surfaced in the same testing pass: ComicVine's `description`
+field is raw HTML, and CT's own pipeline runs it through
+`comictalker.talker_utils.cleanup_html()` (BeautifulSoup-based) before ever writing
+it to `Summary` — this call was missing, so raw markup was landing as literal
+escaped text (`&lt;p&gt;&lt;em&gt;...`) instead of clean plain text.
+
+**How to apply:** `backend/ct_bridge.py`'s `metadata_to_field_dict()` now maps
+Series, Number, Count, Title, Volume, Summary (via `cleanup_html()`),
+AlternateSeries/Number/Count, StoryArc, SeriesGroup, Publisher, Imprint, Day,
+Month, Year, Language, Web, Manga, Characters, Teams, Locations, Notes
+(self-generated, mirroring CT's own "Tagged with..." convention), and all seven
+credit-role fields (Writer/Penciller/Inker/Colorist/Letterer/CoverArtist/Editor) —
+Genre/Format/AgeRating/BlackAndWhite/PageCount remain the only exclusions. Written
+into `EDITOR_SPEC.md` §9 and `ADMIN_SPEC.md` §11.4's Change Logs, 2026-07-04 — both
+surfaces share this one mapping function, so the fix applies identically to Search
+Online and the CT Auto-Tag automation stage.
+
+### ComicTagger integration — identify() needs a filename-parsing fallback, and 80% match thresholds, confirmed after live testing failures
+
+**Decided:** 2026-07-04, diagnosing two consecutive failed live tests of v2.5
+Item 1's CT Auto-Tag stage.
+
+**Why:** Tez's first real test — a file with `ComicInfo.xml` deliberately removed,
+run through "Run Now" — came back `[skipped: no match]` in the audit log
+immediately (implausibly fast for a real ComicVine search). Diagnosis: `ct_bridge.
+identify_file()` only ever seeded its search from `ComicArchive.read_tags("cr")`;
+with no embedded XML, `Series`/`Issue#` were both empty and the function
+short-circuited before ever calling ComicVine — a gap flagged as an open judgment
+call during planning but never actually built or confirmed. Separately, ComicVine
+genuinely did have the series (confirmed via direct search), but the real issue
+had no explicit number in the filename — a one-shot-style release. Tez's own
+standalone ComicTagger successfully tagged the same file using its own
+default-on "If no issue number, assume 1" Auto-Tag option, which ComicVault had no
+equivalent of.
+
+**How to apply:** `identify_file()` now falls back to `backend/rename_tool.py`'s
+`parse_comic_filename()` (the tested, scene-release-tolerant parser — not
+`scanner.py`'s weaker one, which was confirmed via direct testing to leave scene
+tags unstripped for this exact filename shape) when the archive has no
+Series/Issue# embedded, and defaults the issue number to "1" when the filename
+itself has none — confirmed with Tez as the right call, matching CT's own default.
+Separately, match thresholds (`series_match_search_thresh`/
+`series_match_identify_thresh`) were lowered from CT's own CLI defaults of 90/91
+to **80**, matching what Tez had already found worked well in his own standalone
+ComicTagger testing (`_DEFAULT_IIO_KWARGS`, `backend/ct_bridge.py`) — confirmed
+this is still a hardcoded value with no Admin UI to tune it, per the locked spec's
+"simpler two-outcome model" framing; revisit if 80% proves too loose in practice
+once Tez's low-confidence sample testing (still pending) surfaces false positives.
+
+### ComicTagger dependency pinned to a GitHub commit, not the published PyPI release
+
+**Decided:** 2026-07-03, during v2.5 Item 1's build (Step 1 smoke test).
+
+**Why:** `pip install comictagger` resolves to PyPI's published release
+(1.5.5 at the time), which predates the `comictalker` plugin-talker architecture
+the entire integration plan was researched and built against (that split only
+exists on ComicTagger's `develop` branch — confirmed via `pip show`, RECORD
+inspection, and comparing the local research clone's `git describe` output,
+`1.6.0-beta.10-45-g0cc9e76`, against 1.5.5's actual installed file layout, which
+has no `comictalker` package at all, just a single legacy
+`comictaggerlib/comicvinetalker.py`). Installing from an agent-chosen external git
+URL tripped Claude Code's auto-mode safety classifier, correctly — this needed
+explicit sign-off before proceeding, not a silent workaround.
+
+**How to apply:** `requirements.txt` pins `comictagger` to
+`git+https://github.com/comictagger/comictagger.git@0cc9e76f8d45d3ef27bcf2feabb676e124412abf`
+— an exact commit, not a branch name, so a fresh install can't drift even if
+`develop` moves on. Confirmed with Tez as the right tradeoff over two alternatives:
+installing from the local research clone's path (rejected — couples
+`requirements.txt` to that exact folder surviving on this one machine, the same
+personal-environment coupling this project has deliberately cut elsewhere, e.g.
+the `rar.exe` decision below) or rewriting the whole integration against 1.5.5's
+older API (rejected — throws away already-completed, verified research, and 1.5.5
+lacks the dual rate-limiter split this integration depends on). Revisit once
+ComicTagger publishes a PyPI release that includes the `comictalker` split.
+
+### ComicTagger integration — "Save on Low Confidence" toggle and ComicVine key field behaviour locked (session 4)
+
+**Decided:** 2026-07-03, ComicTagger integration scoping session 4 (Chat +
+Tez), following up two items introduced under "Processing Folder Automation
+addition" that weren't actually in any prior entry.
+
+**Why:**
+
+1. **"Save on Low Confidence" toggle, in §11.4 alongside the CT Auto-Tag
+   stage toggle.** Confirmed new — not present in session 1–3 scoping, so
+   this is the first time its behaviour is defined, not a recap. **OFF:**
+   skip writing tags for a low-confidence CT match entirely — the file
+   passes through the stage untagged and unflagged, as if CT Auto-Tag hadn't
+   run on it. **ON (default):** unchanged from session 1/2 — write the
+   best-guess tags, set `NeedsReview`, let Full Editor's Search Online
+   resolve it later. This is deliberately a cheap branch inside the CT
+   Auto-Tag stage itself, not a pipeline-flow change — the alternative
+   (holding a low-confidence file back from continuing to Convert Images /
+   the library) was ruled out on this pass: §11.4 is explicitly
+   **folder-level, not per-file chaining** ("Stage 2 simply picks up
+   whatever CBZ/CBR files are present... it does not receive an explicit
+   list from the previous stage"), so "hold this one file back" would need
+   new per-file tracking infrastructure that doesn't exist anywhere in this
+   pipeline today. Confirmed not worth building for this.
+
+2. **ComicVine key field gets a "Save & Test" button**, not auto-save and
+   not a bare manual Save — the one deliberate exception to this section's
+   auto-save convention, justified because CT's own `comicvine.py` already
+   ships `check_status()` (hits `team/1/`, detects ComicVine's "Invalid API
+   Key" error 100) giving real pass/fail feedback a plain auto-save
+   couldn't. Distinct from the Schedule/Time/Day manual-save control
+   (`INBOX.md`, deferred to v2.6 as a bug) — that one has no such
+   justification and stays logged as an inconsistency to fix; this one does
+   the extra step because it earns it.
+   **Recommended (not yet asked, low-stakes default):** the button always
+   persists whatever's typed to `comicvine_api_key` in `config.json` on
+   click, with the test result shown as separate pass/fail feedback rather
+   than gating the save — losing a just-typed key because the test call
+   itself timed out would be worse than saving a key that later turns out
+   to be wrong and is easy to re-edit.
+
+**How to apply:** `ADMIN_SPEC.md` §11.4 needs: the CT Auto-Tag toggle row, the
+Save on Low Confidence toggle row (both matching the existing Convert
+Archives/Convert Images toggle pattern), and the `comicvine_api_key` field
+with its Save & Test button and `check_status()` wiring. **Written up
+2026-07-03**, same session — see `EDITOR_SPEC.md` §9 and
+`ADMIN_SPEC.md` §11.4. (Correction: the three earlier entries below cite a
+"standing hold — nothing goes to Code until reviewed with the §12 CAPT tool
+ports" as blocking this. That was wrong — the §12 cluster was already built
+and verified before this scoping began; v2.4 closed 2026-07-02. No hold ever
+applied to this work; see the correction note at the end of this entry's
+neighbours below and `ROADMAP.md`.)
+
+### ComicTagger integration — search/select UI detail locked (session 3); reverses part of session 2's trigger design
+
+**Decided:** 2026-07-03, ComicTagger integration scoping session 3 (Chat +
+Tez), working from two CT screenshots (`images/search-online-manual-
+selection-from-results.PNG`, `images/series-page-search-issue-list.PNG`) and
+`taggerwindow.py`/`issueidentifier.py` read directly.
+
+**Why — this reverses part of the previous entry, not a refinement:**
+Session 2 had the `NeedsReview` badge itself as a click-to-open trigger for
+the search modal, with a second trigger beside the Series field, and assumed
+the badge would reuse §3.5's read-only side-by-side view as its resolution
+UI. None of that survives contact with the actual design:
+
+- **Card indicator is now a plain colour-coded border, not a text badge** —
+  reuses the existing favourited-card gold-border convention (`SPEC.md`) with
+  a different colour/condition, not §3.5's pattern. Purely passive — clicking
+  it does nothing beyond the existing unified focus/load mechanic (§5.2); it
+  does not open the modal.
+- **One global trigger only:** a "Search Online" button in the Full Editor's
+  toolbar, next to the existing Admin-cog link (`(log in)` in Tez's original
+  note refers to that area's unrelated Allow-Remote-Admin login control, not
+  a gate on this button — confirmed, no relation to the ComicVine key).
+  Operates on whichever file is currently focused/loaded into the form.
+- **Column 1 gains one inline count**, "N Low Confidence," placed after the
+  Clear List button in the action row, same text style as the "N File(s)
+  Loaded" line but a different line/position — not folded into that count.
+
+**Search field source, verified against CT source rather than assumed:**
+Two different CT code paths use different keys — worth being precise since
+they don't match:
+- Automated Auto-Tag (`issueidentifier.py::identify`) requires **Series and
+  Issue #** at minimum ("Not enough info for a search!" if either's blank),
+  then uses Year/Publisher/Month/Issue Count to filter and score candidates,
+  plus cover-image hashing for confidence. No Title anywhere in the key set.
+- Manual Search Online (`taggerwindow.py::query_online`, the function behind
+  the ported dialog) only **requires Series** ("Need to enter a series name
+  to search" if blank, search stops there) — Issue #, Year, and Issue Count
+  are read from the form and passed through to pre-filter/sort results, but
+  none of them block the search if empty. **Title is not used in either
+  path** — Tez's original assumption included it; confirmed absent from both
+  `SearchKeys` (`issueidentifier.py`) and `query_online`'s field reads.
+
+  ComicVault's Search Online button follows the manual-path behaviour: reads
+  Series/Issue #/Year/Issue Count directly from the currently-focused file's
+  form fields at click time (no separate input, no state duplication),
+  blocked with a message if Series is empty (matching CT's own guard).
+
+**Select Series dialog — deliberately trimmed from CT's native version**
+(per screenshot): no editable search box, no Re-Search button, no Show
+Issues button, no Filter Publishers checkbox — all present in CT's dialog,
+all dropped here since the read-from-form behaviour above replaces them (to
+retry, edit the Series field in the main form and click Search Online
+again). Kept: results table (Series/Year/Issues/Publisher), cover-art
+preview and description panel that both update on row selection, double-click
+a row to proceed.
+
+**Select Issue dialog** (second screenshot): issue list (Issue #/Date/Title)
+with cover preview and description, both updating on row selection — no
+changes from the screenshot's own layout.
+
+**Two-window question resolved as one modal, two internal steps, not two
+stacked windows.** CT's split into separate `QDialog`s is a desktop-toolkit
+artifact — independently movable/resizable windows are a native-app
+affordance that doesn't carry over to a browser modal. Stacking two overlays
+would mean nested focus-traps, a second backdrop, and rebuilding a whole
+overlay just to go "back" to already-fetched series results, for no offsetting
+benefit — nothing else in ComicVault has a stacked-modal precedent either.
+Built as one modal container; a "← Back to Series" control returns to the
+cached results list from the issue step.
+
+**Confirming a match still fully overwrites the mapped form fields and still
+only clears the `NeedsReview` XML tag on save** (session 2, unchanged) — the
+border/count are read live off in-memory form state, so they update the
+moment fields are populated, same as every other field in this editor; they
+don't wait for a save round-trip.
+
+**Not yet decided, flagging for a future pass, not blocking:** whether
+Search Online should also warn/disable if no `comicvine_api_key` is
+configured in Admin, rather than surfacing a raw network failure on first
+use. Worth doing, doesn't affect anything else here.
+
+**How to apply:** Written into `EDITOR_SPEC.md` §9, 2026-07-03 (session 4's
+doc-update pass). No hold applied — see the correction note in the session 4
+entry above.
+
+### ComicTagger integration — search/select dialog locked as a modal overlay; ComicVine API key gets a home; 2000 AD parser fix deferred
+
+**Decided:** 2026-07-03, ComicTagger integration scoping session 2 (Chat + Tez) —
+eng-review pass on session 1's two open questions, plus one gap the review
+surfaced.
+**Why:** Three related calls:
+
+1. **Modal overlay confirmed** for the CT search/select dialog (not an
+   in-column panel swap in Column 2). A modal cleanly blocks the rest of the
+   Full Editor while it's open — in particular Column 1's existing
+   hover/arrow-key "focused card" mechanic (§5.2), which would otherwise fight
+   with an open search dialog over which file is "current." An in-column swap
+   would have had to solve that conflict from scratch; a modal gets it for
+   free by definition.
+
+   Design details locked in the same pass, all chosen for consistency with
+   existing Full Editor conventions rather than inventing new ones:
+   - Re-Search field pre-fills with the form's current Series value (not
+     blank) — matches the already-confirmed "editable search field, not a
+     passive candidate list" workflow (`INBOX.md`, session 1).
+   - Confirming a selected issue **fully overwrites** the mapped fields in
+     the form — same "not a smart merge" rule §3.3 already established for
+     saves generally (every exposed tag is fully overwritten by whatever's in
+     the form). One rule for the whole editor, not a special case for this
+     dialog.
+   - Modal traps focus, blocking Column 1's card-swap and Process
+     Queue/Process All while open.
+   - Two trigger points open the same modal instance: a button beside the
+     Series field (always available), and clicking a `NeedsReview`-flagged
+     card's warning badge in Column 1. The badge reuses §3.5's warning visual
+     pattern but the click target opens this modal directly, not §3.5's
+     read-only side-by-side view — different problem (wrong/blank field vs.
+     duplicate XML) doesn't need the same resolution UI.
+   - No auto-advance to the next flagged file after confirming a match —
+     closes back to normal state, Tez picks the next one manually, matching
+     the existing "walk the list" batch workflow rather than a new
+     guided-queue mechanic.
+   - Series/issue search must go through **one shared backend function**,
+     called by both this manual modal and the eventual CT Auto-Tag automation
+     stage (session 1) — same router-independent-callable principle already
+     applied to Convert Archives/Convert Images (`ADMIN_SPEC.md`
+     §11.2/§11.3), not two codepaths hitting ComicVine.
+
+2. **ComicVine API key gets a home.** Reading
+   `comictalker/talkers/comicvine.py` directly (in the CT clone) found the
+   talker ships with a hardcoded shared default key
+   (`27431e6787042105bd3e47e169a624521f89f3a4`) rate-limited to **1
+   request/10s, 100/hour** — versus **10 req/10s, 200/hour** on a personal key
+   (`custom_limiter` vs `default_limiter`, same file). That shared key is used
+   by every ComicTagger install that hasn't configured its own, so a
+   Processing-folder batch running on it would stall for hours and compete
+   with unrelated users worldwide. Nothing in `config.json` or
+   `ADMIN_SPEC.md` currently holds a personal key — this blocks the CT
+   Auto-Tag automation stage from session 1 as much as it blocks this modal,
+   not something either can quietly work around. **Confirmed with Tez:** new
+   `comicvine_api_key` field in `config.json` (same trust model already
+   applied to `SESSION_SECRET`, stored there in plaintext today), with an
+   Admin UI field placed near Processing Folder Automation, since that's the
+   section it unblocks.
+
+3. **2000 AD "progs"-to-issue filename pattern fix deferred**, logged as a
+   `[change]` not a `[bug]`. The manual Re-Search field (above) already
+   covers this workflow today at no extra cost — re-typing the issue number
+   into the search string was already the confirmed real-world habit
+   (session 1). Automating the upstream parser is a precision improvement for
+   later, not a gap blocking anything now.
+
+**How to apply:** Written into `EDITOR_SPEC.md` §9 and `ADMIN_SPEC.md` §11.4,
+2026-07-03 (session 4's doc-update pass). **Correction, same pass:** this
+entry originally cited "per the standing rule nothing in the CAPT cluster
+goes to Code until the whole set is reviewed together" as a blocker. That
+was wrong — checked against `ROADMAP.md`'s own v2.4 close-out note and
+`ADMIN_SPEC.md`'s per-section build-status text, the §12 CAPT cluster (Items
+4–7/9–13/15–16) was already built and verified before this scoping began;
+v2.4 closed 2026-07-02. No such hold ever applied here — I was working from
+stale memory instead of checking. `EDITOR_SPEC.md` got a new CT
+Integration section (§9) covering the modal (data flow, both triggers, overwrite
+semantics, focus trap) alongside the existing §3.5/§5.2 material it reuses;
+`ADMIN_SPEC.md` got the `comicvine_api_key` field documented alongside
+§11.4's automation settings, plus the three-stage pipeline amendment already
+noted in the entry below.
+
+### ComicTagger integration — Rename moves after Full Editor review; low-confidence flag stays an in-file XML tag
+
+**Decided:** 2026-07-03, ComicTagger integration scoping session (Chat + Tez),
+continuing from the CBR write-back decision above.
+**Why:** Two related calls made in the same session:
+
+1. **Manual workflow order changes.** Tez's original stated pipeline was convert
+   → CT tag → convert images → rename → open in Full Editor. Rename sitting
+   between tagging and review meant any "needs review" signal correlated by
+   filename/path would break exactly at that step. Tez agreed to reorder:
+   convert → CT tag → convert images → **open in Full Editor (review/confirm/
+   search-fallback)** → rename → move to library. This doesn't change
+   `ADMIN_SPEC.md` §11.4's built automation (Rename was already excluded from
+   automation, for a separate reason — no undo, needs a human at the live
+   preview) — it changes the order Tez runs Rename manually, after the Editor
+   step rather than before.
+2. **Low-confidence match flag stays an XML tag, not a dump/log-file
+   correlation**, even after the reorder removed the original objection
+   (filename changing mid-window). Reason: the Full Editor already parses each
+   file's XML on load — reading a new tag out of that same parse costs nothing.
+   A log-file approach still needs new write code, new read code, and a
+   path-correlation step, none of which are free. The "must be explicitly
+   cleared/resolved on save, or it lingers" problem applies equally to both
+   approaches, so it isn't a differentiator. A separate **aggregate audit-run
+   log** ("12 converted, 11 confident, 1 flagged") is still worth building —
+   Tez confirmed this explicitly — but as a future addition alongside whatever
+   job-progress logging the eventual CT automation stage needs, not as the
+   mechanism the Editor itself reads.
+
+**How to apply:** When CT integration is actually scoped for build, it becomes
+a **new middle stage** in `ADMIN_SPEC.md` §11.4's pipeline — Convert Archives →
+CT Auto-Tag → Convert Images — following the exact same architecture already
+established twice (§11.2/§11.3): a plain router-independent callable, its own
+progress singleton, its own audit log using the existing `[AUTO]`-prefix
+convention rather than a new log format. The low-confidence flag is a new XML
+tag (name TBD, e.g. `NeedsReview`) added to `COMICINFO_TAGS`
+(`backend/editor/xml_parser.py`) with special handling in the Editor's save
+routes to explicitly clear it on every successful save — `build_xml_from_fields`
+only touches tags present in the submitted payload, so this tag will never
+self-clear via the normal field-preservation mechanism (`field_merge.py`) the
+way a text field would. **Confirmed whole-file, not per-field** (same
+session, follow-up) — Tez's stated need was "flag the file," and Genre is
+irrelevant to this either way since CT/ComicVine doesn't supply Genre data at
+all, so there's no per-field case being lost by keeping this simple.
+
+### ComicTagger integration — CBR write-back stays out of scope even though `rar.exe` is present on Tez's machine
+
+**Decided:** 2026-07-03, ComicTagger integration scoping session (Chat + Tez).
+**Why:** While scoping CT integration, Tez asked whether the existing CBR→CBZ
+conversion requirement (Item 6, `admin-spec-section-12-processing-tools.md`
+§12.2) might no longer be needed, since CBR is now natively DB-supported
+read-only (Item 5) and CAPT already has a CBZ→CBR converter. Reading
+`comicapi/archivers/rar.py` (in the CT clone at
+`D:\workshop\3rd_party_apps\ComicTagger`) confirmed all RAR write operations
+(`write_file`, `remove_file`, `set_comment`) shell out to an external `rar`
+executable located via `shutil.which()` — no pure-Python or free fallback
+exists. CAPT's own `create_rar_archive()` (`arc_conv_helpers.py`) does the
+identical thing. Tez then confirmed `rar.exe` (the WinRAR CLI component) is
+in fact installed on his machine, which is why CAPT's CBZ→CBR button has
+apparently worked before.
+
+That finding doesn't change the decision: Convert Archives (CBR→CBZ) stays a
+hard requirement ahead of CT tagging, and CBZ→CBR / any CBR write-back stays
+permanently out of scope. Depending on one specific machine happening to have
+a paid tool's CLI binary on PATH is exactly the kind of personal-environment
+coupling the project has been deliberately cutting elsewhere (Flatten
+Archive, saved rename templates). It's not portable, not guaranteed to
+survive a reinstall/migration, and isn't something Code should build a
+dependency on.
+
+**How to apply:** CAPT's `create_rar_archive()` / CBZ→CBR feature is now dead
+code from ComicVault's perspective — candidate for removal from CAPT, not for
+porting into ComicVault's Admin UI. If CBR write-back is ever reconsidered,
+it needs its own decision (and would still require documenting the WinRAR
+dependency explicitly, not assuming it away), not a quiet re-add.
+
 ### File Rename — kept Year over the mockup's Publisher field; added per-item queue removal
 
 **Decided:** 2026-07-02, planning session with Tez ahead of the "Add to Queue" fix

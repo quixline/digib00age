@@ -22,6 +22,11 @@ let viewerZoom = 1;
 
 let multiXmlFileId = null;
 
+// Search Online (EDITOR_SPEC.md §9)
+let searchOnlineOpen = false;   // focus trap — blocks card-swap/Process while the modal is open
+let soSeriesResults = [];       // cached Step 1 results, so "Back to Series" doesn't re-fetch
+let soSelectedSeriesId = null;
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   populateStaticSelects();
@@ -34,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   wirePicker();
   wireMultiXmlModal();
   wireProcessErrorModal();
+  wireSearchOnlineModal();
 
   await refreshFileList();
   await refreshQueueList();
@@ -122,7 +128,9 @@ function renderFileList() {
 
   for (const entry of loadedFiles) {
     const row = document.createElement('div');
-    row.className = 'fe-file-row' + (entry.id === focusedFileId ? ' focused' : '');
+    row.className = 'fe-file-row'
+      + (entry.id === focusedFileId ? ' focused' : '')
+      + (entry.needs_review ? ' needs-review' : '');
     row.draggable = true;
     row.dataset.id = entry.id;
 
@@ -164,9 +172,16 @@ function renderFileList() {
   }
 
   document.getElementById('feLoadedCount').textContent = `${loadedFiles.length} File(s) Loaded`;
+
+  // §9.3 — counted off the Loaded list only, not the Queue. Read live off
+  // in-memory state (entry.needs_review, set lazily on focus below, or
+  // cleared immediately by confirmSoIssue()) — not a save round-trip.
+  const lowConfCount = loadedFiles.filter((f) => f.needs_review).length;
+  document.getElementById('feLowConfidenceCount').textContent = `${lowConfCount} Low Confidence`;
 }
 
 async function focusFile(fileId) {
+  if (searchOnlineOpen) return;  // Search Online modal traps focus (§9.6)
   focusedFileId = fileId;
   renderFileList();
   await loadFileIntoEditor(fileId);
@@ -333,6 +348,7 @@ function setProcessingState(active) {
 }
 
 async function processBatch(mode) {
+  if (searchOnlineOpen) return;  // Search Online modal traps focus (§9.6)
   if (mode === 'queue' && queueFiles.length === 0) return;
   if (mode === 'all' && loadedFiles.length === 0) return;
 
@@ -399,6 +415,16 @@ async function loadFileIntoEditor(fileId) {
   if (data.multiple_xml) {
     openMultiXmlModal(fileId, data.candidates);
     return;
+  }
+
+  // Lazy-on-focus (confirmed with Tez, 2026-07-03): this XML parse already
+  // happens on every focus, so reading NeedsReview off it costs nothing
+  // extra — the tradeoff is the count/border build up as files are visited
+  // rather than being accurate immediately after a batch load.
+  const entry = loadedFiles.find((f) => f.id === fileId);
+  if (entry) {
+    entry.needs_review = !!data.fields.NeedsReview;
+    renderFileList();
   }
 
   populateForm(data.fields);
@@ -838,5 +864,159 @@ async function resolveMultiXml(keepFilename) {
   // Refresh the file row's xml_files so the warning clears
   const entry = loadedFiles.find((f) => f.id === multiXmlFileId);
   if (entry) entry.xml_files = ['ComicInfo.xml'];
+  renderFileList();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SEARCH ONLINE — Select Series / Select Issue (EDITOR_SPEC.md §9)
+//  One modal, two internal steps (not two stacked windows) — a "← Back to
+//  Series" control returns to the cached soSeriesResults, no re-fetch.
+// ══════════════════════════════════════════════════════════════════════════════
+
+function wireSearchOnlineModal() {
+  document.getElementById('feSearchOnlineBtn').onclick = openSearchOnline;
+  document.getElementById('feSearchOnlineCloseBtn').onclick = closeSearchOnlineModal;
+  document.getElementById('feSoBackBtn').onclick = () => showSoStep('series');
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function openSearchOnline() {
+  if (!focusedFileId) {
+    showError('Select a loaded file first.');
+    return;
+  }
+  const fields = collectFormFields();
+  if (!fields.Series || !fields.Series.trim()) {
+    // Matches CT's own taggerwindow.py::query_online() guard wording.
+    showError('Need to enter a series name to search.');
+    return;
+  }
+  clearError();
+
+  searchOnlineOpen = true;
+  document.getElementById('feSearchOnlineOverlay').hidden = false;
+  showSoStep('series');
+
+  document.getElementById('feSoSeriesTbody').innerHTML = '<tr><td colspan="4">Searching…</td></tr>';
+  const res = await fetch(`/api/editor/full/search/series?q=${encodeURIComponent(fields.Series.trim())}`);
+  if (!res.ok) {
+    document.getElementById('feSoSeriesTbody').innerHTML = '<tr><td colspan="4">Search failed.</td></tr>';
+    return;
+  }
+  const data = await res.json();
+  soSeriesResults = data.results;
+  renderSoSeriesTable();
+}
+
+function closeSearchOnlineModal() {
+  searchOnlineOpen = false;
+  document.getElementById('feSearchOnlineOverlay').hidden = true;
+}
+
+function showSoStep(step) {
+  document.getElementById('feSoStepSeries').hidden = step !== 'series';
+  document.getElementById('feSoStepIssue').hidden = step !== 'issue';
+  document.getElementById('feSearchOnlineTitle').textContent = step === 'series' ? 'Select Series' : 'Select Issue';
+}
+
+function renderSoSeriesTable() {
+  const tbody = document.getElementById('feSoSeriesTbody');
+  tbody.innerHTML = '';
+  document.getElementById('feSoSeriesCover').src = '';
+  document.getElementById('feSoSeriesDescription').innerHTML = '';
+
+  if (!soSeriesResults.length) {
+    tbody.innerHTML = '<tr><td colspan="4">No results found.</td></tr>';
+    return;
+  }
+
+  for (const series of soSeriesResults) {
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${escapeHtml(series.name)}</td><td>${series.start_year || ''}</td>` +
+      `<td>${series.count_of_issues != null ? series.count_of_issues : ''}</td><td>${escapeHtml(series.publisher)}</td>`;
+    row.addEventListener('click', () => previewSoSeries(series, row));
+    row.addEventListener('dblclick', () => proceedToSoIssues(series.id));
+    tbody.appendChild(row);
+  }
+  previewSoSeries(soSeriesResults[0], tbody.firstElementChild);
+}
+
+function previewSoSeries(series, row) {
+  document.querySelectorAll('#feSoSeriesTbody tr').forEach((r) => r.classList.remove('selected'));
+  if (row) row.classList.add('selected');
+  document.getElementById('feSoSeriesCover').src = series.image_url || '';
+  document.getElementById('feSoSeriesDescription').innerHTML = series.description || '';
+}
+
+async function proceedToSoIssues(seriesId) {
+  soSelectedSeriesId = seriesId;
+  showSoStep('issue');
+  const tbody = document.getElementById('feSoIssueTbody');
+  tbody.innerHTML = '<tr><td colspan="3">Loading…</td></tr>';
+  const res = await fetch(`/api/editor/full/search/issues?series_id=${encodeURIComponent(seriesId)}`);
+  if (!res.ok) {
+    tbody.innerHTML = '<tr><td colspan="3">Could not load issues.</td></tr>';
+    return;
+  }
+  const data = await res.json();
+  renderSoIssueTable(data.results);
+}
+
+function renderSoIssueTable(issues) {
+  const tbody = document.getElementById('feSoIssueTbody');
+  tbody.innerHTML = '';
+  document.getElementById('feSoIssueCover').src = '';
+  document.getElementById('feSoIssueDescription').innerHTML = '';
+
+  if (!issues.length) {
+    tbody.innerHTML = '<tr><td colspan="3">No issues found.</td></tr>';
+    return;
+  }
+
+  for (const issue of issues) {
+    const row = document.createElement('tr');
+    row.innerHTML = `<td>${escapeHtml(issue.number)}</td><td>${escapeHtml(issue.date)}</td><td>${escapeHtml(issue.title)}</td>`;
+    row.addEventListener('click', () => previewSoIssue(issue, row));
+    row.addEventListener('dblclick', () => confirmSoIssue(issue.issue_id));
+    tbody.appendChild(row);
+  }
+  previewSoIssue(issues[0], tbody.firstElementChild);
+}
+
+function previewSoIssue(issue, row) {
+  document.querySelectorAll('#feSoIssueTbody tr').forEach((r) => r.classList.remove('selected'));
+  if (row) row.classList.add('selected');
+  document.getElementById('feSoIssueCover').src = issue.cover_url || '';
+  document.getElementById('feSoIssueDescription').innerHTML = issue.description || '';
+}
+
+async function confirmSoIssue(issueId) {
+  const res = await fetch('/api/editor/full/search/confirm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ issue_id: issueId }),
+  });
+  if (!res.ok) {
+    showError('Could not apply this match.');
+    return;
+  }
+  const data = await res.json();
+  // §9.7 — fully overwrites only the mapped fields; Genre/Format/AgeRating/
+  // BlackAndWhite/PageCount (never in the mapped set) are left untouched
+  // since they're preserved from the current form state underneath.
+  populateForm({ ...collectFormFields(), ...data.fields });
+  closeSearchOnlineModal();
+  clearNeedsReviewIndicatorFor(focusedFileId);
+}
+
+// §9.7 — clears the border/count immediately in frontend in-memory state;
+// the NeedsReview XML tag itself only actually clears on the file's next
+// real save (Process Queue/Process All already send NeedsReview: "").
+function clearNeedsReviewIndicatorFor(fileId) {
+  const entry = loadedFiles.find((f) => f.id === fileId);
+  if (entry) entry.needs_review = false;
   renderFileList();
 }

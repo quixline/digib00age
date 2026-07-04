@@ -16,8 +16,10 @@ within a single doc, a later-dated or higher-numbered section overrides an earli
   version: `comicvault-changes-vN.M.md` (the build queue) and `progress.md`
   (narrative log, scoped to just this version's sessions). When a version closes,
   the whole folder moves into `docs/archive/vN.M/` as one bundle. **v2.4 closed
-  2026-07-02** — no active version folder right now; `docs/v2.5/` gets created
-  whenever real v2.5 scoping begins (see `ROADMAP.md` "v2.5").
+  2026-07-02; `docs/v2.5/` created 2026-07-04** alongside Item 1's build
+  (ComicTagger + ComicVine integration, built and manually verified) — the
+  remaining v2.5 holding-list items (`ROADMAP.md` "v2.5") still haven't had their
+  own triage/scoping session yet.
 - **`docs/archive/`** (renamed from `historical/` 2026-06-29) — closed-out build
   queues, their matching `progress.md`, one-time setup/research docs, and the fixed
   bug history. **Out of focus for Cowork's nightly scan, not out of reach** —

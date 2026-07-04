@@ -25,15 +25,21 @@ Queue:
 
 Batch:
   POST   /api/editor/full/process                  Process Queue or Process All
+
+Search Online (EDITOR_SPEC.md §9, ComicTagger integration):
+  GET    /api/editor/full/search/series             Select Series step — search ComicVine
+  GET    /api/editor/full/search/issues              Select Issue step — issues for one series
+  POST   /api/editor/full/search/confirm              Map a chosen issue to ComicVault fields
 """
 
 import base64
+import dataclasses
 import io
 import os
 
 from fastapi import APIRouter, Body, HTTPException
 
-from backend import archive_formats, config
+from backend import archive_formats, config, ct_bridge
 from backend.editor.archive_io import (
     IMAGE_EXTENSIONS,
     extract_xml_from_archive,
@@ -395,6 +401,11 @@ def process_batch(payload: dict = Body(...)):
     for file_id, field_values in items:
         path = paths[file_id]
         clean_fields = {k: v for k, v in field_values.items() if k in COMICINFO_TAGS}
+        # NeedsReview is never part of the submitted form/queue payload
+        # (EDITOR_SPEC.md 9.2) — build_xml_from_fields only touches tags
+        # present here, so it won't self-clear without this. Covers both
+        # mode="queue" and mode="all", which both flow through this loop.
+        clean_fields["NeedsReview"] = ""
 
         try:
             xml_files = find_xml_in_archive(path)
@@ -440,3 +451,43 @@ def process_batch(payload: dict = Body(...)):
             _queue_files.pop(file_id, None)
 
     return {"success": not errors, "processed": processed, "errors": errors}
+
+
+# ---------------------------------------------------------------------------
+# Search Online (EDITOR_SPEC.md §9) — Select Series / Select Issue modal.
+# Reads Series (required)/Issue #/Year/Issue Count from the currently-focused
+# file's form fields at click time (§9.5) — the frontend sends these, this
+# router does not re-read them from the working-set entry's own XML. Series/
+# issue search goes through ct_bridge.py's shared talker setup (§9.1) — the
+# same module the CT Auto-Tag automation stage uses, not a second codepath.
+# ---------------------------------------------------------------------------
+
+@router.get("/editor/full/search/series")
+def search_online_series(q: str):
+    if not q or not q.strip():
+        raise HTTPException(status_code=400, detail="Series name required")
+    results = ct_bridge.search_series(q.strip())
+    return {"results": [dataclasses.asdict(r) for r in results]}
+
+
+@router.get("/editor/full/search/issues")
+def search_online_issues(series_id: str):
+    results = ct_bridge.list_issues_for_series(series_id)
+    return {"results": [dataclasses.asdict(r) for r in results]}
+
+
+@router.post("/editor/full/search/confirm")
+def search_online_confirm(payload: dict = Body(...)):
+    """
+    payload: {"issue_id": "..."}. Returns the mapped ComicVault field dict —
+    the frontend applies it to the form directly, fully overwriting the
+    mapped fields (§9.7). Does not write to the archive or touch
+    NeedsReview here — that only happens on the file's next real save
+    (Process Queue/Process All), per §9.2/§9.7.
+    """
+    issue_id = payload.get("issue_id")
+    if not issue_id:
+        raise HTTPException(status_code=400, detail="issue_id required")
+    md = ct_bridge.fetch_issue_metadata(issue_id)
+    fields = ct_bridge.metadata_to_field_dict(md)
+    return {"fields": fields}

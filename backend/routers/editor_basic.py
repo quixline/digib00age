@@ -139,6 +139,10 @@ def save_editor_fields(
 
     raw_fields = payload.get("fields", {})
     field_values = {k: v for k, v in raw_fields.items() if k in COMICINFO_TAGS}
+    # NeedsReview is never part of the submitted form (EDITOR_SPEC.md 9.2) —
+    # build_xml_from_fields only touches tags present in the payload, so it
+    # won't self-clear via the normal preservation rule without this.
+    field_values["NeedsReview"] = ""
 
     errors = validate_enforced_fields(field_values)
     if errors:

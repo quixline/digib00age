@@ -11,6 +11,10 @@ backend/*.db-shm
 # Generated thumbnails
 backend/thumbnails/
 
+# ComicVine search-result/cover-image cache (ComicTagger's ComicVineTalker,
+# backend/ct_bridge.py's CT_CACHE_DIR) — runtime cache, not source
+ct_cache/
+
 # Python
 __pycache__/
 *.py[cod]

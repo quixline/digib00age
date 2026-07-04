@@ -531,7 +531,143 @@ No change to `library_root`'s value, `db_path`, ports, or any other existing key
 
 ---
 
-## 9. What This Build Round Does Not Include
+## 9. ComicTagger Integration (Full Editor)
+
+Scoped across four sessions, 2026-07-03 (`DECISIONS.md` — four entries same date).
+Full rationale lives there; this section is the build-facing transcription.
+
+**Built and manually verified 2026-07-03/04** (v2.5 Item 1) — Search Online (both
+modal steps, field mapping, `NeedsReview` indicator) confirmed live by Tez against
+real ComicVine data, including a full-data cross-check against an external source.
+**Not yet tested:** low-confidence matches and how this section's resolution flow
+(§9.6/§9.7) handles them in practice — Tez is sourcing varied sample material for
+that pass himself (`meta/roadmap.html` Now #1), not blocking this section's built
+status. See `docs/v2.5/progress.md` "Session — 2026-07-03/04" for the full build
+narrative, including three post-build fixes (filename-fallback/assume-issue-1 for
+`identify()`, a missing-credits bug in the CT Auto-Tag write path, and the
+field-mapping scope correction below).
+
+### 9.1 Architecture
+
+- CT's `comicapi`, `comictalker`, and `comictaggerlib.issueidentifier` are imported
+  as libraries directly into the FastAPI backend — no CLI wrapper, no
+  reimplementation. Apache-2.0 licensed, already decoupled from CT's PyQt GUI.
+- CBR write-back stays permanently out of scope (WinRAR CLI dependency) — same rule
+  as the rest of this editor (§3.2). CT integration never writes RAR.
+- Series/issue search goes through **one shared backend function**, called by both
+  the Search Online modal below and the future CT Auto-Tag automation stage
+  (`ADMIN_SPEC.md` §11.4) — not two separate codepaths hitting ComicVine.
+
+### 9.2 `NeedsReview` flag
+
+- New XML tag (name used throughout scoping was `NeedsReview` — confirm as final
+  before build) added to `COMICINFO_TAGS` (`backend/editor/xml_parser.py`).
+- Whole-file granularity, not per-field.
+- Set by the CT Auto-Tag automation stage (`ADMIN_SPEC.md` §11.4) whenever it
+  writes a low-confidence match.
+- Cleared explicitly on every successful save, in both editor save routes —
+  `build_xml_from_fields`/`field_merge.py` only touch tags present in the
+  submitted payload, so this tag will never self-clear via the normal
+  field-preservation mechanism the way a text field would. Needs its own explicit
+  clear-on-save handling.
+
+### 9.3 Full Editor visual indicator (Column 1)
+
+- Loaded-file cards with `NeedsReview` set get a **colour-coded (red) border** —
+  reuses the existing favourited-card gold-border mechanism (`SPEC.md`) with a
+  different colour/condition, not a new visual pattern and not §3.5's
+  badge/side-by-side pattern.
+- Purely passive — clicking the border does nothing beyond the existing unified
+  focus/load mechanic (§5.2). It does not open the search modal below.
+- New inline count, **"N Low Confidence,"** placed after the Clear List button in
+  Column 1's action row (§5.2) — same text style as the "N File(s) Loaded" line,
+  different line/position, not folded into that count. Counted off the Loaded
+  list only, not the Queue.
+- Border and count are read live off in-memory form state, updating the moment
+  fields are populated by a confirmed match — same as every other field in this
+  editor; they don't wait for a save round-trip.
+
+### 9.4 Search Online — trigger
+
+- One global button, **"Search Online,"** in the Full Editor's toolbar next to
+  the existing Admin-cog link. Not per-field, not per-card.
+- Operates on whichever file is currently focused/loaded into the form.
+- Blocked with a message if the form's Series field is empty — matches CT's own
+  guard in `taggerwindow.py::query_online()` ("Need to enter a series name to
+  search").
+
+### 9.5 Search Online — field source
+
+Read directly from the currently-focused file's form fields at click time, no
+separate input anywhere in this flow:
+
+- **Series** — required.
+- **Issue #**, **Year**, **Issue Count** — read and passed through to
+  pre-filter/sort results, not required.
+- **Title is not used** — confirmed absent from both CT's automated `SearchKeys`
+  (`issueidentifier.py::_get_search_keys`) and the manual `query_online()` field
+  reads.
+
+To retry with a different term: edit the Series field in the main form and click
+Search Online again. There is no separate re-search input inside the modal.
+
+### 9.6 Select Series / Select Issue modal
+
+- **One modal container, two internal steps** — not two stacked windows. CT's
+  native split into separate `QDialog`s is a desktop-toolkit affordance
+  (independently movable/resizable windows) that doesn't carry over to a browser
+  modal; two stacked overlays would mean nested focus-traps and rebuilding a
+  whole overlay just to go back to already-fetched results. A "← Back to Series"
+  control returns to the cached results list from the issue step, no re-fetch.
+- Modal traps focus — blocks Column 1's card-swap and Process Queue/Process All
+  while open.
+
+**Step 1 — Select Series** (trimmed from CT's native dialog; reference screenshot
+`images/search-online-manual-selection-from-results.PNG`):
+
+- Results table: Series / Year / Issues / Publisher.
+- Cover-art preview and description panel, both update on row selection.
+- Double-click a row to proceed to Select Issue.
+- **Dropped from CT's native version:** editable search box, Re-Search button,
+  Show Issues button, Filter Publishers checkbox — all superseded by §9.5's
+  read-from-form behaviour.
+
+**Step 2 — Select Issue** (reference screenshot
+`images/series-page-search-issue-list.PNG`):
+
+- Issue list: Issue # / Date / Title.
+- Cover preview and description, both update on row selection.
+- Confirm applies the selected issue's metadata to the form.
+
+### 9.7 Confirming a match
+
+- **Fully overwrites** the mapped form fields — same "not a smart merge" rule
+  §3.3 already establishes for saves generally. No merge-vs-overwrite special
+  case for this dialog.
+- Clears the red-border/count indicator immediately (§9.3); the `NeedsReview` XML
+  tag itself only actually clears on save (§9.2), same as every other field edit
+  in this editor.
+- No auto-advance to the next flagged file after confirming — closes back to
+  normal state, the user picks the next flagged file manually.
+
+### 9.8 Not yet decided (flagged, not blocking)
+
+- Whether Search Online should warn/disable if no `comicvine_api_key` is
+  configured in Admin (`ADMIN_SPEC.md` §11.4), rather than surfacing a raw
+  network failure on first use.
+- Final XML tag name — `NeedsReview` used throughout scoping, not yet confirmed
+  as final.
+
+### 9.9 Config
+
+`config.json` gains `comicvine_api_key` (plaintext, same trust model already
+applied to the existing `SESSION_SECRET`). Set via `ADMIN_SPEC.md` §11.4's
+"Save & Test" field — not via this editor. No other config changes from this
+section.
+
+---
+
+## 10. What This Build Round Does Not Include
 
 Explicitly deferred, not part of this spec:
 - Admin-page UI for adding/removing genres by click (Genre list stays a hand-edited JSON
@@ -548,7 +684,7 @@ Explicitly deferred, not part of this spec:
 
 ---
 
-## 10. Build Order Suggestion
+## 11. Build Order Suggestion
 
 Not binding, but a sensible sequence given the shared-core architecture:
 
@@ -566,7 +702,7 @@ Not binding, but a sensible sequence given the shared-core architecture:
 
 ---
 
-## 11. Open Items Carried Forward From Investigation (Informational, Not Blocking)
+## 12. Open Items Carried Forward From Investigation (Informational, Not Blocking)
 
 These were noted in the investigation report as discrepancies against `SPEC.md`'s original
 assumptions. None require a decision to proceed with this build, but are recorded here so
@@ -583,7 +719,7 @@ they aren't lost:
 
 ---
 
-## 12. Change Log
+## 13. Change Log
 
 > Record any deviations from this spec here with date and reason, same convention as
 > `SPEC.md` Section 21.
@@ -603,3 +739,5 @@ they aren't lost:
 | 2026-06-18 | **Full Editor (Section 5.2) and Basic Editor (Section 6.2) layout polish from live use**, committed as `cc772ba`: Image Viewer column narrowed and its preview image capped smaller; `.fe-layout` reworked so the XML Editor column is the flexible track instead of File Management/Image Viewer; Genre grid column counts changed (Full Editor settled on 5 columns, Basic Editor on 4 with the popup widened to 720px to fit); Increment Number checkbox relabelled "Increment #" and moved into the Issue Number/Year row; zoom controls moved to their own row below Prev/Next; B&W checkbox moved onto the Format/Age Rating row in Basic Editor. None of these change the field sets, validation rules, or behaviour defined in Sections 3–6 — layout/wording only. Full before/after detail in `progress.md`. | Tez's live-use feedback across both the desktop PC (primary editing machine) and a laptop with a smaller screen. |
 | 2026-06-26 | **Full Editor — Process All error display** (§5.2). When `result.errors.length > 0`, a new dismissible modal (`#feProcessErrorOverlay`, styled like the existing log viewer modal) now opens instead of dumping a pipe-delimited wall of repeated validation messages into the inline `#feError` div. Shows a `Processed X of Y files` summary, the first file's full error, and — if more files failed — a count + guidance note pointing at the "Apply to All" checkboxes. `#feError`/`showError()`/`clearError()` are unchanged and still used for short single-line cases (network errors, "select a file first"). | Post-test fix pass (`docs/2.3-fixes.md` Fix 3) — manual test pass found the inline error display unreadable against a large batch of files sharing the same missing-required-field error. |
 | 2026-06-30 | **CBR support reversed back in (read-only), §2/§3.1/3.2/§9 — v2.4 Item 5.** This file's original §2/§9 deliberately dropped CBR/.rar support on the basis that "library is all-CBZ." That basis no longer holds — Tez's direction has shifted toward a possible public release, and users with large mixed CBZ/CBR collections (some >100,000 issues) can't reasonably be required to bulk-convert before their library is browsable. §3.1 gains a `rarfile.RarFile` read branch alongside `zipfile.ZipFile`. §3.2's rebuild path is **unchanged** — it always produced a `.zip`/`.cbz` regardless of source format, so no RAR-creation code is added; when the source file is a `.cbr`, the existing rebuild simply lands at a new `.cbz` path and the original `.cbr` is deleted once the new file is verified written. Confirmed with Tez to apply uniformly across Basic Editor, Full Editor single-file saves, and Full Editor batch/Process All — no per-surface special-casing. RAR archive *creation* remains permanently out of scope (not just deferred) — it requires a paid WinRAR install, which CAPT's own `create_rar_archive()` already depends on and is exactly the dependency this reversal is designed to avoid reintroducing. Full rationale and the original eng-review that surfaced this in `DECISIONS.md`; `SPEC.md` §6.1/§7/§13/§21 carries the scanner/schema/dependency side of the same change; build item `v2.4/comicvault-changes-v2.4.md` Item 5/11. | v2.4 Item 5, eng-reviewed and scoped 2026-06-30. |
+| 2026-07-03 | **Added Section 9, ComicTagger Integration (Full Editor)** — transcribed from four scoping sessions (`DECISIONS.md`, four 2026-07-03 entries): architecture (CT libraries imported directly, no CLI wrapper), `NeedsReview` XML flag + its red-border/count visual indicator (§9.3, reuses the favourited-card border mechanism, not §3.5's badge pattern), the single global "Search Online" trigger and its read-from-form field source (Series required; Issue #/Year/Issue Count optional; Title confirmed unused in either of CT's own search paths), the Select Series/Select Issue modal (one container, two steps — not CT's native two stacked windows), and full-overwrite-on-confirm semantics matching §3.3. Sections 9–12 renumbered to 10–13 to make room (old §9 "What This Build Round Does Not Include" is now §10, etc.) — no other content changed by the renumbering. Not yet built; same standing status as the rest of this document. | v2.5 #1 — four scoping sessions 2026-07-03, this pass transcribes the locked decisions from `DECISIONS.md` into the build-facing spec so Code has what it needs to start. |
+| 2026-07-04 | **Section 9 built and manually verified** (v2.5 Item 1) — see `docs/v2.5/progress.md` for the full build narrative. Confirms the section as scoped, plus one build-time addition not previously specified: the `GenericMetadata` → ComicVault field-dict mapping (`backend/ct_bridge.py`) captures every field CT/ComicVine supplies that maps to a standard ComicInfo.xml tag (mirroring `comicapi/tags/comicrack.py`'s own write mapping field-for-field — Month, Day, Notes, Inker, Colorist, Letterer, CoverArtist, Editor, Web, Volume, AlternateSeries/Number/Count, SeriesGroup, Characters, Teams, Locations), not just the fields this section's Main/More tabs expose. This was a live-testing correction, not a spec decision made in advance — an initial build-time judgment call to map only editor-exposed fields turned out to not match Tez's actual intent (capture everything, even fields the UI never displays). Genre/Format/AgeRating/BlackAndWhite remain excluded from this mapping — confirmed as a different, correctness-driven exclusion (enforced-dropdown validation integrity; a literal `"on"`/`"Yes"` semantic mismatch for BlackAndWhite), not a "not shown so not captured" one. | v2.5 Item 1 build + Tez's live-testing pass, 2026-07-03/04; see `DECISIONS.md` for the fuller rationale. |

@@ -504,6 +504,13 @@ ul { list-style: none; }
   box-shadow: 0 0 0 1px #f0c419;
 }
 
+/* NeedsReview indicator (Full Editor Column 1) — reuses the favourited-card
+   box-shadow-ring technique above, red instead of gold, different condition
+   (a low-confidence CT Auto-Tag match, not a favourite). EDITOR_SPEC.md §9.3. */
+.fe-file-row.needs-review {
+  box-shadow: 0 0 0 1px #e05252;
+}
+
 /* Read-state card colours */
 
 /* Fully read — flat dark-green tint, same as before */
@@ -1471,6 +1478,7 @@ ul { list-style: none; }
   margin-bottom: 10px;
 }
 .admin-backup-error { color: #ff7070; margin-top: 4px; }
+.admin-key-ok { color: var(--green); margin-top: 4px; }
 .admin-empty-hint {
   font-size: 12px;
   color: var(--text-3);
@@ -2197,6 +2205,55 @@ ul { list-style: none; }
   gap: 4px;
 }
 .fe-multixml-field-row strong { color: var(--text); }
+
+/* Search Online — Select Series / Select Issue (EDITOR_SPEC.md §9.6) */
+.fe-search-online-modal { max-width: 900px; }
+.fe-so-step { padding: 14px 20px 20px; }
+#feSoBackBtn { margin-bottom: 12px; }
+.fe-so-layout { display: flex; gap: 16px; }
+.fe-so-results-table {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-collapse: collapse;
+  font-size: 13px;
+  display: block;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.fe-so-results-table thead, .fe-so-results-table tbody, .fe-so-results-table tr { display: table; width: 100%; table-layout: fixed; }
+.fe-so-results-table th {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 12px;
+}
+.fe-so-results-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.fe-so-results-table tbody tr { cursor: pointer; }
+.fe-so-results-table tbody tr:hover { background: var(--surface-3); }
+.fe-so-results-table tbody tr.selected { background: color-mix(in srgb, var(--accent) 15%, var(--surface-2)); }
+.fe-so-preview {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fe-so-cover-img {
+  width: 100%;
+  min-height: 140px;
+  object-fit: contain;
+  background: var(--surface-2);
+  border-radius: var(--radius);
+}
+.fe-so-description {
+  font-size: 12px;
+  color: var(--text-2);
+  max-height: 260px;
+  overflow-y: auto;
+}
 
 @media (max-width: 1100px) {
   .fe-layout { grid-template-columns: 1fr; }

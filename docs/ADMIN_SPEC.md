@@ -28,10 +28,19 @@
 > `admin-spec-section-12-processing-tools.md` scoping file is retired; its
 > content lives here as §11.1–§11.4 (renumbered from its own §12.1–§12.4).
 > §11.1 File Rename is **built and manually tested (v2.4 Item 10, 2026-07-01; queue
-> workflow corrected 2026-07-02)**.
-> §11.2 Convert Archives, §11.3 Convert Images, and §11.4 Processing Folder
-> Automation are fully scoped, build in progress (v2.4 Items 12, 13, 16) —
-> check each subsection's own build-status note before assuming it's live.
+> workflow corrected 2026-07-02)**. §11.2 Convert Archives, §11.3 Convert
+> Images, and §11.4 Processing Folder Automation are also **built and
+> manually tested (v2.4 Items 12, 13, 16, all 2026-07-01)** — v2.4 closed
+> 2026-07-02 with the whole CAPT-tooling cluster verified (`ROADMAP.md`).
+> §11.4's third pipeline stage (CT Auto-Tag), its two new toggles, and the
+> ComicVine API key field are **built and manually verified 2026-07-03/04**
+> (v2.5 Item 1) — see `docs/v2.5/progress.md` for the full build narrative,
+> including three post-build fixes found during Tez's live testing
+> (identify() falling back to filename parsing + assuming issue 1 for
+> one-shots, match thresholds lowered to 80%, and a missing-credits bug in
+> the tagging write path). **Not yet tested:** low-confidence matches —
+> Tez is sourcing varied sample material for that pass himself
+> (`meta/roadmap.html` Now #1), not blocking this section's built status.
 >
 > **Note on authority:** `SPEC.md` §11 and §20.13 contain earlier admin descriptions.
 > Where they conflict with this file, **this file is authoritative** — it consolidates
@@ -1217,10 +1226,12 @@ dropped 2026-07-01, see the Change Log entry below and 11.1.1.
   protection against processing 200 simultaneous arrivals in parallel — meaningful
   architecture cost for a personal staging workflow where batch arrival is the norm. A
   scheduler + "Run Now" covers the real use case with none of that complexity.
-- **Two-stage pipeline** — Convert Archives → Convert Images, fixed order, not
-  configurable. Each stage is independently toggleable but the order never changes.
-  See 11.4.3 for the dependency rationale. (Originally a three-stage pipeline that
-  also included Rename — dropped 2026-07-01, see Change Log.)
+- **Three-stage pipeline** — Convert Archives → CT Auto-Tag → Convert Images, fixed
+  order, not configurable. Each stage is independently toggleable but the order
+  never changes. See 11.4.3 for the dependency rationale. (This was a two-stage
+  pipeline — Convert Archives → Convert Images — from 2026-07-01 until CT Auto-Tag
+  was added 2026-07-03; before that, a three-stage pipeline that also included
+  Rename was dropped 2026-07-01. See Change Log for both.)
 - Same local-only gating as all Processing Tools (§11 shared notes). The section is
   greyed out with an explanatory hint for remote sessions.
 - Same pre-ingest/staging positioning as §11.1–12.3. Not restricted to any specific
@@ -1241,13 +1252,28 @@ Fixed, always in this sequence:
 1. **Convert Archives (§11.2)** — processes CBR and/or PDF files in the folder,
    produces CBZ output. After this stage the folder contains the new CBZ files
    alongside (or replacing, per 11.4.6's backup model) the originals.
-2. **Convert Images (§11.3)** — processes CBZ and CBR files in the folder (excluding
+2. **CT Auto-Tag (new, 2026-07-03 — see `DECISIONS.md`)** — runs ComicTagger's
+   `issueidentifier` (Series/Issue # required at minimum, plus Year/Publisher/Month/
+   Issue Count and cover-image hash matching for confidence — see
+   `EDITOR_SPEC.md` §9.1/§9.5 for the same field set as it applies to the Full
+   Editor's manual Search Online) against each file in the folder, writing
+   `ComicInfo.xml` tags for confident matches. Low-confidence matches are governed
+   by the Save on Low Confidence toggle (11.4.4): ON writes the best-guess tags and
+   sets the `NeedsReview` flag (`EDITOR_SPEC.md` §9.2) for later resolution in the
+   Full Editor; OFF skips writing anything for that file, which passes through
+   untagged and unflagged. Requires a `comicvine_api_key` (11.4.4) — see that
+   section for why.
+3. **Convert Images (§11.3)** — processes CBZ and CBR files in the folder (excluding
    `.bak` files), converts images to WebP and repacks. After this stage all processed
    archives contain WebP images.
 
-**Why this order is fixed:** Stage 1 may produce new CBZ files that Stage 2 should
-then process — running Stage 2 first would miss them. Running the stages in the
-other order creates a compounding conflict with no benefit.
+**Why this order is fixed:** Stage 1 may produce new CBZ files that Stage 2/3 should
+then process — running a later stage first would miss them. CT Auto-Tag runs before
+Convert Images so tagging always happens on the archive's original images, not
+after a lossy WebP pass — not a hard technical requirement (CT can read either
+format), but keeps the pipeline's confidence scoring working against the
+highest-quality source available. Running the stages in any other order creates a
+compounding conflict with no benefit.
 
 **Rename is not part of this pipeline** (dropped 2026-07-01 — see Change Log). Files
 land in the processing folder converted and image-optimized; renaming remains a
@@ -1257,17 +1283,20 @@ which unattended automation would remove.
 
 **Folder-level, not per-file chaining.** Each stage operates on the folder contents
 as they exist at that point in the pipeline — it does not receive an explicit list of
-files from the previous stage. Stage 2 simply picks up whatever CBZ/CBR files are
-present after Stage 1 finishes. This means:
+files from the previous stage. Each later stage simply picks up whatever CBZ/CBR
+files are present after the previous stage finishes. This means:
 
-- A CBR that **failed** Stage 1 (conversion failed, original untouched) will still be
-  picked up by Stage 2 if Convert Images is enabled — §11.3 accepts CBR input and
-  rebuilds as CBZ, so Stage 2 can still process it.
+- A CBR that **failed** Stage 1 (conversion failed, original untouched) will still
+  be picked up by Stage 2 (CT Auto-Tag reads CBR natively) and by Stage 3 if
+  Convert Images is enabled — §11.3 accepts CBR input and rebuilds as CBZ.
 - A file that was already CBZ before the run is ignored by Stage 1 and picked up
-  normally by Stage 2.
+  normally by Stages 2 and 3.
+- A file CT Auto-Tag skipped (Save on Low Confidence OFF, or the stage disabled
+  entirely) is picked up by Stage 3 exactly as if Stage 2 hadn't run on it —
+  Convert Images has no dependency on tagging having happened first.
 
-**Per-stage failures do not abort the pipeline.** If Stage 1 fails on a subset of
-files, Stage 2 runs on whatever Stage 1 left in a valid state. A complete stage
+**Per-stage failures do not abort the pipeline.** If a stage fails on a subset of
+files, the next stage runs on whatever was left in a valid state. A complete stage
 failure (the stage itself errors out, not just individual files) logs the error and
 moves to the next stage — the pipeline always runs all enabled stages.
 
@@ -1282,6 +1311,43 @@ in `config.json`.
 - From format: CBR or PDF (`processing_folder_convert_archives_from`) — same content-
   detected format choice as 11.2.2. Applied batch-wide to the whole folder run.
 - Backup model: see 11.4.6.
+
+**CT Auto-Tag** (new, 2026-07-03 — see `DECISIONS.md`, four entries same date, and
+`EDITOR_SPEC.md` §9 for the Full Editor side of this feature):
+
+- Toggle: enabled/disabled (`processing_folder_ct_autotag_enabled`).
+- **Save on Low Confidence** toggle (`processing_folder_ct_save_low_confidence`,
+  default ON): ON writes the best-guess tags to a low-confidence match and sets
+  the `NeedsReview` flag (`EDITOR_SPEC.md` §9.2) for later resolution in the Full
+  Editor; OFF skips writing anything for that file — it passes through the stage
+  untagged and unflagged, as if the stage hadn't run on it. Deliberately a branch
+  inside this stage, not a pipeline-flow change — holding a low-confidence file
+  back from continuing to Convert Images/the library was considered and rejected,
+  since §11.4 is folder-level, not per-file chaining (11.4.3), and building
+  per-file hold-back tracking wasn't judged worth it for this.
+- **ComicVine API key** — text field, `comicvine_api_key` in `config.json`
+  (plaintext, same trust model already applied to the existing `SESSION_SECRET`).
+  Required for this stage to do anything: without a personal key, CT's
+  `comictalker` falls back to its own shared default key, rate-limited to 1
+  request/10s and 100/hour globally across every ComicTagger install that hasn't
+  configured one — a personal key gets 10 req/10s and 200/hour instead (confirmed
+  by reading `comictalker/talkers/comicvine.py` directly). A Processing-folder
+  batch run on the shared key would stall for hours.
+  **Save behaviour:** a **"Save & Test"** button, not auto-save and not a bare
+  manual Save — the one deliberate exception to this page's auto-save convention.
+  Clicking it always persists whatever's typed to `config.json` immediately, then
+  separately calls CT's own `comicvine.py::check_status()` (hits ComicVine's
+  `team/1/` endpoint, detects the "Invalid API Key" error) and shows the result as
+  pass/fail feedback next to the field — the test does not gate the save, since
+  losing a just-typed key to a timed-out test call would be worse than saving a
+  key that turns out to be wrong and is easy to re-edit.
+- Uses the same shared, router-independent series/issue-search backend function
+  as the Full Editor's Search Online button (`EDITOR_SPEC.md` §9.1) — one codepath
+  hitting ComicVine, not two.
+- Backup model: **does not apply.** This stage only adds/writes XML inside the
+  existing archive via the editor core's rebuild path (`EDITOR_SPEC.md` §3.2) — no
+  separate output file, no `.bak` to manage; 11.4.6's table is specific to Convert
+  Archives/Convert Images' file-replacement model and doesn't extend here.
 
 **Convert Images:**
 
@@ -1369,36 +1435,53 @@ use; noted here for public-release awareness.
 #### 11.4.8 Progress & Status
 
 - New `processing_folder_progress` singleton tracking overall pipeline state:
-  `running`, `current_stage` (`convert_archives` / `convert_images`), and
-  `stage_results` (accumulating per-stage summary).
-- The active stage's own progress singleton (`convert_progress`,
-  `convert_images_progress`) drives the per-file detail within each stage — the
-  pipeline does not duplicate that tracking.
+  `running`, `current_stage` (`convert_archives` / `ct_autotag` / `convert_images`),
+  and `stage_results` (accumulating per-stage summary).
+- The active stage's own progress singleton (`convert_progress`, a new
+  `ct_autotag_progress`, `convert_images_progress`) drives the per-file detail
+  within each stage — the pipeline does not duplicate that tracking.
 - `POST /api/admin/processing-folder/run` — starts the pipeline via `BackgroundTasks`,
   returns immediately.
 - `GET /api/admin/processing-folder/status` — polled by the frontend, returns pipeline
   state including current stage, the active stage's per-file progress, and completed
   stage summaries.
-- On completion: summary per stage — "Converted X of Y archives", "Converted images in
-  X of Y files" — with per-file detail expandable for each stage. Failed files per
-  stage are listed for manual follow-up; no automatic retry.
+- On completion: summary per stage — "Converted X of Y archives", "Tagged X of Y
+  files, Z flagged for review", "Converted images in X of Y files" — with per-file
+  detail expandable for each stage. Failed files per stage are listed for manual
+  follow-up; no automatic retry.
 
 #### 11.4.9 Audit Logs
 
-No new automation-specific log file. Each of the two tools' existing logs captures
-its own entries regardless of trigger source, distinguished by an `[AUTO]` prefix on
-log lines produced by the automation pipeline vs. the plain format used by manual
-runs:
+Each tool's own log captures its entries regardless of trigger source, distinguished
+by an `[AUTO]` prefix on log lines produced by the automation pipeline vs. the plain
+format used by manual runs:
 
 ```
 DD/MM/YYYY HH:MM — [AUTO] filename.cbr → filename.cbz [OK]
+DD/MM/YYYY HH:MM — [AUTO] filename.cbz [tagged: confident] "Series Name" #12 (2019)
+DD/MM/YYYY HH:MM — [AUTO] filename.cbz [tagged: low confidence, NeedsReview set] "Series Name" #12 (2019)
+DD/MM/YYYY HH:MM — [AUTO] filename.cbz [skipped: low confidence, Save on Low Confidence off]
 DD/MM/YYYY HH:MM — [AUTO] filename.cbz [OK, 3 images skipped] (backed up to filename.cbz.bak)
 ```
 
-Manual runs continue to use the existing untagged format (11.2.6, 11.3.7).
-`rename_log.md` (11.1.7) never carries an `[AUTO]` line — Rename isn't triggered by
-automation. This keeps the existing logs as the single source of truth for their
-respective tools while still making automation runs distinguishable in review.
+**CT Auto-Tag gets its own new `ct_autotag_log.md`**, same `[AUTO]`-prefix convention
+as the other two, rather than folding into either existing log — it isn't a
+variant of Convert Archives or Convert Images, distinct enough (confidence outcome,
+not a file-format transform) to warrant its own file. Manual runs of the same
+underlying tagging function (Full Editor's Search Online, `EDITOR_SPEC.md` §9) are
+**not** logged here — that's an interactive, one-file-at-a-time action, not a batch
+run; this log is specific to the automation stage.
+
+Manual Convert Archives/Convert Images runs continue to use the existing untagged
+format (11.2.6, 11.3.7). `rename_log.md` (11.1.7) never carries an `[AUTO]` line —
+Rename isn't triggered by automation. This keeps the existing logs as the single
+source of truth for their respective tools while still making automation runs
+distinguishable in review.
+
+**Aggregate audit-run summary** ("12 converted, 11 confident, 1 flagged") — confirmed
+wanted (`DECISIONS.md`, session 1) but still explicitly deferred, not part of this
+build. Would sit alongside these per-tool logs as a run-level rollup, not replace
+them.
 
 #### 11.4.10 Implementation Notes (for Code)
 
@@ -1413,18 +1496,24 @@ Not binding design, but worth flagging before the build session:
   completed run; persist to `config.json`; on each 60s poll check `now >= next_run`.
 - New `processing_folder_progress` singleton — own module or top of
   `backend/routers/processing_folder.py`; not shared with the per-tool singletons.
-- The two tool callables are invoked **directly** (not via HTTP) — this is exactly
-  what 11.3.8 specified when it required a "plain, router-independent callable."
-  §11.2's equivalent callable should be confirmed to follow the same pattern during
-  its re-scoping session.
+- All three tool callables — Convert Archives, CT Auto-Tag, Convert Images — are
+  invoked **directly** (not via HTTP), same "plain, router-independent callable"
+  requirement 11.3.8 specified. CT Auto-Tag's callable is also shared with the Full
+  Editor's Search Online endpoint (`EDITOR_SPEC.md` §9.1/§9.4) — one function, two
+  callers, not a duplicate implementation on each side.
 - The picker/folder-selection endpoint is the **fifth** near-identical in-app picker
   implementation. The shared-component refactor flagged in 11.1.8 and 11.2.7 should
   be treated as a hard prerequisite for this item's build, not optional cleanup — five
   near-identical implementations is the point where duplication meaningfully raises
   maintenance risk.
-- `config.json` gains the keys listed in 11.4.4–11.4.5. No schema migration needed
-  (config is a plain JSON file, not the SQLite DB) — new keys default to `"off"` /
-  `false` / `""` on first read, same pattern as existing optional config keys.
+- `config.json` gains the keys listed in 11.4.4–11.4.5, including
+  `processing_folder_ct_autotag_enabled`, `processing_folder_ct_save_low_confidence`,
+  and `comicvine_api_key`. No schema migration needed (config is a plain JSON file,
+  not the SQLite DB) — new keys default to `"off"` / `false` / `""` on first read,
+  same pattern as existing optional config keys.
+- New `COMICINFO_TAGS` entry for `NeedsReview` (`backend/editor/xml_parser.py`) is a
+  shared prerequisite with `EDITOR_SPEC.md` §9.2 — build once, used by both this
+  stage (writes it) and the Full Editor (reads/clears it).
 
 ---
 
@@ -1453,3 +1542,5 @@ Not binding design, but worth flagging before the build session:
 | 2026-07-02 | §11.1.5/§11.1.6 corrected: the 2026-07-01 build's implicit auto-accumulate-on-edit Preview model is replaced with an explicit **Add to Queue** step (Queued Files list doubles as the preview, new-filename-only per row) plus per-file queue removal. Manual testing against the original mockup (`Filename-Editor.pdf`) found the implicit model had no deliberate "add" gesture and no way to pull a single file back out short of clearing the whole list — a functional regression from what was actually intended, not a design choice. Frontend-only change (`frontend/js/processingTools.js`, `frontend/admin.html`, `frontend/css/style.css`); backend `/rename/preview` and `/rename/apply` unchanged. Layout also reshaped into the mockup's two-row grouping (toolbar + list + edit-panel on top, toolbar + list + batch-options below). | v2.4 Item 10 post-build manual test session, 2026-07-02 — Tez tested against `Filename-Editor.pdf`/`filename-editor-description.txt` and flagged the missing queue workflow. |
 | 2026-07-02 | §11.1.2 amended, same-day follow-up: "Clear Loaded Files" renamed **Clear All** and now also resets the edit panel's field values/checkboxes (not just the file/queue lists), and Loaded Files rows gained a per-file remove control matching Queued Files'. | Tez follow-up request same session as the row above. |
 | 2026-07-02 | §11.1.5 bug fix: Auto-Increment was sending one shared value set across the whole batch, which blanked Series/Title/Year on every file the moment Auto-Increment was checked (only the incremented `#N` survived in the output filename) instead of falling back to each file's own baseline/File override the way plain batch mode already did correctly. Fixed by routing Auto-Increment through the same per-file `computeRenameFileData` resolution as the rest of batch mode, with only the Issue value overridden per file using a frontend-computed sequential number. | Found by Tez testing against `L:\Comic Archives\Processing\Tagging Done` (Judge Dredd - Day of Chaos v01-03) — screenshots showed the wipe happening specifically when Auto-Increment was toggled on. |
+| 2026-07-03 | **§11.4 amended to a three-stage pipeline** — Convert Archives → **CT Auto-Tag (new)** → Convert Images (11.4.1/11.4.3). New CT Auto-Tag stage (11.4.4): enabled/disabled toggle, **Save on Low Confidence** toggle (ON writes best-guess tags + sets `NeedsReview`; OFF skips writing entirely for that file — a branch inside the stage, not a pipeline-flow change, since §11.4 is folder-level/not per-file chaining), and a `comicvine_api_key` field with a **"Save & Test"** button (the one deliberate exception to this page's auto-save convention — validates live via CT's own `check_status()`). Progress/status (11.4.8) and audit logging (11.4.9, new `ct_autotag_log.md`) extended for the third stage; aggregate audit-run summary re-confirmed as wanted but still deferred. Transcribed from `DECISIONS.md` (four 2026-07-03 entries) and `EDITOR_SPEC.md` §9 (the Full Editor side of the same feature) so Code has a build-ready spec on both sides. Also corrected this file's top-of-document status block, which had drifted stale — claimed §11.2–§11.4 were "build in progress (v2.4 Items 12, 13, 16)" when v2.4 had in fact already closed 2026-07-02 with all three built and verified. | v2.5 #1 — four ComicTagger integration scoping sessions 2026-07-03; this pass transcribes the locked decisions into the build-facing spec. |
+| 2026-07-04 | **§11.4's CT Auto-Tag stage built and manually verified** (v2.5 Item 1) — see `docs/v2.5/progress.md` for the full narrative. Three real bugs found and fixed during Tez's own live testing: `identify_file()` fell back to filename parsing (via `backend/rename_tool.py`'s tested parser) and defaults the issue number to "1" for one-shots with none in the filename when an archive has no embedded XML, rather than short-circuiting to `no_match` immediately; match thresholds lowered from CT's own CLI defaults (90/91) to 80 to match what Tez had already found worked in his own standalone ComicTagger testing; the tagging write path now does a follow-up full single-issue fetch before mapping fields, since `IssueIdentifier`'s bulk candidate search doesn't carry credits (Writer/Penciller/etc. were silently empty without it). Also carries the same field-mapping-scope correction as `EDITOR_SPEC.md` §9's matching Change Log entry — the automation stage shares `ct_bridge.py`'s mapping function with Search Online, so both surfaces now capture the full CT/ComicVine field set the same way. | v2.5 Item 1 build + Tez's live-testing pass, 2026-07-03/04. |

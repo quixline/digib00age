@@ -615,10 +615,11 @@
       <div class="admin-subsection">
         <h3 class="admin-subsection-heading">Processing Folder Automation</h3>
         <p class="admin-card-hint">
-          Runs Convert Archives then Convert Images (fixed order) against a single
-          folder, on a schedule or on demand. File Rename is not part of this
-          pipeline — its live-preview review is the only thing that safely catches
-          a mis-parsed filename, and unattended automation removes that check.
+          Runs Convert Archives, then CT Auto-Tag, then Convert Images (fixed order)
+          against a single folder, on a schedule or on demand. File Rename is not
+          part of this pipeline — its live-preview review is the only thing that
+          safely catches a mis-parsed filename, and unattended automation removes
+          that check.
         </p>
         <div class="admin-card">
           <div class="admin-field-row">
@@ -636,6 +637,24 @@
             <div class="pt-rename-case-style">
               <label><input type="radio" name="pfConvertArchivesFrom" value="cbr" checked> From CBR</label>
               <label><input type="radio" name="pfConvertArchivesFrom" value="pdf"> From PDF</label>
+            </div>
+          </div>
+
+          <div class="admin-field-row">
+            <label class="admin-field-label"><input type="checkbox" id="pfCtAutotagEnabled"> CT Auto-Tag</label>
+            <div class="pt-rename-case-style">
+              <label><input type="checkbox" id="pfCtSaveLowConfidence" checked> Save on Low Confidence</label>
+            </div>
+          </div>
+
+          <div class="admin-field-row">
+            <label class="admin-field-label" for="pfComicVineKey">ComicVine API Key</label>
+            <div class="admin-field-input-wrap">
+              <div class="admin-field-input-row">
+                <input type="password" class="admin-input" id="pfComicVineKey" placeholder="Optional — uses shared rate-limited key if blank" autocomplete="off">
+                <button class="btn-admin-action" id="pfComicVineKeyTestBtn">Save &amp; Test</button>
+              </div>
+              <span class="admin-card-hint" id="pfComicVineKeyResult"></span>
             </div>
           </div>
 

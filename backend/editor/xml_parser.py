@@ -32,6 +32,7 @@ COMICINFO_TAGS = [
     "PageCount",
     "StoryArc",
     "Language",
+    "NeedsReview",
 ]
 
 

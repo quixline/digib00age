@@ -9,3 +9,9 @@ lxml
 rarfile          # CBR extraction — added v2.4 Item 5/11 (2026-06-30/07-01), requires an
                  # unrar-compatible backend (UnRAR.dll/unrar.exe) on the host
 pymupdf          # PDF->CBZ page rendering — added v2.4 Item 12 (2026-07-01), Convert Archives
+comictagger @ git+https://github.com/comictagger/comictagger.git@0cc9e76f8d45d3ef27bcf2feabb676e124412abf
+                 # ComicTagger integration (comicapi/comictalker/issueidentifier) — v2.5 #1,
+                 # ComicVine Auto-Tag + Search Online, 2026-07-03. Pinned to a develop-branch
+                 # commit, not PyPI's 1.5.5 — PyPI predates the comictalker plugin split this
+                 # integration depends on. Smoke-tested 2026-07-03: base install has no PyQt6,
+                 # RarArchiver correctly uses ComicVault's existing rarfile install.

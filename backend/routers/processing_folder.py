@@ -1,17 +1,18 @@
 """
 ComicVault — Processing Folder Automation Router (ADMIN_SPEC.md §11.4).
-Two-stage pipeline (Convert Archives -> Convert Images, fixed order) against
-a single configured folder, triggered by "Run Now" or the wall-clock
-scheduler (backend/scheduler.py's processing_folder_loop()). Invokes Item
-12/13's callables directly — not via HTTP — since automation isn't a browser
-client.
+Three-stage pipeline (Convert Archives -> CT Auto-Tag -> Convert Images,
+fixed order) against a single configured folder, triggered by "Run Now" or
+the wall-clock scheduler (backend/scheduler.py's processing_folder_loop()).
+Invokes each stage's callable directly — not via HTTP — since automation
+isn't a browser client. CT Auto-Tag added v2.5 #1 (2026-07-03/07).
 
-GET    /api/admin/processing-folder/config      Read settings
-POST   /api/admin/processing-folder/config       Save settings
-GET    /api/admin/processing-folder/browse       Folder listing (no path = library_root)
-GET    /api/admin/processing-folder/drives       Drive-letter listing ("This PC")
-POST   /api/admin/processing-folder/run          Run Now (background)
-GET    /api/admin/processing-folder/status       Poll progress
+GET    /api/admin/processing-folder/config              Read settings
+POST   /api/admin/processing-folder/config               Save settings
+GET    /api/admin/processing-folder/browse               Folder listing (no path = library_root)
+GET    /api/admin/processing-folder/drives               Drive-letter listing ("This PC")
+POST   /api/admin/processing-folder/run                  Run Now (background)
+GET    /api/admin/processing-folder/status               Poll progress
+POST   /api/admin/processing-folder/comicvine-key/test    Save & Test ComicVine API key
 """
 
 from __future__ import annotations
@@ -24,10 +25,11 @@ from typing import Optional
 
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Request
 
-from backend import convert_images_log, convert_log, file_picker
+from backend import ct_autotag_log, ct_bridge, convert_images_log, convert_log, file_picker
 from backend.archive_convert import ConvertResult, convert_archive_file, detect_archive_format
 from backend.auth import is_local_request
 from backend.config import LIBRARY_ROOT, get_config, save_config
+from backend.ct_autotag import CTAutoTagResult, ct_autotag_file
 from backend.image_convert import ConvertImagesResult, convert_images_in_archive
 
 logger = logging.getLogger(__name__)
@@ -55,6 +57,9 @@ def get_processing_folder_config():
         "processing_folder_convert_images_enabled": cfg.get("processing_folder_convert_images_enabled", False),
         "processing_folder_convert_images_lossless": cfg.get("processing_folder_convert_images_lossless", False),
         "processing_folder_convert_images_quality": cfg.get("processing_folder_convert_images_quality", 95),
+        "processing_folder_ct_autotag_enabled": cfg.get("processing_folder_ct_autotag_enabled", False),
+        "processing_folder_ct_save_low_confidence": cfg.get("processing_folder_ct_save_low_confidence", True),
+        "comicvine_api_key": cfg.get("comicvine_api_key", ""),
         "processing_folder_schedule": cfg.get("processing_folder_schedule", "off"),
         "processing_folder_schedule_time": cfg.get("processing_folder_schedule_time", "00:00"),
         "processing_folder_schedule_day": cfg.get("processing_folder_schedule_day", 0),
@@ -66,12 +71,15 @@ _BOOL_KEYS = (
     "processing_folder_convert_archives_enabled",
     "processing_folder_convert_images_enabled",
     "processing_folder_convert_images_lossless",
+    "processing_folder_ct_autotag_enabled",
+    "processing_folder_ct_save_low_confidence",
 )
 _STR_KEYS = (
     "processing_folder_path",
     "processing_folder_convert_archives_from",
     "processing_folder_schedule",
     "processing_folder_schedule_time",
+    "comicvine_api_key",
 )
 
 
@@ -127,7 +135,7 @@ def list_drives():
 @dataclass
 class ProcessingFolderProgress:
     running: bool = False
-    current_stage: Optional[str] = None  # 'convert_archives' | 'convert_images'
+    current_stage: Optional[str] = None  # 'convert_archives' | 'ct_autotag' | 'convert_images'
     stage_results: dict = field(default_factory=dict)
     finished_at: Optional[datetime] = None
     error: Optional[str] = None
@@ -169,6 +177,17 @@ def _convertible_images(folder: str) -> list[str]:
     ]
 
 
+def _ct_taggable_files(folder: str) -> list[str]:
+    """CBZ/CBR minus .bak — same filter as _convertible_images, since CT
+    Auto-Tag accepts both formats natively (ComicArchive branches on content
+    itself; tagging a .cbr rebuilds it as .cbz, same as every other editor
+    save path — see CTAutoTagResult.final_path)."""
+    return [
+        p for p in _list_folder_files(folder)
+        if not p.lower().endswith(".bak") and detect_archive_format(p) in ("CBZ", "CBR")
+    ]
+
+
 def _run_convert_archives_stage(folder: str, from_format: str, auto: bool) -> list[dict]:
     results = []
     for path in _convertible_archives(folder, from_format):
@@ -179,6 +198,32 @@ def _run_convert_archives_stage(folder: str, from_format: str, auto: bool) -> li
         status = "failed" if not result.success else ("success_with_warning" if result.pages_skipped else "success")
         results.append({"filename": filename, "new_filename": new_name, "status": status,
                          "pages_skipped": result.pages_skipped, "error": result.error})
+    return results
+
+
+def _run_ct_autotag_stage(folder: str, api_key: str, save_low_confidence: bool) -> list[dict]:
+    """No `auto` parameter — ct_autotag_log.md is automation-only (§11.4.9),
+    every line always carries [AUTO]."""
+    results = []
+    for path in _ct_taggable_files(folder):
+        filename = os.path.basename(path)
+        result: CTAutoTagResult = ct_autotag_file(path, api_key, save_low_confidence)
+        # A .cbr source that got tagged rebuilds as a sibling .cbz
+        # (CTAutoTagResult.final_path) — log the filename that's actually on
+        # disk afterward, not the pre-write one.
+        logged_filename = os.path.basename(result.final_path) if result.final_path else filename
+        ct_autotag_log.append_entry(
+            logged_filename, result.confidence, result.tags_written,
+            result.series, result.issue, result.year, result.error,
+        )
+        status = "failed" if not result.success else (
+            "success_with_warning" if result.confidence == "low_confidence" else "success"
+        )
+        results.append({
+            "filename": logged_filename, "status": status, "confidence": result.confidence,
+            "tags_written": result.tags_written, "series": result.series,
+            "issue": result.issue, "year": result.year, "error": result.error,
+        })
     return results
 
 
@@ -220,6 +265,16 @@ def run_pipeline(auto: bool = False) -> None:
             logger.exception("Convert Archives stage failed")
             processing_folder_progress.stage_results["convert_archives_error"] = str(exc)
 
+    if cfg.get("processing_folder_ct_autotag_enabled", False):
+        processing_folder_progress.current_stage = "ct_autotag"
+        try:
+            api_key = cfg.get("comicvine_api_key", "")
+            save_low = cfg.get("processing_folder_ct_save_low_confidence", True)
+            processing_folder_progress.stage_results["ct_autotag"] = _run_ct_autotag_stage(folder, api_key, save_low)
+        except Exception as exc:
+            logger.exception("CT Auto-Tag stage failed")
+            processing_folder_progress.stage_results["ct_autotag_error"] = str(exc)
+
     if cfg.get("processing_folder_convert_images_enabled", False):
         processing_folder_progress.current_stage = "convert_images"
         try:
@@ -245,7 +300,11 @@ def run_now(background_tasks: BackgroundTasks):
         return {"message": "A run is already in progress", "running": True, "started": False}
 
     cfg = get_config()
-    if not cfg.get("processing_folder_convert_archives_enabled") and not cfg.get("processing_folder_convert_images_enabled"):
+    if not any(cfg.get(k) for k in (
+        "processing_folder_convert_archives_enabled",
+        "processing_folder_ct_autotag_enabled",
+        "processing_folder_convert_images_enabled",
+    )):
         raise HTTPException(status_code=400, detail="No stages enabled")
 
     # §11.4.9's [AUTO] tag distinguishes "came through the Processing Folder
@@ -266,3 +325,16 @@ def status():
         "finished_at": processing_folder_progress.finished_at.isoformat() if processing_folder_progress.finished_at else None,
         "error": processing_folder_progress.error,
     }
+
+
+# ---------------------------------------------------------------------------
+# ComicVine API key — Save & Test (§11.4.4, one deliberate exception to this
+# page's auto-save convention)
+# ---------------------------------------------------------------------------
+
+@router.post("/processing-folder/comicvine-key/test")
+def save_and_test_comicvine_key(payload: dict = Body(...)):
+    api_key = str(payload.get("comicvine_api_key", ""))
+    save_config({"comicvine_api_key": api_key})  # always persists, regardless of test outcome
+    message, is_valid = ct_bridge.check_api_key(api_key)
+    return {"saved": True, "valid": is_valid, "message": message}

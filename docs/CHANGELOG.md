@@ -8,9 +8,27 @@ entry. **Entries dated 2026-06-28 or earlier point into `archive/v2.3/progress.m
 (progress.md became version-scoped starting with v2.4, archived alongside v2.3's
 close) — **entries from 2026-06-29 through 2026-07-02 point into
 `archive/v2.4/progress.md`** (v2.4 closed 2026-07-02, folder moved to `archive/`).
-No active version folder right now — see `ROADMAP.md` "v2.5".
+**Entries from 2026-07-03 onward point into `v2.5/progress.md`** (`docs/v2.5/`
+created 2026-07-04, alongside Item 1's build).
 
 ---
+
+- **2026-07-04** — v2.5 Item 1: ComicTagger + ComicVine integration built and
+  manually verified — Full Editor's Search Online (two-step Select Series/
+  Select Issue modal, `NeedsReview` indicator) and Processing Folder
+  Automation's new CT Auto-Tag stage. Three real bugs found and fixed
+  during Tez's own live testing: `identify_file()` now falls back to
+  filename parsing and assumes issue 1 for one-shots when an archive has
+  no embedded XML (was silently short-circuiting to `no_match`); match
+  thresholds lowered to 80%; the tagging write path now does a follow-up
+  full-issue fetch so credits (Writer/Penciller/Inker/etc.) actually land,
+  and the field mapping was expanded to capture everything CT/ComicVine
+  supplies (mirroring `comicapi/tags/comicrack.py`'s own write mapping)
+  rather than just the fields the editor UI exposes — including fixing raw
+  HTML leaking into `Summary` instead of clean text. Low-confidence-match
+  testing explicitly deferred to Tez (sourcing sample material himself),
+  not blocking this item's close-out. → `v2.5/progress.md` "Session —
+  2026-07-03/04: v2.5 Item 1 — ComicTagger + ComicVine integration"
 
 - **2026-07-02** — BUG-018 fixed (off-cycle, after v2.4's close — never tied
   to a numbered version item). Scanner's `_parse_cbz()` now finds

@@ -13,6 +13,7 @@
     <div class="container inner">
       <a href="/" class="site-logo">ComicVault</a>
       <span class="admin-page-label">Full Editor</span>
+      <button type="button" class="btn-admin-action" id="feSearchOnlineBtn">Search Online</button>
       <a href="/admin" class="settings-btn" title="Admin / Settings" aria-label="Settings">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="3"/>
@@ -36,6 +37,7 @@
           <div class="fe-action-row">
             <button type="button" class="btn-admin-action" id="feExplorerBtn">Explorer</button>
             <button type="button" class="btn-admin-action" id="feClearListBtn">Clear List</button>
+            <span class="fe-count" id="feLowConfidenceCount">0 Low Confidence</span>
           </div>
           <div class="fe-file-list" id="feFileList" tabindex="0"></div>
         </div>
@@ -279,6 +281,45 @@
       <div class="log-viewer-content" id="feProcessErrorBody"></div>
       <div class="fe-process-error-footer">
         <button type="button" class="btn-primary" id="feProcessErrorDismissBtn">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Search Online — Select Series / Select Issue (EDITOR_SPEC.md §9.6) ─── -->
+  <div id="feSearchOnlineOverlay" class="editor-overlay" hidden>
+    <div class="editor-modal fe-search-online-modal">
+      <div class="editor-modal-header">
+        <h2 class="editor-modal-title" id="feSearchOnlineTitle">Select Series</h2>
+        <button type="button" class="editor-close-btn" id="feSearchOnlineCloseBtn" aria-label="Close">&times;</button>
+      </div>
+
+      <!-- Step 1: Select Series -->
+      <div id="feSoStepSeries" class="fe-so-step">
+        <div class="fe-so-layout">
+          <table class="fe-so-results-table">
+            <thead><tr><th>Series</th><th>Year</th><th>Issues</th><th>Publisher</th></tr></thead>
+            <tbody id="feSoSeriesTbody"></tbody>
+          </table>
+          <div class="fe-so-preview">
+            <img id="feSoSeriesCover" class="fe-so-cover-img" alt="">
+            <div class="fe-so-description" id="feSoSeriesDescription"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Select Issue -->
+      <div id="feSoStepIssue" class="fe-so-step" hidden>
+        <button type="button" class="btn-admin-action" id="feSoBackBtn">&larr; Back to Series</button>
+        <div class="fe-so-layout">
+          <table class="fe-so-results-table">
+            <thead><tr><th>Issue #</th><th>Date</th><th>Title</th></tr></thead>
+            <tbody id="feSoIssueTbody"></tbody>
+          </table>
+          <div class="fe-so-preview">
+            <img id="feSoIssueCover" class="fe-so-cover-img" alt="">
+            <div class="fe-so-description" id="feSoIssueDescription"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

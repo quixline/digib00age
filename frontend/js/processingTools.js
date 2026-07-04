@@ -585,12 +585,21 @@ function initConvertImagesTool() {
 
 let pfPollTimer = null;
 
+const PF_STAGE_LABELS = {
+  convert_archives: 'Convert Archives',
+  ct_autotag: 'CT Auto-Tag',
+  convert_images: 'Convert Images',
+};
+
 async function loadProcessingFolderConfig() {
   const cfg = await (await fetch(`${API}/admin/processing-folder/config`)).json();
 
   document.getElementById('pfFolderInput').value = cfg.processing_folder_path || '';
   document.getElementById('pfConvertArchivesEnabled').checked = cfg.processing_folder_convert_archives_enabled;
   document.querySelector(`input[name="pfConvertArchivesFrom"][value="${cfg.processing_folder_convert_archives_from}"]`).checked = true;
+  document.getElementById('pfCtAutotagEnabled').checked = cfg.processing_folder_ct_autotag_enabled;
+  document.getElementById('pfCtSaveLowConfidence').checked = cfg.processing_folder_ct_save_low_confidence;
+  document.getElementById('pfComicVineKey').value = cfg.comicvine_api_key || '';
   document.getElementById('pfConvertImagesEnabled').checked = cfg.processing_folder_convert_images_enabled;
   document.getElementById('pfConvertImagesLossless').checked = cfg.processing_folder_convert_images_lossless;
   document.getElementById('pfConvertImagesQuality').value = cfg.processing_folder_convert_images_quality;
@@ -644,7 +653,7 @@ async function pollPfStatus() {
 
   if (status.running) {
     label.textContent = status.current_stage
-      ? `Running — ${status.current_stage === 'convert_archives' ? 'Convert Archives' : 'Convert Images'}`
+      ? `Running — ${PF_STAGE_LABELS[status.current_stage] || status.current_stage}`
       : 'Running…';
     pfPollTimer = setTimeout(pollPfStatus, 700);
     return;
@@ -667,7 +676,7 @@ async function pollPfStatus() {
       continue;
     }
     const ok = results.filter(r => r.status !== 'failed').length;
-    lines.push(`${stage === 'convert_archives' ? 'Convert Archives' : 'Convert Images'}: ${ok} of ${results.length} succeeded`);
+    lines.push(`${PF_STAGE_LABELS[stage] || stage}: ${ok} of ${results.length} succeeded`);
     for (const r of results.filter(r => r.status === 'failed')) {
       lines.push(`  ${r.filename}: ${r.error}`);
     }
@@ -683,6 +692,21 @@ function initProcessingFolderTool() {
     savePfSetting({ processing_folder_convert_archives_enabled: e.target.checked }));
   document.querySelectorAll('input[name="pfConvertArchivesFrom"]').forEach(r =>
     r.addEventListener('change', (e) => savePfSetting({ processing_folder_convert_archives_from: e.target.value })));
+
+  document.getElementById('pfCtAutotagEnabled').addEventListener('change', (e) =>
+    savePfSetting({ processing_folder_ct_autotag_enabled: e.target.checked }));
+  document.getElementById('pfCtSaveLowConfidence').addEventListener('change', (e) =>
+    savePfSetting({ processing_folder_ct_save_low_confidence: e.target.checked }));
+  document.getElementById('pfComicVineKeyTestBtn').addEventListener('click', async () => {
+    const key = document.getElementById('pfComicVineKey').value;
+    const resultEl = document.getElementById('pfComicVineKeyResult');
+    resultEl.textContent = 'Testing…';
+    resultEl.className = 'admin-card-hint';
+    const res = await postJSON('/processing-folder/comicvine-key/test', { comicvine_api_key: key });
+    resultEl.textContent = res.message;
+    resultEl.className = 'admin-card-hint ' + (res.valid ? 'admin-key-ok' : 'admin-backup-error');
+  });
+
   document.getElementById('pfConvertImagesEnabled').addEventListener('change', (e) =>
     savePfSetting({ processing_folder_convert_images_enabled: e.target.checked }));
   document.getElementById('pfConvertImagesLossless').addEventListener('change', (e) =>

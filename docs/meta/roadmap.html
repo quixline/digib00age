@@ -97,8 +97,10 @@ parked, and what "public-ready" still needs. Regenerated wholesale at each triag
 session; click any card for detail and its source doc.</p>
 <p class="updated">Baseline built 2026-06-28 · last full regeneration 2026-06-29 (v2.4's
 14-item plan, v2.5 holding list, v2.6 named) · Now lane hand-edited 2026-07-01
-(CAPT-tooling cluster completed) and 2026-07-02 (v2.4 closed, Items 1-3 of the
-v2.5 holding list pulled into Now) · bug count corrected 2026-07-02 (BUG-018
+(CAPT-tooling cluster completed), 2026-07-02 (v2.4 closed, Items 1-3 of the
+v2.5 holding list pulled into Now), and 2026-07-04 (Now #1 updated — ComicTagger
++ ComicVine integration built and verified, card now tracks the remaining
+low-confidence-match testing) · bug count corrected 2026-07-02 (BUG-018
 fixed off-cycle) — see footnote</p>
 
 <div class="bugs-strip">
@@ -120,16 +122,25 @@ fixed off-cycle) — see footnote</p>
     </div>
     <div class="cards">
 
-      <div class="card" onclick="this.classList.toggle('open')">
+      <div class="card open" onclick="this.classList.toggle('open')">
         <div class="card-top">
           <div class="order-badge ob-now">1</div>
           <div>
-            <div class="c-title">Scope: ComicTagger + ComicVine integration</div>
-            <div class="c-sub">Large — needs its own planning session first</div>
+            <div class="c-title">ComicTagger + ComicVine integration</div>
+            <div class="c-sub">Built and verified — additional testing for low confidence matches and how the editor deals with them</div>
           </div>
         </div>
         <div class="c-detail">
-          <div class="ref">ROADMAP.md — "v2.5"</div>
+          Full Editor Search Online + Processing Folder Automation's CT Auto-Tag
+          stage built and manually verified 2026-07-04, including three real bugs
+          found and fixed during live testing (filename-fallback/assume-issue-1,
+          80% match thresholds, a missing-credits bug in the tagging write path,
+          and a field-mapping scope correction to capture everything CT/ComicVine
+          supplies). What's left: low-confidence matches specifically — Tez is
+          sourcing varied sample material to test that path and confirm the
+          Full Editor's <code>NeedsReview</code>/Search Online resolution flow
+          holds up against real ambiguous matches.
+          <div class="ref">v2.5/comicvault-changes-v2.5.md Item 1 · v2.5/progress.md · EDITOR_SPEC.md §9 · ADMIN_SPEC.md §11.4</div>
         </div>
       </div>
 
