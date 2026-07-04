@@ -1,10 +1,11 @@
 # ComicVault — v2.5: Build Plan
 
-> **Status: Active — Item 1 built and manually verified 2026-07-04.**
-> `docs/v2.5/` created this session (Code, per `ROADMAP.md`'s note that the
-> working folder gets created alongside implementation rather than ahead of
-> it — real v2.5 triage/scoping for the remaining holding-list items
-> hasn't happened yet, this queue currently holds Item 1 only).
+> **Status: Item 1 built and fully tested 2026-07-04 — closed.** `docs/v2.5/`
+> created this session (Code, per `ROADMAP.md`'s note that the working
+> folder gets created alongside implementation rather than ahead of it —
+> real v2.5 triage/scoping for the remaining holding-list items hasn't
+> happened yet, this queue currently holds Item 1 only). Next up: scoping
+> OPDS / 3rd-party reader connection (`meta/roadmap.html` Now #1).
 >
 > **How to use this document**
 > This is the ordered build queue for v2.5. Paste into a Claude Code session
@@ -83,13 +84,58 @@ logged in `BUGS.md` since found and closed within this build):**
   before writing tags; this call was missing. Now applied, including
   correct conversion of embedded `<table>` credit lists to plain text.
 
-**Verified by Tez, live, against real files:** API key Save & Test, a
-confident match pulling full/correct data (cross-checked against an
-external source), the credits/HTML fixes, and the scheduled Auto-Tag stage
-run against a couple of real titles. **Not yet tested:** low-confidence
-matches and how the Full Editor's Search Online/`NeedsReview` flow handles
-resolving them — Tez is sourcing varied sample material for that pass
-himself; tracked as `meta/roadmap.html`'s current Now #1 item, not blocking
-this item's ✅.
+**Follow-up work, same item, added 2026-07-04 after the first round of live
+testing above:**
+- New **Match Ratio Threshold** slider (10–100%, 1% steps) in Admin →
+  Processing Folder Automation, right after "Save on Low Confidence" —
+  `processing_folder_ct_match_threshold` (default 80, matching the
+  previously-hardcoded value). `identify_file()` now reads this at
+  call-time instead of hardcoding `series_match_search_thresh`/
+  `series_match_identify_thresh`. Added once Tez had more real-world match
+  data and wanted to tune it himself rather than rely on a fixed value.
+- Found and fixed a misleading-results bug during the low-confidence test
+  pass below: the Processing Folder Automation run-complete summary
+  reported "N of M succeeded" by counting every non-`failed` status,
+  which includes legitimate `no_match`/skipped-low-confidence outcomes
+  (correctly `success=True` at the code level — the stage didn't error).
+  A 5-file test run that tagged 4 files and correctly no-matched the 5th
+  was reported as "5 of 5 succeeded", reading as if all 5 got tagged. Fixed
+  with a CT-Auto-Tag-specific summary line breaking out tagged/no-match/
+  skipped-low-confidence/failed counts explicitly
+  (`frontend/js/processingTools.js` `pollPfStatus()`). The underlying
+  `ct_autotag_log.md` audit log was accurate the whole time — this was a
+  UI rollup-message bug only.
+- Added a brief "Saved" toast (reusing the existing `showToast()` from
+  `admin.js`) to `savePfSetting()` — applies to every auto-save control in
+  this section, not just the new slider, since they all share this one
+  helper. No control on this page previously gave any save confirmation
+  except the ComicVine key's deliberate "Save & Test" exception.
+
+**Low-confidence / real-world match-quality testing, completed 2026-07-04
+(the item previously tracked as outstanding):** Tez ran a 5-file real-world
+comparison test — his standalone ComicTagger 1.5.5 (30% match ratio, Save
+on Low Confidence off) successfully tagged 1 of 5 files; the same 5 files
+through ComicVault's CT Auto-Tag (actually run at the 80% default, since
+the new threshold setting hadn't persisted yet at the time — a sequencing
+issue, not a bug) tagged 4 of 5, correctly no-matching the 5th
+(`Hard Bargain (2025).cbz`, a one-shot with no issue number in its
+filename or on ComicVine). Investigated the discrepancy: all 4 of
+ComicVault's successful matches came from filenames with clean, explicit,
+unambiguous issue numbers — no evidence of risky guessing. Root cause of
+CT's own lower hit-rate was **not conclusively identified** — leading
+hypotheses (standalone CT possibly using ComicVine's shared rate-limited
+key rather than a personal one; CT 1.5.5 being a genuinely different,
+older codebase than the git-commit-pinned dev-branch version ComicVault
+runs) were not confirmed with Tez before session close. Not treated as a
+ComicVault defect — nothing in ComicVault's own matches was found to be
+wrong — but worth revisiting if a similar gap recurs.
+
+**Fully verified by Tez, live, against real files — item closed:** API key
+Save & Test; a confident match pulling full/correct data (cross-checked
+against an external source); the credits/HTML fixes; the scheduled
+Auto-Tag stage run against real titles; the Match Ratio Threshold slider's
+save/persist behaviour; and the low-confidence/real-world match-quality
+pass above. `meta/roadmap.html`'s Now #1 card removed 2026-07-04 (item
+complete) — next up is scoping OPDS.
 
 ---

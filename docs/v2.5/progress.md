@@ -138,3 +138,73 @@ assume-issue-1 default, and the comprehensive field-mapping reversal;
 `CHANGELOG.md`; `docs/v2.5/` created (this file + the build queue);
 `meta/roadmap.html`'s Now #1 card updated to reflect the build is done and
 what's left is Tez's own low-confidence sample testing.
+
+---
+
+## Session — 2026-07-04 (close-of-session): Match Ratio Threshold slider + low-confidence real-world test — v2.5 Item 1 closed
+
+**Goal.** Tez wanted the CT Auto-Tag match-confidence threshold (hardcoded
+at 80 the previous session) tunable from the Admin page, then ran his
+deferred low-confidence real-world test — a 5-file comparison against his
+standalone ComicTagger install.
+
+**Built:** new Match Ratio Threshold slider (10–100%, 1% steps) in Admin →
+Processing Folder Automation, immediately after "Save on Low Confidence" —
+mirrors the existing Convert Images Quality slider's markup/JS pattern
+exactly. New `processing_folder_ct_match_threshold` config key (default
+80). `backend/ct_bridge.py`'s `identify_file()` now reads this from config
+at call-time and overrides both `series_match_search_thresh`/
+`series_match_identify_thresh` (kept tied to one value, matching CT's own
+single "match ratio" concept and the existing 2026-07-03 decision to unify
+both). Verified live: markup and JS served correctly from Tez's own
+already-running server (frontend files serve fresh without a restart);
+backend logic confirmed via direct import checks, pending his own restart
+for the live config round-trip.
+
+**Bug found during Tez's low-confidence test pass.** He ran a real 5-file
+comparison: standalone ComicTagger 1.5.5 (30% match ratio, Save on Low
+Confidence off) tagged 1 of 5; the same 5 files through ComicVault's Run
+Now returned "successfully tagged 5 files" but only 4 were actually
+tagged. Diagnosis (via the audit log, which was accurate throughout — this
+was a UI-only bug): `ct_autotag_file()`'s `no_match`/skipped-low-confidence
+outcomes correctly return `success=True` at the code level (the stage
+didn't error — deciding not to tag is a legitimate outcome, not a
+failure), but `pollPfStatus()`'s run-complete summary counted any
+non-`failed` status as "succeeded" without distinguishing "tagged" from
+"correctly decided not to tag." Fixed with a CT-Auto-Tag-specific summary
+branch reporting tagged/no-match/skipped-low-confidence/failed counts
+separately, rather than reusing Convert Archives/Images' generic
+succeeded-vs-failed framing (which fits their simpler two-outcome model,
+but not CT Auto-Tag's four-outcome one).
+
+**Investigated but not conclusively resolved:** why the standalone app
+(1/5) underperformed ComicVault (4/5), especially since ComicVault's
+actual run used the *stricter* 80% default (the 30% setting hadn't
+persisted yet — sequencing issue, not a bug: Tez had dragged the slider
+before restarting his server past the point where the backend recognised
+the new config key). Checked all 4 of ComicVault's successful matches
+against their source filenames — all had clean, explicit, unambiguous
+issue numbers, no evidence of risky guessing; the one no-match
+(`Hard Bargain (2025).cbz`) is a one-shot with no issue number anywhere
+(filename or ComicVine), correctly not force-guessed. Leading hypotheses
+for CT's lower hit-rate (shared vs. personal ComicVine API key on the
+standalone install; CT 1.5.5 being a different, older codebase entirely
+from the git-commit-pinned dev-branch version ComicVault runs) were raised
+but not confirmed with Tez before session close — flagged for a future
+session if the gap recurs, not treated as a ComicVault defect since
+nothing in ComicVault's own behaviour was found to be wrong.
+
+**Also added:** a brief "Saved" toast (`showToast()`, already used
+elsewhere on the Admin page) to `savePfSetting()` — applies to every
+auto-save control in Processing Folder Automation, not just the new
+slider, since they all share this one helper and none of them previously
+gave any save confirmation.
+
+**Session close-out — v2.5 Item 1 fully tested and closed.** Tez confirmed
+"built and fully tested" — the low-confidence/real-world match-quality
+pass that was the item's one remaining open question is done.
+`meta/roadmap.html`'s Now #1 card removed entirely (not greyed out — per
+the completed-item convention), remaining two Now cards renumbered 1–2,
+OPDS scoping now Now #1. Docs updated: this file, `comicvault-changes-v2.5.md`
+(Item 1's final status), `ADMIN_SPEC.md` §11.4.4 (new slider documented),
+`EDITOR_SPEC.md` §9 (status line), `CHANGELOG.md`, `meta/roadmap.html`.

@@ -13,6 +13,18 @@ created 2026-07-04, alongside Item 1's build).
 
 ---
 
+- **2026-07-04** — v2.5 Item 1 closed: added a configurable Match Ratio
+  Threshold slider (10–100%, default 80) to Processing Folder Automation's
+  CT Auto-Tag stage, replacing the previous hardcoded 80% value. Every
+  auto-save control in that section now shows a brief "Saved" toast. Fixed
+  a misleading-results bug caught during Tez's deferred low-confidence
+  real-world test (a 5-file comparison against his standalone ComicTagger)
+  — the run-complete summary counted legitimate no-match/skipped outcomes
+  as "succeeded", reporting "5 of 5" when only 4 were actually tagged; the
+  underlying audit log was accurate throughout. Item 1's one remaining open
+  question (low-confidence/real-world match testing) is done — item
+  closed, `meta/roadmap.html` Now #1 card removed. → `v2.5/progress.md`
+  "Session — 2026-07-04 (close-of-session)"
 - **2026-07-04** — v2.5 Item 1: ComicTagger + ComicVine integration built and
   manually verified — Full Editor's Search Online (two-step Select Series/
   Select Issue modal, `NeedsReview` indicator) and Processing Folder

@@ -536,16 +536,15 @@ No change to `library_root`'s value, `db_path`, ports, or any other existing key
 Scoped across four sessions, 2026-07-03 (`DECISIONS.md` — four entries same date).
 Full rationale lives there; this section is the build-facing transcription.
 
-**Built and manually verified 2026-07-03/04** (v2.5 Item 1) — Search Online (both
-modal steps, field mapping, `NeedsReview` indicator) confirmed live by Tez against
-real ComicVine data, including a full-data cross-check against an external source.
-**Not yet tested:** low-confidence matches and how this section's resolution flow
-(§9.6/§9.7) handles them in practice — Tez is sourcing varied sample material for
-that pass himself (`meta/roadmap.html` Now #1), not blocking this section's built
-status. See `docs/v2.5/progress.md` "Session — 2026-07-03/04" for the full build
-narrative, including three post-build fixes (filename-fallback/assume-issue-1 for
-`identify()`, a missing-credits bug in the CT Auto-Tag write path, and the
-field-mapping scope correction below).
+**Built and fully tested 2026-07-03/04** (v2.5 Item 1, closed) — Search Online
+(both modal steps, field mapping, `NeedsReview` indicator) confirmed live by Tez
+against real ComicVine data, including a full-data cross-check against an external
+source and a real-world low-confidence-match comparison test. See
+`docs/v2.5/progress.md` "Session — 2026-07-03/04" and the 2026-07-04
+close-of-session entry for the full build narrative, including post-build fixes
+(filename-fallback/assume-issue-1 for `identify()`, a missing-credits bug in the
+CT Auto-Tag write path, the field-mapping scope correction below, and a
+misleading-results-summary UI bug caught during the low-confidence test pass).
 
 ### 9.1 Architecture
 

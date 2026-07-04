@@ -32,15 +32,18 @@
 > Images, and §11.4 Processing Folder Automation are also **built and
 > manually tested (v2.4 Items 12, 13, 16, all 2026-07-01)** — v2.4 closed
 > 2026-07-02 with the whole CAPT-tooling cluster verified (`ROADMAP.md`).
-> §11.4's third pipeline stage (CT Auto-Tag), its two new toggles, and the
-> ComicVine API key field are **built and manually verified 2026-07-03/04**
-> (v2.5 Item 1) — see `docs/v2.5/progress.md` for the full build narrative,
-> including three post-build fixes found during Tez's live testing
-> (identify() falling back to filename parsing + assuming issue 1 for
-> one-shots, match thresholds lowered to 80%, and a missing-credits bug in
-> the tagging write path). **Not yet tested:** low-confidence matches —
-> Tez is sourcing varied sample material for that pass himself
-> (`meta/roadmap.html` Now #1), not blocking this section's built status.
+> §11.4's third pipeline stage (CT Auto-Tag), its two new toggles, the
+> ComicVine API key field, and the Match Ratio Threshold slider (added
+> 2026-07-04) are **built and fully tested 2026-07-03/04** (v2.5 Item 1,
+> closed) — see `docs/v2.5/progress.md` for the full build narrative,
+> including post-build fixes found during Tez's live testing (identify()
+> falling back to filename parsing + assuming issue 1 for one-shots, match
+> thresholds now user-configurable (80% default), a missing-credits bug in
+> the tagging write path, and a misleading-results-summary bug caught
+> during a real 5-file low-confidence test pass). A minor open question
+> (why Tez's standalone ComicTagger install underperformed ComicVault's own
+> matching on that same 5-file test) was investigated but not conclusively
+> resolved — not treated as a ComicVault defect, see `v2.5/progress.md`.
 >
 > **Note on authority:** `SPEC.md` §11 and §20.13 contain earlier admin descriptions.
 > Where they conflict with this file, **this file is authoritative** — it consolidates
@@ -1325,6 +1328,18 @@ in `config.json`.
   back from continuing to Convert Images/the library was considered and rejected,
   since §11.4 is folder-level, not per-file chaining (11.4.3), and building
   per-file hold-back tracking wasn't judged worth it for this.
+- **Match Ratio Threshold** slider (`processing_folder_ct_match_threshold`,
+  default 80, range 10–100 in 1% steps) — added 2026-07-04, once Tez had more
+  real-world match data than the original 80%-hardcoded default was set from.
+  Feeds `IssueIdentifierOptions`' `series_match_search_thresh` and
+  `series_match_identify_thresh` (`backend/ct_bridge.py`'s `identify_file()`,
+  read from config at call-time), kept tied to one value rather than two
+  separate controls, matching CT's own single "match ratio" concept. Auto-saves
+  like every other control in this section — every auto-save control here
+  (this slider, both toggles above, Convert Archives/Images' controls) shows a
+  brief "Saved" toast on change, added 2026-07-04 (`savePfSetting()`,
+  `frontend/js/processingTools.js`); the ComicVine API key's Save & Test
+  button is still the one control with its own distinct feedback.
 - **ComicVine API key** — text field, `comicvine_api_key` in `config.json`
   (plaintext, same trust model already applied to the existing `SESSION_SECRET`).
   Required for this stage to do anything: without a personal key, CT's
@@ -1544,3 +1559,4 @@ Not binding design, but worth flagging before the build session:
 | 2026-07-02 | §11.1.5 bug fix: Auto-Increment was sending one shared value set across the whole batch, which blanked Series/Title/Year on every file the moment Auto-Increment was checked (only the incremented `#N` survived in the output filename) instead of falling back to each file's own baseline/File override the way plain batch mode already did correctly. Fixed by routing Auto-Increment through the same per-file `computeRenameFileData` resolution as the rest of batch mode, with only the Issue value overridden per file using a frontend-computed sequential number. | Found by Tez testing against `L:\Comic Archives\Processing\Tagging Done` (Judge Dredd - Day of Chaos v01-03) — screenshots showed the wipe happening specifically when Auto-Increment was toggled on. |
 | 2026-07-03 | **§11.4 amended to a three-stage pipeline** — Convert Archives → **CT Auto-Tag (new)** → Convert Images (11.4.1/11.4.3). New CT Auto-Tag stage (11.4.4): enabled/disabled toggle, **Save on Low Confidence** toggle (ON writes best-guess tags + sets `NeedsReview`; OFF skips writing entirely for that file — a branch inside the stage, not a pipeline-flow change, since §11.4 is folder-level/not per-file chaining), and a `comicvine_api_key` field with a **"Save & Test"** button (the one deliberate exception to this page's auto-save convention — validates live via CT's own `check_status()`). Progress/status (11.4.8) and audit logging (11.4.9, new `ct_autotag_log.md`) extended for the third stage; aggregate audit-run summary re-confirmed as wanted but still deferred. Transcribed from `DECISIONS.md` (four 2026-07-03 entries) and `EDITOR_SPEC.md` §9 (the Full Editor side of the same feature) so Code has a build-ready spec on both sides. Also corrected this file's top-of-document status block, which had drifted stale — claimed §11.2–§11.4 were "build in progress (v2.4 Items 12, 13, 16)" when v2.4 had in fact already closed 2026-07-02 with all three built and verified. | v2.5 #1 — four ComicTagger integration scoping sessions 2026-07-03; this pass transcribes the locked decisions into the build-facing spec. |
 | 2026-07-04 | **§11.4's CT Auto-Tag stage built and manually verified** (v2.5 Item 1) — see `docs/v2.5/progress.md` for the full narrative. Three real bugs found and fixed during Tez's own live testing: `identify_file()` fell back to filename parsing (via `backend/rename_tool.py`'s tested parser) and defaults the issue number to "1" for one-shots with none in the filename when an archive has no embedded XML, rather than short-circuiting to `no_match` immediately; match thresholds lowered from CT's own CLI defaults (90/91) to 80 to match what Tez had already found worked in his own standalone ComicTagger testing; the tagging write path now does a follow-up full single-issue fetch before mapping fields, since `IssueIdentifier`'s bulk candidate search doesn't carry credits (Writer/Penciller/etc. were silently empty without it). Also carries the same field-mapping-scope correction as `EDITOR_SPEC.md` §9's matching Change Log entry — the automation stage shares `ct_bridge.py`'s mapping function with Search Online, so both surfaces now capture the full CT/ComicVine field set the same way. | v2.5 Item 1 build + Tez's live-testing pass, 2026-07-03/04. |
+| 2026-07-04 | **§11.4.4 gained a Match Ratio Threshold slider** (`processing_folder_ct_match_threshold`, default 80, 10–100% in 1% steps), placed after Save on Low Confidence — the previous session's 80% match threshold was hardcoded with no UI; added once Tez had more real-world match data to tune against. Every auto-save control in this section now shows a brief "Saved" toast (`savePfSetting()`) — none had any save confirmation before, ComicVine API Key's Save & Test excepted. **Bug fixed:** Processing Folder Automation's run-complete summary reported "N of M succeeded" by counting any non-`failed` status, which conflates a legitimate `no_match`/skipped-low-confidence outcome (correctly `success=True` — the stage didn't error) with an actual tag write; a 5-file test that tagged 4 and correctly no-matched the 5th reported as "5 of 5 succeeded". Fixed with a CT-Auto-Tag-specific summary breaking out tagged/no-match/skipped-low-confidence/failed counts (the underlying `ct_autotag_log.md` audit log was accurate throughout — UI-only bug). **v2.5 Item 1 closed** — Tez's deferred low-confidence real-world test (a 5-file standalone-ComicTagger-vs-ComicVault comparison) completed; investigated but did not conclusively resolve why the standalone app underperformed (1 of 5 tagged vs. ComicVault's 4 of 5) — not attributed to a ComicVault defect, full detail in `v2.5/progress.md`. | v2.5 Item 1 close-of-session, 2026-07-04. |

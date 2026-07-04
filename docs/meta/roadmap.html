@@ -98,9 +98,11 @@ session; click any card for detail and its source doc.</p>
 <p class="updated">Baseline built 2026-06-28 · last full regeneration 2026-06-29 (v2.4's
 14-item plan, v2.5 holding list, v2.6 named) · Now lane hand-edited 2026-07-01
 (CAPT-tooling cluster completed), 2026-07-02 (v2.4 closed, Items 1-3 of the
-v2.5 holding list pulled into Now), and 2026-07-04 (Now #1 updated — ComicTagger
-+ ComicVine integration built and verified, card now tracks the remaining
-low-confidence-match testing) · bug count corrected 2026-07-02 (BUG-018
+v2.5 holding list pulled into Now), 2026-07-04 midday (Now #1 updated — ComicTagger
++ ComicVine integration built and verified, card tracking the remaining
+low-confidence-match testing), and 2026-07-04 close-of-session (Now #1 card
+removed entirely — item fully built and tested, remaining two cards renumbered
+1-2, OPDS now Now #1) · bug count corrected 2026-07-02 (BUG-018
 fixed off-cycle) — see footnote</p>
 
 <div class="bugs-strip">
@@ -116,37 +118,15 @@ fixed off-cycle) — see footnote</p>
     <div class="lane-head">
       <div>
         <div class="lane-title">Now</div>
-        <div class="lane-sub">v2.4 closed 2026-07-02 — v2.5 begun with Items 1-3 of its holding list</div>
+        <div class="lane-sub">v2.5 Item 1 (ComicTagger + ComicVine) built, tested, and closed 2026-07-04 — next up is OPDS scoping</div>
       </div>
-      <div class="lane-count">3</div>
+      <div class="lane-count">2</div>
     </div>
     <div class="cards">
 
-      <div class="card open" onclick="this.classList.toggle('open')">
-        <div class="card-top">
-          <div class="order-badge ob-now">1</div>
-          <div>
-            <div class="c-title">ComicTagger + ComicVine integration</div>
-            <div class="c-sub">Built and verified — additional testing for low confidence matches and how the editor deals with them</div>
-          </div>
-        </div>
-        <div class="c-detail">
-          Full Editor Search Online + Processing Folder Automation's CT Auto-Tag
-          stage built and manually verified 2026-07-04, including three real bugs
-          found and fixed during live testing (filename-fallback/assume-issue-1,
-          80% match thresholds, a missing-credits bug in the tagging write path,
-          and a field-mapping scope correction to capture everything CT/ComicVine
-          supplies). What's left: low-confidence matches specifically — Tez is
-          sourcing varied sample material to test that path and confirm the
-          Full Editor's <code>NeedsReview</code>/Search Online resolution flow
-          holds up against real ambiguous matches.
-          <div class="ref">v2.5/comicvault-changes-v2.5.md Item 1 · v2.5/progress.md · EDITOR_SPEC.md §9 · ADMIN_SPEC.md §11.4</div>
-        </div>
-      </div>
-
       <div class="card" onclick="this.classList.toggle('open')">
         <div class="card-top">
-          <div class="order-badge ob-now">2</div>
+          <div class="order-badge ob-now">1</div>
           <div>
             <div class="c-title">Scope: OPDS — connecting 3rd-party readers</div>
             <div class="c-sub">Merged with the existing Komga-compatibility research note</div>
@@ -159,7 +139,7 @@ fixed off-cycle) — see footnote</p>
 
       <div class="card" onclick="this.classList.toggle('open')">
         <div class="card-top">
-          <div class="order-badge ob-now">3</div>
+          <div class="order-badge ob-now">2</div>
           <div>
             <div class="c-title">Scope: running custom scripts on the Processing Folder</div>
             <div class="c-sub">Same area as v2.4's Processing Folder Automation — likely worth scoping together</div>

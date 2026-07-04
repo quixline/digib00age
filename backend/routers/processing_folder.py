@@ -59,6 +59,7 @@ def get_processing_folder_config():
         "processing_folder_convert_images_quality": cfg.get("processing_folder_convert_images_quality", 95),
         "processing_folder_ct_autotag_enabled": cfg.get("processing_folder_ct_autotag_enabled", False),
         "processing_folder_ct_save_low_confidence": cfg.get("processing_folder_ct_save_low_confidence", True),
+        "processing_folder_ct_match_threshold": cfg.get("processing_folder_ct_match_threshold", 80),
         "comicvine_api_key": cfg.get("comicvine_api_key", ""),
         "processing_folder_schedule": cfg.get("processing_folder_schedule", "off"),
         "processing_folder_schedule_time": cfg.get("processing_folder_schedule_time", "00:00"),
@@ -94,6 +95,8 @@ def save_processing_folder_config(payload: dict = Body(...)):
             update[key] = str(payload[key])
     if "processing_folder_convert_images_quality" in payload:
         update["processing_folder_convert_images_quality"] = int(payload["processing_folder_convert_images_quality"])
+    if "processing_folder_ct_match_threshold" in payload:
+        update["processing_folder_ct_match_threshold"] = int(payload["processing_folder_ct_match_threshold"])
     if "processing_folder_schedule_day" in payload:
         update["processing_folder_schedule_day"] = int(payload["processing_folder_schedule_day"])
 

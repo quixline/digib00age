@@ -599,6 +599,8 @@ async function loadProcessingFolderConfig() {
   document.querySelector(`input[name="pfConvertArchivesFrom"][value="${cfg.processing_folder_convert_archives_from}"]`).checked = true;
   document.getElementById('pfCtAutotagEnabled').checked = cfg.processing_folder_ct_autotag_enabled;
   document.getElementById('pfCtSaveLowConfidence').checked = cfg.processing_folder_ct_save_low_confidence;
+  document.getElementById('pfCtMatchThreshold').value = cfg.processing_folder_ct_match_threshold;
+  document.getElementById('pfCtMatchThresholdValue').textContent = cfg.processing_folder_ct_match_threshold;
   document.getElementById('pfComicVineKey').value = cfg.comicvine_api_key || '';
   document.getElementById('pfConvertImagesEnabled').checked = cfg.processing_folder_convert_images_enabled;
   document.getElementById('pfConvertImagesLossless').checked = cfg.processing_folder_convert_images_lossless;
@@ -616,6 +618,7 @@ async function loadProcessingFolderConfig() {
 
 async function savePfSetting(payload) {
   await postJSON('/processing-folder/config', payload);
+  showToast('Saved');
 }
 
 function openPfBrowse() {
@@ -675,6 +678,21 @@ async function pollPfStatus() {
       lines.push(`${stage.replace('_error', '')} stage failed: ${results}`);
       continue;
     }
+    if (stage === 'ct_autotag') {
+      // CT Auto-Tag's "success" status covers no_match/skipped-low-confidence
+      // outcomes too (correctly -- the stage didn't error), so a plain
+      // "N of M succeeded" line reads as "N got tagged" when it doesn't mean
+      // that. Break out what actually happened per file instead.
+      const tagged = results.filter(r => r.tags_written).length;
+      const noMatch = results.filter(r => r.confidence === 'no_match').length;
+      const skippedLow = results.filter(r => r.confidence === 'low_confidence' && !r.tags_written).length;
+      const failed = results.filter(r => r.status === 'failed').length;
+      lines.push(`CT Auto-Tag: ${tagged} tagged, ${noMatch} no match, ${skippedLow} low confidence skipped, ${failed} failed (of ${results.length})`);
+      for (const r of results.filter(r => r.status === 'failed')) {
+        lines.push(`  ${r.filename}: ${r.error}`);
+      }
+      continue;
+    }
     const ok = results.filter(r => r.status !== 'failed').length;
     lines.push(`${PF_STAGE_LABELS[stage] || stage}: ${ok} of ${results.length} succeeded`);
     for (const r of results.filter(r => r.status === 'failed')) {
@@ -697,6 +715,11 @@ function initProcessingFolderTool() {
     savePfSetting({ processing_folder_ct_autotag_enabled: e.target.checked }));
   document.getElementById('pfCtSaveLowConfidence').addEventListener('change', (e) =>
     savePfSetting({ processing_folder_ct_save_low_confidence: e.target.checked }));
+  document.getElementById('pfCtMatchThreshold').addEventListener('input', (e) => {
+    document.getElementById('pfCtMatchThresholdValue').textContent = e.target.value;
+  });
+  document.getElementById('pfCtMatchThreshold').addEventListener('change', (e) =>
+    savePfSetting({ processing_folder_ct_match_threshold: e.target.value }));
   document.getElementById('pfComicVineKeyTestBtn').addEventListener('click', async () => {
     const key = document.getElementById('pfComicVineKey').value;
     const resultEl = document.getElementById('pfComicVineKeyResult');

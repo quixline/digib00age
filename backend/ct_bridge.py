@@ -254,14 +254,13 @@ class AutoTagIdentifyResult:
 
 
 # IssueIdentifierOptions has no defaults of its own (all 9 fields required,
-# confirmed against the real installed class). Match thresholds set to 80
-# (not CT's own CLI defaults of 90/91) -- confirmed with Tez 2026-07-04,
-# matching the 80% match ratio he already found works well in his own
-# standalone ComicTagger testing. No UI exposed for tuning them, matching
-# the spec's simpler two-outcome (confident/low-confidence) framing.
+# confirmed against the real installed class). series_match_search_thresh/
+# series_match_identify_thresh are overridden at call-time in identify_file()
+# from the Admin page's Match Ratio Threshold slider (processing_folder_
+# ct_match_threshold, default 80 -- added 2026-07-04, no UI to tune at first,
+# added once Tez had more real-world experience with match quality). Both
+# stay tied to one value, matching CT's own single "match ratio" concept.
 _DEFAULT_IIO_KWARGS = dict(
-    series_match_search_thresh=80,
-    series_match_identify_thresh=80,
     use_publisher_filter=False,
     publisher_filter=[],
     quiet=True,
@@ -301,7 +300,14 @@ def identify_file(archive_path: str) -> AutoTagIdentifyResult:
             error="Not enough info for a search (Series/Issue # required)",
         )
 
-    iio = IssueIdentifierOptions(cache_dir=CT_CACHE_DIR, talker=talker, **_DEFAULT_IIO_KWARGS)
+    match_threshold = get_config().get("processing_folder_ct_match_threshold", 80)
+    iio = IssueIdentifierOptions(
+        cache_dir=CT_CACHE_DIR,
+        talker=talker,
+        series_match_search_thresh=match_threshold,
+        series_match_identify_thresh=match_threshold,
+        **_DEFAULT_IIO_KWARGS,
+    )
     ii = IssueIdentifier(iio, on_rate_limit=None, output=lambda *a, **k: None)
 
     result, matches = ii.identify(ca, md)

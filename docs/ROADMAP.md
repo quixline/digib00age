@@ -133,33 +133,24 @@ see `ADMIN_SPEC.md` §11.4.5). Neither blocks anything before v2.6 starts.
 
 ---
 
-## v2.5 — holding list (v2.4 closed 2026-07-02; Item 1 built 2026-07-04, rest not yet scoped)
+## v2.5 — holding list (v2.4 closed 2026-07-02; Item 1 closed 2026-07-04, rest not yet scoped)
 
 Six items agreed 2026-06-29 (originally seven — "Processing Folder automation"
 moved to `v2.4/comicvault-changes-v2.4.md` Item 15 on 2026-06-30, see that doc's
 header note for why). One of the six — ComicTagger + ComicVine — has since gone
-all the way through scoping and build; the remaining five are still an unscoped
-holding list, not a build queue. `meta/roadmap.html`'s Now lane moved the first
-three items here (ComicTagger + ComicVine, OPDS, Processing Folder custom
-scripts) up from Next on 2026-07-02; per the version lifecycle in
-`meta/working-rules.md`, real scoping (and a `docs/v2.5/` working folder) still
-needs its own triage session before any of the remaining five move to an actual
-build queue.
+all the way through scoping, build, and testing; the remaining five are still an
+unscoped holding list, not a build queue. `meta/roadmap.html`'s Now lane moved
+the first three items here (ComicTagger + ComicVine, OPDS, Processing Folder
+custom scripts) up from Next on 2026-07-02; per the version lifecycle in
+`meta/working-rules.md`, real scoping (and a `docs/v2.5/` working folder for
+them) still needs its own triage session before any of the remaining five move
+to an actual build queue.
 
-**ComicTagger + ComicVine API integration — built and manually verified
-2026-07-04, moved out of this holding list.** Now tracked as
-`docs/v2.5/comicvault-changes-v2.5.md` Item 1 (that file created 2026-07-04,
-alongside this item's build — see `INDEX.md`). Four scoping sessions 2026-07-03
-locked architecture, pipeline order, the `NeedsReview` flag mechanism, the Full
-Editor's Search Online modal, the CT Auto-Tag automation stage, and the
-ComicVine API key field (`DECISIONS.md`, four 2026-07-03 entries); transcribed
-into `EDITOR_SPEC.md` §9 and `ADMIN_SPEC.md` §11.4 the same day. Built and
-live-tested by Tez 2026-07-03/04, with three real bugs found and fixed along
-the way (`docs/v2.5/progress.md` has the full narrative). **Not yet tested:**
-low-confidence matches and how the Full Editor resolves them — Tez is sourcing
-varied sample material for that pass himself, tracked as `meta/roadmap.html`'s
-current Now #1 card, not left in this holding list since the item itself is
-built.
+**ComicTagger + ComicVine API integration — built, fully tested, and closed
+2026-07-04.** Tracked as `docs/v2.5/comicvault-changes-v2.5.md` Item 1 (✅);
+full build/test/fix narrative in `docs/v2.5/progress.md`, spec detail in
+`EDITOR_SPEC.md` §9 and `ADMIN_SPEC.md` §11.4. `meta/roadmap.html`'s Now lane
+card removed 2026-07-04 (item complete) — OPDS is now Now #1.
 - **Scope: OPDS — connecting 3rd-party readers.** Merge with the existing
   partial-Komga-API-compatibility idea into one research note; both solve the
   same underlying goal (external reader apps connecting to ComicVault) and should

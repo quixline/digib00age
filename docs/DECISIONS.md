@@ -4,6 +4,35 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### CT Auto-Tag's "N of M succeeded" summary needed its own outcome breakdown, not a status-semantics change
+
+**Decided:** 2026-07-04, diagnosing a misleading result reported during Tez's
+low-confidence real-world test (5 files, 4 tagged, 1 correctly no-matched,
+reported as "5 of 5 succeeded").
+
+**Why:** `ct_autotag_file()` correctly returns `success=True` for a `no_match` or
+a skipped-low-confidence outcome — deciding not to tag a file is a legitimate,
+intentional result (per ADMIN_SPEC.md §11.4.3's "distinct from low confidence"
+framing), not an error, so `success=False` would be the wrong signal to reuse
+here. The bug wasn't in that status value — it was that
+`pollPfStatus()`'s run-complete summary (`frontend/js/processingTools.js`)
+reused Convert Archives/Images' generic `results.filter(r => r.status !==
+'failed').length` framing for every stage, which fits a simple two-outcome
+model (converted vs. failed) but silently swallows CT Auto-Tag's real
+four-outcome model (tagged confident / tagged low-confidence / correctly
+skipped / failed) into a misleading two-bucket "succeeded/failed" count. The
+underlying `ct_autotag_log.md` audit log was accurate throughout — this was a
+UI rollup-message bug only, not a data-integrity issue.
+
+**How to apply:** Don't "fix" this by changing `ct_autotag_file()`'s
+`success`/`status` semantics to make `no_match` count as something other than
+success — that would break the correct, already-established design. Instead,
+any stage whose outcome model doesn't fit the simple succeeded-vs-failed
+framing needs its own summary branch in `pollPfStatus()`, using the per-file
+result fields already available (`tags_written`, `confidence`) rather than
+the generic `status` field alone. `ADMIN_SPEC.md` §11.4.4/§11.4.9 and
+`v2.5/progress.md`'s 2026-07-04 close-of-session entry have the full detail.
+
 ### ComicTagger integration — field mapping expanded to capture everything CT/ComicVine supplies, not just editor-exposed fields
 
 **Decided:** 2026-07-04, during Tez's live testing of v2.5 Item 1's build.
