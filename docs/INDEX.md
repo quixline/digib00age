@@ -15,11 +15,11 @@ within a single doc, a later-dated or higher-numbered section overrides an earli
 - **`docs/vN.M/`** — the *current* version's own working set, created fresh each
   version: `comicvault-changes-vN.M.md` (the build queue) and `progress.md`
   (narrative log, scoped to just this version's sessions). When a version closes,
-  the whole folder moves into `docs/archive/vN.M/` as one bundle. **v2.4 closed
-  2026-07-02; `docs/v2.5/` created 2026-07-04** alongside Item 1's build
-  (ComicTagger + ComicVine integration, built and manually verified) — the
-  remaining v2.5 holding-list items (`ROADMAP.md` "v2.5") still haven't had their
-  own triage/scoping session yet.
+  the whole folder moves into `docs/archive/vN.M/` as one bundle. **v2.5 closed
+  2026-07-05** (Items 1–3: ComicTagger + ComicVine integration, Sort by Filename,
+  Mobile ↔ Server Reading-State Sync — all built and manually verified) — no
+  active version folder right now; `docs/v2.6/` gets created whenever real v2.6
+  scoping/building begins (see `ROADMAP.md` "v2.6").
 - **`docs/archive/`** (renamed from `historical/` 2026-06-29) — closed-out build
   queues, their matching `progress.md`, one-time setup/research docs, and the fixed
   bug history. **Out of focus for Cowork's nightly scan, not out of reach** —
@@ -89,6 +89,8 @@ gone, it's just not part of the day-to-day working set.
 | Doc | What it was for |
 |---|---|
 | `bugs-fixed-archive.md` | Fixed-bug history, split out of `BUGS.md` 2026-06-29 to keep the live file lean. Not version-scoped — append-only, any fixed bug lands here regardless of which version found or fixed it. |
+| `v2.5/comicvault-changes-v2.5.md` | v2.5's build queue — closed 2026-07-05. Item 1 (ComicTagger + ComicVine, 2026-07-04), Item 2 (Sort by Filename, 2026-07-05), Item 3 (Mobile ↔ Server Reading-State Sync, 2026-07-05) all built and manually verified. |
+| `v2.5/progress.md` | Narrative build history, scoped to v2.5 sessions (2026-07-03 through 2026-07-05). |
 | `v2.4/comicvault-changes-v2.4.md` | v2.4's build queue — closed 2026-07-02. Items 1–7, 9–13, 15–16 built and manually verified; Items 8/14 dropped, superseded by BUG-018 (open, tracked independently — not blocking this close-out). |
 | `v2.4/progress.md` | Narrative build history, scoped to v2.4 sessions (2026-06-29 through 2026-07-02) — the first version to use the per-version `progress.md` pattern. |
 | `v2.4/code-handoffs/bug-018-nested-comicinfo-scanner-fix.md` | BUG-018's scoped fix plan — moved here with the rest of the v2.4 folder; the bug itself stays open and tracked in `BUGS.md`, unaffected by the archive move. |

@@ -8,8 +8,9 @@ entry. **Entries dated 2026-06-28 or earlier point into `archive/v2.3/progress.m
 (progress.md became version-scoped starting with v2.4, archived alongside v2.3's
 close) — **entries from 2026-06-29 through 2026-07-02 point into
 `archive/v2.4/progress.md`** (v2.4 closed 2026-07-02, folder moved to `archive/`).
-**Entries from 2026-07-03 onward point into `v2.5/progress.md`** (`docs/v2.5/`
-created 2026-07-04, alongside Item 1's build).
+**Entries from 2026-07-03 through 2026-07-05 point into
+`archive/v2.5/progress.md`** (v2.5 closed 2026-07-05, folder moved to `archive/`).
+No active version folder right now — see `ROADMAP.md` "v2.6".
 
 ---
 

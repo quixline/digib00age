@@ -4,10 +4,11 @@ Paused, deferred, or future work — explicitly out of scope until unblocked or
 prioritized. If a request seems to fall under something listed here, flag it rather
 than building it; `archive/comicvault-changes-2.1.md` and
 `archive/comicvault-changes-v2.2.md` (both closed 2026-06-22),
-`archive/v2.3/comicvault-changes-v2.3.md` (closed 2026-06-29), and
-`archive/v2.4/comicvault-changes-v2.4.md` (closed 2026-07-02) covered the prior
-active queues. No active build queue right now — `docs/v2.5/` hasn't been created
-yet; real scoping starts whenever that triage session happens (see "v2.5" below).
+`archive/v2.3/comicvault-changes-v2.3.md` (closed 2026-06-29),
+`archive/v2.4/comicvault-changes-v2.4.md` (closed 2026-07-02), and
+`archive/v2.5/comicvault-changes-v2.5.md` (closed 2026-07-05) covered the prior
+active queues. No active build queue right now — `docs/v2.6/` hasn't been created
+yet; real scoping starts whenever that triage session happens (see "v2.6" above).
 
 ---
 
@@ -178,7 +179,21 @@ one, so it isn't a parked item unless a real need for it comes up separately.
 
 ---
 
-## v2.5 — holding list (v2.4 closed 2026-07-02; Item 1 closed 2026-07-04, rest not yet scoped)
+## v2.5 — closed 2026-07-05
+
+All three of v2.5's actual build-queue items resolved: Item 1 (ComicTagger +
+ComicVine, closed 2026-07-04), Item 2 (Sort by Filename, closed 2026-07-05), and
+Item 3 (Mobile ↔ Server Reading-State Sync, closed 2026-07-05) — all built and
+manually verified. `docs/v2.5/` moved to `docs/archive/v2.5/` as one bundle. The
+rest of the original six-item holding list below (OPDS, user guide, tooltips,
+installer) was either ruled out or bumped to v2.6, as already noted inline —
+this heading and the history underneath it are kept for context, not rewritten.
+
+**Correction to the record:** Item 1 below's own text ("This closes v2.5's own
+scope entirely") was written 2026-07-05 when Sort by Filename closed, but was
+premature — Mobile → Server Sync (numbered Item 2 in this holding list, tracked
+as v2.5 Item 3 in the build queue) was still open at that point. That item
+closed the same day, and *that's* what actually closes v2.5 out.
 
 Six items agreed 2026-06-29 (originally seven — "Processing Folder automation"
 moved to `v2.4/comicvault-changes-v2.4.md` Item 15 on 2026-06-30, see that doc's
@@ -256,7 +271,7 @@ Tez 2026-07-05:
    feature + sync engine + trigger wiring + status indicators. **Tez's manual
    test on the real tablet passed** — full detail, including a timezone-skew
    bug caught during review before it reached a device, in
-   `docs/v2.5/comicvault-changes-v2.5.md` Item 3 and `docs/v2.5/progress.md`.
+   `archive/v2.5/comicvault-changes-v2.5.md` Item 3 and `archive/v2.5/progress.md`.
    One planned verification step (visually confirming the `server_kept`
    conflict outcome via a second reader) couldn't be run — no working reader
    exists outside the Flutter app right now, tracked separately as `BUGS.md`
