@@ -4,6 +4,58 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### BUG-017 fix scoped to .cbz only, not .cbr
+
+**Decided:** 2026-07-05, before building the Android file-association fix.
+
+**Why:** The bug was originally logged covering both `.cbz`/`.cbr`, but
+`LocalCbzService` (`flutter_app/lib/services/local_cbz_service.dart`) decodes
+exclusively via `ZipDecoder()` — there is no RAR support anywhere in the
+Flutter app. Associating `.cbr` in the Android manifest would have put
+ComicVault in the "Open With" list for a format it can't actually read,
+which just trades "no app can open this" for a different, equally unhelpful
+failure once tapped.
+
+**Decision:** intent-filters registered for `.cbz` only. `.cbr` stays
+unassociated — exactly as unopenable as before, no regression introduced.
+
+**How to apply:** if CBR reading support is ever added to the Flutter reader,
+revisit extending the same intent-filter/`resolveSharedUri` mechanism to
+`.cbr` — the plumbing (native URI resolution, `_handleLink` routing) would
+carry over unchanged; only the manifest's MIME-type/pathPattern list and the
+archive-decoding side would need to grow.
+
+### Flutter's `shouldHandleDeeplinking()` disabled to fix a route-push crash found during BUG-017 testing
+
+**Decided:** 2026-07-05, mid-session, after live testing on Tez's tablet
+surfaced a crash the plan hadn't anticipated.
+
+**Why:** `FlutterActivity`'s default Android embedding behaviour
+auto-converts any incoming `ACTION_VIEW` intent into a raw
+`Navigator.pushNamed()` call using the intent URI's literal path as the
+route name — this happens *before* the `app_links` package's own
+`uriLinkStream` (what `main.dart`'s `_handleLink` listens on) ever sees the
+intent. A path like `/storage/emulated/0/Download/foo.cbz` isn't a
+registered route, so this crashed with "Could not find a generator for
+route" and silently swallowed the intent — meaning the manifest change
+alone would have gotten ComicVault into the Open With list, but tapping it
+would have crashed rather than opened anything. Confirmed via `adb logcat`
+against a plain installed APK first (no visible crash in that log, wrongly
+suggesting no problem), then conclusively by attaching `flutter run`
+directly to the tablet and reading the live Dart exception — the lesson
+being that `adb logcat` alone isn't sufficient for diagnosing Dart-level
+widget exceptions; a debugger-attached run surfaces them far more reliably.
+
+**Decision:** override `shouldHandleDeeplinking()` to return `false` in
+`MainActivity.kt`, leaving `app_links` as the sole path that receives
+incoming intents (native `VIEW` intent handling, not anything specific to
+CBZ files).
+
+**How to apply:** this affects *all* incoming `VIEW` intents to this app,
+including the pre-existing `comicvault://read/{id}` deep link — worth
+knowing if a future deep-linking change behaves unexpectedly, since Flutter's
+own automatic route-push is now deliberately off, not just quietly present.
+
 ### OPDS / 3rd-party reader connectivity ruled out — continue Flutter app development instead
 
 **Decided:** 2026-07-04, first scoping session for the v2.5 "OPDS" holding-list item.

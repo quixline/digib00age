@@ -496,3 +496,85 @@ previously-parked future-scope items remain, not urgent: (1) Reader → Server
 progress sync for local/offline mode; (2) a Custom-Tabs-equivalent for
 Flutter, if that's ever wanted (not committed to — this session deliberately
 chose removal over building a replacement).
+
+---
+
+## Session — 2026-07-05: BUG-017 fix — Android .cbz file association
+
+**Goal.** Fix BUG-017 (inbox capture from 2026-07-04/05 Sunday triage):
+tapping a `.cbz` file on Android and choosing "Open With" never offered
+ComicVault as a handler at all.
+
+**Scope decision, confirmed with Tez before building:** the bug was logged
+as "cbz/r," but `LocalCbzService` only ever decodes via `ZipDecoder()` —
+there's no RAR support anywhere in the app. Scoped the fix to `.cbz` only;
+`.cbr` stays exactly as unassociated as before (no regression, just not
+fixed) rather than adding an association that would just trade one error
+message for another.
+
+**Built:**
+- `AndroidManifest.xml` — two new `<intent-filter>` blocks on `.MainActivity`
+  for `ACTION_VIEW`: a MIME-type-based one (`application/vnd.comicbook+zip`,
+  `application/x-cbz`, `application/zip`) and a `pathPattern`-based fallback
+  (`mimeType="*/*"` + `.*\.cbz`) for file managers that send
+  `application/octet-stream` or no useful type.
+- `MainActivity.kt` — new `resolveSharedUri` method on the existing
+  `comicvault/local_file_picker` channel, reusing the `copyToCache()` helper
+  already written for the local file picker (BUG-020) to resolve an incoming
+  `content://`/`file://` URI to a real cache-file path.
+- `local_cbz_service.dart` — thin `resolveSharedUri()` Dart wrapper.
+- `main.dart` — `_handleLink()` extended: a `content://`/`file://` URI (as
+  opposed to the existing `comicvault://read/{id}` case) now resolves via
+  `resolveSharedUri()` and pushes `/reader/local`, the same route the in-app
+  file picker already uses.
+
+**Real bug found during testing, not anticipated in the plan.**
+`FlutterActivity`'s default Android embedding behavior auto-converts any
+incoming `ACTION_VIEW` intent into a raw `Navigator.pushNamed()` call using
+the URI's literal path as the route name — this runs *before* `app_links`'
+own `uriLinkStream` (what `_handleLink` listens on) ever sees the intent.
+Since a path like `/storage/emulated/0/Download/foo.cbz` isn't a registered
+route, this crashed with "Could not find a generator for route" and
+silently swallowed the intent — meaning the manifest change alone would
+have gotten ComicVault into the Open With list, but tapping it would have
+crashed instead of opening. Root-caused by attaching `flutter run` directly
+to Tez's tablet and reading the live Dart exception (plain `adb logcat`
+against an already-installed APK didn't surface it clearly). Fixed by
+overriding `shouldHandleDeeplinking()` to return `false` in `MainActivity`,
+leaving `app_links` as the sole path handling incoming intents — this is a
+stock Flutter/Android interaction, not specific to anything else in this
+codebase.
+
+**Verified, extensively, via `adb` against Tez's real tablet before any
+manual step:**
+- `pm resolve-activity` / `dumpsys package com.comicvault.comicvault`
+  confirmed Android now resolves ComicVault as a matching `.cbz` handler for
+  all three registered MIME types plus the extension-pattern fallback.
+- Firing real `VIEW` intents confirmed the crash was gone post-fix.
+- Temporarily added debug prints (removed before the final build) traced the
+  intent all the way through `_handleLink` → `resolveSharedUri` → the native
+  method, with no exceptions in the Dart/native bridge.
+- The one thing `adb` couldn't fully simulate: a real, permission-granted
+  `content://` URI. A hand-built `file://` URI correctly failed with
+  `EACCES` (Android's scoped storage doing exactly what it's supposed to),
+  and MediaStore's raw path querying is itself locked down for the same
+  reason — both expected platform behavior, not app bugs, but they meant the
+  very last step needed a real tap-through rather than another adb
+  workaround.
+
+**Tez's manual test passed:** tapped a `.cbz` in the file manager, ComicVault
+now appears under Open With, selected it, opened correctly into the reader.
+
+**Aside — bug-numbering collision noticed, not touched:** `archive/bugs-fixed-archive.md`
+already has an unrelated, earlier-fixed bug also numbered BUG-017 ("All-tab
+Favourites filter only checks one issue per series," fixed 2026-07-01). This
+fix's entry was appended using the same "BUG-017" label the live `BUGS.md`/
+`ROADMAP.md`/`meta/roadmap.html` all already referenced it by — didn't
+renumber the historical entry, since that's outside this session's scope and
+risks its own confusion. Worth a glance next time bug numbers are assigned.
+
+**Docs updated this session:** `BUGS.md` (BUG-017 entry removed),
+`archive/bugs-fixed-archive.md` (BUG-017 fixed entry appended), `CHANGELOG.md`,
+`ROADMAP.md` (stale BUG-017 cross-reference under the Mobile → Server Sync
+item corrected), `meta/roadmap.html` (same cross-reference corrected), this
+file.

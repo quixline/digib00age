@@ -26,6 +26,16 @@ class MainActivity : FlutterActivity() {
     private val pickCbzRequestCode = 4242
     private var pendingResult: MethodChannel.Result? = null
 
+    // BUG-017: FlutterActivity's default behavior auto-forwards any
+    // ACTION_VIEW intent's data as a raw route push (Navigator.pushNamed on
+    // the URI's path) before app_links' own uriLinkStream/getInitialLink
+    // ever sees it — since a literal file path like
+    // "/storage/emulated/0/Download/foo.cbz" isn't a registered route, that
+    // crashes with "Could not find a generator for route" and swallows the
+    // intent entirely. Disabling it lets app_links (see main.dart
+    // _handleLink) be the single path that receives incoming intents.
+    override fun shouldHandleDeeplinking(): Boolean = false
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName).setMethodCallHandler { call, result ->
@@ -36,6 +46,24 @@ class MainActivity : FlutterActivity() {
                     addCategory(Intent.CATEGORY_OPENABLE)
                 }
                 startActivityForResult(intent, pickCbzRequestCode)
+            } else if (call.method == "resolveSharedUri") {
+                // BUG-017: a .cbz opened from outside the app (file manager
+                // "Open With") arrives as a content:// URI via the intent
+                // filter in AndroidManifest.xml; this resolves it to a local
+                // cache path the same way pickCbz does, reusing copyToCache.
+                val uriString = call.arguments as? String
+                if (uriString == null) {
+                    result.error("RESOLVE_SHARED_URI_FAILED", "No URI provided", null)
+                } else {
+                    Thread {
+                        try {
+                            val path = copyToCache(Uri.parse(uriString))
+                            runOnUiThread { result.success(path) }
+                        } catch (e: Exception) {
+                            runOnUiThread { result.error("RESOLVE_SHARED_URI_FAILED", e.message, null) }
+                        }
+                    }.start()
+                }
             } else {
                 result.notImplemented()
             }

@@ -21,6 +21,13 @@ class LocalCbzService {
     return _localFilePickerChannel.invokeMethod<String>('pickCbz');
   }
 
+  // Resolves a content://|file:// URI (from a .cbz opened externally via
+  // "Open With" — see BUG-017) to a local cache path, using the same native
+  // copy-to-cache logic pickFile()'s picker result goes through.
+  Future<String?> resolveSharedUri(String uriString) async {
+    return _localFilePickerChannel.invokeMethod<String>('resolveSharedUri', uriString);
+  }
+
   // listPages()/readPage() are both called once per page while a comic is
   // open (LocalReaderScreen._load()). Without caching, each call re-read and
   // re-decoded the entire archive from disk — for a 40-page, 346MB issue,

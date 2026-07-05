@@ -111,7 +111,7 @@ bug count corrected 2026-07-05 (BUG-019/020/008 fixed 2026-07-04) — see footno
 
 <div class="bugs-strip">
   <i class="ti ti-bug"></i>
-  <span><span class="count">4</span> open bugs — not on this sequence, ride along
+  <span><span class="count">5</span> open bugs — not on this sequence, ride along
   with whatever's being built. See <code>BUGS.md</code>.</span>
 </div>
 
@@ -122,9 +122,9 @@ bug count corrected 2026-07-05 (BUG-019/020/008 fixed 2026-07-04) — see footno
     <div class="lane-head">
       <div>
         <div class="lane-title">Now</div>
-        <div class="lane-sub">OPDS ruled out 2026-07-04 (DECISIONS.md); mobile connectivity/crash/2000-AD-tab bugs fixed same day — next up is custom-scripts scoping, the v2.6 redesign, and continued Flutter development</div>
+        <div class="lane-sub">Queue re-set 2026-07-05 (Tez): custom-scripts scoping, then Mobile→Server Sync scoping, then Web and Mobile UI redesign scoped as two separate efforts</div>
       </div>
-      <div class="lane-count">3</div>
+      <div class="lane-count">4</div>
     </div>
     <div class="cards">
 
@@ -145,17 +145,17 @@ bug count corrected 2026-07-05 (BUG-019/020/008 fixed 2026-07-04) — see footno
         <div class="card-top">
           <div class="order-badge ob-now">2</div>
           <div>
-            <div class="c-title">v2.6 — UI Redesign</div>
-            <div class="c-sub">Header unification (v2.3 Item 14) + BUG-014, bundled</div>
-            <span class="chip blocked">blocked — Claude Design</span>
+            <div class="c-title">Scope: Mobile → Server Sync</div>
+            <div class="c-sub">Sharpened 2026-07-05 from the generic "continue Flutter dev" entry</div>
           </div>
         </div>
         <div class="c-detail">
-          Blocked on a parked exploration with Claude Design on overall UI
-          redesign direction. Both items share a root cause (the four main
-          surface tabs never call <code>pushState</code>) — revisit together
-          once that direction exists.
-          <div class="ref">ROADMAP.md — "v2.6 — UI Redesign" · BUGS.md BUG-014</div>
+          Local/offline reading progress on the Flutter app has no persistence
+          back to the ComicVault DB right now (SPEC.md) — this is the only
+          backend/functional Flutter work currently identified as needed.
+          (BUG-017 — Android had no <code>.cbz</code> file association — was a
+          related but separate item; fixed and verified on-device 2026-07-05.)
+          <div class="ref">ROADMAP.md — "v2.5 — holding list" · archive/bugs-fixed-archive.md BUG-017</div>
         </div>
       </div>
 
@@ -163,20 +163,32 @@ bug count corrected 2026-07-05 (BUG-019/020/008 fixed 2026-07-04) — see footno
         <div class="card-top">
           <div class="order-badge ob-now">3</div>
           <div>
-            <div class="c-title">Flutter app — continued development</div>
-            <div class="c-sub">OPDS/3rd-party-reader route ruled out 2026-07-04 — decision made to keep developing this instead</div>
+            <div class="c-title">Scope: Web UI Redesign</div>
+            <div class="c-sub">Split 2026-07-05 from the old single "v2.6 UI Redesign" placeholder</div>
+            <span class="chip blocked">possible — Claude Design</span>
           </div>
         </div>
         <div class="c-detail">
-          Connection failure, CBZ-select crash, and the broken 2000 AD tab
-          (BUG-019/020/008 — all found in the same 2026-07-04 report) are all
-          fixed and verified on Tez's real tablet. Next scope not yet
-          triaged — candidates: Reader → Server progress sync for local/
-          offline mode, a "Browse local files" icon next to search. A
-          Custom-Tabs-equivalent for Flutter is <em>not</em> committed to —
-          BUG-008's fix chose removing the broken 2000 AD tab over building
-          one.
-          <div class="ref">ROADMAP.md — "Mobile app connectivity fix" · DECISIONS.md · archive/bugs-fixed-archive.md</div>
+          Covers header unification (v2.3 Item 14) + BUG-014 (both share a
+          root cause — the four main surface tabs never call
+          <code>pushState</code>), the deferred Admin Custom Tabs field
+          removal, and other web-surface items parked pending "UI redesign."
+          Own discussion/design pass, possibly with Claude Design.
+          <div class="ref">ROADMAP.md — "v2.5 — holding list" · BUGS.md BUG-014</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">4</div>
+          <div>
+            <div class="c-title">Scope: Mobile UI Redesign</div>
+            <div class="c-sub">Flutter-side counterpart to #3 — split out, not assumed same scope/timeline</div>
+            <span class="chip blocked">possible — Claude Design</span>
+          </div>
+        </div>
+        <div class="c-detail">
+          <div class="ref">ROADMAP.md — "v2.5 — holding list"</div>
         </div>
       </div>
 
@@ -188,7 +200,7 @@ bug count corrected 2026-07-05 (BUG-019/020/008 fixed 2026-07-04) — see footno
     <div class="lane-head">
       <div>
         <div class="lane-title">Next</div>
-        <div class="lane-sub">v2.5 — remaining holding list, not started</div>
+        <div class="lane-sub">v2.6 — moved from v2.5 2026-07-05 to sit alongside the UI redesign work</div>
       </div>
       <div class="lane-count">3</div>
     </div>
@@ -206,7 +218,7 @@ bug count corrected 2026-07-05 (BUG-019/020/008 fixed 2026-07-04) — see footno
           The v2.3 Password Recovery popup already assumes a guide will exist and
           link to it — worth checking for other such assumptions before scoping
           from scratch.
-          <div class="ref">ROADMAP.md — "v2.5" · ADMIN_SPEC.md §7.1.7</div>
+          <div class="ref">ROADMAP.md — "v2.5 — holding list" · ADMIN_SPEC.md §7.1.7</div>
         </div>
       </div>
 
@@ -215,11 +227,11 @@ bug count corrected 2026-07-05 (BUG-019/020/008 fixed 2026-07-04) — see footno
           <div class="order-badge ob-next">2</div>
           <div>
             <div class="c-title">Add: tooltips (mouseover) site-wide</div>
-            <div class="c-sub">Low priority within v2.5, but now has a version attached</div>
+            <div class="c-sub">Low priority, fits naturally alongside the UI redesign work</div>
           </div>
         </div>
         <div class="c-detail">
-          <div class="ref">ROADMAP.md — "v2.5"</div>
+          <div class="ref">ROADMAP.md — "v2.5 — holding list"</div>
         </div>
       </div>
 
@@ -234,7 +246,7 @@ bug count corrected 2026-07-05 (BUG-019/020/008 fixed 2026-07-04) — see footno
         <div class="c-detail">
           Current setup assumes Windows-specific paths and the pystray tray
           launcher — likely its own dedicated scoping session, not a quick pass.
-          <div class="ref">ROADMAP.md — "v2.5"</div>
+          <div class="ref">ROADMAP.md — "v2.5 — holding list"</div>
         </div>
       </div>
 

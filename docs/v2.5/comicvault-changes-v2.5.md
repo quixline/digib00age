@@ -141,6 +141,9 @@ against an external source); the credits/HTML fixes; the scheduled
 Auto-Tag stage run against real titles; the Match Ratio Threshold slider's
 save/persist behaviour; and the low-confidence/real-world match-quality
 pass above. `meta/roadmap.html`'s Now #1 card removed 2026-07-04 (item
-complete) — next up is scoping OPDS.
+complete). **Note, added later the same day:** OPDS was scoped next as
+originally planned, but ruled out (see `DECISIONS.md`/`ROADMAP.md`) — the
+Flutter mobile-bugs fixes took its place as Now #1 and are also now closed;
+the remaining v2.5 holding-list items still need their own triage session.
 
 ---

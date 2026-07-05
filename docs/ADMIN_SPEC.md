@@ -1237,12 +1237,12 @@ dropped 2026-07-01, see the Change Log entry below and 11.1.1.
   Rename was dropped 2026-07-01. See Change Log for both.)
 - Same local-only gating as all Processing Tools (§11 shared notes). The section is
   greyed out with an explanatory hint for remote sessions.
-- Same pre-ingest/staging positioning as §11.1–12.3. Not restricted to any specific
+- Same pre-ingest/staging positioning as §11.1–§11.3. Not restricted to any specific
   folder; not a library-wide bulk tool.
 
 #### 11.4.2 Folder Selection
 
-- Single folder selection — same in-app folder-tree picker as §11.1–12.3 (no native
+- Single folder selection — same in-app folder-tree picker as §11.1–§11.3 (no native
   OS dialog, no `library_root` restriction, Up climbs to a drive-letter list, no
   recursion).
 - One folder applies to the whole pipeline. There is no per-stage folder override.

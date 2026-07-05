@@ -53,6 +53,26 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
       if (id != null) {
         _navigatorKey.currentState?.pushNamed('/reader', arguments: id);
       }
+      return;
+    }
+    // BUG-017: a .cbz opened from outside the app (file manager "Open
+    // With", browser download) arrives here as a content://|file:// URI,
+    // via the same app_links stream the comicvault:// deep link uses.
+    if (uri.scheme == 'content' || uri.scheme == 'file') {
+      _openSharedCbz(uri);
+    }
+  }
+
+  Future<void> _openSharedCbz(Uri uri) async {
+    try {
+      final path = await _localCbz.resolveSharedUri(uri.toString());
+      if (path == null) return;
+      widget.settings.addRecentLocalFile(path);
+      _navigatorKey.currentState?.pushNamed('/reader/local', arguments: path);
+    } catch (_) {
+      // Resolution failed (revoked permission, unreadable stream, etc.) —
+      // nothing to open; fail silently rather than crash, same as
+      // LibraryScreen._openLocalFile() does when the picker returns null.
     }
   }
 

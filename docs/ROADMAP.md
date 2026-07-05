@@ -208,25 +208,50 @@ reasoning in `DECISIONS.md`. Removed as a v2.5 holding-list item — the mobile
 app connectivity fix above (`## Mobile app connectivity fix`) replaced it as
 `meta/roadmap.html`'s Now #1, since fixed and closed 2026-07-04; `meta/
 roadmap.html` regenerated 2026-07-05 to drop OPDS and reflect the fix.
-- **Scope: running custom scripts on the Processing Folder.** Originally listed
-  alongside Processing Folder Automation as "likely worth scoping together" —
-  stays here in v2.5 on its own (Tez's explicit call, 2026-06-30) even though
-  Processing Folder Automation itself moved forward into v2.4 Item 15. Revisit
-  whether this still makes sense to scope together once Item 15's design exists.
-- **Add: user guide.** Not yet scoped at all — first mention. `ADMIN_SPEC.md`
-  §7.1.7's Password Recovery popup (v2.3 Item 10) already explicitly said the
-  guide, once built, should link to that popup rather than duplicating its
-  instructions — worth checking for any other place a spec already assumes a
-  guide exists before scoping this from scratch.
-- **Add: tooltips (mouseover) site-wide.** Low priority within v2.5 itself, but
-  now has a version attached rather than "end of main dev/design phase" with no
-  target.
-- **Scope: installer — Windows, Mac, and Linux.** Expanded scope, 2026-06-29 —
-  previously Windows-only and unprioritized (`SPEC.md` §20.14: "setup is manual,
-  `config.json` + `start.bat`"). Cross-platform installer is a meaningfully bigger
-  scoping question than a Windows-only one (the app's current setup assumes
-  Windows-specific paths/the pystray tray launcher) — flag this scope session as
-  likely needing its own dedicated time, not a quick pass.
+**v2.5's remaining scope is now just Item 2 below** — the other holding-list
+items (user guide, tooltips, installer) were bumped to v2.6 on 2026-07-05, since
+UI redesign work (web + mobile) is happening in that version anyway and these
+fit better alongside it than as v2.5 stragglers. Queue order confirmed with
+Tez 2026-07-05:
+
+1. **Scope: running custom scripts on the Processing Folder** (v2.5 Item 2).
+   Originally listed alongside Processing Folder Automation as "likely worth
+   scoping together" — stays on its own (Tez's explicit call, 2026-06-30) even
+   though Processing Folder Automation itself moved forward into v2.4 Item 15.
+   Revisit whether this still makes sense to scope together now that Item 15's
+   design exists. **Next up.**
+2. **Scope: Mobile → Server Sync** (v2.6). Sharpened 2026-07-05 from the
+   previously-generic "continue Flutter dev" Now-lane entry — this is the
+   specific parked item from the BUG-008 session (`## v2.5 — holding list`
+   history above): local/offline reading progress on the Flutter app has no
+   persistence back to the ComicVault DB at all right now (`SPEC.md`). This is
+   the only backend/functional Flutter work currently identified as needed.
+   (BUG-017 — Android had no `.cbz` file association — was a related but
+   separate item; fixed and verified on-device 2026-07-05, see
+   `archive/bugs-fixed-archive.md`.)
+3. **Scope: Web UI Redesign** (v2.6). Replaces the old single "v2.6 UI
+   Redesign" placeholder — split 2026-07-05 into web and mobile as two
+   separate scoping/design efforts, each needing its own discussion (possibly
+   with Claude Design). Covers the header-unification/back-button work noted
+   under BUG-014 above, the deferred Admin Custom Tabs field removal, and any
+   other web-surface items already parked pending "UI redesign."
+4. **Scope: Mobile UI Redesign** (v2.6). The Flutter-side counterpart to #3,
+   split out as its own item rather than assumed identical scope/timeline to
+   the web redesign.
+5. **Add: user guide** (v2.6, moved from v2.5 2026-07-05). Not yet scoped at
+   all. `ADMIN_SPEC.md` §7.1.7's Password Recovery popup (v2.3 Item 10) already
+   explicitly said the guide, once built, should link to that popup rather than
+   duplicating its instructions — worth checking for any other place a spec
+   already assumes a guide exists before scoping this from scratch.
+6. **Add: tooltips (mouseover) site-wide** (v2.6, moved from v2.5 2026-07-05).
+   Low priority, fits naturally alongside the UI redesign work.
+7. **Scope: installer — Windows, Mac, and Linux** (v2.6, moved from v2.5
+   2026-07-05). Expanded scope, 2026-06-29 — previously Windows-only and
+   unprioritized (`SPEC.md` §20.14: "setup is manual, `config.json` +
+   `start.bat`"). Cross-platform installer is a meaningfully bigger scoping
+   question than a Windows-only one (the app's current setup assumes
+   Windows-specific paths/the pystray tray launcher) — flag this scope session
+   as likely needing its own dedicated time, not a quick pass.
 
 ---
 

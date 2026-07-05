@@ -10,8 +10,14 @@
 > **Status:** Built and verified (2026-06-18) — all of Section 10's build order is complete:
 > shared core, genres endpoint, pre-migration report, Basic Editor, Full Editor, and the
 > tray app/Admin page wiring. See `progress.md` for the per-step build log and what was
-> verified. CAPT is fully retired as a separate app. Next: live use by Tez, working through
-> the pre-migration report's flagged issues, and any V2.1 follow-up fixes that surface.
+> verified. CAPT is fully retired as a separate app.
+>
+> **Section 9 (ComicTagger Integration / Search Online) added and built 2026-07-04**
+> (v2.5 Item 1, closed) — see `docs/v2.5/progress.md` for the full build/test
+> narrative, including Tez's deferred low-confidence/real-world match-quality pass,
+> completed the same day. See this file's Change Log (bottom) for build-time
+> corrections made during that testing (filename-parsing fallback + assume-issue-1
+> default, 80% match threshold, expanded field mapping).
 
 ---
 

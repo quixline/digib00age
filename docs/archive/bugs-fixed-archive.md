@@ -708,3 +708,64 @@ through all three tabs with no errors or crashes.
 **This closes out the last open item from the 2026-07-04 mobile-bugs
 report** (BUG-019 connection failure, BUG-020 CBZ-select crash, and this —
 all found in the same report, all independent root causes, all now fixed).
+
+---
+
+### BUG-017 — Android: no file association for .cbz to open in the app
+
+**Found:** 2026-07-04 (late), Tez, outside a build session — inbox capture
+during Sunday triage 2026-07-05.
+
+**Scope decision, before building:** the title as originally logged said
+"cbz/r," but the Flutter reader has no RAR decoder anywhere in its code —
+`LocalCbzService` decodes exclusively via `ZipDecoder()`. Confirmed with Tez:
+scope this fix to `.cbz` only. Associating `.cbr` too would have put
+ComicVault in the "Open With" list for files it can't actually read, trading
+"no app can open this" for a different, equally unhelpful error. `.cbr`
+stays unassociated — exactly as unopenable as it was before, no regression.
+
+**Fix, 2026-07-05:**
+- `AndroidManifest.xml` — two new `<intent-filter>` blocks on `.MainActivity`
+  for `ACTION_VIEW`: one matching the MIME types real file managers actually
+  send for zip-based comic archives (`application/vnd.comicbook+zip`,
+  `application/x-cbz`, `application/zip`), one as a fallback matching the
+  literal `.cbz` extension via `pathPattern` for managers that send
+  `application/octet-stream` or no useful type at all (requires
+  `mimeType="*/*"` alongside the pattern — omitting it restricts the filter
+  to untyped intents, which real "Open With" launches essentially never are).
+- `MainActivity.kt` — new `resolveSharedUri` method on the existing
+  `comicvault/local_file_picker` channel, reusing the already-existing
+  `copyToCache()` helper (written for the local file picker, BUG-020) to
+  stream a `content://`/`file://` URI into a cache file and return a real
+  path.
+- **A second, previously-invisible bug found during testing:**
+  `FlutterActivity`'s default behaviour auto-converts any incoming
+  `ACTION_VIEW` intent into a raw `Navigator.pushNamed()` call using the
+  URI's literal path as the route name — before `app_links`' own
+  `uriLinkStream` (what `main.dart`'s `_handleLink` listens on) ever saw it.
+  Since a path like `/storage/emulated/0/Download/foo.cbz` isn't a
+  registered route, this crashed with "Could not find a generator for
+  route" and silently swallowed the intent. This is a stock Flutter/Android
+  embedding behaviour, unrelated to anything specific to this fix — fixed by
+  overriding `shouldHandleDeeplinking()` to return `false` in `MainActivity`,
+  so `app_links` is the sole path handling incoming intents. (Root-caused by
+  attaching `flutter run` directly to the tablet and reading the live Dart
+  exception — plain `adb logcat` on an installed APK didn't surface it
+  clearly enough to diagnose.)
+- `local_cbz_service.dart` — thin `resolveSharedUri()` wrapper.
+- `main.dart` — `_handleLink()` now routes any `content://`/`file://` URI
+  (as opposed to the existing `comicvault://read/{id}` case) through
+  `resolveSharedUri()` and into the existing `/reader/local` route, the same
+  one the in-app file picker already uses.
+
+**Verified:** extensively via `adb` against Tez's real tablet before any
+manual step — `pm resolve-activity`/`dumpsys package` confirmed Android
+resolves ComicVault as a `.cbz` handler; firing real `VIEW` intents
+confirmed no crash post-fix and traced (via temporary debug prints, removed
+before final build) that the intent correctly reaches `resolveSharedUri`
+with no exceptions in the Dart/native bridge. The one thing `adb` couldn't
+simulate — a real, permission-granted `content://` URI, since Android's
+scoped storage rejects a hand-built `file://` URI with `EACCES`, and
+MediaStore's raw path querying is itself locked down — was confirmed by
+Tez's own manual test: tapped a `.cbz` in the file manager, ComicVault
+appeared under Open With, selected it, opened correctly into the reader.

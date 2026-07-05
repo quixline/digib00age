@@ -13,6 +13,19 @@ created 2026-07-04, alongside Item 1's build).
 
 ---
 
+- **2026-07-05** — BUG-017 fixed and verified on-device: Android had no file
+  association for `.cbz` — tapping one in a file manager never offered
+  ComicVault under "Open With". Added Android intent-filters for `.cbz`
+  (scoped to `.cbz` only — the app has no RAR decoder, so `.cbr` stays
+  unassociated), plus a fix for a second bug found during testing: Flutter's
+  default `FlutterActivity` behavior was auto-consuming the incoming intent
+  as a bogus route push before the app's own handling ever ran, crashing
+  with "Could not find a generator for route" (fixed via
+  `shouldHandleDeeplinking() = false`). Verified extensively via `adb`
+  (manifest resolution, crash-free intent handling) and finally confirmed by
+  Tez tapping a real `.cbz` on the tablet — ComicVault appeared under Open
+  With and opened it correctly. → `v2.5/progress.md` "Session — 2026-07-05
+  (BUG-017 fix — Android .cbz file association)"
 - **2026-07-04** — BUG-008 fixed: removed the Flutter app's broken 2000 AD
   tab entirely (Tez's call — not worth building a Custom Tabs equivalent for
   Flutter just to replace it). Deleted `two_thousand_ad_screen.dart`, dropped

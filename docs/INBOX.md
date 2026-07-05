@@ -40,12 +40,16 @@ until triaged — only processed lines ever leave.
 
 (empty — add lines below this heading as they come to you)
 
-[bug] mobile app - doesn't connect to 192.168.0.151:9424
-
 
 ---
 
 ## Processed (awaiting Sunday prune)
+
+### Triaged 2026-07-05
+
+- ~~[bug] mobile app - doesn't connect to 192.168.0.151:9424~~ → this is BUG-019, already fixed and archived 2026-07-04 (`archive/bugs-fixed-archive.md`) — inbox line lagged the fix.
+
+- ~~[bug] Android: no way to associate .cbz/.cbr files to open in the app (spotted late 2026-07-04)~~ → added to `BUGS.md` as BUG-017, not yet scoped.
 
 ### Triaged 2026-07-03
 
