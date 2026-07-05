@@ -4,17 +4,25 @@ import '../models/series.dart';
 import '../services/api_service.dart';
 import '../services/settings_service.dart';
 import '../services/local_cbz_service.dart';
+import '../services/download_service.dart';
+import '../services/sync_service.dart';
+import '../route_observer.dart';
+import 'reader_screen.dart' show LocalReaderArgs;
 
 class LibraryScreen extends StatefulWidget {
   final ApiService api;
   final SettingsService settings;
   final LocalCbzService localCbz;
+  final DownloadService downloads;
+  final SyncService syncService;
 
   const LibraryScreen({
     super.key,
     required this.api,
     required this.settings,
     required this.localCbz,
+    required this.downloads,
+    required this.syncService,
   });
 
   @override
@@ -22,11 +30,12 @@ class LibraryScreen extends StatefulWidget {
 }
 
 class _LibraryScreenState extends State<LibraryScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, RouteAware {
   late TabController _tabs;
   bool _serverOnline = false;
   bool _loading = true;
   String? _error;
+  bool _syncing = false;
 
   List<Series> _seriesList = [];
   List<Series> _singlesList = [];
@@ -45,10 +54,26 @@ class _LibraryScreenState extends State<LibraryScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    routeObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _tabs.dispose();
     super.dispose();
   }
+
+  // RouteAware — fires when a route pushed on top of this screen (e.g. the
+  // reader, after opening a downloaded issue) is popped back to this screen.
+  // LibraryScreen sits at the app root and is only pushed once, so its own
+  // initState() never re-runs on back-navigation — this is what actually
+  // catches "closed the reader, foregrounded the library" for the
+  // reconnect/foreground sync trigger (v2.5 Item 3).
+  @override
+  void didPopNext() => _checkAndLoad();
 
   Future<void> _checkAndLoad() async {
     final online = await widget.api.checkConnection();
@@ -56,9 +81,37 @@ class _LibraryScreenState extends State<LibraryScreen>
     setState(() => _serverOnline = online);
     if (online) {
       await _loadLibrary();
+      _syncInBackground(); // fire-and-forget, same "best-effort" spirit as ApiService.updateProgress()
     } else {
       setState(() => _loading = false);
     }
+  }
+
+  Future<void> _syncInBackground() async {
+    await widget.syncService.syncNow();
+    if (mounted) setState(() {}); // refresh "last synced" label + dirty markers
+  }
+
+  Future<void> _syncNowManual() async {
+    setState(() => _syncing = true);
+    try {
+      final result = await widget.syncService.syncNow();
+      if (!mounted) return;
+      final parts = <String>[];
+      if (result.pushed > 0) parts.add('${result.pushed} pushed');
+      if (result.serverWon > 0) parts.add('${result.serverWon} kept server-side');
+      if (result.failed > 0) parts.add('${result.failed} failed');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(parts.isEmpty ? 'Nothing to sync' : 'Synced: ${parts.join(', ')}')),
+      );
+    } finally {
+      if (mounted) setState(() => _syncing = false);
+    }
+  }
+
+  String _lastSyncedLabel() {
+    final last = widget.syncService.lastSyncedAt;
+    return last == null ? 'Never synced' : 'Synced ${_formatAgo(last)}';
   }
 
   Future<void> _loadLibrary() async {
@@ -102,7 +155,17 @@ class _LibraryScreenState extends State<LibraryScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ComicVault'),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('ComicVault'),
+            Text(
+              _lastSyncedLabel(),
+              style: const TextStyle(fontSize: 11, color: Colors.white60, fontWeight: FontWeight.normal),
+            ),
+          ],
+        ),
         bottom: _serverOnline
             ? TabBar(
                 controller: _tabs,
@@ -114,6 +177,17 @@ class _LibraryScreenState extends State<LibraryScreen>
               )
             : null,
         actions: [
+          IconButton(
+            icon: _syncing
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.sync),
+            tooltip: 'Sync now',
+            onPressed: _syncing ? null : _syncNowManual,
+          ),
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: _openSearch,
@@ -215,6 +289,7 @@ class _LibraryScreenState extends State<LibraryScreen>
 
   Widget _buildOfflineBody() {
     final recentFiles = widget.settings.recentLocalFiles;
+    final downloaded = widget.downloads.list();
     return Column(
       children: [
         Container(
@@ -241,41 +316,84 @@ class _LibraryScreenState extends State<LibraryScreen>
             label: const Text('Open local CBZ file'),
           ),
         ),
-        if (recentFiles.isNotEmpty) ...[
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text('Recent files', style: TextStyle(color: Colors.white60)),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: recentFiles.length,
-              itemBuilder: (context, i) {
-                final path = recentFiles[i];
-                return ListTile(
-                  leading: const Icon(Icons.book),
-                  title: Text(widget.localCbz.titleFromPath(path), style: const TextStyle(fontSize: 14)),
-                  subtitle: Text(path, style: const TextStyle(fontSize: 11, color: Colors.white38)),
-                  onTap: () => Navigator.of(context).pushNamed(
-                    '/reader/local',
-                    arguments: path,
+        Expanded(
+          child: ListView(
+            children: [
+              // "Downloaded" — comics fetched from the server for offline
+              // reading (v2.5 Item 3), kept separate from the ad-hoc
+              // "Recent files" list of arbitrarily opened CBZs below.
+              if (downloaded.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Downloaded', style: TextStyle(color: Colors.white60)),
                   ),
-                );
-              },
-            ),
+                ),
+                ...downloaded.map((d) {
+                  final dirty = widget.syncService.store
+                      .dirtyItems()
+                      .any((p) => p.issueId == d.issueId);
+                  return ListTile(
+                    leading: const Icon(Icons.check_circle, color: Colors.greenAccent, size: 20),
+                    title: Text(
+                      d.number != null ? '${d.series} #${d.number}' : d.series,
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                    subtitle: Text(
+                      dirty
+                          ? 'Downloaded ${_formatAgo(d.downloadedAt)} · Not synced'
+                          : 'Downloaded ${_formatAgo(d.downloadedAt)}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: dirty ? Colors.amber : Colors.white38,
+                      ),
+                    ),
+                    onTap: () => Navigator.of(context).pushNamed(
+                      '/reader/local',
+                      arguments: LocalReaderArgs(d.localFilePath, issueId: d.issueId),
+                    ),
+                  );
+                }),
+              ],
+              if (recentFiles.isNotEmpty) ...[
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Recent files', style: TextStyle(color: Colors.white60)),
+                  ),
+                ),
+                ...recentFiles.map((path) => ListTile(
+                      leading: const Icon(Icons.book),
+                      title: Text(widget.localCbz.titleFromPath(path), style: const TextStyle(fontSize: 14)),
+                      subtitle: Text(path, style: const TextStyle(fontSize: 11, color: Colors.white38)),
+                      onTap: () => Navigator.of(context).pushNamed(
+                        '/reader/local',
+                        arguments: LocalReaderArgs(path),
+                      ),
+                    )),
+              ],
+            ],
           ),
-        ],
+        ),
       ],
     );
+  }
+
+  String _formatAgo(DateTime when) {
+    final diff = DateTime.now().toUtc().difference(when);
+    if (diff.inMinutes < 1) return 'just now';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+    if (diff.inHours < 24) return '${diff.inHours}h ago';
+    return '${diff.inDays}d ago';
   }
 
   Future<void> _openLocalFile() async {
     final path = await widget.localCbz.pickFile();
     if (path == null || !mounted) return;
     widget.settings.addRecentLocalFile(path);
-    Navigator.of(context).pushNamed('/reader/local', arguments: path);
+    Navigator.of(context).pushNamed('/reader/local', arguments: LocalReaderArgs(path));
   }
 
   void _openSearch() async {

@@ -345,6 +345,13 @@ account in `progress.md` "Session — 2026-06-21: Tier 4 Item 3".
 | `current_page` | INTEGER | Last page viewed (0-indexed) |
 | `last_read_at` | DATETIME | For "continue reading" sort |
 
+**Mobile sync (v2.5 Item 3):** one canonical row per issue, unchanged by sync — no
+device concept or history log was added to this table. `POST /sync/progress` (§10)
+reconciles offline-captured tablet progress against this same table using
+last-write-wins: the client's captured `updated_at` is compared against `last_read_at`;
+whichever is newer is authoritative (a missing row or an exact tie goes to the
+incoming client write). See `mobile-server-sync-scope.md` for the product scope.
+
 ---
 
 ## 8. Fields Dropped from DB
@@ -381,7 +388,7 @@ These ComicInfo.xml fields are intentionally not stored:
 
 **Framework:** FastAPI
 **Base URL:** `http://localhost:8000/api`
-**Files:** `backend/routers/library.py`, `reader.py`, `progress.py`, `admin.py`
+**Files:** `backend/routers/library.py`, `reader.py`, `progress.py`, `admin.py`, `sync.py`
 
 | Method | Endpoint | Purpose |
 |---|---|---|
@@ -393,6 +400,7 @@ These ComicInfo.xml fields are intentionally not stored:
 | GET | `/issue/{id}/pages` | List of page image URLs in order |
 | GET | `/page/{issue_id}/{page_number}` | Serve single page image from CBZ |
 | GET | `/cover/{issue_id}` | Serve cover thumbnail |
+| GET | `/issue/{id}/download` | Serve the whole CBZ/CBR file (Flutter offline download, v2.5 Item 3) |
 | GET | `/search?q=` | Search across series, title, writer, characters, story_arc |
 | GET | `/browse/publishers` | Publisher list with series counts |
 | GET | `/browse/genres` | Genre list (SELECT DISTINCT from issue_genres) |
@@ -401,6 +409,7 @@ These ComicInfo.xml fields are intentionally not stored:
 | GET | `/reading/continue` | Issues with status="reading", sorted by last_read_at |
 | GET | `/reading/unread` | All unread issues, newest first |
 | POST | `/progress/{issue_id}` | Update status + current_page |
+| POST | `/sync/progress` | Batch-reconcile offline tablet progress, last-write-wins by timestamp (v2.5 Item 3) |
 | POST | `/scan` | Trigger full library rescan |
 | POST | `/scan/file?path=` | Rescan single file (called by editor after save) |
 | GET | `/scan/status` | Scan progress for UI progress bar |

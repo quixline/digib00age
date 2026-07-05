@@ -4,6 +4,7 @@ import '../models/issue.dart';
 import '../services/api_service.dart';
 import '../services/settings_service.dart';
 import '../services/local_cbz_service.dart';
+import '../services/sync_store.dart';
 import '../widgets/comic_page_view.dart';
 import '../widgets/toolbar_overlay.dart';
 
@@ -172,16 +173,29 @@ class _ReaderScreenState extends State<ReaderScreen> {
 // Local file reader
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Route arguments for '/reader/local'. issueId is only set when opening a
+// DownloadedIssue (v2.5 Item 3) — arbitrary files picked via the file picker
+// or "Open With" pass issueId: null and behave exactly as before this item.
+class LocalReaderArgs {
+  final String filePath;
+  final int? issueId;
+  const LocalReaderArgs(this.filePath, {this.issueId});
+}
+
 class LocalReaderScreen extends StatefulWidget {
   final String filePath;
   final SettingsService settings;
   final LocalCbzService localCbz;
+  final int? issueId;
+  final SyncStore? syncStore; // required iff issueId != null
 
   const LocalReaderScreen({
     super.key,
     required this.filePath,
     required this.settings,
     required this.localCbz,
+    this.issueId,
+    this.syncStore,
   });
 
   @override
@@ -236,6 +250,13 @@ class _LocalReaderScreenState extends State<LocalReaderScreen> {
   void _onPageChanged(int page) {
     setState(() => _currentPage = page);
     widget.settings.saveLocalProgress(widget.filePath, page, _pageCount);
+    if (widget.issueId != null) {
+      widget.syncStore!.recordProgress(
+        widget.issueId!,
+        currentPage: page,
+        status: page == _pageCount - 1 ? 'read' : 'reading',
+      );
+    }
   }
 
   void _onModeChanged(ReadingMode m) {

@@ -11,6 +11,10 @@ class SettingsService {
 
   SettingsService._(this._prefs);
 
+  // Exposed so sibling services (DownloadService, SyncStore, SyncService)
+  // can share the same storage instead of each opening their own.
+  SharedPreferences get prefs => _prefs;
+
   static Future<SettingsService> load() async {
     final prefs = await SharedPreferences.getInstance();
     return SettingsService._(prefs);

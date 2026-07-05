@@ -112,12 +112,13 @@ from fastapi import Depends  # noqa: E402
 from backend.auth import is_local_request, is_remote_admin_enabled, require_admin_auth  # noqa: E402
 from backend.routers import (  # noqa: E402
     library, reader, progress, admin, home, editor_basic, editor_full, admin_auth,
-    rename, convert, convert_images, processing_folder, filename_sort,
+    rename, convert, convert_images, processing_folder, filename_sort, sync,
 )
 
 app.include_router(library.router, prefix="/api")
 app.include_router(reader.router,  prefix="/api")
 app.include_router(progress.router, prefix="/api")
+app.include_router(sync.router,    prefix="/api")  # v2.5 Item 3 — same ungated tier as progress/reader
 app.include_router(home.router,    prefix="/api")
 
 # admin_auth is intentionally ungated — it's the login/status surface the gate itself depends on.

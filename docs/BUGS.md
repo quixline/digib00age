@@ -11,6 +11,32 @@ one).
 
 ## OPEN
 
+### BUG-021 — No working reader outside the Flutter app (web UI has none by design; V1's Windows reader was never carried into V2)
+
+**Found:** 2026-07-05, during v2.5 Item 3's (Mobile ↔ Server Reading-State
+Sync) manual verification pass — needed a second way to view/change a
+comic's reading progress to confirm the sync conflict rule's `server_kept`
+case didn't get visibly clobbered, and neither option worked.
+
+**Where:** Two separate causes, not one bug:
+- The web UI has no reader page at all — `SPEC.md` §11 already documents
+  this as by-design ("`reader.html` is NOT built — the Read button in
+  `issue.html` deep-links into the Flutter app"), not a regression.
+- The standalone Windows reader EXE built during V1 was never rebuilt or
+  moved across into this V2 checkout — it isn't present/functional here.
+
+**Impact:** No way to exercise or verify reading-progress behavior from a
+desktop/browser context without the Flutter app. Blocked one verification
+step for v2.5 Item 3 (confirming `server_kept` visually, beyond the
+backend's own scratch tests, which already cover that exact code path).
+Not a defect in anything shipped in Item 3 itself.
+
+**Not fixed** — needs its own scoping session (rebuild/relocate the V1
+Windows reader, or decide it's no longer needed now the Flutter app is the
+primary reader).
+
+---
+
 ### BUG-016 — Restore Database: restore completes but does not revert DB to backup state
 
 **Found:** 2026-06-28, manual test pass (Items 10–13).

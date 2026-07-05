@@ -3,6 +3,10 @@ import 'package:app_links/app_links.dart';
 import 'services/api_service.dart';
 import 'services/settings_service.dart';
 import 'services/local_cbz_service.dart';
+import 'services/download_service.dart';
+import 'services/sync_store.dart';
+import 'services/sync_service.dart';
+import 'route_observer.dart';
 import 'screens/library_screen.dart';
 import 'screens/series_screen.dart';
 import 'screens/reader_screen.dart';
@@ -25,6 +29,9 @@ class ComicVaultApp extends StatefulWidget {
 class _ComicVaultAppState extends State<ComicVaultApp> {
   late final ApiService _api;
   late final LocalCbzService _localCbz;
+  late final DownloadService _downloads;
+  late final SyncStore _syncStore;
+  late final SyncService _syncService;
   final _navigatorKey = GlobalKey<NavigatorState>();
   late final AppLinks _appLinks;
 
@@ -33,6 +40,9 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
     super.initState();
     _api = ApiService(widget.settings.serverUrl);
     _localCbz = LocalCbzService();
+    _downloads = DownloadService(_api, widget.settings, _localCbz);
+    _syncStore = SyncStore(widget.settings.prefs);
+    _syncService = SyncService(_api, _syncStore, widget.settings);
     _initDeepLinks();
   }
 
@@ -68,7 +78,7 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
       final path = await _localCbz.resolveSharedUri(uri.toString());
       if (path == null) return;
       widget.settings.addRecentLocalFile(path);
-      _navigatorKey.currentState?.pushNamed('/reader/local', arguments: path);
+      _navigatorKey.currentState?.pushNamed('/reader/local', arguments: LocalReaderArgs(path));
     } catch (_) {
       // Resolution failed (revoked permission, unreadable stream, etc.) —
       // nothing to open; fail silently rather than crash, same as
@@ -81,6 +91,7 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
     return MaterialApp(
       title: 'ComicVault',
       navigatorKey: _navigatorKey,
+      navigatorObservers: [routeObserver],
       debugShowCheckedModeBanner: false,
       theme: _buildTheme(),
       initialRoute: '/',
@@ -96,12 +107,14 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
             api: _api,
             settings: widget.settings,
             localCbz: _localCbz,
+            downloads: _downloads,
+            syncService: _syncService,
           ),
         );
       case '/series':
         final anchorId = routeSettings.arguments as int;
         return MaterialPageRoute(
-          builder: (_) => SeriesScreen(anchorId: anchorId, api: _api),
+          builder: (_) => SeriesScreen(anchorId: anchorId, api: _api, downloads: _downloads),
         );
       case '/reader':
         final issueId = routeSettings.arguments as int;
@@ -113,12 +126,14 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
           ),
         );
       case '/reader/local':
-        final filePath = routeSettings.arguments as String;
+        final args = routeSettings.arguments as LocalReaderArgs;
         return MaterialPageRoute(
           builder: (_) => LocalReaderScreen(
-            filePath: filePath,
+            filePath: args.filePath,
             settings: widget.settings,
             localCbz: _localCbz,
+            issueId: args.issueId,
+            syncStore: args.issueId != null ? _syncStore : null,
           ),
         );
       case '/settings':

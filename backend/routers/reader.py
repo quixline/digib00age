@@ -1,8 +1,9 @@
 """
 ComicVault — Reader Router
-GET /api/issue/{id}/pages   Ordered list of page image URLs
-GET /api/page/{id}/{n}      Serve one page image from inside the CBZ
-GET /api/cover/{id}         Serve the pre-generated cover thumbnail
+GET /api/issue/{id}/pages     Ordered list of page image URLs
+GET /api/page/{id}/{n}        Serve one page image from inside the CBZ
+GET /api/cover/{id}           Serve the pre-generated cover thumbnail
+GET /api/issue/{id}/download  Serve the whole CBZ/CBR file (mobile offline download)
 """
 
 from __future__ import annotations
@@ -163,3 +164,35 @@ def get_cover(issue_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Cannot read cover page: {exc}")
 
     return Response(content=data, media_type=mime)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/issue/{issue_id}/download
+# ---------------------------------------------------------------------------
+
+@router.get("/issue/{issue_id}/download")
+def download_issue(issue_id: int, db: Session = Depends(get_db)):
+    """
+    Serve the whole CBZ/CBR file for offline download by the Flutter app —
+    the only whole-archive endpoint in the API (everything else above serves
+    one page at a time). v2.5 Item 3 (mobile reading-state sync).
+    """
+    issue = db.query(Issue).filter(Issue.id == issue_id).first()
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+    if issue.missing:
+        raise HTTPException(status_code=404, detail="File is marked missing on disk")
+
+    path = Path(issue.file_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="File not found on disk")
+
+    ext = path.suffix.lower()  # trust the real file, not container_format
+    label = f"{issue.series} {issue.number}" if issue.number else issue.series
+    filename = f"{label}{ext}".replace("/", "-")
+
+    return FileResponse(
+        str(path),
+        media_type="application/vnd.comicbook+zip" if ext == ".cbz" else "application/x-cbr",
+        filename=filename,  # FastAPI/Starlette sets Content-Disposition + escaping
+    )

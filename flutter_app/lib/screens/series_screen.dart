@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../services/api_service.dart';
+import '../services/download_service.dart';
 
 class SeriesScreen extends StatefulWidget {
   final int anchorId;
   final ApiService api;
+  final DownloadService downloads;
 
-  const SeriesScreen({super.key, required this.anchorId, required this.api});
+  const SeriesScreen({
+    super.key,
+    required this.anchorId,
+    required this.api,
+    required this.downloads,
+  });
 
   @override
   State<SeriesScreen> createState() => _SeriesScreenState();
@@ -129,24 +136,29 @@ class _SeriesScreenState extends State<SeriesScreen> {
             ),
           ),
           if (hasArcs)
-            _buildArcGroups(arcGroups)
+            _buildArcGroups(arcGroups, seriesName)
           else
-            _buildFlatList(issues),
+            _buildFlatList(issues, seriesName),
         ],
       ),
     );
   }
 
-  Widget _buildFlatList(List<Map<String, dynamic>> issues) {
+  Widget _buildFlatList(List<Map<String, dynamic>> issues, String seriesName) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
-        (context, i) => _IssueTile(issue: issues[i], api: widget.api),
+        (context, i) => _IssueTile(
+          issue: issues[i],
+          api: widget.api,
+          downloads: widget.downloads,
+          seriesName: seriesName,
+        ),
         childCount: issues.length,
       ),
     );
   }
 
-  Widget _buildArcGroups(Map<String?, List<Map<String, dynamic>>> groups) {
+  Widget _buildArcGroups(Map<String?, List<Map<String, dynamic>>> groups, String seriesName) {
     final noArc = groups[null] ?? [];
     final arcs = groups.entries
         .where((e) => e.key != null && e.key!.isNotEmpty)
@@ -161,11 +173,21 @@ class _SeriesScreenState extends State<SeriesScreen> {
     for (final entry in arcs) {
       sections.add(_ArcHeader(title: entry.key!));
       for (final iss in entry.value) {
-        sections.add(_IssueTile(issue: iss, api: widget.api));
+        sections.add(_IssueTile(
+          issue: iss,
+          api: widget.api,
+          downloads: widget.downloads,
+          seriesName: seriesName,
+        ));
       }
     }
     for (final iss in noArc) {
-      sections.add(_IssueTile(issue: iss, api: widget.api));
+      sections.add(_IssueTile(
+        issue: iss,
+        api: widget.api,
+        downloads: widget.downloads,
+        seriesName: seriesName,
+      ));
     }
 
     return SliverList(
@@ -192,14 +214,29 @@ class _ArcHeader extends StatelessWidget {
   }
 }
 
-class _IssueTile extends StatelessWidget {
+class _IssueTile extends StatefulWidget {
   final Map<String, dynamic> issue;
   final ApiService api;
+  final DownloadService downloads;
+  final String seriesName;
 
-  const _IssueTile({required this.issue, required this.api});
+  const _IssueTile({
+    required this.issue,
+    required this.api,
+    required this.downloads,
+    required this.seriesName,
+  });
+
+  @override
+  State<_IssueTile> createState() => _IssueTileState();
+}
+
+class _IssueTileState extends State<_IssueTile> {
+  bool _downloading = false;
 
   @override
   Widget build(BuildContext context) {
+    final issue = widget.issue;
     final id = issue['id'] as int;
     final number = issue['number'] as String?;
     final title = issue['title'] as String?;
@@ -218,7 +255,7 @@ class _IssueTile extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(3),
           child: CachedNetworkImage(
-            imageUrl: '${api.baseUrl}$coverPath',
+            imageUrl: '${widget.api.baseUrl}$coverPath',
             fit: BoxFit.cover,
             errorWidget: (_, _, _) =>
                 const Icon(Icons.book, color: Colors.white24),
@@ -245,11 +282,78 @@ class _IssueTile extends StatelessWidget {
           ],
         ],
       ),
-      trailing: _statusIcon(readStatus),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!missing) _buildDownloadButton(id, number, title),
+          const SizedBox(width: 6),
+          _statusIcon(readStatus),
+        ],
+      ),
       onTap: missing
           ? null
           : () => Navigator.of(context).pushNamed('/reader', arguments: id),
     );
+  }
+
+  Widget _buildDownloadButton(int id, String? number, String? title) {
+    if (_downloading) {
+      return const SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    final downloaded = widget.downloads.findByIssueId(id) != null;
+    return IconButton(
+      icon: Icon(
+        downloaded ? Icons.download_done : Icons.download_for_offline_outlined,
+        color: downloaded ? Colors.greenAccent : Colors.white54,
+        size: 20,
+      ),
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(),
+      onPressed: () => downloaded ? _confirmDelete(id) : _download(id, number, title),
+    );
+  }
+
+  Future<void> _download(int id, String? number, String? title) async {
+    setState(() => _downloading = true);
+    try {
+      await widget.downloads.download(
+        id,
+        series: widget.seriesName,
+        number: number,
+        title: title,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Download failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
+  Future<void> _confirmDelete(int id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Remove download?'),
+        content: const Text('This deletes the offline copy from this device.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Remove')),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await widget.downloads.delete(id);
+      if (mounted) setState(() {});
+    }
   }
 
   Widget _statusIcon(String status) {

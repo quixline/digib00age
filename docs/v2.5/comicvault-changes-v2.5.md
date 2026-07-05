@@ -189,3 +189,125 @@ real files touched) **— then Tez confirmed "test passed"** via the live
 Admin UI.
 
 ---
+
+## Item 3 — Mobile ↔ Server Reading-State Sync ✅
+
+**Feature.** Reading progress on the tablet's downloaded-comics mode now
+persists back to the ComicVault DB, closing the gap `mobile-server-sync-scope.md`
+(Cowork discovery session, 2026-07-05) and `ROADMAP.md`'s "v2.5 — holding
+list" Item 2 flagged. Scoped and built same-session by Code, 2026-07-05.
+Full technical plan (backend endpoints, conflict algorithm, Flutter service
+design) written before build; see `docs/v2.5/progress.md` for the narrative
+and the file-by-file detail.
+
+**Gap found during scoping, not anticipated by the discovery-session doc:**
+the Flutter app had no way to download a comic from the server for offline
+reading at all — its "local file" mode only opened arbitrary CBZs copied
+onto the device manually, with no link to a server `issue_id`. Confirmed
+with Tez to build a proper download-for-offline feature as part of this
+item rather than a filename-matching heuristic or deferring it — without
+that link there was nothing concrete to sync for the scope doc's actual
+scenario ("tablet with comics downloaded for a trip").
+
+**Built:**
+- `backend/routers/reader.py` — new `GET /api/issue/{id}/download`, serves
+  the whole CBZ/CBR file (the only whole-archive endpoint in the API;
+  everything else serves one page at a time).
+- `backend/routers/sync.py` (new) — `POST /api/sync/progress`, batch
+  reconciliation with last-write-wins by timestamp (confirmed with Tez over
+  highest-page-wins, so a deliberate rewind/re-read can move progress
+  backward). Registered in `main.py` alongside `progress.router`, same
+  ungated tier. No `reading_progress` schema change — one canonical row per
+  issue already fit the model; last-write-wins is a write-time comparison,
+  not a schema concept.
+- Flutter: `DownloadedIssue` model + `DownloadService` (download-for-offline,
+  manifest in `SharedPreferences`, same pattern as `SettingsService`'s
+  existing `recentLocalFiles`), a download/delete affordance on each issue
+  row in `series_screen.dart`, and a "Downloaded" section in
+  `library_screen.dart`'s offline view, kept separate from the existing
+  ad-hoc "Recent files" list.
+- Flutter: `SyncStore` (per-issue pending-progress record with a dirty flag)
+  + `SyncService.syncNow()` (push dirty records, apply the server's
+  conflict-resolution result). `LocalReaderScreen` extended with an optional
+  `issueId`/`syncStore` — arbitrary local files (picked via file picker or
+  "Open With") keep working exactly as before, only downloaded/issue_id-linked
+  files get a timestamped sync record. New `LocalReaderArgs` route-argument
+  type replaces the old bare `String filePath` for `/reader/local`.
+- Flutter: manual "Sync now" button in `LibraryScreen`'s AppBar; a
+  reconnect/foreground trigger piggybacked on the existing
+  `_checkAndLoad()`/`checkConnection()` call, plus a new `RouteObserver`
+  (`lib/route_observer.dart`) + `RouteAware.didPopNext()` so returning to
+  the library after closing the reader also triggers a sync check —
+  `LibraryScreen` sits at the app root and is only pushed once, so its own
+  `initState()` never re-fires on back-navigation otherwise. No
+  `connectivity_plus` dependency added — deliberately not needed.
+  "Synced Xm ago"/"Never synced" label in the AppBar, "Not synced" marker on
+  any downloaded issue with unpushed local progress.
+
+**Correctness catch during the build, before any device testing:** Dart's
+`DateTime.now()` is local time, and `.toIso8601String()` on a local
+`DateTime` emits no "Z"/offset suffix at all — if the client ever captured a
+sync timestamp that way, the server would misinterpret a local timestamp as
+UTC, skewing every last-write-wins comparison by the tablet's UTC offset.
+Fixed by always capturing sync-relevant timestamps via
+`DateTime.now().toUtc()` on the Flutter side (`sync_store.dart`), with a
+defensive naive-to-UTC fallback + explicit "Z" handling on the backend
+(`sync.py`'s `_parse_client_ts()`) as a safety net, not a substitute.
+
+**Verified:**
+- Backend — both endpoints tested directly (function calls, no full app
+  boot) against a scratch SQLite DB and scratch CBZ/CBR files: download's
+  404s (unknown issue, `missing=True`, file absent from disk) and correct
+  media type per extension; sync's `client_applied`/`server_kept`/`not_found`
+  outcomes, an exact-timestamp tie resolving to the incoming write, and the
+  actual DB row state after each (not just the response body). All scratch
+  files deleted afterward, no real DB or library touched.
+- Flutter — `flutter analyze` clean, a debug APK built successfully,
+  `SyncStore`'s dirty-flag logic covered by 4 isolated unit tests (deleted
+  after passing, matching this project's scratch-test convention rather
+  than adding a permanent suite).
+- **Tez's manual test, on the real Lenovo tablet against the real server:**
+  downloaded an issue, read it with the server stopped, reconnected, and
+  confirmed the sync pushed correctly — **signed off "passed."** One planned
+  check (mark an issue further along from the web UI, then confirm
+  `server_kept` doesn't get clobbered by reopening the stale downloaded
+  copy) could not be run — see BUG-021 below, found during this pass, out
+  of scope for this item.
+
+**Found during the manual pass, logged not fixed here (`BUGS.md` BUG-021):**
+neither the web UI nor a Windows desktop reader currently works as a way to
+view/re-mark progress on a comic outside the Flutter app — the web UI has
+no reader by design (`SPEC.md` §11, deep-links into Flutter instead), and
+the standalone Windows reader EXE built in V1 was never rebuilt/carried
+across into this V2 checkout. This blocked one verification step (the
+`server_kept` reverse-conflict check) but doesn't affect this item's actual
+correctness, since that exact code path (server timestamp newer than an
+incoming stale client push) is covered by the backend's own scratch tests
+above. Flagged as its own follow-up, not absorbed into this item.
+
+**Also installed during this session's on-device pass, not a code
+change:** installing a debug-signed build over a previously release-signed
+one forced Android to uninstall first, wiping the app's local
+`SharedPreferences` (server URL reset to default, recent-files list
+cleared) — Tez reconfigured the server URL by hand afterward. Worth
+knowing next time a differently-signed build goes onto the same device.
+
+**One more bug caught after Tez's sign-off, while finishing doc close-out —
+not covered by the passed manual test, since that test used a CBZ issue:**
+`DownloadService.download()` always wrote the downloaded bytes to a
+hardcoded `{issueId}.cbz` path regardless of the issue's actual format. A
+CBR issue would have been saved under the wrong extension and then failed
+opaquely at the page-count step (`LocalCbzService` only supports
+`ZipDecoder`, per `SPEC.md`'s already-documented "Flutter local/offline mode
+is a known, accepted gap" for CBR). Fixed: `ApiService.downloadIssue()` now
+returns the real extension from the download response's `Content-Type`
+(which the backend already sets correctly per file), and a failed
+page-count read now deletes the partially-written file and raises a clear
+"CBR issues can't be read offline yet" message instead of leaving an
+unreadable file + manifest entry behind. Doesn't change the already-tested
+CBZ path (content-type still resolves to `.cbz` there, byte-for-byte the
+same behavior) — verified via `flutter analyze` (clean) and a fresh debug
+build; not re-tested on-device since the tablet was disconnected by this
+point, and the fix is scoped to a path Tez's sign-off didn't exercise.
+
+---

@@ -13,6 +13,20 @@ created 2026-07-04, alongside Item 1's build).
 
 ---
 
+- **2026-07-05** — Mobile ↔ Server Reading-State Sync built (v2.5 Item 3):
+  reading progress made offline on the tablet now persists back to the
+  ComicVault DB. New `GET /api/issue/{id}/download` and `POST /api/sync/progress`
+  (last-write-wins by timestamp, no schema change) on the backend; a new
+  download-for-offline feature, `SyncStore`/`SyncService`, and sync-trigger/
+  status UI on the Flutter side — including a download feature that wasn't
+  in the original scope doc but turned out to be a hard prerequisite. A
+  timezone-skew bug in the conflict comparison was caught during plan review,
+  before reaching a device. Tez confirmed "signed off, passed" on the real
+  tablet; one planned check (visually confirming the `server_kept` outcome)
+  was blocked by a separate, pre-existing gap — no working reader exists
+  outside the Flutter app right now (`BUGS.md` BUG-021, logged not fixed
+  here). → `v2.5/progress.md` "Mobile ↔ Server Reading-State Sync built —
+  v2.5 Item 3 (2026-07-05)"
 - **2026-07-05** — New Processing Tool built: Sort by Filename (`ADMIN_SPEC.md`
   §11.5, v2.5 Item 2). Moves each CBZ/CBR file directly inside a chosen folder
   into its own same-named subfolder, ported from the standalone

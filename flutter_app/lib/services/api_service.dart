@@ -93,6 +93,30 @@ class ApiService {
     await http.post(Uri.parse('$apiBase/progress/$issueId/mark-unread'));
   }
 
+  // Fetches the whole CBZ/CBR file for offline download (v2.5 Item 3).
+  // Returns the raw bytes plus the real extension (from Content-Type, which
+  // backend/routers/reader.py's download_issue() sets per the actual file —
+  // ".cbz" or ".cbr") so the caller never mislabels a CBR download as a CBZ.
+  Future<(List<int> bytes, String extension)> downloadIssue(int issueId) async {
+    final res = await http.get(Uri.parse('$apiBase/issue/$issueId/download'));
+    _assertOk(res);
+    final contentType = res.headers['content-type'] ?? '';
+    final ext = contentType.contains('cbr') ? '.cbr' : '.cbz';
+    return (res.bodyBytes, ext);
+  }
+
+  // Batch-reconciles offline-captured progress against the server
+  // (v2.5 Item 3) — see backend/routers/sync.py for the conflict rule.
+  Future<Map<String, dynamic>> syncProgress(Map<String, dynamic> payload) async {
+    final res = await http.post(
+      Uri.parse('$apiBase/sync/progress'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
+    _assertOk(res);
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   Future<List<Map<String, dynamic>>> getPublishers() async {
     final res = await http.get(Uri.parse('$apiBase/browse/publishers'));
     _assertOk(res);

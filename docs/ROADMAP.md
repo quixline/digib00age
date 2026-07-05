@@ -214,21 +214,54 @@ UI redesign work (web + mobile) is happening in that version anyway and these
 fit better alongside it than as v2.5 stragglers. Queue order confirmed with
 Tez 2026-07-05:
 
-1. **Scope: running custom scripts on the Processing Folder** (v2.5 Item 2).
-   Originally listed alongside Processing Folder Automation as "likely worth
-   scoping together" — stays on its own (Tez's explicit call, 2026-06-30) even
-   though Processing Folder Automation itself moved forward into v2.4 Item 15.
-   Revisit whether this still makes sense to scope together now that Item 15's
-   design exists. **Next up.**
-2. **Scope: Mobile → Server Sync** (v2.6). Sharpened 2026-07-05 from the
-   previously-generic "continue Flutter dev" Now-lane entry — this is the
-   specific parked item from the BUG-008 session (`## v2.5 — holding list`
-   history above): local/offline reading progress on the Flutter app has no
-   persistence back to the ComicVault DB at all right now (`SPEC.md`). This is
-   the only backend/functional Flutter work currently identified as needed.
-   (BUG-017 — Android had no `.cbz` file association — was a related but
-   separate item; fixed and verified on-device 2026-07-05, see
+1. **Running custom scripts on the Processing Folder — scoped, built, and
+   closed 2026-07-05.** Turned out simpler than the "likely worth scoping
+   together [with Processing Folder Automation]" framing below suggested —
+   once actually scoped it was a single, self-contained tool, not something
+   needing Item 15's design revisited. Landed as **Sort by Filename**
+   (`ADMIN_SPEC.md` §11.5), ported from the standalone
+   `create-folders-from-file.py` script: moves each CBZ/CBR file directly
+   inside a chosen folder into its own same-named subfolder. Cowork produced
+   the build brief, handed to Code, built and manually verified same day —
+   full detail in `docs/v2.5/comicvault-changes-v2.5.md` Item 2 (✅) and
+   `docs/v2.5/progress.md`. A collision-rule gap (unrelated existing folder
+   content not being caught) was found via scratch testing and fixed before
+   the live pass — see `DECISIONS.md`. **This closes v2.5's own scope
+   entirely** — the version's only remaining item was this one, everything
+   else already moved to v2.6 above. `meta/roadmap.html` regenerated
+   2026-07-05 to reflect this (Now #1 card removed).
+   Original framing, kept for context: *originally listed alongside
+   Processing Folder Automation as "likely worth scoping together" — stayed
+   on its own per Tez's explicit call, 2026-06-30, even though Processing
+   Folder Automation itself moved forward into v2.4 Item 15.*
+2. **Mobile → Server Sync — scoped, built, and closed 2026-07-05.** Sharpened
+   from the previously-generic "continue Flutter dev" Now-lane entry — this
+   was the specific parked item from the BUG-008 session (`## v2.5 — holding
+   list` history above): local/offline reading progress on the Flutter app
+   had no persistence back to the ComicVault DB at all (`SPEC.md`). (BUG-017
+   — Android had no `.cbz` file association — was a related but separate
+   item; fixed and verified on-device 2026-07-05, see
    `archive/bugs-fixed-archive.md`.)
+
+   Full scope doc: `mobile-server-sync-scope.md` (Cowork discovery session,
+   2026-07-05). Scoping surfaced a gap the discovery doc hadn't accounted
+   for — the Flutter app had no way to download a comic for offline reading
+   at all, so there was nothing concrete to sync for the doc's actual
+   scenario. Confirmed with Tez to build a proper download-for-offline
+   feature as part of this item rather than a heuristic or a deferral.
+   Conflict rule locked in as last-write-wins by timestamp (over
+   highest-page-wins), matching the scope doc's recommended default. Built
+   same session: `GET /api/issue/{id}/download`, `POST /api/sync/progress`
+   (last-write-wins, no schema change needed), and the Flutter-side download
+   feature + sync engine + trigger wiring + status indicators. **Tez's manual
+   test on the real tablet passed** — full detail, including a timezone-skew
+   bug caught during review before it reached a device, in
+   `docs/v2.5/comicvault-changes-v2.5.md` Item 3 and `docs/v2.5/progress.md`.
+   One planned verification step (visually confirming the `server_kept`
+   conflict outcome via a second reader) couldn't be run — no working reader
+   exists outside the Flutter app right now, tracked separately as `BUGS.md`
+   BUG-021, not a defect in this item. `meta/roadmap.html`'s Now #1 card
+   removed 2026-07-05 (item complete).
 3. **Scope: Web UI Redesign** (v2.6). Replaces the old single "v2.6 UI
    Redesign" placeholder — split 2026-07-05 into web and mobile as two
    separate scoping/design efforts, each needing its own discussion (possibly

@@ -4,6 +4,42 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Mobile Sync: build the download-for-offline feature rather than a filename heuristic or a deferral
+
+**Decided:** 2026-07-05, during v2.5 Item 3 scoping, before any code.
+
+**Why:** `mobile-server-sync-scope.md` (the Cowork discovery-session doc) scoped
+sync assuming the tablet already had a way to have "comics downloaded for a
+trip" tied to a server `issue_id`. Reading the actual Flutter code showed this
+didn't exist — the app's only local-file mode opens arbitrary CBZs copied onto
+the device manually or via Android "Open With," tracked by file path only,
+with no timestamp and no link to any `issue_id`. Without that link there was
+nothing concrete for a sync feature to act on. Considered three options:
+build a real download feature (bigger scope than the doc anticipated, but the
+only way to actually deliver the doc's own scenario); guess the `issue_id` by
+matching the local file's name against the library (cheap, but a wrong match
+could silently push progress onto the wrong comic); or descope entirely and
+treat download as a separate future item. Tez chose the first — worth
+recording since it's a meaningfully bigger build than the original scope doc
+implied, and a future reader shouldn't assume the smaller scope was what
+shipped.
+
+**Where:** `flutter_app/lib/services/download_service.dart`,
+`backend/routers/reader.py`'s `download_issue`.
+
+### Mobile Sync: last-write-wins by timestamp, not highest-page-wins
+
+**Decided:** 2026-07-05, confirming the scope doc's flagged-but-unconfirmed
+default.
+
+**Why:** The scope doc named this as needing eng review before it could be
+locked in. Highest-page-wins is simpler (progress never silently moves
+backward) but would block a deliberate rewind/re-read from ever taking effect
+once synced — the scope doc explicitly wanted that case supported. Tez
+confirmed last-write-wins by timestamp over highest-page-wins.
+
+**Where:** `backend/routers/sync.py`'s `sync_progress()` conflict comparison.
+
 ### Sort by Filename: "existing folder with different file" collision means unrelated content, not just an exact-path clash
 
 **Decided:** 2026-07-05, during the build session, found via direct scratch-folder
