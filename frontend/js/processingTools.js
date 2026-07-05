@@ -753,6 +753,100 @@ function initProcessingFolderTool() {
   loadProcessingFolderConfig();
 }
 
+// ── Sort by Filename (§11.5) ─────────────────────────────────────────────
+
+let fsPollTimer = null;
+
+function openFsBrowse() {
+  openFilePicker({
+    browseUrl: `${API}/admin/filename-sort/browse`,
+    drivesUrl: `${API}/admin/filename-sort/drives`,
+    mode: 'folder',
+    title: 'Choose Folder to Sort',
+    onConfirm: ([folderPath]) => {
+      document.getElementById('fsFolderInput').value = folderPath;
+    },
+  });
+}
+
+function renderFsResult(headline, isError, detailLines) {
+  const line = document.getElementById('fsResultLine');
+  line.textContent = headline;
+  line.className = 'admin-card-hint ' + (isError ? 'admin-backup-error' : 'admin-key-ok');
+  line.hidden = false;
+
+  const detail = document.getElementById('fsResultDetail');
+  const list = document.getElementById('fsResultDetailList');
+  list.innerHTML = '';
+  if (detailLines && detailLines.length) {
+    for (const d of detailLines) {
+      const li = document.createElement('li');
+      li.textContent = d;
+      list.appendChild(li);
+    }
+    detail.hidden = false;
+  } else {
+    detail.hidden = true;
+  }
+}
+
+async function runFilenameSort() {
+  const folder = document.getElementById('fsFolderInput').value;
+  if (!folder) {
+    showToast('Choose a folder first', true);
+    return;
+  }
+  const res = await postJSON('/filename-sort/run', { folder });
+  if (res.started === false || res.detail) {
+    showToast(res.detail || res.message || 'Could not start run', true);
+    return;
+  }
+  document.getElementById('fsRunBtn').disabled = true;
+  document.getElementById('fsProgressWrap').hidden = false;
+  document.getElementById('fsResultLine').hidden = true;
+  document.getElementById('fsResultDetail').hidden = true;
+  pollFsStatus();
+}
+
+async function pollFsStatus() {
+  const status = await (await fetch(`${API}/admin/filename-sort/status`)).json();
+
+  if (status.running) {
+    fsPollTimer = setTimeout(pollFsStatus, 500);
+    return;
+  }
+
+  clearTimeout(fsPollTimer);
+  document.getElementById('fsRunBtn').disabled = false;
+  document.getElementById('fsProgressWrap').hidden = true;
+
+  if (status.error) {
+    renderFsResult(`❌ Failed: ${status.error}`, true, []);
+    return;
+  }
+  if (!status.result) return; // idle poll, nothing ran
+
+  const { moved, total, folders, files } = status.result;
+  const failed = files.filter(f => !f.success);
+
+  if (!total) {
+    renderFsResult('No CBZ/CBR files found in this folder.', false, []);
+  } else if (!failed.length) {
+    renderFsResult(`✅ Sorted ${moved} file${moved === 1 ? '' : 's'} into ${folders} folder${folders === 1 ? '' : 's'}`, false, []);
+  } else {
+    renderFsResult(
+      `⚠️ Sorted ${moved} of ${total} file${total === 1 ? '' : 's'} into ${folders} folder${folders === 1 ? '' : 's'} — ${failed.length} failed`,
+      true,
+      failed.map(f => `${f.filename}: ${f.error}`)
+    );
+  }
+}
+
+function initFilenameSortTool() {
+  document.getElementById('fsBrowseBtn').addEventListener('click', openFsBrowse);
+  document.getElementById('fsRunBtn').addEventListener('click', runFilenameSort);
+}
+
 // ── Local-only gating (§12 shared notes) ────────────────────────────────
 // Hooked from admin.js's refreshAuthSettingsUi(), which already fetches
 // GET /api/admin/auth/status once per refresh — avoids a second fetch here.
@@ -776,6 +870,7 @@ function initProcessingTools() {
   initConvertTool();
   initConvertImagesTool();
   initProcessingFolderTool();
+  initFilenameSortTool();
 }
 
 document.addEventListener('DOMContentLoaded', initProcessingTools);

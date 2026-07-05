@@ -1532,6 +1532,106 @@ Not binding design, but worth flagging before the build session:
 
 ---
 
+### 11.5 Sort by Filename
+
+**Built and manually tested 2026-07-05 — `comicvault-changes-v2.5.md` Item 2.**
+
+Ported from the standalone `create-folders-from-file.py` script. For every CBZ/CBR
+file found directly inside a chosen folder, moves it into a new subfolder named
+after its own filename with the extension stripped — e.g. `Batman 001.cbz` moves
+into `Batman 001\Batman 001.cbz`.
+
+#### 11.5.1 Scope
+
+- **CBZ/CBR only, by extension.** Every other file in the folder — `Thumbs.db`,
+  `desktop.ini`, `.bak` files, anything else — is left exactly where it is, not
+  folderized. This is a plain extension check, not the content-sniffing
+  `detect_archive_format()` other Processing Tools use (§11.2/§11.3) — deliberately
+  simpler scope, since this tool only ever moves a file and never opens its
+  contents. `.bak` handling is deferred along with §11.2's — not a concern today
+  since a `.bak` file never matches the CBZ/CBR extension filter anyway.
+- **No recursion.** Only files directly inside the chosen folder are considered.
+- Same pre-ingest/staging positioning as §11.1–§11.4. Not restricted to any specific
+  folder; not a library-wide bulk tool. No library scan is triggered, no DB write.
+- Same local-only gating as all Processing Tools (§11 shared notes).
+- **Not part of Processing Folder Automation (§11.4).** Scheduling/pipeline wiring
+  is explicitly deferred, not built here (see Change Log) — the `[AUTO]`-log-prefix
+  plumbing is already in place for when that lands.
+
+#### 11.5.2 Folder Selection
+
+Single folder selection — same in-app folder-tree picker as §11.1–§11.4 (no native
+OS dialog, no `library_root` restriction, Up climbs to a drive-letter list, no
+recursion). **Not persisted to `config.json`** — unlike §11.4's Processing Folder,
+this tool has no schedule to persist a folder for; the chosen folder lives only in
+the admin page's own state until Run is clicked.
+
+#### 11.5.3 Collision Rules
+
+Every file is attempted independently — one file's failure doesn't block any other:
+
+- **Same-basename pair** (e.g. a CBZ+CBR pair sharing a filename) — both move into
+  the same folder, no error. The second file's target folder already exists
+  (created moving the first) and contains only its own sibling, which isn't treated
+  as a conflict.
+- **Target folder already exists and holds an unrelated file** (anything whose own
+  basename doesn't match the folder name — e.g. a pre-existing folder with some
+  other file already in it) — that one file fails with a clear reason
+  (`'<folder>' already contains an unrelated file: '<name>'`) rather than being
+  dropped in alongside content it doesn't belong with. The file stays in place,
+  unmoved.
+- **Destination path already occupied** (the exact same filename already sitting in
+  the target folder — a re-run scenario) — fails with a clear reason rather than
+  silently overwriting.
+- **Folder not found / unreachable path** — clean error returned immediately, no
+  files attempted, nothing logged as a run.
+
+#### 11.5.4 Run & Result
+
+Single "Run" button — background job + polling progress, same `running`-boolean
+guard pattern as §11.4's `processing_folder_progress` (a second Run is rejected
+outright while one's in flight; same "reflects actual current state, callers must
+check `started` not `running`" contract as the other tools). On completion, a
+terse one-line result: `✅ Sorted N files into M folders`, or `⚠️ Sorted N of M
+files into K folders — J failed` with an expandable Details list of the per-file
+failure reasons, or `❌ Failed: <reason>` for a folder-level failure (not found /
+unreachable). No summary modal (§11.1–§11.3's shared `ptSummaryOverlay`) — the
+terse inline line plus expandable detail was judged sufficient for a
+single-folder, no-preview tool with only one input.
+
+#### 11.5.5 Audit Log
+
+New `filename_sort_log.md` in `/logs/`, same append-only/1MB-cap pattern as the
+other three tools' logs:
+
+```
+DD/MM/YYYY HH:MM — old_filename.ext → new_folder\old_filename.ext [OK]
+DD/MM/YYYY HH:MM — old_filename.ext → FAILED: <reason>
+```
+
+`[AUTO]`-prefix support is wired in now (matches `convert_log.py`'s convention)
+even though nothing calls it with `auto=True` yet — cheap to add alongside the
+tool itself, saves a second pass once automation wiring (deferred, 11.5.1) is
+scoped.
+
+#### 11.5.6 Implementation Notes (for Code)
+
+- `backend/filename_sort.py` — `sort_by_filename(folder: str) -> FilenameSortResult`,
+  a plain, router-independent callable (same requirement as every other tool's core
+  logic, §11.3.8/§11.4.10) — pure filesystem logic, no logging, no router concerns.
+- `backend/filename_sort_log.py` — thin wrapper over `tool_logs.py`, parallel to
+  `convert_log.py`.
+- `backend/routers/filename_sort.py` — `browse`/`drives` (shared `file_picker.py`),
+  `run`/`status` mirroring `processing_folder.py`'s shape. No working-file-list
+  endpoints — the folder itself is the only input, there's nothing to stage.
+- Script name shown as a disabled single-option `<select>` in the admin card rather
+  than a plain label — deliberately the **only** script today (per the build
+  brief), but a second script (a move-to-library tool, not yet written) is
+  expected eventually, at which point this becomes a real dropdown with minimal
+  rework.
+
+---
+
 ## 12. Change Log
 
 > Record any deviations from this spec here with date and reason.
@@ -1560,3 +1660,4 @@ Not binding design, but worth flagging before the build session:
 | 2026-07-03 | **§11.4 amended to a three-stage pipeline** — Convert Archives → **CT Auto-Tag (new)** → Convert Images (11.4.1/11.4.3). New CT Auto-Tag stage (11.4.4): enabled/disabled toggle, **Save on Low Confidence** toggle (ON writes best-guess tags + sets `NeedsReview`; OFF skips writing entirely for that file — a branch inside the stage, not a pipeline-flow change, since §11.4 is folder-level/not per-file chaining), and a `comicvine_api_key` field with a **"Save & Test"** button (the one deliberate exception to this page's auto-save convention — validates live via CT's own `check_status()`). Progress/status (11.4.8) and audit logging (11.4.9, new `ct_autotag_log.md`) extended for the third stage; aggregate audit-run summary re-confirmed as wanted but still deferred. Transcribed from `DECISIONS.md` (four 2026-07-03 entries) and `EDITOR_SPEC.md` §9 (the Full Editor side of the same feature) so Code has a build-ready spec on both sides. Also corrected this file's top-of-document status block, which had drifted stale — claimed §11.2–§11.4 were "build in progress (v2.4 Items 12, 13, 16)" when v2.4 had in fact already closed 2026-07-02 with all three built and verified. | v2.5 #1 — four ComicTagger integration scoping sessions 2026-07-03; this pass transcribes the locked decisions into the build-facing spec. |
 | 2026-07-04 | **§11.4's CT Auto-Tag stage built and manually verified** (v2.5 Item 1) — see `docs/v2.5/progress.md` for the full narrative. Three real bugs found and fixed during Tez's own live testing: `identify_file()` fell back to filename parsing (via `backend/rename_tool.py`'s tested parser) and defaults the issue number to "1" for one-shots with none in the filename when an archive has no embedded XML, rather than short-circuiting to `no_match` immediately; match thresholds lowered from CT's own CLI defaults (90/91) to 80 to match what Tez had already found worked in his own standalone ComicTagger testing; the tagging write path now does a follow-up full single-issue fetch before mapping fields, since `IssueIdentifier`'s bulk candidate search doesn't carry credits (Writer/Penciller/etc. were silently empty without it). Also carries the same field-mapping-scope correction as `EDITOR_SPEC.md` §9's matching Change Log entry — the automation stage shares `ct_bridge.py`'s mapping function with Search Online, so both surfaces now capture the full CT/ComicVine field set the same way. | v2.5 Item 1 build + Tez's live-testing pass, 2026-07-03/04. |
 | 2026-07-04 | **§11.4.4 gained a Match Ratio Threshold slider** (`processing_folder_ct_match_threshold`, default 80, 10–100% in 1% steps), placed after Save on Low Confidence — the previous session's 80% match threshold was hardcoded with no UI; added once Tez had more real-world match data to tune against. Every auto-save control in this section now shows a brief "Saved" toast (`savePfSetting()`) — none had any save confirmation before, ComicVine API Key's Save & Test excepted. **Bug fixed:** Processing Folder Automation's run-complete summary reported "N of M succeeded" by counting any non-`failed` status, which conflates a legitimate `no_match`/skipped-low-confidence outcome (correctly `success=True` — the stage didn't error) with an actual tag write; a 5-file test that tagged 4 and correctly no-matched the 5th reported as "5 of 5 succeeded". Fixed with a CT-Auto-Tag-specific summary breaking out tagged/no-match/skipped-low-confidence/failed counts (the underlying `ct_autotag_log.md` audit log was accurate throughout — UI-only bug). **v2.5 Item 1 closed** — Tez's deferred low-confidence real-world test (a 5-file standalone-ComicTagger-vs-ComicVault comparison) completed; investigated but did not conclusively resolve why the standalone app underperformed (1 of 5 tagged vs. ComicVault's 4 of 5) — not attributed to a ComicVault defect, full detail in `v2.5/progress.md`. | v2.5 Item 1 close-of-session, 2026-07-04. |
+| 2026-07-05 | Added §11.5 Sort by Filename — full scope, ported from the standalone `create-folders-from-file.py` script. CBZ/CBR-only by extension (not content-sniffed, unlike §11.2/§11.3 — deliberately simpler since this tool never opens a file). Collision rules refined during build/testing beyond the original brief's literal reading: a same-basename CBZ+CBR pair sharing a target folder is not a conflict, but a target folder that already holds an *unrelated* file (different basename) fails that one file with a clear reason rather than dropping content into it — see `DECISIONS.md` for why the first-pass implementation (an exact-destination-path-exists check only) didn't actually satisfy this. Background job + polling progress (own `filename_sort_progress` singleton, same `running`-boolean guard as §11.4), own `filename_sort_log.md` audit log with `[AUTO]`-prefix support pre-wired (unused until automation is scoped). Automation/scheduling wiring, a second script (move-to-library), and a dirty-folder cleanup tool are explicitly deferred, not built here. | Build brief handed directly to Code (pre-scoped spec, not sourced from `INBOX.md`/`ROADMAP.md`) — logged as `comicvault-changes-v2.5.md` Item 2. Collision-logic correction found via direct scratch-folder testing, before the manual UI pass. |

@@ -13,6 +13,14 @@ created 2026-07-04, alongside Item 1's build).
 
 ---
 
+- **2026-07-05** — New Processing Tool built: Sort by Filename (`ADMIN_SPEC.md`
+  §11.5, v2.5 Item 2). Moves each CBZ/CBR file directly inside a chosen folder
+  into its own same-named subfolder, ported from the standalone
+  `create-folders-from-file.py` script. A collision-rule gap (an unrelated file
+  already sitting in the target folder wasn't being caught) was found via
+  scratch testing and fixed before the manual pass — see `DECISIONS.md`. Tez
+  confirmed "test passed" via the live Admin UI. → `progress.md` "Sort by
+  Filename Processing Tool built — v2.5 Item 2 (2026-07-05)"
 - **2026-07-05** — BUG-017 fixed and verified on-device: Android had no file
   association for `.cbz` — tapping one in a file manager never offered
   ComicVault under "Open With". Added Android intent-filters for `.cbz`

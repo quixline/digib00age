@@ -112,7 +112,7 @@ from fastapi import Depends  # noqa: E402
 from backend.auth import is_local_request, is_remote_admin_enabled, require_admin_auth  # noqa: E402
 from backend.routers import (  # noqa: E402
     library, reader, progress, admin, home, editor_basic, editor_full, admin_auth,
-    rename, convert, convert_images, processing_folder,
+    rename, convert, convert_images, processing_folder, filename_sort,
 )
 
 app.include_router(library.router, prefix="/api")
@@ -133,6 +133,7 @@ app.include_router(rename.router,       prefix="/api/admin", dependencies=_auth_
 app.include_router(convert.router,      prefix="/api/admin", dependencies=_auth_gate)
 app.include_router(convert_images.router, prefix="/api/admin", dependencies=_auth_gate)
 app.include_router(processing_folder.router, prefix="/api/admin", dependencies=_auth_gate)
+app.include_router(filename_sort.router,     prefix="/api/admin", dependencies=_auth_gate)
 
 # ---------------------------------------------------------------------------
 # Serve frontend static files

@@ -4,6 +4,32 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Sort by Filename: "existing folder with different file" collision means unrelated content, not just an exact-path clash
+
+**Decided:** 2026-07-05, during the build session, found via direct scratch-folder
+testing before the manual UI pass.
+
+**Why:** The build brief's literal wording — "existing-folder-with-different-file-in-it
+collision → explicit check before move, fail that single file with a clear reason
+rather than silently overwriting" — reads two ways: (a) fail only when the exact
+destination path (`folder\filename`) is already occupied, or (b) fail whenever the
+target folder already exists and contains *anything* that isn't this file's own
+sibling. The first pass implemented (a), since it was the simpler/more literal
+reading and matched every other Processing Tool's existing collision-guard shape
+(`rename_tool.py`'s `rename_files()`, `archive_convert.py`'s backup-exists check).
+A scratch test built specifically to exercise the named edge cases caught the gap
+immediately: a folder pre-populated with an unrelated file let the new file move in
+without complaint, since its own destination path was still free — silently mixing
+unrelated content into an already-organized folder, exactly what the edge case was
+supposed to prevent. Reading (b) is what the spec actually intended. Fixed by
+checking, before any move, whether the target folder already exists and holds an
+entry whose own basename differs from the folder's name — same-basename siblings
+(a CBZ+CBR pair) are still allowed through unchanged, since that's the explicitly
+un-concerning case named right next to this one in the same brief.
+
+**Where:** `backend/filename_sort.py`'s `_conflicting_existing_entry()`,
+`ADMIN_SPEC.md` §11.5.3.
+
 ### BUG-017 fix scoped to .cbz only, not .cbr
 
 **Decided:** 2026-07-05, before building the Android file-association fix.

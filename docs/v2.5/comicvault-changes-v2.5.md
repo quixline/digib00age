@@ -147,3 +147,45 @@ Flutter mobile-bugs fixes took its place as Now #1 and are also now closed;
 the remaining v2.5 holding-list items still need their own triage session.
 
 ---
+
+## Item 2 — Sort by Filename Processing Tool ✅
+
+**Feature.** New Processing Tool (`ADMIN_SPEC.md` §11.5), ported from the
+standalone `create-folders-from-file.py` script — moves each CBZ/CBR file
+directly inside a chosen folder into its own same-named subfolder. Arrived
+as a build brief handed directly to Code (a pre-scoped spec, not sourced
+from `INBOX.md`/`ROADMAP.md`'s holding list), built and manually tested
+2026-07-05.
+
+**Built:**
+- `backend/filename_sort.py` (new) — pure `sort_by_filename(folder)`
+  callable, no router/logging concerns.
+- `backend/filename_sort_log.py` (new) — audit log, thin wrapper over
+  `tool_logs.py`, same shape as `convert_log.py`.
+- `backend/routers/filename_sort.py` (new) — `browse`/`drives` (shared
+  `file_picker.py`), `run`/`status` mirroring `processing_folder.py`'s
+  background-job + polling shape. Registered in `main.py`.
+- Frontend: new "Sort by Filename" card in Admin → Processing Tools
+  (`frontend/admin.html`) — folder picker, Run button, terse result line,
+  expandable failure detail — and its wiring in
+  `frontend/js/processingTools.js`.
+
+**Found and fixed during build, before the manual test pass (see
+`DECISIONS.md`):** the collision rule for "target folder already exists
+with different content in it" was first implemented as a plain
+exact-destination-path check, which a scratch-folder test (built
+specifically to exercise the brief's named edge cases) showed let a file
+move into a folder that already held unrelated content, silently. Fixed to
+check whether the target folder holds any entry that isn't this file's own
+basename-matching sibling before allowing the move — a same-basename
+CBZ+CBR pair still passes through unchanged, only genuinely unrelated
+folder content is rejected.
+
+**Verified — core logic and router layer tested directly against a scratch
+folder** (CBZ+CBR same-basename pair, an unrelated-content collision, a
+non-CBZ/CBR file, and a missing-folder case, all before the live UI pass;
+test artefacts and the log file they generated were deleted afterward, no
+real files touched) **— then Tez confirmed "test passed"** via the live
+Admin UI.
+
+---

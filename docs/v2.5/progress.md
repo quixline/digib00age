@@ -578,3 +578,68 @@ risks its own confusion. Worth a glance next time bug numbers are assigned.
 `ROADMAP.md` (stale BUG-017 cross-reference under the Mobile → Server Sync
 item corrected), `meta/roadmap.html` (same cross-reference corrected), this
 file.
+
+---
+
+## Session — 2026-07-05: Sort by Filename Processing Tool built — v2.5 Item 2
+
+**Goal.** Build a new Processing Tool from a build brief handed directly to
+Code — "FINAL SPEC: Sort by Filename Processing Tool (handoff to Code)" —
+porting the standalone `create-folders-from-file.py` script (found at
+`D:\workshop\Scripts\Python\create-folders-from-file.py`) into ComicVault
+following the existing `rename_tool.py`/`archive_convert.py` pattern.
+
+**Built**, following the established Processing Tool shape exactly:
+`backend/filename_sort.py` (pure `sort_by_filename(folder)` core logic),
+`backend/filename_sort_log.py` (audit log, `convert_log.py`'s shape),
+`backend/routers/filename_sort.py` (`browse`/`drives`/`run`/`status`,
+mirroring `processing_folder.py`), registered in `main.py`. Frontend: new
+"Sort by Filename" card in Admin → Processing Tools (folder picker, Run,
+terse result line, expandable failure detail), wired into
+`processingTools.js`.
+
+**Bug found and fixed before the manual test pass, via direct testing —
+not found by inspection.** The brief named three edge cases: a same-basename
+CBZ+CBR pair should both move into one folder with no error; a pre-existing
+target folder holding a *different* file should fail that one file with a
+clear reason; a missing/unreachable folder should fail cleanly with nothing
+logged. Built a scratch folder covering exactly these cases and ran
+`sort_by_filename()` directly (no server needed) before touching the UI.
+The first-pass collision check only compared the exact destination path
+(`folder\filename`) — it let a file move into a folder that already held
+something else entirely, as long as that unrelated file didn't happen to
+share the exact same name. Fixed by checking whether the target folder
+(if it already exists) holds any entry whose own basename doesn't match
+the folder's name, before allowing the move — this correctly lets a
+same-basename sibling through while rejecting genuinely unrelated content.
+Re-ran the same scratch test afterward to confirm all three named cases now
+behave as specified (see `DECISIONS.md` for the full reasoning).
+
+**Verification order, following the port-then-test-then-log discipline this
+project uses:** import/syntax checks; `sort_by_filename()` run directly
+against a scratch folder (same-basename pair, unrelated-folder-content
+collision, a `Thumbs.db`/`.txt` pair confirming the extension filter, and a
+missing-folder case); the router's background-task function (`_run()`) run
+directly to confirm the concurrency guard, result shape, and that a
+folder-not-found error writes nothing to the log. All test artifacts —
+the scratch folder and the `filename_sort_log.md` file the router test
+created — were deleted afterward; nothing in the real library, config, or
+Processing folder was touched. Server restart for the live UI pass was
+Tez's own action (a live tray-managed server was already running on the
+configured port; rather than restart it mid-session, Code asked and Tez
+chose to restart it himself when convenient). **Tez confirmed "test
+passed"** afterward via the live Admin UI — this is the gate this session's
+doc updates were held for.
+
+**Scope, per the brief — explicitly deferred, not built:** automation/
+scheduling wiring into `scheduler.py`/Processing Folder Automation; a second
+script (move-to-library, not yet written); a dirty-folder cleanup tool
+(flagged as a plausible future tool, not scoped); `.bak` file handling
+(tied to the separate Convert Archives review, not touched here — moot
+today since `.bak` never matches the CBZ/CBR extension filter anyway); any
+registry/dropdown UI for multiple scripts (stays a single fixed
+disabled-`<select>` until a second script exists).
+
+**Docs updated this session:** `ADMIN_SPEC.md` (new §11.5 Sort by Filename,
+Change Log entry), `comicvault-changes-v2.5.md` (new Item 2), `DECISIONS.md`
+(collision-rule correction), `CHANGELOG.md`, this file.
