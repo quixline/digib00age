@@ -10,9 +10,19 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 `archive/v2.4/progress.md`** (v2.4 closed 2026-07-02, folder moved to `archive/`).
 **Entries from 2026-07-03 through 2026-07-05 point into
 `archive/v2.5/progress.md`** (v2.5 closed 2026-07-05, folder moved to `archive/`).
-No active version folder right now — see `ROADMAP.md` "v2.6".
+**Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
+2026-07-06).
 
 ---
+
+- **2026-07-07** — Web UI Redesign Phase A built (v2.6 Item 1, Design→Code
+  handoff from the `digib00age` Claude Design project): design-token palette
+  (colour/typography/spacing/elevation) merged into `style.css` site-wide, and
+  a visible brand rename to **digib00age** (header logo, page titles, favicon)
+  — internal/codebase name stays ComicVault. No structural or nav changes yet;
+  Phases B (left sidebar nav), C (Admin IA restructure), and D (Series/Issue
+  visual polish) are queued next. → `v2.6/progress.md` "Web UI Redesign Phase A
+  built (2026-07-07)"
 
 - **2026-07-05** — Mobile ↔ Server Reading-State Sync built (v2.5 Item 3):
   reading progress made offline on the tablet now persists back to the

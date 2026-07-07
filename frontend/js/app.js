@@ -1508,7 +1508,7 @@ async function initSeries() {
       ? `?field=${encodeURIComponent(field)}&value=${encodeURIComponent(value)}`
       : q ? `?q=${encodeURIComponent(q)}` : '';
     const data = await apiFetch(`/series/${issueId}${qs}`);
-    document.title = `${data.series} — ComicVault`;
+    document.title = `${data.series} — digib00age`;
     content.innerHTML = '';
     content.appendChild(buildSeriesHeader(data));
     content.appendChild(buildIssueList(data, from));
@@ -1722,7 +1722,7 @@ async function initIssue() {
     const data = await apiFetch(`/issue/${issueId}`);
 
     const numSuffix = data.number ? ` #${data.number}` : '';
-    document.title = `${data.series}${numSuffix} — ComicVault`;
+    document.title = `${data.series}${numSuffix} — digib00age`;
 
     // Back link: real browser history, not a guessed destination — see series
     // header's matching comment for why this replaced the old from-param logic.

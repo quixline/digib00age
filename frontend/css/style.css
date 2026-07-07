@@ -1,21 +1,115 @@
 /* ComicVault — style.css */
 
+/* digib00age brand fonts (v2.6 Item 1 Phase A). First external network
+   dependency in this app — self-hosting the .woff2 files locally is a
+   possible fast-follow if that's ever a problem; not blocking this phase. */
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 :root {
-  --bg: #111113;
-  --surface: #1c1c1f;
-  --surface-2: #26262a;
-  --surface-3: #313136;
-  --accent: #8b6ef5;
-  --accent-dim: #6e54c9;
-  --text: #f0f0f0;
-  --text-2: #a0a0a8;
-  --text-3: #606068;
-  --green: #4caf76;
-  --blue: #4a9eff;
-  --border: #2e2e33;
+  /* digib00age design system (v2.6 Item 1 Phase A) — dark-first palette.
+     --accent-dim is kept as the pre-existing hover-state name (3 call sites)
+     and aliased to --accent-hover rather than renamed, to avoid an
+     unnecessary sweep of otherwise-unrelated CSS. */
+  --bg: #0D0E10;
+  --surface: #16181C;
+  --surface-2: #1F2228;
+  --surface-3: #2A2E36;
+  --accent: #0A5FFF;
+  --accent-hover: #2E72FF;
+  --accent-press: #0048D6;
+  --accent-dim: var(--accent-hover);
+  --accent-tint: color-mix(in srgb, var(--accent) 16%, transparent);
+  --accent-text: #5C90FF;
+  --text: #F2F4F7;
+  --text-2: #9BA1AC;
+  --text-3: #5E6470;
+  --green: #3FB877;
+  --blue: #0A5FFF;
+  --favourite: #F0C419;
+  --danger: #E8625A;
+  --border: #2C3038;
   --radius: 6px;
+  --radius-xs: 3px;
+  --radius-md: 8px;
   --radius-lg: 10px;
+  --radius-pill: 999px;
   --card-min: 120px;
+
+  /* Semantic aliases matching the digib00age design reference verbatim, so
+     Phase B–D CSS can be ported without a second translation pass. */
+  --surface-card: var(--surface);
+  --surface-raised: var(--surface-2);
+  --surface-sunken: var(--surface-3);
+  --text-primary: var(--text);
+  --text-secondary: var(--text-2);
+  --text-muted: var(--text-3);
+  --state-read: var(--green);
+  --state-progress: var(--green);
+  --state-reading: var(--blue);
+  --focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent);
+  --scrim: rgba(0, 0, 0, 0.55);
+
+  /* Spacing scale (4px base) */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Typography */
+  --font-sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-black: 800;
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-md: 17px;
+  --text-lg: 20px;
+  --text-xl: clamp(20px, 2.2vw, 26px);
+  --text-2xl: 30px;
+  --text-3xl: clamp(28px, 4vw, 44px);
+  --leading-tight: 1.15;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+  --tracking-tight: -0.03em;
+  --tracking-snug: -0.02em;
+  --tracking-normal: 0;
+  --tracking-label: 0.08em;
+
+  /* Shadows */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.55);
+  --shadow-toast: 0 4px 24px rgba(0, 0, 0, 0.5);
+
+  /* Motion */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 0.12s;
+  --dur: 0.18s;
+  --dur-slow: 0.28s;
+  --lift: translateY(-3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0s;
+    --dur: 0s;
+    --dur-slow: 0s;
+    --lift: none;
+  }
 }
 
 /* Light theme (SPEC.md §20.17) — applied either by explicit override
@@ -25,33 +119,41 @@
    page's <head> so there's no dark-then-light flash on load. */
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) {
-    --bg: #f5f4f2;
-    --surface: #ffffff;
-    --surface-2: #ececea;
-    --surface-3: #dddbd8;
-    --accent: #6e54c9;
-    --accent-dim: #8b6ef5;
-    --text: #1a1a1c;
-    --text-2: #55555c;
-    --text-3: #8a8a90;
-    --green: #2f8f55;
-    --blue: #2a6fd1;
-    --border: #d8d6d2;
+    --bg: #F4F6F9;
+    --surface: #FFFFFF;
+    --surface-2: #EDF0F4;
+    --surface-3: #E1E6EC;
+    --accent: #0A5FFF;
+    --accent-hover: #0048D6;
+    --accent-press: #0039AB;
+    --accent-tint: color-mix(in srgb, var(--accent) 12%, transparent);
+    --accent-text: #0048D6;
+    --text: #14161A;
+    --text-2: #565C66;
+    --text-3: #888E98;
+    --green: #2E9E60;
+    --blue: #0A5FFF;
+    --danger: #D24A42;
+    --border: #DCE0E6;
   }
 }
 :root[data-theme="light"] {
-  --bg: #f5f4f2;
-  --surface: #ffffff;
-  --surface-2: #ececea;
-  --surface-3: #dddbd8;
-  --accent: #6e54c9;
-  --accent-dim: #8b6ef5;
-  --text: #1a1a1c;
-  --text-2: #55555c;
-  --text-3: #8a8a90;
-  --green: #2f8f55;
-  --blue: #2a6fd1;
-  --border: #d8d6d2;
+  --bg: #F4F6F9;
+  --surface: #FFFFFF;
+  --surface-2: #EDF0F4;
+  --surface-3: #E1E6EC;
+  --accent: #0A5FFF;
+  --accent-hover: #0048D6;
+  --accent-press: #0039AB;
+  --accent-tint: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-text: #0048D6;
+  --text: #14161A;
+  --text-2: #565C66;
+  --text-3: #888E98;
+  --green: #2E9E60;
+  --blue: #0A5FFF;
+  --danger: #D24A42;
+  --border: #DCE0E6;
 }
 
 /* ── Reset ───────────────────────────────────────────────────────────────── */
@@ -94,12 +196,18 @@ ul { list-style: none; }
   flex-wrap: wrap;
 }
 .site-logo {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--accent);
-  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
   white-space: nowrap;
   flex-shrink: 0;
+}
+.site-logo-img { height: 26px; display: block; }
+.site-logo-img--light { display: none; }
+:root[data-theme="light"] .site-logo-img--dark { display: none; }
+:root[data-theme="light"] .site-logo-img--light { display: block; }
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .site-logo-img--dark { display: none; }
+  :root:not([data-theme]) .site-logo-img--light { display: block; }
 }
 
 /* ── Surface nav ─────────────────────────────────────────────────────────── */
@@ -483,7 +591,7 @@ ul { list-style: none; }
   position: absolute;
   top: 6px;
   left: 6px;
-  color: #f0c419;
+  color: var(--favourite);
   font-size: 18px;
   border: 1px solid #000;
   border-radius: 50%;
@@ -501,7 +609,7 @@ ul { list-style: none; }
    existing hover/selected border-color rules. SPEC.md §20.17. */
 .cover-card.is-favorite,
 .issue-row.is-favorite {
-  box-shadow: 0 0 0 1px #f0c419;
+  box-shadow: 0 0 0 1px var(--favourite);
 }
 
 /* NeedsReview indicator (Full Editor Column 1) — reuses the favourited-card
@@ -514,7 +622,7 @@ ul { list-style: none; }
 /* Read-state card colours */
 
 /* Fully read — flat dark-green tint, same as before */
-.cover-card.state-read { background: color-mix(in srgb, #4caf76 50%, var(--surface)); }
+.cover-card.state-read { background: color-mix(in srgb, var(--state-read) 50%, var(--surface)); }
 
 /* Partially read — near-black base with green gradient rising from the bottom */
 .cover-card.state-part-read {
@@ -1085,10 +1193,10 @@ ul { list-style: none; }
   border: 1px solid var(--border);
   transition: all 0.15s;
 }
-.btn-favorite-toggle:hover { border-color: #f0c419; color: var(--text); }
+.btn-favorite-toggle:hover { border-color: var(--favourite); color: var(--text); }
 .btn-favorite-toggle.is-favorite {
-  border-color: #f0c419;
-  color: #f0c419;
+  border-color: var(--favourite);
+  color: var(--favourite);
 }
 /* SPEC.md §20.17 — larger stars + space-between (no fixed gap) so the row
    fills the same width as the button column below it, instead of sitting
@@ -1106,7 +1214,7 @@ ul { list-style: none; }
   transition: color 0.15s, transform 0.1s;
 }
 .rating-control .rating-star:hover { transform: scale(1.15); }
-.rating-control .rating-star.is-filled { color: #f0c419; }
+.rating-control .rating-star.is-filled { color: var(--favourite); }
 .btn-edit-xml {
   display: block;
   text-align: center;
@@ -1750,7 +1858,7 @@ ul { list-style: none; }
   color: var(--text-2);
   transition: color 0.15s, transform 0.1s;
 }
-.selection-rate .rating-star:hover { color: #f0c419; transform: scale(1.15); }
+.selection-rate .rating-star:hover { color: var(--favourite); transform: scale(1.15); }
 .selection-rate .rating-clear {
   font-size: 12px;
   margin-right: 4px;

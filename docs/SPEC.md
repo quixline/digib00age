@@ -16,6 +16,14 @@
 
 ## 1. Project Overview
 
+> **Visible brand name (added 2026-07-07, v2.6 Item 1 Phase A):** the web UI's
+> displayed product name is now **digib00age** (header logo, page titles,
+> favicon) — see `docs/v2.6/comicvault-changes-v2.6.md` Item 1. **ComicVault**
+> remains the repo/internal/codebase name throughout this doc, the DB, API
+> routes, `config.json`, and the tray app — nothing below changes meaning, this
+> note just explains why the running app's UI no longer literally says
+> "ComicVault" anywhere.
+
 **ComicVault** is a personal, local comic book server for a single user on a home network.
 It serves a collection of up to 10,000 CBZ files with rich metadata from embedded ComicInfo.xml files.
 
