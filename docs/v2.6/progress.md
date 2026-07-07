@@ -375,3 +375,88 @@ Advanced Settings stay in their old always-visible form, queued for Phase C2.
 - Updated `ADMIN_SPEC.md` with a status note on the new nav (§ intro) and a
   note on §7's lock-gate change for the two relocated sections, plus a
   `DECISIONS.md` entry for the unlock decision and its rationale.
+
+## Session — 2026-07-07 — Phase C2a built (Admin IA restructure, part 2)
+
+Extended the category → sub-item → content-pane nav to the two remaining
+"undesigned" categories that don't need backend work: **Editor Options**
+(Genre List, Format List) and **Advanced Settings** (Password Protection,
+Change Server Port, Wipe Database, Wipe Reading State). Processing Tools
+stays old-style, queued for Phase C2b — it needs real backend work (new
+standalone XML Tagging tool) so it's being kept separate.
+
+- **New material surfaced before this session's plan was finalised:**
+  Tez provided `admin2.PNG` (Design's own screenshot, confirming Processing
+  Tools/Editor Options/Advanced Settings were literally "not yet designed in
+  this pass"), the source doc Design's `admin.jsx` categories were built
+  from (`New Admin Layout.md`, on Google Drive outside the `docs/` junction),
+  and 3 CAPT-era reference PDFs. This corrected the Phase C1 plan's guess at
+  the Processing Tools mapping: `New Admin Layout.md` lists a **XML Tagging**
+  sub-item that doesn't map to any existing section — it's genuinely new
+  functionality (own folder picker + Run), not just a relocation. Confirmed
+  with Tez: Auto Processing keeps its CT Auto-Tag enable checkbox; only the
+  detailed settings (Match Ratio Threshold, Save on Low Confidence,
+  ComicVine API Key) move to the new XML Tagging pane. This pushed Processing
+  Tools into its own session (Phase C2b) rather than building all three
+  remaining categories together as originally assumed.
+- **Sequencing decision:** Editor Options + Advanced Settings (C2a) have zero
+  backend dependency and use the exact same proven pattern as Phase C1, so
+  built now. Processing Tools (C2b) waits for its own plan — splitting
+  Auto Processing's field-removal from XML Tagging's field-reception across
+  two sessions would leave the ComicVine API key/threshold/save-low-confidence
+  genuinely inaccessible in the UI for the gap between them, a real
+  regression, not just cosmetic — so all 5 Processing Tools sub-items ship
+  together in one atomic C2b session instead.
+- **Danger Zone split:** the old single "Danger Zone" subsection (Clear
+  Reading Progress + Clear Database together) doesn't match `New Admin
+  Layout.md`'s two separate sub-items (Wipe Database, Wipe Reading State) —
+  split into two independent `.admin-content-block`s, each with its own
+  heading/hint, same buttons/IDs (`clearDbBtn`, `clearProgressBtn`)
+  unchanged.
+- **Genre List / Format List unlocked** — same treatment as Phase C1's Home
+  Strips/Libraries: moved out of the locked `advancedFields` fieldset into
+  their own always-visible Editor Options category, since they graduated
+  into a category distinct from Advanced Settings and the lock no longer
+  made sense once separated from the checkbox that gates it.
+- **Advanced Settings sub-items stay locked** — Password Protection, Change
+  Server Port (Reader Location folded into the same sub-item — not in
+  `New Admin Layout.md`'s list at all, flagged rather than silently
+  dropped), Wipe Database, Wipe Reading State all remain inside
+  `<fieldset id="advancedFields" disabled>`, gated by the same "Unlock
+  advanced settings" checkbox as before — they weren't reclassified, so the
+  existing gate still applies. The checkbox + fieldset-open moved out of the
+  old `<section class="admin-section"><h2>Advanced Settings</h2>` wrapper
+  (redundant now that the category card carries that label) into a bare
+  `admin-card` + fieldset pair, physically positioned where the old section
+  used to sit (between `#adminContentPane` and Processing Tools) — it's not
+  itself gated by category selection (same "always visible, not yet fully
+  nav-ified" pattern Processing Tools already uses), so it shows regardless
+  of which category is active; only the fields inside it toggle per-subitem.
+- Technical approach: identical to Phase C1 — extended the existing
+  `ADMIN_CATEGORIES` array in `admin.js` with two new entries (`editor-
+  options`, `advanced-settings`), no changes to `bindAdminNav()` itself.
+  `admin.html`: 6 blocks wrapped in `.admin-content-block[data-category]
+  [data-subitem][hidden]`, inner IDs completely untouched. No CSS changes —
+  Phase C1's `.admin-nav-card`/`.admin-content-heading` rules already cover
+  the new categories.
+- **Verified manually** in the browser (server already running from earlier
+  in the session, `localhost:9424/admin`) — all 4 category cards render;
+  Editor Options → Genre List shows real data (Crime 534 issues, Superhero
+  131 issues, etc.), unlocked with no checkbox gate; Advanced Settings → all
+  4 sub-items render correctly and independently (Password Protection
+  greyed out until unlock checkbox ticked, then editable; Change Server
+  Port shows the real listening port 9424 and real Reader Location
+  `L:\Comic Archives` together; Wipe Database and Wipe Reading State render
+  as two separate isolated blocks, confirming the Danger Zone split
+  worked). Library Management (Phase C1) re-checked, still fully
+  functional, unaffected by the new array entries. Processing Tools section
+  scrolled past, confirmed still fully intact and untouched below the new
+  content. Dark and light theme (toggled via `localStorage.cv_theme`, then
+  reset back to dark). No console errors on a fresh page load. Did not
+  click Save & Restart / Clear Database / Clear Reading Progress — those
+  are real, irreversible actions against the live server and out of scope
+  for a rendering/wiring verification pass.
+- Updated `ADMIN_SPEC.md` (top status note + §7 intro note covering the
+  unlock/lock split and the Danger Zone sub-item split) and
+  `comicvault-changes-v2.6.md` (Phase C2 split into C2a ✅ / C2b queued,
+  checklist table, status line).

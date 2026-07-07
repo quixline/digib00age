@@ -34,10 +34,9 @@ function initAdminBackLink() {
 // functions below need to change; they just now render into a block that
 // starts hidden until its nav card is picked.
 //
-// Only the two categories with real content-pane blocks are wired here —
-// Processing Tools / Editor Options / Advanced Settings stay as their old
-// always-visible sections until Phase C2 adds their category cards alongside
-// the content (docs/v2.6/comicvault-changes-v2.6.md).
+// Processing Tools stays as its old always-visible section until Phase C2b
+// adds its category card alongside the content (new XML Tagging tool +
+// backend work — docs/v2.6/comicvault-changes-v2.6.md).
 const ADMIN_CATEGORIES = [
   { id: 'library-mgmt', label: 'Library Management', subItems: [
     { id: 'auto-scan', label: 'Auto Scan Settings' },
@@ -52,6 +51,16 @@ const ADMIN_CATEGORIES = [
     { id: 'theme', label: 'Theme Selection' },
     { id: 'card-size', label: 'Card Size' },
     { id: 'pagination', label: 'Pagination' },
+  ] },
+  { id: 'editor-options', label: 'Editor Options', subItems: [
+    { id: 'genre-list', label: 'Genre List' },
+    { id: 'format-list', label: 'Format List' },
+  ] },
+  { id: 'advanced-settings', label: 'Advanced Settings', subItems: [
+    { id: 'password-protection', label: 'Password Protection' },
+    { id: 'server-port', label: 'Change Server Port' },
+    { id: 'wipe-database', label: 'Wipe Database' },
+    { id: 'wipe-reading-state', label: 'Wipe Reading State' },
   ] },
 ];
 

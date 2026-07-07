@@ -4,6 +4,58 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### v2.6 Item 1 Phase C2a: Genre List / Format List unlocked, rest of Advanced Settings stays locked
+
+**Decided:** 2026-07-07, before building Phase C2a (Admin IA restructure, part 2).
+
+**Why:** Same reasoning as Phase C1's Home Page Strips/Libraries decision below.
+Genre List and Format List used to live inside `<fieldset id="advancedFields"
+disabled>` alongside Password Protection, Server Port, and the old "Danger
+Zone" subsection. The new Admin IA moves them into their own **Editor
+Options** category, distinct from **Advanced Settings** — keeping the lock
+would mean the unlock checkbox lives in a different part of the nav than the
+content it gates. Matches `New Admin Layout.md`'s own category split (Editor
+Options is a separate top-level section from Advanced Settings). The
+remaining four sub-items (Password Protection, Change Server Port + Reader
+Location, Wipe Database, Wipe Reading State) **stay locked** — they weren't
+reclassified, they're still Advanced Settings, so the existing gate continues
+to make sense there and wasn't relitigated.
+
+**Also decided this session:** the old single "Danger Zone" subsection
+(Clear Reading Progress + Clear Database together under one heading) splits
+into two independent sub-items, **Wipe Database** and **Wipe Reading State**,
+matching `New Admin Layout.md`'s own two-item list — same buttons/IDs, just
+no longer grouped under one shared heading.
+
+**Where:** `frontend/admin.html` (Genre List / Format List blocks moved out
+of `#advancedFields`; Danger Zone split into two `.admin-content-block`s),
+`docs/ADMIN_SPEC.md` §7.
+
+### v2.6 Item 1 Phase C2: Processing Tools mapping corrected — XML Tagging is new functionality, not a relocation
+
+**Decided:** 2026-07-07, during Phase C2 planning, before Phase C2a was built.
+
+**Why:** The Phase C1 plan had guessed Processing Tools' 5 sub-items were all
+relocations of existing sections. New reference material (`admin2.PNG`,
+`New Admin Layout.md` — the actual source doc `admin.jsx`'s categories were
+built from, on Google Drive outside the `docs/` junction — and 3 CAPT-era
+PDFs) showed a **XML Tagging** sub-item with no existing-section match. Tez
+confirmed: it's a genuinely new standalone tool (own folder picker + Run),
+not just a settings relocation, and the reference doc/PDFs had mistakenly
+dropped CT Auto-Tag from Auto Processing entirely — Auto Processing actually
+keeps its CT Auto-Tag enable checkbox; only the *detailed* settings (Match
+Ratio Threshold, Save on Low Confidence, ComicVine API Key) move to the new
+XML Tagging pane, reading/writing the same shared config fields. This pushed
+Processing Tools out of Phase C2a (no backend work) into its own session,
+Phase C2b, and settled that all 5 Processing Tools sub-items ship together
+atomically in C2b rather than split further — removing Auto Processing's CT
+settings fields before XML Tagging exists to receive them would leave the
+ComicVine API key/threshold/save-low-confidence genuinely inaccessible in the
+UI for however long the gap lasted, a real regression, not just cosmetic.
+
+**Where:** `docs/v2.6/comicvault-changes-v2.6.md` Phase C2a/C2b split,
+`docs/ADMIN_SPEC.md` §11 (pending Phase C2b build).
+
 ### v2.6 Item 1 Phase C1: Home Page Strips / Add-Remove Libraries — unlock them
 
 **Decided:** 2026-07-07, before building Phase C1 (Admin IA restructure).

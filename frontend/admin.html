@@ -66,6 +66,8 @@
     <div class="admin-nav-grid" id="adminCategoryNav">
       <button type="button" class="admin-nav-card" data-category="library-mgmt">Library Management</button>
       <button type="button" class="admin-nav-card" data-category="library-appearance">Library Appearance</button>
+      <button type="button" class="admin-nav-card" data-category="editor-options">Editor Options</button>
+      <button type="button" class="admin-nav-card" data-category="advanced-settings">Advanced Settings</button>
     </div>
     <div class="admin-nav-grid admin-nav-grid--sm" id="adminSubitemNav" hidden></div>
 
@@ -349,29 +351,110 @@
         </div>
       </div>
 
+      <!-- ── Genre List (v2.6 Item 1 Phase C2a — moved out from behind the
+           advanced-settings lock, same as Phase C1's Home Strips/Libraries;
+           see docs/DECISIONS.md) ─────────────────────────────────────── -->
+      <div class="admin-content-block" data-category="editor-options" data-subitem="genre-list" hidden>
+        <h3 class="admin-content-heading">Genre List</h3>
+        <p class="admin-card-hint">
+          Values offered in the editor's Genre picker. Removing a value already
+          used by existing issues does not retag them — it only drops it from
+          future selection. At least one value must remain.
+        </p>
+        <div class="admin-card">
+          <div class="folder-list" id="genreList"></div>
+          <div class="ct-add-form">
+            <div class="ct-path-row">
+              <input type="text" class="admin-input" id="genreNameInput" placeholder="Genre name" />
+              <button type="button" class="btn-primary" id="genreAddBtn">Add Genre</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Format List (v2.6 Item 1 Phase C2a — moved out from behind the
+           advanced-settings lock, same rationale as Genre List above) ─── -->
+      <div class="admin-content-block" data-category="editor-options" data-subitem="format-list" hidden>
+        <h3 class="admin-content-heading">Format List</h3>
+        <p class="admin-card-hint">
+          Values offered in the editor's Format dropdown. Removing a value already
+          used by existing issues does not retag them — it only drops it from
+          future selection. At least one value must remain.
+        </p>
+        <div class="admin-card">
+          <div class="folder-list" id="formatList"></div>
+          <div class="ct-add-form">
+            <div class="ct-path-row">
+              <input type="text" class="admin-input" id="formatNameInput" placeholder="Format name" />
+              <button type="button" class="btn-primary" id="formatAddBtn">Add Format</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
-    <!-- ── Advanced Settings ───────────────────────────────────────────────── -->
-    <section class="admin-section">
-      <h2 class="admin-section-heading">Advanced Settings</h2>
-      <div class="admin-card">
-        <label class="admin-lock-label">
-          <input type="checkbox" id="advancedLock" />
-          <span>Unlock advanced settings</span>
-        </label>
-        <fieldset class="admin-fieldset" id="advancedFields" disabled>
-          <div class="admin-field-row">
-            <label class="admin-field-label" for="readerLocationInput">Reader Location</label>
+    <!-- ── Advanced Settings (v2.6 Item 1 Phase C2a) — these sub-items keep
+         the existing "Unlock advanced settings" gate (unlike Editor Options
+         above): they weren't reclassified, they're staying in the Advanced
+         Settings category, so the gate still makes sense here. ──────────── -->
+    <div class="admin-card">
+      <label class="admin-lock-label">
+        <input type="checkbox" id="advancedLock" />
+        <span>Unlock advanced settings</span>
+      </label>
+    </div>
+    <fieldset class="admin-fieldset" id="advancedFields" disabled>
+
+      <!-- ── Password Protection (ADMIN_SPEC.md §7.1 / §7.2) ─────────── -->
+      <div class="admin-content-block" data-category="advanced-settings" data-subitem="password-protection" hidden>
+        <h3 class="admin-content-heading">Password Protection</h3>
+        <p class="admin-card-hint" id="authLocalOnlyHint" hidden>
+          Password protection, remote administration and password changes can only be
+          changed from this machine — log in locally to change these settings.
+        </p>
+        <div class="admin-card">
+          <label class="admin-lock-label">
+            <input type="checkbox" id="authProtectionToggle" />
+            <span>Require a password for Admin / Editor</span>
+          </label>
+          <div class="admin-field-row" id="authPasswordFields" hidden>
             <div class="admin-field-input-wrap">
               <div class="admin-field-input-row">
-                <input type="text" class="admin-input" id="readerLocationInput" placeholder="comicvault://read/" />
-                <button class="btn-primary" id="saveAdvancedBtn">Save Location</button>
+                <input type="password" class="admin-input" id="authNewPassword" placeholder="New password" autocomplete="new-password" />
+                <input type="password" class="admin-input" id="authConfirmPassword" placeholder="Confirm password" autocomplete="new-password" />
+                <button class="btn-primary" id="authSaveBtn">Save</button>
               </div>
-              <p class="admin-field-hint">No functional effect in V1 — reserved for future reader configuration.</p>
+              <p class="editor-error" id="authError" hidden></p>
+            </div>
+          </div>
+          <div class="admin-field-row" id="authDisableConfirmRow" hidden>
+            <div class="admin-field-input-wrap">
+              <p class="admin-field-hint">Enter current password to disable protection:</p>
+              <div class="admin-field-input-row">
+                <input type="password" class="admin-input" id="authDisableCurrentPassword" placeholder="Current password" autocomplete="current-password" />
+                <button class="btn-primary" id="authDisableConfirmBtn">Confirm</button>
+                <button class="btn-admin-action" id="authDisableCancelBtn">Cancel</button>
+              </div>
+              <p class="editor-error" id="authDisableError" hidden></p>
             </div>
           </div>
 
-          <!-- ── Server Listening Port (ADMIN_SPEC.md §7.3) ───────────────── -->
+          <label class="admin-lock-label" id="authRemoteLabel">
+            <input type="checkbox" id="authRemoteToggle" disabled />
+            <span>Allow Remote Administration (non-local access)</span>
+          </label>
+          <p class="admin-field-hint">Requires password protection to be on.</p>
+        </div>
+      </div>
+
+      <!-- ── Change Server Port + Reader Location (ADMIN_SPEC.md §7.3 / §7.6)
+           — folded into one sub-item; Reader Location isn't in New Admin
+           Layout.md's list at all, but it's a real existing field with
+           nowhere else sensible to live. ─────────────────────────────── -->
+      <div class="admin-content-block" data-category="advanced-settings" data-subitem="server-port" hidden>
+        <h3 class="admin-content-heading">Change Server Port</h3>
+        <div class="admin-card">
           <div class="admin-field-row">
             <label class="admin-field-label" for="serverPortInput">Server Listening Port</label>
             <div class="admin-field-input-wrap">
@@ -383,108 +466,51 @@
             </div>
           </div>
 
-          <!-- ── Password Protection (ADMIN_SPEC.md §7.1 / §7.2) ─────────── -->
-          <div class="admin-subsection">
-            <h3 class="admin-subsection-heading">Password Protection</h3>
-            <p class="admin-card-hint" id="authLocalOnlyHint" hidden>
-              Password protection, remote administration and password changes can only be
-              changed from this machine — log in locally to change these settings.
-            </p>
-            <div class="admin-card">
-              <label class="admin-lock-label">
-                <input type="checkbox" id="authProtectionToggle" />
-                <span>Require a password for Admin / Editor</span>
-              </label>
-              <div class="admin-field-row" id="authPasswordFields" hidden>
-                <div class="admin-field-input-wrap">
-                  <div class="admin-field-input-row">
-                    <input type="password" class="admin-input" id="authNewPassword" placeholder="New password" autocomplete="new-password" />
-                    <input type="password" class="admin-input" id="authConfirmPassword" placeholder="Confirm password" autocomplete="new-password" />
-                    <button class="btn-primary" id="authSaveBtn">Save</button>
-                  </div>
-                  <p class="editor-error" id="authError" hidden></p>
-                </div>
+          <div class="admin-field-row">
+            <label class="admin-field-label" for="readerLocationInput">Reader Location</label>
+            <div class="admin-field-input-wrap">
+              <div class="admin-field-input-row">
+                <input type="text" class="admin-input" id="readerLocationInput" placeholder="comicvault://read/" />
+                <button class="btn-primary" id="saveAdvancedBtn">Save Location</button>
               </div>
-              <div class="admin-field-row" id="authDisableConfirmRow" hidden>
-                <div class="admin-field-input-wrap">
-                  <p class="admin-field-hint">Enter current password to disable protection:</p>
-                  <div class="admin-field-input-row">
-                    <input type="password" class="admin-input" id="authDisableCurrentPassword" placeholder="Current password" autocomplete="current-password" />
-                    <button class="btn-primary" id="authDisableConfirmBtn">Confirm</button>
-                    <button class="btn-admin-action" id="authDisableCancelBtn">Cancel</button>
-                  </div>
-                  <p class="editor-error" id="authDisableError" hidden></p>
-                </div>
-              </div>
-
-              <label class="admin-lock-label" id="authRemoteLabel">
-                <input type="checkbox" id="authRemoteToggle" disabled />
-                <span>Allow Remote Administration (non-local access)</span>
-              </label>
-              <p class="admin-field-hint">Requires password protection to be on.</p>
+              <p class="admin-field-hint">No functional effect in V1 — reserved for future reader configuration.</p>
             </div>
           </div>
-
-          <!-- ── Genre List (comicvault-changes.md Tier 4 Item 1) ────────── -->
-          <div class="admin-subsection">
-            <h3 class="admin-subsection-heading">Genre List</h3>
-            <p class="admin-card-hint">
-              Values offered in the editor's Genre picker. Removing a value already
-              used by existing issues does not retag them — it only drops it from
-              future selection. At least one value must remain.
-            </p>
-            <div class="admin-card">
-              <div class="folder-list" id="genreList"></div>
-              <div class="ct-add-form">
-                <div class="ct-path-row">
-                  <input type="text" class="admin-input" id="genreNameInput" placeholder="Genre name" />
-                  <button type="button" class="btn-primary" id="genreAddBtn">Add Genre</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ── Format List (comicvault-changes.md Tier 4 Item 1) ───────── -->
-          <div class="admin-subsection">
-            <h3 class="admin-subsection-heading">Format List</h3>
-            <p class="admin-card-hint">
-              Values offered in the editor's Format dropdown. Removing a value already
-              used by existing issues does not retag them — it only drops it from
-              future selection. At least one value must remain.
-            </p>
-            <div class="admin-card">
-              <div class="folder-list" id="formatList"></div>
-              <div class="ct-add-form">
-                <div class="ct-path-row">
-                  <input type="text" class="admin-input" id="formatNameInput" placeholder="Format name" />
-                  <button type="button" class="btn-primary" id="formatAddBtn">Add Format</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ── Danger Zone (ADMIN_SPEC.md §7.4 / §7.5) ──────────────────── -->
-          <div class="admin-subsection">
-            <h3 class="admin-subsection-heading">Danger Zone</h3>
-            <p class="admin-card-hint">
-              These actions permanently delete library data and cannot be undone.
-              Custom Tabs and Home Page Strips are configuration, not library data,
-              and are never affected by either action below. Local access only.
-            </p>
-            <div class="admin-card">
-              <div class="admin-field-row">
-                <label class="admin-field-label">Clear Reading Progress</label>
-                <button class="btn-admin-action" id="clearProgressBtn">Clear Reading Progress</button>
-              </div>
-              <div class="admin-field-row">
-                <label class="admin-field-label">Clear Database</label>
-                <button class="btn-admin-action" id="clearDbBtn">Clear Database</button>
-              </div>
-            </div>
-          </div>
-        </fieldset>
+        </div>
       </div>
-    </section>
+
+      <!-- ── Wipe Database (ADMIN_SPEC.md §7.4) ───────────────────────── -->
+      <div class="admin-content-block" data-category="advanced-settings" data-subitem="wipe-database" hidden>
+        <h3 class="admin-content-heading">Wipe Database</h3>
+        <p class="admin-card-hint">
+          This action permanently deletes library data and cannot be undone.
+          Custom Tabs and Home Page Strips are configuration, not library data,
+          and are never affected. Local access only.
+        </p>
+        <div class="admin-card">
+          <div class="admin-field-row">
+            <label class="admin-field-label">Clear Database</label>
+            <button class="btn-admin-action" id="clearDbBtn">Clear Database</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Wipe Reading State (ADMIN_SPEC.md §7.5) ──────────────────── -->
+      <div class="admin-content-block" data-category="advanced-settings" data-subitem="wipe-reading-state" hidden>
+        <h3 class="admin-content-heading">Wipe Reading State</h3>
+        <p class="admin-card-hint">
+          This action permanently deletes reading progress and cannot be undone.
+          Local access only.
+        </p>
+        <div class="admin-card">
+          <div class="admin-field-row">
+            <label class="admin-field-label">Clear Reading Progress</label>
+            <button class="btn-admin-action" id="clearProgressBtn">Clear Reading Progress</button>
+          </div>
+        </div>
+      </div>
+
+    </fieldset>
 
     <!-- ── Processing Tools (admin-spec-section-12-processing-tools.md §12) ─── -->
     <section class="admin-section" id="processingToolsSection">

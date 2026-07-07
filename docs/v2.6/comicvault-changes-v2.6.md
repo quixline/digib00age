@@ -49,7 +49,7 @@ turns up.):**
 | **Browse (All/Singles/Series/a custom tab's flat listing)** | **Filter/sort bar restyled — visual only, every existing field/control stays (see below) — not started, not previously listed under any phase.** Cover grid/card styling is likely already close after Phase A's token remap (existing `.cover-card` already had lift-on-hover, read-state colour, radius tokens before this redesign started) — confirm during build rather than assuming a rebuild is needed. | D (new) |
 | Series detail | Blurred cover backdrop, issue-row treatment, tag/genre chips | E (renumbered from old "Phase D") |
 | Issue detail | Cover + action-button column, credits/summary layout | E (renumbered from old "Phase D") |
-| Admin | Category → sub-item → content-pane IA restructure | C |
+| Admin | Category → sub-item → content-pane IA restructure | C1 ✅ / C2a ✅ / C2b (Processing Tools) queued |
 
 **Browse filter/sort bar — what's actually different (found in
 `screens.jsx`'s `BrowseScreen`, confirmed against the live Design canvas
@@ -131,13 +131,31 @@ phased across multiple sessions rather than one continuous build —
   settings" gate (`DECISIONS.md`). Manually verified in dark and light
   theme, including one real functional round-trip test (Card Size change
   → localStorage → revert) — see `v2.6/progress.md`.
-- **Phase C2 — queued next.** Processing Tools, Editor Options, Advanced
-  Settings — the undesigned three, built from the real-section mapping
-  above (Filename Editor / Convert Archives & Images / Folder Processing /
-  Sort by Filename / Genre List / Format List / Password Protection /
-  Change Server Port / Reader Location / Wipe Database / Wipe Reading
-  State). The riskiest remaining chunk of admin.js/processingTools.js
-  wiring — same ID-preserving approach as C1.
+- **Phase C2a — ✅ built 2026-07-07.** Admin page IA restructure, part 2:
+  category → sub-item → content-pane nav for **Editor Options** (Genre
+  List, Format List — moved out from behind the advanced-settings lock,
+  same treatment as Phase C1's Home Strips/Libraries) and **Advanced
+  Settings** (Password Protection, Change Server Port + Reader Location
+  folded into one sub-item, Wipe Database, Wipe Reading State — split out
+  of the old single "Danger Zone" subsection into two separate sub-items;
+  all four stay behind the existing "Unlock advanced settings" gate, not
+  reclassified). Every existing `admin.html` element ID preserved;
+  `admin.js` extended only by adding two entries to the existing
+  `ADMIN_CATEGORIES` array — `bindAdminNav()` itself unchanged. Processing
+  Tools section untouched, still old-style always-visible. Manually
+  verified in dark and light theme, all 4 new sub-items and the
+  lock/unlock gate — see `v2.6/progress.md`.
+- **Phase C2b — queued next.** Processing Tools — the last undesigned
+  category, built from the corrected real-section mapping (Filename Editor
+  / Converter: Archives & Images / **new standalone XML Tagging tool** /
+  Folder Processing (Sort by Filename) / Auto Processing). Includes real
+  backend work: new `backend/routers/xml_tagging.py` modeled on
+  `filename_sort.py`, reusing `ct_autotag_file()`/`ct_bridge.*` verbatim;
+  the ComicVine API key/threshold/save-low-confidence fields relocate out
+  of Auto Processing's pane into the new XML Tagging pane (same stored
+  config fields, same IDs); Auto Processing keeps its CT Auto-Tag enable
+  checkbox. The riskiest remaining chunk of admin.js/processingTools.js
+  wiring, plus the only backend change in this item.
 - **Phase D — queued (added 2026-07-07, was missing from this list
   entirely until Tez caught it).** Browse screen filter/sort bar restyle —
   visual only, every current field/control stays (resolved 2026-07-07, see
@@ -149,5 +167,5 @@ phased across multiple sessions rather than one continuous build —
   detail visual polish (backdrop, issue rows, credits layout) per the
   design reference's `screens.jsx`.
 
-**Status:** Handed to Code 2026-07-07. Phases A, B, and C1 built and
-verified same day. Phases C2, D, E not yet started.
+**Status:** Handed to Code 2026-07-07. Phases A, B, C1, and C2a built and
+verified same day. Phases C2b, D, E not yet started.

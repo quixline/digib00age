@@ -15,6 +15,17 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-07** — Web UI Redesign Phase C2a built (v2.6 Item 1): Admin page
+  IA restructure extended to **Editor Options** (Genre List, Format List —
+  unlocked, same treatment as Phase C1's Home Strips/Libraries) and
+  **Advanced Settings** (Password Protection, Change Server Port + Reader
+  Location, Wipe Database, Wipe Reading State — split out of the old single
+  "Danger Zone" subsection into two sub-items, all four still behind the
+  "Unlock advanced settings" gate). Every existing element ID preserved;
+  `admin.js` only extended `ADMIN_CATEGORIES` with 2 new entries — no other
+  logic changed. Processing Tools stays old-style, moved to its own Phase
+  C2b (needs backend work for a new standalone XML Tagging tool). → `v2.6/
+  progress.md` "Phase C2a built (Admin IA restructure, part 2) (2026-07-07)"
 - **2026-07-07** — Web UI Redesign Phase C1 built (v2.6 Item 1): Admin page
   restructured from one long scrolling page into a category → sub-item →
   content-pane nav, for **Library Management** and **Library Appearance**

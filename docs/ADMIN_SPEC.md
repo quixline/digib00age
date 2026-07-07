@@ -58,6 +58,17 @@
 > described below is unchanged — only how you navigate to it changed. §11
 > (Processing Tools) and the rest of §7 (Advanced Settings) are not yet migrated
 > — still reached by scrolling, per the old layout — planned for Phase C2.
+>
+> **v2.6 Item 1 Phase C2a (2026-07-07):** extended the same nav to two more
+> categories — **Editor Options** (Genre List, Format List — unlocked, same as
+> Phase C1's Home Strips/Libraries) and **Advanced Settings** (Password
+> Protection, Change Server Port + Reader Location folded together, Wipe
+> Database, Wipe Reading State — all still behind the existing "Unlock advanced
+> settings" gate). Every field/ID unchanged, only navigation and the Danger
+> Zone→two-separate-sub-items split changed — see §7's intro note above for
+> detail. §11 (Processing Tools) is still reached by scrolling, per the old
+> layout — planned for Phase C2b, which also adds a new standalone **XML
+> Tagging** tool (see `docs/v2.6/comicvault-changes-v2.6.md`).
 
 ---
 
@@ -214,9 +225,16 @@ Appearance** category in the new Settings nav and are directly editable, no
 unlock checkbox required. Decided 2026-07-07 (see `DECISIONS.md`) — they graduated
 into their own always-visible category, distinct from Advanced Settings, so a
 lock tied to a checkbox that now lives in a different part of the nav would have
-been a confusing UX regression. Everything else described in this section (Reader
-Location, Server Port, Password Protection, Genre List, Format List, Danger Zone)
-is still locked exactly as before.
+been a confusing UX regression.
+
+**v2.6 Item 1 Phase C2a change (2026-07-07):** Genre List and Format List moved
+out of this locked fieldset too, for the same reason — they graduated into their
+own **Editor Options** category, directly editable, no unlock checkbox required
+(see `DECISIONS.md`). Reader Location, Server Port, Password Protection, and
+Danger Zone (now reached as two separate sub-items, **Wipe Database** and **Wipe
+Reading State** — same fields/IDs, just no longer grouped under one heading) stay
+in the **Advanced Settings** category and remain locked exactly as before — they
+weren't reclassified, so the existing gate still applies.
 
 ### 7.1 Password Protection *(built — V2.3 Item 6, 2026-06-24)*
 
