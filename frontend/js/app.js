@@ -46,6 +46,30 @@ const PRESS_MOVE_TOLERANCE  = 10;  // px — a drag/scroll cancels the long-pres
 let selectionActive = false;
 const selectedIds   = new Map();   // id -> 'issue' | 'series'
 
+// Shared by the long-press gesture (makeSelectable()) and the CoverCard
+// select-dot's click handler — either enters selection mode (first pick)
+// or toggles this id within an already-active selection.
+function selectOrToggle(id, kind = 'issue') {
+  if (!selectionActive) enterSelectionMode(id, kind);
+  else toggleSelected(id, kind);
+}
+
+// Hover-reveal selection circle (grid view only, hidden via CSS in list
+// view) — a discoverable, single-click alternative to the long-press
+// gesture above. Appended into a card's .cover-img-wrap, same parent as
+// the unread-badge/card-progress-bar.
+function buildSelectDot(id, kind = 'issue') {
+  const dot = el('span', 'select-dot');
+  dot.setAttribute('role', 'checkbox');
+  dot.setAttribute('aria-label', 'Select');
+  dot.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    selectOrToggle(id, kind);
+  });
+  return dot;
+}
+
 function makeSelectable(element, issueId, kind = 'issue') {
   element.dataset.issueId = issueId;
 
@@ -62,8 +86,7 @@ function makeSelectable(element, issueId, kind = 'issue') {
     clearPress();
     pressTimer = setTimeout(() => {
       longPressFired = true;
-      if (!selectionActive) enterSelectionMode(issueId, kind);
-      else toggleSelected(issueId, kind);
+      selectOrToggle(issueId, kind);
     }, LONG_PRESS_MS);
   });
 
@@ -1140,7 +1163,8 @@ function buildCoverCard(s) {
   // Multi-select: Singles cards select their one underlying issue directly;
   // Series-aggregate cards select the whole series (DECISIONS.md 2026-06-23
   // scope correction — previously series-aggregate cards were navigation-only).
-  makeSelectable(card, s.series_anchor_id, isSingle ? 'issue' : 'series');
+  const selectKind = isSingle ? 'issue' : 'series';
+  makeSelectable(card, s.series_anchor_id, selectKind);
 
   const wrap = el('div', 'cover-img-wrap');
   const img  = el('img');
@@ -1149,6 +1173,7 @@ function buildCoverCard(s) {
   img.loading = 'lazy';
   img.onerror = () => { wrap.innerHTML = '<div class="cover-placeholder">📖</div>'; };
   wrap.appendChild(img);
+  wrap.appendChild(buildSelectDot(s.series_anchor_id, selectKind));
 
   if (s.unread_count > 0 && s.unread_count < s.issue_count) {
     wrap.appendChild(el('span', 'unread-badge', s.unread_count));
@@ -1500,6 +1525,7 @@ function buildFolderFileCard(issue) {
   img.loading = 'lazy';
   img.onerror = () => { wrap.innerHTML = '<div class="cover-placeholder">📖</div>'; };
   wrap.appendChild(img);
+  wrap.appendChild(buildSelectDot(issue.id));
 
   if (state === 'state-part-read' && issue.page_count > 0) {
     const pct = Math.min(100, Math.round((issue.current_page / issue.page_count) * 100));

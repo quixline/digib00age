@@ -815,3 +815,93 @@ its own left/right arrow buttons. Fixed with one line
 (`overflow-x: hidden`) — reloaded and re-checked Year and Genre, both
 clean, only the intended vertical scrollbar remains. No other files
 touched.
+
+## Session — 2026-07-08 — Design-vs-implementation scan + CoverCard selection circle built
+
+Tez asked whether Phase D was "all the changes based on Design's docs" and
+requested a full scan comparing the Design project against the real app,
+having already spotted one gap himself (a small circle in the bottom-left
+corner of cover images on hover — screenshot: `D:\workshop\images\
+digib00age\selection-dot.PNG`).
+
+- **Scan approach:** rather than re-describing Design from memory, pulled
+  the remaining component sources directly from the Claude Design
+  project's compiled bundle (`_ds_bundle.js` — same JSON-extraction trick
+  as Phase D's Dropdown research: save the tool result's `content` field
+  to a real `.js` file so it's actually greppable) — `CoverCard.jsx`,
+  `parts.jsx` (`AppHeader`, `Strip`), `Badge`/`StatCard`/`Tag`/
+  `StatusButton`. Compared each against the real app's corresponding CSS/
+  JS.
+- **Confirmed already matching (no action needed):** CoverCard's read-
+  state colouring (fully-read green tint, part-read black+gradient) —
+  matches to the literal RGB value; favourite badge, unread badge,
+  progress bar + bottom feather gradient; hover-lift (`--lift:
+  translateY(-3px)` is even the same token name in both); Home Strip's
+  hover-reveal scroll arrows (pre-existing V1 feature, not something Phase
+  A/B introduced, already matched Design's edge-aware behaviour); Admin
+  `StatCard` padding/typography; header logo height/search/settings
+  button. This confirmed Phase A's token remap was genuinely thorough, not
+  just spot-checked.
+- **Confirmed gap:** Design's `CoverCard.jsx` has a `canSelect`-gated
+  select circle (`.ds-select-circle`) the real app never got — 14×14px,
+  white ring, `bottom:11/left:8`, hidden until hover (`opacity:0→1`),
+  stays visible once selected with an inner 6px accent dot, grid-view-only
+  by default (`!isList`). The real app's selection was long-press-only
+  (`makeSelectable()`, 500ms) with zero visual hint it was possible until
+  already mid-gesture.
+- **Out of scope, correctly not flagged as a new finding:** Series/Issue
+  detail differences (`StatusButton`, backdrop, issue rows, `Tag` layout)
+  — already tracked as Phase E, not started, not a Phase D/A/B/C gap.
+
+**Built the fix**, plan approved before touching anything:
+
+- Traced exactly where `.cover-card` elements get built in `app.js`:
+  `buildCoverCard()` (Browse grid) and `buildFolderFileCard()` (Folder
+  View flat files) both already call `makeSelectable()` — these two get
+  the new circle. `buildStripCard()` (Home) does **not** call
+  `makeSelectable()` at all — Home has no selection feature, so no circle
+  there (confirmed via a real page check: 45 strip cards, 0 select-dots).
+- `app.js`: extracted the 2-line `if (!selectionActive) enterSelectionMode
+  (...) else toggleSelected(...)` branch already living inside
+  `makeSelectable()`'s long-press timer into a named `selectOrToggle(id,
+  kind)` helper, called from both the timer callback (unchanged behaviour)
+  and a new `buildSelectDot(id, kind)` helper (`e.preventDefault();
+  e.stopPropagation();` then `selectOrToggle`) used by both card-building
+  functions. Zero changes to `enterSelectionMode`/`toggleSelected`/
+  `exitSelectionMode`/the toolbar — the circle is a new entry point into
+  the exact same state machine, not a parallel one.
+- `style.css`: new `.select-dot` — the inner filled dot is a
+  `::after` pseudo-element gated purely by the ancestor `.cover-card.
+  selected` class already toggled by the existing `toggleSelected()`, so
+  no extra DOM node or JS needed for that part. `.cover-grid.list-view
+  .select-dot { display: none; }` for the grid-only default.
+- **Verification hit real automation friction, worth recording:** the
+  first couple of real-mouse clicks via the browser tool either navigated
+  straight into the issue page or hit nothing at all — alarming at first,
+  since it looked like `preventDefault()`/`stopPropagation()` weren't
+  working. Root-caused by dispatching the *exact* event cascade a real
+  click fires (`pointerdown` → `pointerup` → `click`, matching what
+  `makeSelectable()`'s own long-press listeners also observe) directly via
+  JS at the dot's measured `getBoundingClientRect()` center: selection
+  worked correctly, toolbar appeared, **no navigation**, every time. The
+  earlier failures were the automation tool's coordinate targeting on a
+  14×14px element, not a real bug — confirmed by also testing a
+  plain synthetic `click`-only dispatch (which skips pointerdown/pointerup
+  entirely) versus the full cascade, both landing on the same correct
+  result once the coordinates were right.
+- **Verified manually**, per the plan: hover reveals the circle
+  (screenshotted, matches the shared reference image); click selects
+  without navigating (confirmed via the full pointerdown/pointerup/click
+  cascade dispatch, both on Browse and Folder View — `#folderGrid` file
+  cards, 45 of 45 got a dot); list view hides all dots
+  (`getComputedStyle().display === 'none'`); Home strips have zero dots
+  among 45 strip cards; Cancel correctly resets selection state; dark and
+  light theme (white ring renders identically in both, matching Design's
+  fixed `rgba(255,255,255,0.95)` regardless of theme); no console errors.
+  Did not exhaustively re-test the long-press gesture itself since the
+  refactor only extracted its existing 2-line branch into a named
+  function with identical behaviour, no logic change.
+- Updated `comicvault-changes-v2.6.md` (new checklist-table row for
+  CoverCard, cross-cutting bullet in the phase list, status line) — logged
+  as its own item since it doesn't map to a single lettered phase
+  (Browse + Folder View, not tied to Phase D's filter-bar-only scope).

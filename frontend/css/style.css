@@ -898,6 +898,39 @@ select.filter-select:focus,
   pointer-events: none;
 }
 
+/* Selection circle — hover-reveal, single-click alternative to the
+   existing long-press-to-select gesture (grid view only; matches
+   Design's CoverCard.jsx `!isList` default). Stays visible once selected,
+   independent of hover — the inner filled dot is a pseudo-element driven
+   purely by the ancestor .cover-card.selected class already toggled by
+   toggleSelected() (app.js), no extra DOM/JS needed for that part. */
+.select-dot {
+  position: absolute;
+  bottom: 11px;
+  left: 8px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity var(--dur) var(--ease);
+}
+.cover-card:hover .select-dot,
+.cover-card.selected .select-dot { opacity: 1; }
+.cover-card.selected .select-dot::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.cover-grid.list-view .select-dot { display: none; }
+
 .cover-info {
   padding: 10px;
   flex: 1;

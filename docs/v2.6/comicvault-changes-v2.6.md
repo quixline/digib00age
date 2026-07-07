@@ -46,7 +46,8 @@ turns up.):**
 | Header (all pages) | Slim bar: sidebar toggle, brand lockup, search, settings, login/logout | B ✅ |
 | Left sidebar (all pages except Admin) | Primary nav, status shortcuts, Libraries list, collapse/expand | B ✅ |
 | Home | Strips unchanged | out of scope (unchanged) |
-| **Browse (All/Singles/Series/a custom tab's flat listing)** | Filter/sort bar restyled — visual only, every existing field/control kept. Cover grid/card styling itself was out of Phase D's scope (only the filter bar was touched) — still believed close after Phase A's token remap, not independently re-verified against Design this phase. | D ✅ |
+| **Browse (All/Singles/Series/a custom tab's flat listing)** | Filter/sort bar restyled — visual only, every existing field/control kept. | D ✅ |
+| **CoverCard (Browse grid + Folder View — Home strips excluded, no selection feature there)** | Hover-reveal selection circle added, closing the one real gap found in a full Design-vs-implementation scan of `CoverCard.jsx` (read-state colours, badges, progress bar, hover-lift all already matched from Phase A). | ✅ (2026-07-08, cross-cutting, not tied to one lettered phase) |
 | Series detail | Blurred cover backdrop, issue-row treatment, tag/genre chips | E (renumbered from old "Phase D") |
 | Issue detail | Cover + action-button column, credits/summary layout | E (renumbered from old "Phase D") |
 | Admin | Category → sub-item → content-pane IA restructure | C1 ✅ / C2a ✅ / C2b ✅ — complete |
@@ -201,12 +202,27 @@ phased across multiple sessions rather than one continuous build —
   changes. See `DECISIONS.md` for the sync mechanism this required
   (`Object.defineProperty` on `.value` + a `MutationObserver` on
   `class`/`hidden`).
+- **CoverCard selection circle — ✅ built 2026-07-08.** Found via a full
+  Design-vs-implementation scan (`components/library/CoverCard.jsx`
+  compared against `app.js`'s `buildCoverCard()`/`buildFolderFileCard()`/
+  `buildStripCard()`) triggered by a screenshot Tez shared. A hover-reveal
+  14px circle, bottom-left of the cover image, single-click alternative to
+  the existing long-press-to-select gesture — stays visible (filled with
+  an accent dot) once selected, independent of hover. Grid view only
+  (Browse + Folder View); Home strips excluded since they have no
+  selection feature to hook into. No changes to the existing selection
+  state machine (`enterSelectionMode`/`toggleSelected`/`exitSelectionMode`,
+  the selection toolbar, or the pre-existing whole-card `.selected` ring) —
+  see `v2.6/progress.md` for the full comparison-scan results (everything
+  else in `CoverCard.jsx` already matched, Phase A's token remap having
+  done a genuinely thorough job).
 - **Phase E — queued (renumbered from the old "Phase D").** Series/Issue
   detail visual polish (backdrop, issue rows, credits layout) per the
   design reference's `screens.jsx`.
 
 **Status:** Handed to Code 2026-07-07. Phases A, B, C1, C2a, C2b, and D
-(plus its open-dropdown-panel follow-up) built and verified same day (also
-a small C2b follow-up polish, see `v2.6/progress.md`) — the Admin IA
-restructure is complete and the Browse bar, including its open dropdowns,
-now matches the Design reference. Phase E not yet started.
+(plus its open-dropdown-panel follow-up and a small C2b follow-up polish)
+built and verified 2026-07-07; the CoverCard selection circle followed on
+2026-07-08 — the Admin IA restructure is complete, the Browse bar
+(including its open dropdowns) and CoverCard both now match the Design
+reference. Phase E not yet started.

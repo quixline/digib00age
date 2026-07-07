@@ -15,6 +15,17 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-08** — Web UI Redesign: CoverCard selection circle (v2.6 Item
+  1): full Design-vs-implementation scan (`CoverCard.jsx` and other
+  remaining components pulled from the Design bundle) found one real gap
+  — a hover-reveal selection circle on cover cards, a discoverable
+  single-click alternative to the existing long-press-to-select gesture.
+  Added to Browse grid + Folder View cards (grid view only); Home strips
+  excluded (no selection feature there). Zero changes to the existing
+  selection state machine. Everything else checked in the scan (read-state
+  colours, badges, progress bar, hover-lift, header, Admin StatCard)
+  already matched Design. → `v2.6/progress.md` "Design-vs-implementation
+  scan + CoverCard selection circle built (2026-07-08)"
 - **2026-07-07** — Web UI Redesign Phase D follow-up fix (v2.6 Item 1): a
   stray horizontal scrollbar was showing on every open dropdown panel
   (`.fd-panel` set `overflow-y` without `overflow-x`, which the CSS spec
