@@ -104,7 +104,7 @@
           <option value="5">&#9733; 5</option>
         </select>
         <button class="fav-filter-btn" id="favFilterBtn" title="Show favourites only">&#9733; Favourites</button>
-        <button class="view-toggle-btn" id="viewToggle" title="Toggle list/grid view">&#9783;</button>
+        <span class="menu-bar-divider"></span>
 
         <!-- Grouping — Flat browse surfaces only. Folder View already groups by
              directory structure, so "Group by" doesn't apply there. -->
@@ -133,7 +133,10 @@
           <button class="filter-clear" id="filterClear">Clear</button>
         </div>
 
-        <span class="browse-count" id="browseCount"></span>
+        <div class="menu-bar-trailing">
+          <button class="view-toggle-btn" id="viewToggle" title="Toggle list/grid view">&#9783;</button>
+          <span class="browse-count" id="browseCount"></span>
+        </div>
        </div>
       </div>
 

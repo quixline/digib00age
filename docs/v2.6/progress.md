@@ -623,3 +623,79 @@ at the end of that row, rather than its own separate row.
   automation tooling itself (the click landing on the pre-reload DOM a
   moment before navigation completes), not a real product bug. Flagging
   here in case it turns up again.
+
+## Session — 2026-07-07 — Phase D built (Browse filter/sort bar restyle)
+
+Restyled the Browse screen's filter/sort bar (`#menuBar`,
+`frontend/index.html`) to match the Design reference — the last visual gap
+identified in the itemised per-screen checklist. Scope had already been
+settled (`DECISIONS.md`, same day): visual restyle only, every current
+field/control stays.
+
+- **Read the Design project directly rather than relying on the prior
+  session's description of it** — fetched `Library.html` (kit-local
+  `.ds-filter`/`.ds-mb-btn` CSS), `screens.jsx` (`BrowseScreen`'s actual
+  JSX layout), and the compiled `Dropdown` component source
+  (`components/library/Dropdown.jsx`, bundled into `_ds_bundle.js` — had
+  to extract the JSON tool result's `content` field to a real `.js` file
+  on disk first to grep it usefully, since the raw tool output is one
+  giant escaped-JSON line).
+- **Scope-narrowing finding, made before writing any code:** Design's
+  filter dropdowns aren't native `<select>` elements — `FilterSelect` in
+  `screens.jsx` renders a fully custom popup-listbox component with its
+  own open/close state, click-outside handling, and a themed
+  `.ds-dropdown-panel` for the open list. Rebuilding that is real new
+  interactive-component work, not a restyle, and reskinning a
+  browser-owned native `<select>`'s open popup isn't achievable via CSS
+  anyway (and isn't visually comparable across browsers). **Decision:**
+  kept the real app's native `<select>` elements, applied `.ds-filter`'s
+  *closed-trigger* styling only — matches the already-resolved "restyle,
+  don't rebuild" scope from the `DECISIONS.md` entry, without needing to
+  ask again.
+- Also found: Design groups the grid/list view toggle *with* the "N
+  Titles" count in one trailing right-aligned cluster, and has one vertical
+  divider after Favourites, before the filter dropdowns — details not
+  captured in the prior session's textual description, only visible by
+  reading `screens.jsx` directly.
+- **Technical approach — CSS-only + one small HTML reorder, zero `app.js`
+  changes** (confirmed via grep first: nothing in `app.js` depends on
+  DOM order/position for any of these elements, everything is
+  `getElementById`-bound):
+  - `style.css`: rewrote `.filter-select` and `.sort-dir-btn`/
+    `.view-toggle-btn`/`.fav-filter-btn` from boxed pills
+    (`background:var(--surface-2); border:1px solid var(--border)`) to
+    borderless/minimal (`background:none; border:none`), muted text that
+    brightens on hover and turns accent-coloured on focus/`.active` —
+    existing `--dur`/`--ease` transition tokens reused, no new tokens
+    needed. Restyled `.filter-clear` the same way for visual consistency
+    (Design has no equivalent control, but it sits in the same row).
+    Added `.menu-bar-divider` (1px hairline) and `.menu-bar-trailing`
+    (flex group, `margin-left:auto`, replaces `.browse-count`'s own
+    `margin-left:auto`).
+  - `index.html`: inserted `<span class="menu-bar-divider">` after
+    `favFilterBtn`; moved the existing `viewToggle` button (unchanged —
+    still one button, one behaviour, not split into two Design-style
+    grid/list buttons, since that would be a functional UI change beyond
+    restyle scope) into a new `.menu-bar-trailing` wrapper alongside
+    `browseCount`. Every other element — `sortSelect`, `sortDirBtn`,
+    `starRatingFilter`, `favFilterBtn`, `groupBySelect`,
+    `#browseFilters` and its 7 children — untouched, same IDs, same
+    position.
+- **Verified manually** in the browser (Browse "All" surface and a Custom
+  Tab's Folder View listing — "2000 AD", confirming the shared bar works
+  correctly in both Flat View and Folder View, and that Folder View
+  correctly has no Group by dropdown, unchanged): divider renders (subtle
+  hairline, matches Design's intent); Favourites toggle filters correctly
+  and turns accent-coloured while active, Clear appears/disappears exactly
+  as before; Genre filter round-tripped via a real `change` event (3,325
+  of 5,427 titles, active state turned accent blue); grid/list view toggle
+  re-tested after an initial missed click (coordinates shifted once Clear
+  toggled visibility mid-sequence — not a bug, just needed a precise
+  re-click) — confirmed both the icon swap and the actual grid↔list layout
+  change still work. Dark and light theme. No console errors.
+- Updated `comicvault-changes-v2.6.md` (Phase D marked ✅, checklist table,
+  status line) — deliberately did **not** claim the cover grid/card
+  styling was re-verified, since Phase D's scope was the filter bar only;
+  left that checklist note honestly scoped to what was actually checked
+  this session, not what Phase A's remap is merely believed to already
+  cover.

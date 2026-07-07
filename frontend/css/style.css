@@ -448,19 +448,31 @@ body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
   flex-wrap: wrap;
 }
 
+/* v2.6 Item 1 Phase D — borderless/minimal treatment (Design's .ds-mb-btn),
+   matches Design's IconToggle used for sort-direction/favourites/view. */
 .sort-dir-btn, .view-toggle-btn, .fav-filter-btn {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: none;
+  border: none;
   color: var(--text-2);
   font-size: 13px;
-  padding: 5px 10px;
+  font-weight: 600;
+  padding: 5px 6px;
   cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
+  transition: color var(--dur) var(--ease);
   white-space: nowrap;
 }
-.sort-dir-btn:hover, .view-toggle-btn:hover, .fav-filter-btn:hover { border-color: var(--accent); color: var(--text); }
-.fav-filter-btn.active { border-color: var(--accent); color: var(--accent); }
+.sort-dir-btn:hover, .view-toggle-btn:hover, .fav-filter-btn:hover { color: var(--text); }
+.fav-filter-btn.active { color: var(--accent); }
+
+/* Divider between the sort/favourites cluster and the filter dropdowns
+   (Design's BrowseScreen — one vertical hairline in that position). */
+.menu-bar-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
 
 /* Grouping dropdown — slightly wider to fit "No grouping" */
 .group-by-select { max-width: 150px; }
@@ -473,44 +485,55 @@ body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
   flex-wrap: wrap;
 }
 
-/* Count — pushed to right end of bar, accent colour matches active state */
-.browse-count {
+/* Trailing group — view toggle + count, pushed to the right end of the bar
+   together (Design groups them, not just the count). */
+.menu-bar-trailing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin-left: auto;
+}
+
+/* Count — accent colour matches active state */
+.browse-count {
   font-size: 20px;
   font-weight: 800;
   color: var(--accent);
   white-space: nowrap;
 }
 
-/* Filter dropdowns — inline in the bar */
+/* Filter dropdowns — inline in the bar. v2.6 Item 1 Phase D — borderless/
+   minimal treatment (Design's .ds-filter). */
 .filter-select {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: none;
+  border: none;
+  border-radius: 0;
   color: var(--text-2);
   font-size: 12px;
-  padding: 4px 6px;
+  font-weight: 600;
+  padding: 5px 2px;
   outline: none;
   cursor: pointer;
-  transition: border-color 0.2s, color 0.15s;
+  transition: color var(--dur) var(--ease);
   max-width: 115px;
 }
+.filter-select:hover { color: var(--text); }
 .filter-select:focus,
-.filter-select.active { border-color: var(--accent); color: var(--text); }
+.filter-select.active { color: var(--accent); }
 .filter-select option { background: var(--surface-2); }
 .filter-clear {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-2);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 5px 12px;
+  background: none;
+  border: none;
+  padding: 5px 6px;
   display: none;
+  cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: color var(--dur) var(--ease);
 }
-.filter-clear:hover { border-color: var(--accent); color: var(--accent); }
+.filter-clear:hover { color: var(--accent); }
 
 /* ── Home strips ─────────────────────────────────────────────────────────── */
 .home-strip { padding: 18px 0 4px; }

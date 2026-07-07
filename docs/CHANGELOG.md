@@ -15,6 +15,15 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-07** — Web UI Redesign Phase D built (v2.6 Item 1): Browse
+  screen filter/sort bar restyled to match the Design reference —
+  borderless/minimal controls (`.filter-select`, sort-direction/
+  favourites/view-toggle buttons, `Clear`), a divider after Favourites,
+  and the view toggle grouped with the title count on the right. Visual
+  only, every field/control unchanged; kept native `<select>` dropdowns
+  rather than rebuilding Design's custom popup-listbox component. →
+  `v2.6/progress.md` "Phase D built (Browse filter/sort bar restyle)
+  (2026-07-07)"
 - **2026-07-07** — Web UI Redesign Phase C2c follow-up (v2.6 Item 1): moved
   the "Unlock advanced settings" checkbox out of its own row into the
   Advanced Settings sub-item nav row as a compact "Unlock" control, per

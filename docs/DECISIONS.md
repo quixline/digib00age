@@ -4,6 +4,31 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### v2.6 Item 1 Phase D: kept native `<select>` filter dropdowns, didn't rebuild as Design's custom popup component
+
+**Decided:** 2026-07-07, while building Phase D (Browse filter/sort bar
+restyle), before writing any code.
+
+**Why:** Reading `screens.jsx` and the compiled `_ds_bundle.js` directly
+(rather than working from the prior session's textual description) showed
+that Design's filter dropdowns aren't styled native `<select>` elements —
+`FilterSelect` renders a fully custom-built popup listbox
+(`components/library/Dropdown.jsx`): its own open/close React state,
+click-outside-to-close, Escape-to-close, and a themed `.ds-dropdown-panel`
+for the open option list. Matching that exactly would mean building a new
+interactive JS component from scratch, not restyling an existing one — a
+different class of work than the "visual restyle only" scope already
+settled for this phase, and not something that can be done through CSS
+alone on a native `<select>` (the browser owns the open-state popup
+rendering). Kept the real app's native `<select>` elements and applied only
+`.ds-filter`'s closed-trigger styling (borderless, muted text, hover/focus
+colour change) — the part that's actually visible and comparable to Design
+side-by-side. The open dropdown list still uses the browser's native
+popup, unstyled, same as before this phase.
+
+**Where:** `frontend/css/style.css` (`.filter-select`), `frontend/index.html`
+(`#menuBar`'s `<select>` elements, unchanged markup).
+
 ### v2.6 Item 1 Phase C2b: ct_autotag_log.md becomes standalone-capable (`auto` param)
 
 **Decided:** 2026-07-07, while building the new XML Tagging tool.

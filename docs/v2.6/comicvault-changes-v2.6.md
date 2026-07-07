@@ -46,7 +46,7 @@ turns up.):**
 | Header (all pages) | Slim bar: sidebar toggle, brand lockup, search, settings, login/logout | B ✅ |
 | Left sidebar (all pages except Admin) | Primary nav, status shortcuts, Libraries list, collapse/expand | B ✅ |
 | Home | Strips unchanged | out of scope (unchanged) |
-| **Browse (All/Singles/Series/a custom tab's flat listing)** | **Filter/sort bar restyled — visual only, every existing field/control stays (see below) — not started, not previously listed under any phase.** Cover grid/card styling is likely already close after Phase A's token remap (existing `.cover-card` already had lift-on-hover, read-state colour, radius tokens before this redesign started) — confirm during build rather than assuming a rebuild is needed. | D (new) |
+| **Browse (All/Singles/Series/a custom tab's flat listing)** | Filter/sort bar restyled — visual only, every existing field/control kept. Cover grid/card styling itself was out of Phase D's scope (only the filter bar was touched) — still believed close after Phase A's token remap, not independently re-verified against Design this phase. | D ✅ |
 | Series detail | Blurred cover backdrop, issue-row treatment, tag/genre chips | E (renumbered from old "Phase D") |
 | Issue detail | Cover + action-button column, credits/summary layout | E (renumbered from old "Phase D") |
 | Admin | Category → sub-item → content-pane IA restructure | C1 ✅ / C2a ✅ / C2b ✅ — complete |
@@ -168,17 +168,32 @@ phased across multiple sessions rather than one continuous build —
   `v2.6/progress.md`. **Admin page IA restructure (Phases C1/C2a/C2b) is
   now complete** — every category is nav-driven, nothing left on the old
   one-long-scrolling-page layout.
-- **Phase D — queued (added 2026-07-07, was missing from this list
-  entirely until Tez caught it).** Browse screen filter/sort bar restyle —
-  visual only, every current field/control stays (resolved 2026-07-07, see
-  `DECISIONS.md`). Restyle `.filter-select`/`.sort-dir-btn`/`.fav-filter-
-  btn`/`.view-toggle-btn`/`.group-by-select`/`.filter-clear` to the
-  borderless/minimal `.ds-filter`/`.ds-mb-btn` treatment from the Design
-  reference, without touching what each control does.
+- **Phase D — ✅ built 2026-07-07.** Browse screen filter/sort bar restyle —
+  visual only, every current field/control kept exactly as-is (resolved
+  2026-07-07, see `DECISIONS.md`). Restyled `.filter-select`/`.sort-dir-
+  btn`/`.fav-filter-btn`/`.view-toggle-btn`/`.group-by-select`/`.filter-
+  clear` to the borderless/minimal `.ds-filter`/`.ds-mb-btn` treatment,
+  fetched directly from the Design project this session (`Library.html`'s
+  kit-local CSS, `screens.jsx`'s `BrowseScreen`) rather than relying on
+  the prior session's description. Added a vertical divider after
+  Favourites and grouped the view toggle with the title count on the
+  right, matching Design's layout — pure CSS + one small HTML reorder, zero
+  `app.js` changes. **Scope call:** Design's dropdowns are a fully custom
+  popup-listbox component (`components/library/Dropdown.jsx`), not a
+  native `<select>` — kept the real app's native `<select>` elements and
+  restyled only their closed-state trigger appearance, rather than
+  rebuilding them as custom widgets (real new interactive-component work,
+  not a restyle, and not justified just to reskin a browser-owned popup
+  list). Manually verified: every control still filters/sorts/toggles
+  identically (Genre filter functional round-trip, Favourites toggle,
+  Clear, grid/list view toggle all re-tested), dark and light theme, Flat
+  View and Folder View (a Custom Tab's listing) both confirmed, no console
+  errors — see `v2.6/progress.md`.
 - **Phase E — queued (renumbered from the old "Phase D").** Series/Issue
   detail visual polish (backdrop, issue rows, credits layout) per the
   design reference's `screens.jsx`.
 
-**Status:** Handed to Code 2026-07-07. Phases A, B, C1, C2a, and C2b built
-and verified same day — the Admin IA restructure is complete. Phases D and
-E not yet started.
+**Status:** Handed to Code 2026-07-07. Phases A, B, C1, C2a, C2b, and D
+built and verified same day (plus a small C2b follow-up polish, see
+`v2.6/progress.md`) — the Admin IA restructure is complete and the Browse
+bar now matches the Design reference. Phase E not yet started.
