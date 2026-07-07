@@ -4,6 +4,32 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### v2.6 Item 1: Browse filter/sort bar — restyle existing controls, don't drop any
+
+**Decided:** 2026-07-07, resolving the open question raised the same day in
+`comicvault-changes-v2.6.md` Phase D.
+
+**Why:** The Design reference's `BrowseScreen` filter bar is missing several
+controls the real app already has and uses — `Group by`, a separate `Year`
+filter alongside `Decade`, a separate `Rated` (personal star rating) dropdown,
+and the `Clear` button. Tez confirmed this is **not** a deliberate scope cut —
+Claude Design was working from an incomplete snapshot of the app's own files,
+so later-added fields never made it into what Design saw, and the mockup
+simply doesn't know they exist. Contrast with Phase B's status-pill removal,
+which *was* confirmed deliberate after checking directly — this is the other
+outcome of asking the same class of question, not a rule that Design always
+wins. **Phase D scope, going forward:** every current field/control stays —
+this is purely a visual restyle (borderless/minimal control styling, hover/
+active states, spacing) applied to the existing full control set, not a
+functional reduction to match the mockup's control count.
+
+**Lesson for future phases (C, E):** don't assume a control's absence from a
+Design mockup means "remove it" — check whether Design had visibility into
+that control's current-app existence at all before treating an omission as
+a decision. Ask, as this session did, rather than build either extreme
+(silently dropping working features, or silently ignoring the design intent)
+on an assumption.
+
 ### Mobile Sync: build the download-for-offline feature rather than a filename heuristic or a deferral
 
 **Decided:** 2026-07-05, during v2.5 Item 3 scoping, before any code.

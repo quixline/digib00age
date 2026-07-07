@@ -46,7 +46,7 @@ turns up.):**
 | Header (all pages) | Slim bar: sidebar toggle, brand lockup, search, settings, login/logout | B ✅ |
 | Left sidebar (all pages except Admin) | Primary nav, status shortcuts, Libraries list, collapse/expand | B ✅ |
 | Home | Strips unchanged | out of scope (unchanged) |
-| **Browse (All/Singles/Series/a custom tab's flat listing)** | **Filter/sort bar restyled + consolidated (see below) — not started, not previously listed under any phase.** Cover grid/card styling is likely already close after Phase A's token remap (existing `.cover-card` already had lift-on-hover, read-state colour, radius tokens before this redesign started) — confirm during build rather than assuming a rebuild is needed. | D (new) |
+| **Browse (All/Singles/Series/a custom tab's flat listing)** | **Filter/sort bar restyled — visual only, every existing field/control stays (see below) — not started, not previously listed under any phase.** Cover grid/card styling is likely already close after Phase A's token remap (existing `.cover-card` already had lift-on-hover, read-state colour, radius tokens before this redesign started) — confirm during build rather than assuming a rebuild is needed. | D (new) |
 | Series detail | Blurred cover backdrop, issue-row treatment, tag/genre chips | E (renumbered from old "Phase D") |
 | Issue detail | Cover + action-button column, credits/summary layout | E (renumbered from old "Phase D") |
 | Admin | Category → sub-item → content-pane IA restructure | C |
@@ -71,17 +71,15 @@ screenshot, not the possibly-stale handoff bundle):**
   the pre-redesign visual language, just re-coloured by Phase A's token
   swap, not restructured.
 
-**Open question, not blocking (flag before Phase D starts, not during
-it):** does the design's leaner control set mean **Group by**, the
-separate **Year** filter, the separate **Rated** dropdown, and the
-**Clear** button are deliberately dropped from the real app, or is the
-mockup just a simplified illustration that doesn't necessarily mean
-"remove these"? All four are real, working, separately-motivated features
-with their own build history (`MENU_BAR_SPEC.md`, `comicvault-changes-
-v2.3.md`) — this is the same class of question Phase B's status-pill
-removal was, and that one *was* a deliberate removal once checked against
-the design directly. Don't assume either way — confirm with Tez before
-Phase D removes anything a user currently relies on.
+**Resolved 2026-07-07 (was an open question, see `DECISIONS.md` for the
+full rationale):** `Group by`, the separate `Year` filter, the separate
+`Rated` dropdown, and `Clear` are **not** being dropped. Design was
+working from an incomplete snapshot of the app's files and never had
+visibility into these controls — their absence from the mockup isn't a
+scope decision, it's a gap in what Design saw. **Phase D is a visual
+restyle only** — every current field/control in `#menuBar` stays exactly
+as-is functionally; only the styling (borderless/minimal controls,
+hover/active states, spacing) changes to match the Design output.
 
 **Detail source:** Claude Design canvas + inline annotations, handed to
 Code directly via the Design connector — not duplicated into this doc.
@@ -129,8 +127,11 @@ phased across multiple sessions rather than one continuous build —
   sections while restyling.
 - **Phase D — queued (added 2026-07-07, was missing from this list
   entirely until Tez caught it).** Browse screen filter/sort bar restyle —
-  see the checklist and open question above; resolve the open question
-  before starting, not during.
+  visual only, every current field/control stays (resolved 2026-07-07, see
+  `DECISIONS.md`). Restyle `.filter-select`/`.sort-dir-btn`/`.fav-filter-
+  btn`/`.view-toggle-btn`/`.group-by-select`/`.filter-clear` to the
+  borderless/minimal `.ds-filter`/`.ds-mb-btn` treatment from the Design
+  reference, without touching what each control does.
 - **Phase E — queued (renumbered from the old "Phase D").** Series/Issue
   detail visual polish (backdrop, issue rows, credits layout) per the
   design reference's `screens.jsx`.
