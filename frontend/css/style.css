@@ -243,7 +243,7 @@ ul { list-style: none; }
   justify-content: center;
 }
 .sidebar-header-spacer {
-  width: 148px; /* 208px expanded sidebar − 60px rail */
+  width: 120px; /* 180px expanded sidebar − 60px rail */
   flex-shrink: 0;
   transition: width var(--dur) var(--ease);
 }
@@ -357,7 +357,7 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
   top: var(--header-h);
   align-self: flex-start;
   height: calc(100vh - var(--header-h));
-  width: 208px;
+  width: 180px;
   flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -383,7 +383,7 @@ body.sidebar-collapsed .app-sidebar-section-label { display: none; }
 .app-sidebar-item {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   width: 100%;
   padding: var(--space-2);
   border-radius: var(--radius-sm);
@@ -410,13 +410,26 @@ body.sidebar-collapsed .app-sidebar-item-label { display: none; }
 .app-sidebar-item.active .app-sidebar-icon,
 .app-sidebar-item:hover .app-sidebar-icon { color: inherit; }
 .app-sidebar-glyph { flex-shrink: 0; width: 22px; text-align: center; font-size: var(--text-base); }
-.app-sidebar-dot {
+
+/* Libraries items: plain text label only when expanded (no marker of any
+   kind — confirmed against the live Design canvas, not just the handoff
+   files, which were a step behind this). Collapsed rail swaps to a single-
+   letter badge (accent blue, same colour for every item — not per-item
+   hues) so a Libraries entry is still identifiable at 60px width. */
+.app-sidebar-lib-badge {
+  display: none;
   flex-shrink: 0;
-  width: 8px;
-  height: 8px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
-  margin: 0 7px;
+  background: var(--accent);
+  color: var(--on-accent);
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
 }
+body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
 
 /* ── Unified menu bar (MENU_BAR_SPEC.md) — shared across Flat View and
    Folder View; sits above whichever surface is active. ───────────────────── */

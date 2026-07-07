@@ -232,3 +232,29 @@ Tez sent three screenshots. Two things changed:
   at a 1920×1040 window — header and sidebar both remain pinned in every
   case; toggle stays fixed, logo shifts on expand/collapse; dark and light
   theme; no console errors.
+
+### Third follow-up — same day, Libraries markers + width (screenshots from
+the live Design canvas, not the handoff files)
+
+Tez sent two screenshots straight from the Claude Design tool (not the
+static handoff bundle read during Phase A planning — a later iteration)
+and said there should be **no dots in the nav bar at all**, plus asked for
+a narrower sidebar:
+
+- **Expanded state:** Libraries items are plain text, no marker of any
+  kind — confirmed from the screenshot, not assumed. Removed
+  `.app-sidebar-dot` and the per-item colour-cycling
+  (`LIBRARY_DOT_COLORS`) entirely.
+- **Collapsed state:** Libraries items show a single-letter badge instead
+  (accent-blue circle, white letter — same colour for every item, not
+  varied) — "#" for 2000 AD (name starts with a digit), "F" for
+  Favourites. New `libraryBadgeChar()` (`app.js`) computes it; new
+  `.app-sidebar-lib-badge` CSS, hidden by default and shown only via
+  `body.sidebar-collapsed`.
+- **Width decreased** from 208px to 180px (`.app-sidebar`,
+  `.sidebar-header-spacer` recalculated to 120px = 180−60 rail), and
+  `.app-sidebar-item`'s icon-to-label gap tightened from `--space-3` (12px)
+  to `--space-2` (8px) to match the more compact spacing in the reference.
+- Verified live (dark theme, hard-reloaded): expanded Libraries items show
+  plain text only; collapsed rail shows the blue letter badges; no console
+  errors.

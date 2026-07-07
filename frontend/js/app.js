@@ -478,21 +478,25 @@ function isFlatSurface(surface) {
 // surfaced in the sidebar's "Libraries" section (v2.6 Item 1 Phase B UI
 // copy — CUSTOM_TABS_SPEC.md's own "Custom Tabs" terminology is unchanged
 // internally), in created_at order. Runs on all three pages (library,
-// series, issue) so the Libraries list is always populated.
-const LIBRARY_DOT_COLORS = ['var(--accent)', 'var(--favourite)', 'var(--state-reading)', 'var(--danger)'];
+// series, issue) so the Libraries list is always populated. Expanded state
+// is plain text, no marker — confirmed against the live Design canvas, not
+// just the (slightly behind) handoff files. Collapsed rail shows a single-
+// letter badge instead, "#" for a name starting with a digit.
+function libraryBadgeChar(name) {
+  const ch = (name || '').trim().charAt(0);
+  return /[0-9]/.test(ch) ? '#' : (ch ? ch.toUpperCase() : '?');
+}
 
 async function loadCustomTabsNav() {
   try {
     const nav = await apiFetch('/nav/config');
     const container = document.getElementById('sidebarLibraries');
     if (!container) return;
-    (nav.custom_tabs || []).forEach((tab, i) => {
+    (nav.custom_tabs || []).forEach((tab) => {
       const btn = el('button', 'app-sidebar-item');
       btn.dataset.tabSurface = `tab-${tab.id}`;
       btn.title = tab.name;
-      const dot = el('span', 'app-sidebar-dot');
-      dot.style.background = LIBRARY_DOT_COLORS[i % LIBRARY_DOT_COLORS.length];
-      btn.appendChild(dot);
+      btn.appendChild(el('span', 'app-sidebar-lib-badge', libraryBadgeChar(tab.name)));
       btn.appendChild(el('span', 'app-sidebar-item-label', tab.name));
       container.appendChild(btn);
       tabViewModes[String(tab.id)] = tab.view_mode || 'flat';
