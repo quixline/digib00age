@@ -15,6 +15,14 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-07** — Web UI Redesign Phase D follow-up (v2.6 Item 1): styled
+  the Browse filter bar's *open* dropdown panel (screenshot-driven
+  request) — new `frontend/js/filterDropdown.js` layers a themed custom
+  panel over each native `<select>`, which stays hidden-but-functional in
+  the DOM as the source of truth (zero `app.js` changes). Reverses Phase
+  D's original "kept native select" scope call now that the open-menu
+  styling was explicitly asked for. → `v2.6/progress.md` "Phase D
+  follow-up built (styled open-dropdown panel) (2026-07-07)"
 - **2026-07-07** — Web UI Redesign Phase D built (v2.6 Item 1): Browse
   screen filter/sort bar restyled to match the Design reference —
   borderless/minimal controls (`.filter-select`, sort-direction/

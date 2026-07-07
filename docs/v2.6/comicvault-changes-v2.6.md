@@ -189,11 +189,24 @@ phased across multiple sessions rather than one continuous build —
   Clear, grid/list view toggle all re-tested), dark and light theme, Flat
   View and Folder View (a Custom Tab's listing) both confirmed, no console
   errors — see `v2.6/progress.md`.
+- **Phase D follow-up — ✅ built 2026-07-07.** Styled *open* dropdown panel
+  (screenshot-driven request — Design's dropdowns are a custom popup
+  listbox, and a native `<select>`'s open state can't be restyled via CSS
+  at all, which is exactly the scope call Phase D's own decision entry had
+  made). New `frontend/js/filterDropdown.js` layers a custom trigger+panel
+  over each `.filter-select` in `#menuBar`, matching
+  `components/library/Dropdown.jsx`'s `.ds-dropdown-panel`/`.ds-dropdown-
+  opt` styling — the real `<select>` stays in the DOM (hidden, not
+  removed) as the single source of truth, so `app.js` needed **zero**
+  changes. See `DECISIONS.md` for the sync mechanism this required
+  (`Object.defineProperty` on `.value` + a `MutationObserver` on
+  `class`/`hidden`).
 - **Phase E — queued (renumbered from the old "Phase D").** Series/Issue
   detail visual polish (backdrop, issue rows, credits layout) per the
   design reference's `screens.jsx`.
 
 **Status:** Handed to Code 2026-07-07. Phases A, B, C1, C2a, C2b, and D
-built and verified same day (plus a small C2b follow-up polish, see
-`v2.6/progress.md`) — the Admin IA restructure is complete and the Browse
-bar now matches the Design reference. Phase E not yet started.
+(plus its open-dropdown-panel follow-up) built and verified same day (also
+a small C2b follow-up polish, see `v2.6/progress.md`) — the Admin IA
+restructure is complete and the Browse bar, including its open dropdowns,
+now matches the Design reference. Phase E not yet started.

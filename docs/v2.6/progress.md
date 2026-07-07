@@ -699,3 +699,104 @@ field/control stays.
   left that checklist note honestly scoped to what was actually checked
   this session, not what Phase A's remap is merely believed to already
   cover.
+
+## Session — 2026-07-07 — Phase D follow-up built (styled open-dropdown panel)
+
+Tez shared a screenshot (`D:\workshop\images\digib00age\open-dd-menu.PNG`)
+of the *open* Genre dropdown, asking for the open-menu styling to be
+adjusted — directly reversing Phase D's own scope call from earlier the
+same session ("kept native `<select>` filter dropdowns", `DECISIONS.md`):
+a browser's native `<select>` popup can't be restyled via CSS at all, so
+matching the screenshot required actually building the custom listbox
+component that decision had ruled out.
+
+- **Reused Phase D's own research** — `components/library/Dropdown.jsx`
+  (fetched from the Design project earlier the same session, still fresh)
+  is the exact reference the screenshot matches: `.ds-dropdown-panel`
+  (themed card surface, border, radius, shadow) and `.ds-dropdown-opt`
+  (padding, hover highlight, accent-tinted selected row). Confirmed every
+  CSS variable needed already exists in `style.css` (`--surface-card`,
+  `--shadow-pop`, `--radius-md`, `--accent-tint`, `--accent-text`) — zero
+  new tokens, though one referenced token turned out not to actually
+  exist (`--radius-sm` — only `--radius-xs`/`--radius`/`--radius-md`/
+  `--radius-lg` are defined; caught before shipping, used `--radius-xs`
+  instead).
+- **Constraint-first design, before writing code:** grepped `app.js` for
+  every way it touches the 10 `.filter-select` elements — `change`
+  listeners (the actual filter logic), **programmatic** `.value =`
+  (`clearAllFilters()`, sort's "Pages"-option suppression), dynamically
+  rebuilt option lists (`addOpts()`, Genre/Format/Decade/Year/Publisher/
+  Rating are populated from live library data, not static HTML), and
+  `groupBySelect.hidden` toggled per-surface. All four had to keep working
+  with zero changes to `app.js` itself.
+- **Approach — hidden native `<select>` + custom overlay
+  (`frontend/js/filterDropdown.js`, new file):** the real `<select>` stays
+  in the DOM (visually hidden via `opacity:0`, not removed) as the single
+  source of truth. A custom trigger `<button>` (reuses `.filter-select`'s
+  exact CSS class for identical Phase D look) and an initially-hidden
+  `.fd-panel` sit alongside it. The panel's rows are rebuilt **fresh from
+  `select.options` every time it opens** — not cached at init — which is
+  what makes dynamically-populated option lists and per-option
+  `hidden`/`disabled` (the Pages-option case) work automatically with no
+  `app.js` changes: the panel always reflects whatever the real select
+  currently contains. Selecting a row sets `select.value` and dispatches a
+  real `change` event, so every existing `app.js` listener fires exactly
+  as if the native popup had been used.
+- **The one genuinely new trick, and the one bug it took a round to find:**
+  `app.js` sets `.value =` and toggles `.active`/`.hidden` as *separate*
+  statements in places like `clearAllFilters()` (`.value = ''` then a
+  distinct `.classList.remove('active')` on the next line) — a plain
+  `change`-event listener can't see scripted `.value =` at all, so the
+  trigger needs its own hook. First attempt: intercepted `.value`'s setter
+  via `Object.defineProperty` (delegating to the original
+  `HTMLSelectElement.prototype` descriptor) to resync the trigger's label,
+  and derived the trigger's accent "active" look from a blanket
+  `select.value !== ''`. That second part was wrong — it made the sort
+  dropdown (`sortSelect`, which always has a real value like `"alpha"` and
+  which `app.js` never toggles `.active` on) permanently accent-coloured,
+  a visible regression from Phase D's actual look (plain/muted until a
+  real filter is chosen). Fixed by not guessing at "active" from value at
+  all: added a `MutationObserver` watching the select's `class`/`hidden`
+  attributes (both real, observable DOM mutations, unlike `.value`) and
+  mirroring `select.classList.contains('active')`/`select.hidden`
+  verbatim onto the trigger/wrapper — self-consistent regardless of
+  statement ordering inside functions like `clearAllFilters()`, and exactly
+  matches original behaviour for every element (including the two,
+  `sortSelect`/`groupBySelect`, that `app.js` never marks `.active` at all).
+- **Second bug, found the same way (build → check against the real app,
+  not just against the plan):** the custom trigger button initially also
+  turned permanently accent-coloured after being clicked once, even with
+  the fix above. Cause: the trigger shares the `filter-select` CSS class
+  for its base look, and the existing rule `.filter-select:focus { color:
+  var(--accent) }` was written to target *any* element with that class —
+  including the new trigger `<button>`, which (unlike a native `<select>`)
+  never loses browser focus after a click. Fixed by tag-qualifying that
+  selector to `select.filter-select:focus`, so it only ever matches the
+  real (now-hidden, harmless) `<select>` elements, never the visible
+  trigger button.
+- Capped `.fd-panel`'s height (`max-height:320px; overflow-y:auto`) after
+  seeing the real Genre list (~30 real values, vs. the Design mockup's
+  6-item placeholder list) run off the bottom of the viewport — not
+  something the Design reference's own short list would ever have
+  surfaced.
+- **Verified manually**, per the plan's checklist: every dropdown (sort,
+  Rated, Group by, Genre, Format, Decade, Year, Publisher, Rating, B&W)
+  opens with the themed panel matching the screenshot; Genre selection
+  round-tripped (filtered to 3,325 of 5,427, trigger turned accent-blue);
+  **Clear correctly reverted the trigger to its plain placeholder text and
+  colour** (the specific case that proves the `class`/`hidden`
+  `MutationObserver` sync works, not just the simpler `change`-event
+  path); clicking outside a panel closes it and lets the click pass
+  through to whatever was underneath (matches Design's own `Dropdown.jsx`
+  behaviour — confirmed by accident when a stray outside-click during
+  testing navigated into an issue page); Escape closes without changing
+  selection; switched to the Series surface and confirmed the sort
+  dropdown's "Pages" option is correctly absent (proves the live-rebuild-
+  from-`select.options` respects `.hidden`); switched to the "2000 AD"
+  Custom Tab (Folder View) and confirmed `groupBySelect`'s wrapper
+  correctly stays hidden there too. Dark and light theme, both Flat View
+  and Folder View. No console errors on a fresh load.
+- Updated `DECISIONS.md` — added a follow-up note on the original Phase D
+  "kept native select" entry pointing at this session's reversal, plus a
+  new entry documenting the sync mechanism (`Object.defineProperty` +
+  `MutationObserver`) as its own non-obvious call.

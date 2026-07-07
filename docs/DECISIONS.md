@@ -29,6 +29,49 @@ popup, unstyled, same as before this phase.
 **Where:** `frontend/css/style.css` (`.filter-select`), `frontend/index.html`
 (`#menuBar`'s `<select>` elements, unchanged markup).
 
+**Reversed same day, later this session** — Tez shared a screenshot of the
+open Genre dropdown asking for the open-menu styling specifically, which is
+exactly the piece this decision had ruled out. See the next entry below
+(sync mechanism) and `v2.6/progress.md` "Phase D follow-up built" — the
+custom listbox got built after all, once it was explicitly requested rather
+than assumed out of scope. This entry is kept as-is (not deleted) since the
+reasoning for the original call is still valid context — "restyle only"
+was the correct read of the request *at the time*.
+
+### v2.6 Item 1 Phase D follow-up: hidden native `<select>` + `Object.defineProperty`/`MutationObserver` sync, not a full replacement
+
+**Decided:** 2026-07-07, while building the styled open-dropdown panel
+(reversing the "kept native select" call above).
+
+**Why:** `app.js` reads and writes the 10 `.filter-select` elements three
+ways that all had to keep working with zero changes to `app.js` itself:
+`change` listeners (the real filter logic), **programmatic** `.value =`
+in a couple of places (`clearAllFilters()`, sort's "Pages"-option
+suppression — neither of which fires a native `change` event), and
+dynamically-rebuilt option lists for Genre/Format/Decade/Year/Publisher/
+Rating (populated from live library data via `addOpts()`, not static
+HTML). Fully replacing the `<select>` with a custom widget (as Design's
+own React `Dropdown` component does) would have meant either touching
+every one of those `app.js` call sites, or reimplementing a `.value`-like
+interface from scratch. Instead: kept the real `<select>` in the DOM,
+hidden but otherwise untouched, as the sole source of truth, and built a
+custom trigger+panel purely as a visual/interaction layer on top of it —
+`Object.defineProperty` on the select's `value` accessor catches
+programmatic sets (which don't fire `change`), and a `MutationObserver` on
+the `class`/`hidden` attributes keeps the trigger's active-state and
+visibility in sync regardless of the order `app.js` happens to touch them
+in (e.g. `clearAllFilters()` sets `.value` and removes `.active` as two
+separate statements). Rejected deriving "active" styling from a blanket
+`select.value !== ''` — tried first, but wrongly made `sortSelect` (always
+has a real value, never gets `.active` toggled by `app.js`) permanently
+accent-coloured; mirroring the select's own real `.active` class instead
+matches original behaviour exactly, including for the two elements
+(`sortSelect`, `groupBySelect`) `app.js` never marks active at all.
+
+**Where:** new `frontend/js/filterDropdown.js`; `frontend/css/style.css`
+(`.fd-wrap`/`.fd-panel`/`.fd-opt`/`.fd-trigger`); `frontend/index.html`
+(one new `<script>` tag). No `app.js` changes.
+
 ### v2.6 Item 1 Phase C2b: ct_autotag_log.md becomes standalone-capable (`auto` param)
 
 **Decided:** 2026-07-07, while building the new XML Tagging tool.
