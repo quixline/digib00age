@@ -34,6 +34,55 @@ Design and handed to Code via the Design→Code connector.
 - Admin page: full visual overhaul, including a stats-card redesign.
 - Home strips: unchanged — carried over as-is from the current design.
 
+**Full per-screen scope checklist (added 2026-07-07 — the bullets above
+and the phase list below are both prose summaries, not an itemised list;
+this is the itemised one, cross-checked directly against the Design
+project's `screens.jsx`/`parts.jsx`/`admin.jsx`, not just described from
+memory. Update this checklist, not just the phase list, if anything else
+turns up.):**
+
+| Screen | What changes | Phase |
+|---|---|---|
+| Header (all pages) | Slim bar: sidebar toggle, brand lockup, search, settings, login/logout | B ✅ |
+| Left sidebar (all pages except Admin) | Primary nav, status shortcuts, Libraries list, collapse/expand | B ✅ |
+| Home | Strips unchanged | out of scope (unchanged) |
+| **Browse (All/Singles/Series/a custom tab's flat listing)** | **Filter/sort bar restyled + consolidated (see below) — not started, not previously listed under any phase.** Cover grid/card styling is likely already close after Phase A's token remap (existing `.cover-card` already had lift-on-hover, read-state colour, radius tokens before this redesign started) — confirm during build rather than assuming a rebuild is needed. | D (new) |
+| Series detail | Blurred cover backdrop, issue-row treatment, tag/genre chips | E (renumbered from old "Phase D") |
+| Issue detail | Cover + action-button column, credits/summary layout | E (renumbered from old "Phase D") |
+| Admin | Category → sub-item → content-pane IA restructure | C |
+
+**Browse filter/sort bar — what's actually different (found in
+`screens.jsx`'s `BrowseScreen`, confirmed against the live Design canvas
+screenshot, not the possibly-stale handoff bundle):**
+- Design's bar: `A–Z` sort dropdown (options include Z–A/Year/Recently
+  Added/**Rating** folded in as a sort mode) · sort-direction toggle (↑) ·
+  `★ Favourites` toggle · divider · `Genre`/`Format`/`Decade`/`Publisher`/
+  `B&W` dropdowns · [spacer] · grid/list toggle · big `N Titles` count.
+  Controls are borderless/minimal — no background box, no visible border
+  until interacted (`.ds-filter`/`.ds-mb-btn` in `Library.html`'s kit-local
+  CSS: `background:none; border:none; color:var(--text-secondary)`,
+  active/hover just changes text colour to accent).
+- Real app's current bar (`frontend/index.html` `#menuBar`, unchanged by
+  Phases A/B): separate `Rated` star dropdown, separate `Year` filter
+  *alongside* `Decade`, a `Group by` dropdown, and a `Clear` button — none
+  of which appear in the design's `BrowseScreen` at all. Controls are
+  boxed pills (`.filter-select` / `.sort-dir-btn` etc. — `background:
+  var(--surface-2); border: 1px solid var(--border); border-radius: ...`),
+  the pre-redesign visual language, just re-coloured by Phase A's token
+  swap, not restructured.
+
+**Open question, not blocking (flag before Phase D starts, not during
+it):** does the design's leaner control set mean **Group by**, the
+separate **Year** filter, the separate **Rated** dropdown, and the
+**Clear** button are deliberately dropped from the real app, or is the
+mockup just a simplified illustration that doesn't necessarily mean
+"remove these"? All four are real, working, separately-motivated features
+with their own build history (`MENU_BAR_SPEC.md`, `comicvault-changes-
+v2.3.md`) — this is the same class of question Phase B's status-pill
+removal was, and that one *was* a deliberate removal once checked against
+the design directly. Don't assume either way — confirm with Tez before
+Phase D removes anything a user currently relies on.
+
 **Detail source:** Claude Design canvas + inline annotations, handed to
 Code directly via the Design connector — not duplicated into this doc.
 Refer to the live Design project for exact layout/spacing/colour values
@@ -78,8 +127,13 @@ phased across multiple sessions rather than one continuous build —
   content panes) — the riskiest phase, must preserve every existing
   `admin.js`/`processingTools.js`/`filePicker.js` wiring across ~20
   sections while restyling.
-- **Phase D — queued.** Series/Issue detail visual polish (backdrop, issue
-  rows, credits layout) per the design reference's `screens.jsx`.
+- **Phase D — queued (added 2026-07-07, was missing from this list
+  entirely until Tez caught it).** Browse screen filter/sort bar restyle —
+  see the checklist and open question above; resolve the open question
+  before starting, not during.
+- **Phase E — queued (renumbered from the old "Phase D").** Series/Issue
+  detail visual polish (backdrop, issue rows, credits layout) per the
+  design reference's `screens.jsx`.
 
 **Status:** Handed to Code 2026-07-07. Phases A and B built and verified
-same day. Phases C–D not yet started.
+same day. Phases C–E not yet started.

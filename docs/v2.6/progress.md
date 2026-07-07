@@ -284,3 +284,35 @@ truncated or force a manual width bump later.
   via the console and re-running the sizing function — grew to 272px,
   clamped correctly, no text clipping, header logo still shifted to the
   right offset. No console errors.
+
+## Session — 2026-07-07 — Phase B closed out; scope-completeness gap found and fixed
+
+Tez confirmed Phase B (nav/hamburger/dots/badges/width) all correct — closing
+it out. Before starting Phase C, Tez asked whether `comicvault-changes-v2.6.md`
+had a full scope/list of all the changes, since it looked incomplete, and
+pointed at a specific example: a filter/sort-bar restyle visible in a Design
+screenshot that wasn't mentioned anywhere in the doc.
+
+- Re-fetched `screens.jsx` fresh from the Design project (not relying on the
+  earlier Phase A read) and confirmed: yes, `BrowseScreen`'s filter/sort bar
+  is a real, distinct design change — leaner control set (no separate Year
+  filter, no Group by, no separate Rated dropdown, no Clear button) and a
+  fundamentally different visual language (borderless/minimal `.ds-filter`/
+  `.ds-mb-btn` controls vs. the real app's current boxed-pill
+  `.filter-select`/`.sort-dir-btn` etc., confirmed still untouched by grep —
+  Phase A only re-coloured them via the token swap, never restructured them).
+- This genuinely wasn't covered by any of the four phases as scoped — Phase D
+  was written as "Series/Issue detail visual polish" only, never mentioned
+  the Browse listing screen at all. Real gap, not a misunderstanding.
+- Fixed `comicvault-changes-v2.6.md`: added an itemised per-screen scope
+  table (Header/Sidebar/Home/Browse/Series/Issue/Admin → phase, cross-checked
+  against the actual Design files rather than described from memory), a
+  written comparison of the current vs. design filter bar, and a new
+  **Phase D — Browse screen filter/sort bar** (old Phase D renumbered to E).
+- Flagged an open question rather than deciding it: does the design's leaner
+  control set mean Group by / Year / Rated / Clear are deliberately dropped,
+  or is the mockup just simplified? These are real, separately-motivated,
+  working features (`MENU_BAR_SPEC.md` build history) — same class of
+  question Phase B's status-pill removal was, which *did* turn out to be a
+  deliberate removal once checked directly against the design. Not assuming
+  either way this time without asking first.
