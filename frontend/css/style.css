@@ -182,19 +182,23 @@ ul { list-style: none; }
 }
 
 /* ── Site header ─────────────────────────────────────────────────────────── */
+/* Fixed height (not just padding) so --header-h is authoritative rather than
+   an estimate — the sidebar's sticky top-offset/height calc (below) depends
+   on this being exactly right, not approximately right. */
 .site-header {
+  height: var(--header-h);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 10px 0;
   position: sticky;
   top: 0;
   z-index: 200;
 }
 .site-header .inner {
+  height: 100%;
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .site-logo {
   display: flex;
@@ -211,7 +215,25 @@ ul { list-style: none; }
   :root:not([data-theme]) .site-logo-img--light { display: block; }
 }
 
-/* ── Sidebar toggle (pinned in header, left of the logo) ─────────────────── */
+/* ── Sidebar toggle (pinned in header, left of the logo) ─────────────────────
+   Stays fixed at the sidebar rail's x-position always; a spacer of matching
+   width to the sidebar's *expanded* extra width sits between it and the logo,
+   collapsing to 0 when the sidebar is collapsed — so the toggle never moves,
+   only the logo (and everything after it) shifts right when the sidebar
+   opens. Mirrors the design reference's AppHeader railWidth/spacer pattern. */
+.sidebar-toggle-col {
+  width: 60px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sidebar-header-spacer {
+  width: 148px; /* 208px expanded sidebar − 60px rail */
+  flex-shrink: 0;
+  transition: width var(--dur) var(--ease);
+}
+body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
 .sidebar-toggle-btn {
   flex-shrink: 0;
   display: flex;
@@ -362,19 +384,17 @@ body.sidebar-collapsed .app-sidebar-section-label { display: none; }
 body.sidebar-collapsed .app-sidebar-item { justify-content: center; padding: var(--space-2) 0; }
 body.sidebar-collapsed .app-sidebar-item-label { display: none; }
 
-.app-sidebar-monogram {
+.app-sidebar-icon {
   flex-shrink: 0;
   width: 22px;
   height: 22px;
-  border-radius: var(--radius-xs);
-  background: var(--surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-2xs);
-  font-weight: var(--weight-bold);
+  color: var(--text-3);
 }
-.app-sidebar-item.active .app-sidebar-monogram { background: var(--accent); color: var(--on-accent, #fff); }
+.app-sidebar-item.active .app-sidebar-icon,
+.app-sidebar-item:hover .app-sidebar-icon { color: inherit; }
 .app-sidebar-glyph { flex-shrink: 0; width: 22px; text-align: center; font-size: var(--text-base); }
 .app-sidebar-dot {
   flex-shrink: 0;

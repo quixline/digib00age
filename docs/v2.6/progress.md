@@ -147,3 +147,37 @@
   UI copy vs. unchanged internal "Custom Tabs" naming), both with their own
   Change Log entries, since both docs described behaviour this phase
   changed.
+
+### Follow-up — same day, post-test adjustments (Tez's review of Phase B)
+
+Tez tested live and flagged three fixable items, no show-stoppers:
+
+- **Hamburger toggle now stays fixed at the sidebar rail's x-position; the
+  logo shifts right instead** when the sidebar expands — previously both
+  sat at a fixed position since the header wasn't responding to sidebar
+  width at all. Matches the design reference's `AppHeader` exactly: a
+  fixed 60px `.sidebar-toggle-col`, then a `.sidebar-header-spacer` whose
+  width is 148px (208px expanded − 60px rail) collapsing to 0 via
+  `body.sidebar-collapsed`, sitting between the toggle and the logo.
+- **Sidebar now reliably reaches the bottom of the viewport.** Root cause:
+  `.site-header` had no explicit height (content-driven, ~55px) while the
+  sidebar's sticky `top`/`height` calc assumed the `--header-h` token
+  (56px) — a small but real mismatch. Made `--header-h` authoritative by
+  giving `.site-header` an explicit `height: var(--header-h)` instead of
+  just padding, so the two can never drift apart.
+- **Home/All/Singles/Series now render as real icons** (house/grid/single-
+  book/stacked-layers, inline SVG matching the existing settings-gear's
+  stroke style — `stroke-width: 2`, `currentColor`) instead of the two-
+  letter monogram badges ("Ho"/"Al"/"Si"/"Se") from the first pass, which
+  weren't what Tez saw in the Claude Design tool.
+- **Libraries dot colours** — Tez reported seeing "# A-Z" text instead of
+  coloured dots for custom-tab entries (e.g. "#" for 2000 AD, an
+  uncoloured "A" for an "Action" tab). Not reproduced after this round of
+  fixes: tested dark and light theme, zoomed screenshot confirms proper
+  coloured circles (blue for 2000 AD, gold for Favourites), no text
+  content in `.app-sidebar-dot` in the current code at all. Possibly a
+  stale-cache artifact from before this session's fixes (same browser
+  hard-reload gotcha hit during Phase A/B testing — cached `app.js`/
+  `style.css` serving old content after an edit). Flagged back to Tez to
+  confirm on a hard reload; not independently reproducible, so no code
+  change made for this specific item.
