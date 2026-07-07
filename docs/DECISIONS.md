@@ -4,6 +4,27 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### v2.6 Item 1 Phase C1: Home Page Strips / Add-Remove Libraries — unlock them
+
+**Decided:** 2026-07-07, before building Phase C1 (Admin IA restructure).
+
+**Why:** Home Page Strips and Custom Tabs ("Add/Remove Libraries") used to live
+inside `<fieldset id="advancedFields" disabled>`, gated behind the "Unlock
+advanced settings" checkbox, alongside Password Protection, Server Port, and
+Danger Zone. The new Admin IA moves them into their own **Library Appearance**
+category, separate from **Advanced Settings** — keeping the lock would mean the
+checkbox that unlocks them lives in a completely different part of the nav than
+the content it unlocks, a confusing UX regression. Asked rather than assumed,
+since removing a gate is a real behaviour change, not just a visual one. Tez
+confirmed: unlock them. Matches `admin.jsx`'s own `HomeStripsContent`/
+`LibrariesContent` — no lock gate at all in the design reference either.
+Verified `toggleAdvanced()` (`admin.js`) only does `fieldset.disabled = locked`,
+no other JS-level gating tied to these two sections specifically, so moving
+their markup outside the fieldset was sufficient — no JS logic changed.
+
+**Where:** `frontend/admin.html` (Home Page Strips / Add-Remove Libraries blocks
+moved out of `#advancedFields`), `docs/ADMIN_SPEC.md` §7.
+
 ### v2.6 Item 1: Browse filter/sort bar — restyle existing controls, don't drop any
 
 **Decided:** 2026-07-07, resolving the open question raised the same day in

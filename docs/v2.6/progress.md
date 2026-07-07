@@ -316,3 +316,62 @@ screenshot that wasn't mentioned anywhere in the doc.
   question Phase B's status-pill removal was, which *did* turn out to be a
   deliberate removal once checked directly against the design. Not assuming
   either way this time without asking first.
+
+## Session — 2026-07-07 — Phase C1 built (Admin IA restructure, part 1)
+
+Restructured the Admin page from one long scrolling page into a category →
+sub-item → content-pane nav (`admin.jsx`'s pattern), for the two categories
+Design actually built content for: **Library Management** and **Library
+Appearance** (10 sub-items total). Processing Tools / Editor Options /
+Advanced Settings stay in their old always-visible form, queued for Phase C2.
+
+- **Riskiest phase so far** — `admin.html` (891 lines), `admin.js` (1,627
+  lines), `processingTools.js` (876 lines), `filePicker.js` (212 lines)
+  define 100+ element IDs existing JS binds to directly. Strategy: preserve
+  every ID exactly, only reorganise/re-wrap the existing markup and add one
+  new additive `bindAdminNav()` function — zero edits to any existing
+  function in any of the three JS files.
+- Mapped each of the 10 sub-items to its real current `admin.html` section
+  (table in `comicvault-changes-v2.6.md`) before touching code, since
+  Design's own category/sub-item labels don't cleanly cover the real app
+  (confirmed again this session for Processing Tools/Advanced Settings,
+  queued for C2, not acted on yet).
+- **Real behaviour question surfaced and resolved before building:** Home
+  Page Strips and Custom Tabs ("Add/Remove Libraries") used to live inside
+  the locked `<fieldset id="advancedFields" disabled>`, gated behind
+  "Unlock advanced settings." Once they move into their own Library
+  Appearance category, keeping that gate would mean unlocking happens in a
+  totally different part of the nav than the content it unlocks — asked
+  before deciding; Tez confirmed unlock them, matching `admin.jsx`'s own
+  `HomeStripsContent`/`LibrariesContent` (no lock gate at all). Verified
+  `toggleAdvanced()` (`admin.js`) only ever does `fieldset.disabled =
+  locked` with no other JS-level gating, so moving the two blocks outside
+  the fieldset in the HTML was sufficient — no JS change needed.
+- Technical approach: each of the 10 target blocks got wrapped in a new
+  `<div class="admin-content-block" data-category="..." data-subitem="..."
+  hidden>` with its heading promoted to a new `.admin-content-heading`
+  class, inner IDs completely untouched. New `bindAdminNav()` renders the
+  category cards, contextual sub-item cards, and toggles `hidden` on the
+  matching block — mirrors `admin.jsx`'s `selectCategory`/`SubContent`
+  logic (click an active category again to collapse it). New CSS:
+  `.admin-nav-card`/`.admin-nav-grid`/`.admin-content-heading`, existing
+  `.admin-card`/`.admin-field-row`/etc. classes untouched (already close
+  enough post-Phase-A).
+- **Verified manually** — every one of the 10 sub-items clicked through
+  individually, each showing its real persisted data (Card Size "50%",
+  Library Folders' real `L:\Comic Archives` root, Home Page Strips' 4 real
+  default strips, Add/Remove Libraries' real 2000 AD/Favourites tabs with
+  "Add Favourites Tab" correctly disabled since one already exists) — not
+  just visually present, genuinely wired to the same `loadX()` calls as
+  before. Ran one real functional round-trip test via the console (changed
+  Card Size to 25%, confirmed `localStorage.cv_card_size` updated, reverted
+  to 50% to restore the real setting). Confirmed the old Advanced Settings
+  fieldset no longer contains Home Page Strips/Custom Tabs but still has
+  Reader Location/Server Port/Password Protection/Genre List/Format
+  List/Danger Zone, all still locked as before. Confirmed Processing Tools
+  section fully intact below with real config data (Processing Folder
+  `L:\Comic Archives\Processing\testing`, CT Auto-Tag enabled, ComicVine
+  key saved). Dark and light theme. No console errors at any point.
+- Updated `ADMIN_SPEC.md` with a status note on the new nav (§ intro) and a
+  note on §7's lock-gate change for the two relocated sections, plus a
+  `DECISIONS.md` entry for the unlock decision and its rationale.

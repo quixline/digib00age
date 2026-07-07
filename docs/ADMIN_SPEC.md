@@ -48,6 +48,16 @@
 > **Note on authority:** `SPEC.md` §11 and §20.13 contain earlier admin descriptions.
 > Where they conflict with this file, **this file is authoritative** — it consolidates
 > and supersedes those entries for admin-page specifics.
+>
+> **v2.6 Item 1 Phase C1 (2026-07-07):** the Admin page's navigation changed from
+> one long scrolling page to a category → sub-item → content-pane structure
+> (`docs/v2.6/comicvault-changes-v2.6.md`). §3–4 (Library Stats, Scan Now + scan
+> stat cards) stay always-visible at the top; §4's Auto Scan Options, §5, §6, §8,
+> and §9 are now reached via **Library Management** / **Library Appearance** in
+> the new Settings nav rather than by scrolling. Every field, ID, and behaviour
+> described below is unchanged — only how you navigate to it changed. §11
+> (Processing Tools) and the rest of §7 (Advanced Settings) are not yet migrated
+> — still reached by scrolling, per the old layout — planned for Phase C2.
 
 ---
 
@@ -196,6 +206,17 @@ Fifth option **75%** added between 50% and 100% — see
 The existing Advanced Settings section is locked by default — a checkbox must be
 ticked to enable editing (all fields greyed out until unlocked). **The items below
 are additions to this section unless noted.**
+
+**v2.6 Item 1 Phase C1 change:** Custom Tabs (§CUSTOM_TABS_SPEC.md, now labelled
+"Add/Remove Libraries" in the UI) and Home Page Strips (§HOME_STRIPS_SPEC.md) are
+**no longer part of this locked fieldset** — they moved to the **Library
+Appearance** category in the new Settings nav and are directly editable, no
+unlock checkbox required. Decided 2026-07-07 (see `DECISIONS.md`) — they graduated
+into their own always-visible category, distinct from Advanced Settings, so a
+lock tied to a checkbox that now lives in a different part of the nav would have
+been a confusing UX regression. Everything else described in this section (Reader
+Location, Server Port, Password Protection, Genre List, Format List, Danger Zone)
+is still locked exactly as before.
 
 ### 7.1 Password Protection *(built — V2.3 Item 6, 2026-06-24)*
 

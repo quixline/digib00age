@@ -15,6 +15,17 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-07** — Web UI Redesign Phase C1 built (v2.6 Item 1): Admin page
+  restructured from one long scrolling page into a category → sub-item →
+  content-pane nav, for **Library Management** and **Library Appearance**
+  (10 sub-items) — the two categories Design actually built content for.
+  Every existing element ID preserved; only new additive `bindAdminNav()`
+  wiring, no existing `admin.js`/`processingTools.js`/`filePicker.js`
+  function touched. Home Page Strips and Add/Remove Libraries moved out
+  from behind the "Unlock advanced settings" gate (decided, see
+  `DECISIONS.md`). Processing Tools/Editor Options/Advanced Settings stay
+  in their old always-visible form until Phase C2. → `v2.6/progress.md`
+  "Phase C1 built (Admin IA restructure, part 1) (2026-07-07)"
 - **2026-07-07** — Web UI Redesign Phase B built (v2.6 Item 1): top
   `.surface-nav` tab bar and the header's status-pills row replaced with a
   collapsible left sidebar (Home/All/Singles/Series, Unread/Reading/Read

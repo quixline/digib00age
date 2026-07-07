@@ -27,9 +27,82 @@ function initAdminBackLink() {
   });
 }
 
+// ── Settings navigation (v2.6 Item 1 Phase C1) ─────────────────────────────────
+// Category → sub-item → content-pane, toggling `hidden` on the matching
+// .admin-content-block. Purely additive — every field/button inside a block
+// keeps the exact ID it always had, so none of the existing loadX()/bindX()
+// functions below need to change; they just now render into a block that
+// starts hidden until its nav card is picked.
+//
+// Only the two categories with real content-pane blocks are wired here —
+// Processing Tools / Editor Options / Advanced Settings stay as their old
+// always-visible sections until Phase C2 adds their category cards alongside
+// the content (docs/v2.6/comicvault-changes-v2.6.md).
+const ADMIN_CATEGORIES = [
+  { id: 'library-mgmt', label: 'Library Management', subItems: [
+    { id: 'auto-scan', label: 'Auto Scan Settings' },
+    { id: 'backup-schedule', label: 'DB Backup Schedule' },
+    { id: 'restore-db', label: 'Restore DB' },
+    { id: 'access-logs', label: 'Access Logs' },
+    { id: 'library-folders', label: 'Library Folders' },
+  ] },
+  { id: 'library-appearance', label: 'Library Appearance', subItems: [
+    { id: 'home-strips', label: 'Home Page Strips' },
+    { id: 'libraries', label: 'Add/Remove Libraries' },
+    { id: 'theme', label: 'Theme Selection' },
+    { id: 'card-size', label: 'Card Size' },
+    { id: 'pagination', label: 'Pagination' },
+  ] },
+];
+
+function bindAdminNav() {
+  const categoryNav = document.getElementById('adminCategoryNav');
+  const subitemNav  = document.getElementById('adminSubitemNav');
+  if (!categoryNav || !subitemNav) return;
+
+  let activeCat = null, activeSub = null;
+
+  function renderSubitems() {
+    subitemNav.innerHTML = '';
+    const cat = ADMIN_CATEGORIES.find(c => c.id === activeCat);
+    if (!cat) { subitemNav.hidden = true; return; }
+    subitemNav.hidden = false;
+    cat.subItems.forEach(sub => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'admin-nav-card' + (sub.id === activeSub ? ' active' : '');
+      btn.textContent = sub.label;
+      btn.dataset.subitem = sub.id;
+      btn.addEventListener('click', () => { activeSub = sub.id; renderSubitems(); renderContent(); });
+      subitemNav.appendChild(btn);
+    });
+  }
+
+  function renderContent() {
+    document.querySelectorAll('.admin-content-block').forEach(block => {
+      block.hidden = !(block.dataset.category === activeCat && block.dataset.subitem === activeSub);
+    });
+  }
+
+  categoryNav.querySelectorAll('.admin-nav-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const catId = btn.dataset.category;
+      activeCat = catId === activeCat ? null : catId; // click active category again to collapse
+      activeSub = null;
+      categoryNav.querySelectorAll('.admin-nav-card').forEach(b => b.classList.toggle('active', b.dataset.category === activeCat));
+      renderSubitems();
+      renderContent();
+    });
+  });
+
+  renderSubitems();
+  renderContent();
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initAdminBackLink();
+  bindAdminNav();
   loadStats();
   loadConfig();
   initPagination();

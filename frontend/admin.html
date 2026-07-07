@@ -54,59 +54,49 @@
       <div class="stat-grid" id="scanGrid">
         <div class="loading-state">Loading…</div>
       </div>
-
-      <div class="admin-card admin-card--spaced">
-        <div class="admin-card-label">Auto Scan Options</div>
-        <div class="pagination-setting-row">
-          <select class="admin-select" id="autoScanFreqSelect" aria-label="Auto scan frequency">
-            <option value="off">Off (manual only)</option>
-            <option value="1hr">Every 1 hour</option>
-            <option value="6hr">Every 6 hours</option>
-            <option value="12hr">Every 12 hours</option>
-            <option value="1day">Every 1 day</option>
-            <option value="3days">Every 3 days</option>
-            <option value="7days">Every 7 days</option>
-            <option value="1month">Every 1 month</option>
-          </select>
-          <label class="admin-lock-label" style="margin:0;">
-            <input type="checkbox" id="scanOnLaunchCheckbox" />
-            <span>Scan on launch</span>
-          </label>
-        </div>
-      </div>
     </section>
 
-    <!-- ── Logs (ADMIN_SPEC.md §8) ─────────────────────────────────────────── -->
-    <section class="admin-section">
-      <h2 class="admin-section-heading">Logs</h2>
-      <div class="admin-card">
-        <div class="admin-field-row">
-          <label class="admin-field-label">Logs Folder</label>
-          <div class="admin-field-input-wrap">
-            <div class="admin-field-input-row">
-              <input type="text" class="admin-input" id="logsFolderPathInput" readonly />
-              <button class="btn-admin-action" id="copyLogsPathBtn">Copy</button>
-            </div>
-          </div>
-        </div>
-        <div class="admin-field-row">
-          <label class="admin-field-label" for="logSizeLimitInput">Log Size Limit (MB)</label>
-          <div class="admin-field-input-wrap">
-            <div class="admin-field-input-row">
-              <input type="number" class="admin-input" id="logSizeLimitInput" min="1" style="max-width:120px;" />
-              <button class="btn-primary" id="saveLogSizeLimitBtn">Save</button>
-            </div>
+    <!-- ── Settings navigation (v2.6 Item 1 Phase C1) — category cards, then
+         contextual sub-item cards, driving a single content pane below.
+         Only Library Management / Library Appearance are wired this phase;
+         Processing Tools / Editor Options / Advanced Settings keep their old
+         always-visible section layout until Phase C2 (see
+         docs/v2.6/comicvault-changes-v2.6.md). ─────────────────────────── -->
+    <div class="admin-nav-label">Settings</div>
+    <div class="admin-nav-grid" id="adminCategoryNav">
+      <button type="button" class="admin-nav-card" data-category="library-mgmt">Library Management</button>
+      <button type="button" class="admin-nav-card" data-category="library-appearance">Library Appearance</button>
+    </div>
+    <div class="admin-nav-grid admin-nav-grid--sm" id="adminSubitemNav" hidden></div>
+
+    <div id="adminContentPane">
+
+      <!-- ── Auto Scan Settings (was Library Scan's Auto Scan Options, ADMIN_SPEC.md §4) -->
+      <div class="admin-content-block" data-category="library-mgmt" data-subitem="auto-scan" hidden>
+        <h3 class="admin-content-heading">Auto Scan Settings</h3>
+        <div class="admin-card">
+          <div class="pagination-setting-row">
+            <select class="admin-select" id="autoScanFreqSelect" aria-label="Auto scan frequency">
+              <option value="off">Off (manual only)</option>
+              <option value="1hr">Every 1 hour</option>
+              <option value="6hr">Every 6 hours</option>
+              <option value="12hr">Every 12 hours</option>
+              <option value="1day">Every 1 day</option>
+              <option value="3days">Every 3 days</option>
+              <option value="7days">Every 7 days</option>
+              <option value="1month">Every 1 month</option>
+            </select>
+            <label class="admin-lock-label" style="margin:0;">
+              <input type="checkbox" id="scanOnLaunchCheckbox" />
+              <span>Scan on launch</span>
+            </label>
           </div>
         </div>
       </div>
-    </section>
 
-    <!-- ── Database Backup (ADMIN_SPEC.md §9) ──────────────────────────────── -->
-    <section class="admin-section">
-      <h2 class="admin-section-heading">Database Backup</h2>
-
-      <div class="admin-subsection">
-        <h3 class="admin-subsection-heading">Scheduled Backup</h3>
+      <!-- ── DB Backup Schedule (ADMIN_SPEC.md §9.1) ─────────────────────── -->
+      <div class="admin-content-block" data-category="library-mgmt" data-subitem="backup-schedule" hidden>
+        <h3 class="admin-content-heading">DB Backup Schedule</h3>
         <div class="admin-card">
           <div class="admin-field-row">
             <label class="admin-field-label">Backup Destination</label>
@@ -141,8 +131,9 @@
         </div>
       </div>
 
-      <div class="admin-subsection">
-        <h3 class="admin-subsection-heading">Restore Backup</h3>
+      <!-- ── Restore DB (ADMIN_SPEC.md §9.2) ─────────────────────────────── -->
+      <div class="admin-content-block" data-category="library-mgmt" data-subitem="restore-db" hidden>
+        <h3 class="admin-content-heading">Restore DB</h3>
         <div class="admin-card">
           <div class="admin-field-row">
             <label class="admin-field-label">Backup File</label>
@@ -164,78 +155,201 @@
           </p>
         </div>
       </div>
-    </section>
 
-    <!-- ── Library Folders ─────────────────────────────────────────────────── -->
-    <section class="admin-section">
-      <h2 class="admin-section-heading">Library Folders</h2>
-
-      <div class="admin-card">
-        <div class="admin-card-label">Scan Roots</div>
-        <div class="folder-list" id="rootList"></div>
-        <div class="folder-add-row">
-          <input type="text" class="admin-input" id="newRootInput" placeholder="e.g. D:\Comics\…" />
-          <button class="btn-admin-action" id="addRootBtn">Add</button>
+      <!-- ── Access Logs (ADMIN_SPEC.md §8) ──────────────────────────────── -->
+      <div class="admin-content-block" data-category="library-mgmt" data-subitem="access-logs" hidden>
+        <h3 class="admin-content-heading">Access Logs</h3>
+        <div class="admin-card">
+          <div class="admin-field-row">
+            <label class="admin-field-label">Logs Folder</label>
+            <div class="admin-field-input-wrap">
+              <div class="admin-field-input-row">
+                <input type="text" class="admin-input" id="logsFolderPathInput" readonly />
+                <button class="btn-admin-action" id="copyLogsPathBtn">Copy</button>
+              </div>
+            </div>
+          </div>
+          <div class="admin-field-row">
+            <label class="admin-field-label" for="logSizeLimitInput">Log Size Limit (MB)</label>
+            <div class="admin-field-input-wrap">
+              <div class="admin-field-input-row">
+                <input type="number" class="admin-input" id="logSizeLimitInput" min="1" style="max-width:120px;" />
+                <button class="btn-primary" id="saveLogSizeLimitBtn">Save</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="admin-card admin-card--spaced">
-        <div class="admin-card-label">Exclude Patterns</div>
-        <p class="admin-card-hint">Folder names or patterns skipped during scan (e.g. Processing)</p>
-        <div class="folder-list" id="excludeList"></div>
-        <div class="folder-add-row">
-          <input type="text" class="admin-input" id="newExcludeInput" placeholder="e.g. Processing" />
-          <button class="btn-admin-action" id="addExcludeBtn">Add</button>
+      <!-- ── Library Folders (ADMIN_SPEC.md §5) ──────────────────────────── -->
+      <div class="admin-content-block" data-category="library-mgmt" data-subitem="library-folders" hidden>
+        <h3 class="admin-content-heading">Library Folders</h3>
+        <div class="admin-card">
+          <div class="admin-card-label">Scan Roots</div>
+          <div class="folder-list" id="rootList"></div>
+          <div class="folder-add-row">
+            <input type="text" class="admin-input" id="newRootInput" placeholder="e.g. D:\Comics\…" />
+            <button class="btn-admin-action" id="addRootBtn">Add</button>
+          </div>
+        </div>
+        <div class="admin-card admin-card--spaced">
+          <div class="admin-card-label">Exclude Patterns</div>
+          <p class="admin-card-hint">Folder names or patterns skipped during scan (e.g. Processing)</p>
+          <div class="folder-list" id="excludeList"></div>
+          <div class="folder-add-row">
+            <input type="text" class="admin-input" id="newExcludeInput" placeholder="e.g. Processing" />
+            <button class="btn-admin-action" id="addExcludeBtn">Add</button>
+          </div>
         </div>
       </div>
-    </section>
 
-    <!-- ── Pagination ──────────────────────────────────────────────────────── -->
-    <section class="admin-section">
-      <h2 class="admin-section-heading">Pagination</h2>
-      <div class="admin-card">
-        <div class="admin-card-label">Results per page</div>
-        <div class="pagination-setting-row">
-          <select class="admin-select" id="pageSizeSelect" aria-label="Page size">
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-            <option value="200">200</option>
-            <option value="500">500</option>
-          </select>
-          <span class="admin-hint">Applies to Series, Singles and All views. Home strips always show 15.</span>
-        </div>
-      </div>
-      <div class="admin-card admin-card--spaced">
-        <div class="admin-card-label">Card size</div>
-        <div class="pagination-setting-row">
-          <select class="admin-select" id="cardSizeSelect" aria-label="Card size">
-            <option value="10">10%</option>
-            <option value="25">25%</option>
-            <option value="50">50%</option>
-            <option value="75">75%</option>
-            <option value="100">100%</option>
-          </select>
-          <span class="admin-hint">Applies to Series, Singles, All, and Home strips.</span>
-        </div>
-      </div>
-    </section>
+      <!-- ── Home Page Strips (HOME_STRIPS_SPEC.md) — moved out from behind
+           the Advanced Settings unlock gate; Library Appearance items are no
+           longer gated (decided 2026-07-07, see DECISIONS.md). ──────────── -->
+      <div class="admin-content-block" data-category="library-appearance" data-subitem="home-strips" hidden>
+        <h3 class="admin-content-heading">Home Page Strips</h3>
+        <p class="admin-card-hint">
+          Reorder with the arrows — Continue Reading, Recently Added, Random Unread
+          and Random Genre are defaults and can't be edited or removed, only moved.
+          Up to 5 added strips, each based on one field+value or one folder.
+        </p>
+        <div class="admin-card">
+          <div class="folder-list" id="hsStripList"></div>
+          <div class="ct-add-form">
+            <input type="text" class="admin-input" id="hsNameInput" placeholder="Strip name" />
 
-    <!-- ── Appearance (SPEC.md §20.17) ─────────────────────────────────────── -->
-    <section class="admin-section">
-      <h2 class="admin-section-heading">Appearance</h2>
-      <div class="admin-card">
-        <div class="admin-card-label">Theme</div>
-        <div class="pagination-setting-row">
-          <select class="admin-select" id="themeSelect" aria-label="Theme">
-            <option value="auto">Match Windows</option>
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-          </select>
-          <span class="admin-hint">"Match Windows" follows your system's dark/light setting.</span>
+            <div class="hs-basis-row">
+              <label class="hs-radio"><input type="radio" name="hsBasis" value="field" checked> Field</label>
+              <label class="hs-radio"><input type="radio" name="hsBasis" value="folder"> Folder</label>
+            </div>
+
+            <div class="ct-path-row" id="hsFieldRow">
+              <select class="admin-select" id="hsFieldNameSelect">
+                <option value="">Field…</option>
+                <option value="genre">Genre</option>
+                <option value="publisher">Publisher</option>
+                <option value="writer">Writer</option>
+                <option value="artist">Artist</option>
+                <option value="format">Format</option>
+                <option value="decade">Decade</option>
+                <option value="year">Year</option>
+                <option value="rating">Rating</option>
+                <option value="bw">Black &amp; White</option>
+              </select>
+              <select class="admin-select" id="hsFieldValueSelect">
+                <option value="">Value…</option>
+              </select>
+            </div>
+
+            <div class="ct-path-row" id="hsFolderRow" hidden>
+              <input type="text" class="admin-input" id="hsFolderInput" placeholder="Folder path" />
+              <button type="button" class="btn-admin-action" id="hsBrowseBtn">Browse…</button>
+            </div>
+
+            <div class="hs-basis-row">
+              <select class="admin-select" id="hsOrderModeSelect">
+                <option value="random">Random</option>
+                <option value="fixed">Fixed</option>
+              </select>
+              <select class="admin-select" id="hsSortFieldSelect" hidden>
+                <option value="title">Title</option>
+                <option value="newest">Newest</option>
+                <option value="recent">Recent</option>
+              </select>
+            </div>
+
+            <div class="ct-add-actions">
+              <button type="button" class="btn-primary" id="hsAddBtn">Add Strip</button>
+              <span class="admin-hint" id="hsCapHint" hidden>5 strips already added — delete one first.</span>
+            </div>
+          </div>
         </div>
       </div>
-    </section>
+
+      <!-- ── Add/Remove Libraries (was "Custom Tabs", CUSTOM_TABS_SPEC.md) —
+           moved out from behind the Advanced Settings unlock gate; see the
+           Home Page Strips note above. ───────────────────────────────────── -->
+      <div class="admin-content-block" data-category="library-appearance" data-subitem="libraries" hidden>
+        <h3 class="admin-content-heading">Add/Remove Libraries</h3>
+        <p class="admin-card-hint">
+          Folder-scoped library tabs shown in the home page nav. Up to 4 can be
+          visible at once — hide one to add another. Deleting only removes the
+          tab definition; comic files are never touched.
+        </p>
+        <div class="admin-card">
+          <div class="folder-list" id="ctTabList"></div>
+          <div class="ct-add-form">
+            <input type="text" class="admin-input" id="ctNameInput" placeholder="Tab name" />
+            <div class="ct-path-row">
+              <input type="text" class="admin-input" id="ctPathInput" placeholder="Folder path" />
+              <button type="button" class="btn-admin-action" id="ctBrowseBtn">Browse…</button>
+            </div>
+            <div class="ct-viewmode-row">
+              <label class="admin-field-label" for="ctViewModeSelect">View</label>
+              <select class="admin-select" id="ctViewModeSelect" aria-label="View mode">
+                <option value="flat">Flat</option>
+                <option value="folder">Folder View</option>
+              </select>
+            </div>
+            <div class="ct-add-actions">
+              <button type="button" class="btn-primary" id="ctAddBtn">Add Tab</button>
+              <button type="button" class="btn-admin-action" id="ctAddFavouritesBtn">Add Favourites Tab</button>
+              <span class="admin-hint" id="ctCapHint" hidden>4 tabs already visible — hide one first.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Theme Selection (SPEC.md §20.17) ────────────────────────────── -->
+      <div class="admin-content-block" data-category="library-appearance" data-subitem="theme" hidden>
+        <h3 class="admin-content-heading">Theme Selection</h3>
+        <div class="admin-card">
+          <div class="pagination-setting-row">
+            <select class="admin-select" id="themeSelect" aria-label="Theme">
+              <option value="auto">Match Windows</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+            <span class="admin-hint">"Match Windows" follows your system's dark/light setting.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Card Size (ADMIN_SPEC.md §6) ─────────────────────────────────── -->
+      <div class="admin-content-block" data-category="library-appearance" data-subitem="card-size" hidden>
+        <h3 class="admin-content-heading">Card Size</h3>
+        <div class="admin-card">
+          <div class="pagination-setting-row">
+            <select class="admin-select" id="cardSizeSelect" aria-label="Card size">
+              <option value="10">10%</option>
+              <option value="25">25%</option>
+              <option value="50">50%</option>
+              <option value="75">75%</option>
+              <option value="100">100%</option>
+            </select>
+            <span class="admin-hint">Applies to Series, Singles, All, and Home strips.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Pagination (ADMIN_SPEC.md §6) ────────────────────────────────── -->
+      <div class="admin-content-block" data-category="library-appearance" data-subitem="pagination" hidden>
+        <h3 class="admin-content-heading">Pagination</h3>
+        <div class="admin-card">
+          <div class="pagination-setting-row">
+            <select class="admin-select" id="pageSizeSelect" aria-label="Page size">
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="200">200</option>
+              <option value="500">500</option>
+            </select>
+            <span class="admin-hint">Applies to Series, Singles and All views. Home strips always show 15.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
 
     <!-- ── Advanced Settings ───────────────────────────────────────────────── -->
     <section class="admin-section">
@@ -308,99 +422,6 @@
                 <span>Allow Remote Administration (non-local access)</span>
               </label>
               <p class="admin-field-hint">Requires password protection to be on.</p>
-            </div>
-          </div>
-
-          <!-- ── Custom Tabs (CUSTOM_TABS_SPEC.md) ───────────────────────── -->
-          <div class="admin-subsection">
-            <h3 class="admin-subsection-heading">Custom Tabs</h3>
-            <p class="admin-card-hint">
-              Folder-scoped library tabs shown in the home page nav. Up to 4 can be
-              visible at once — hide one to add another. Deleting only removes the
-              tab definition; comic files are never touched.
-            </p>
-            <div class="admin-card">
-              <div class="folder-list" id="ctTabList"></div>
-              <div class="ct-add-form">
-                <input type="text" class="admin-input" id="ctNameInput" placeholder="Tab name" />
-                <div class="ct-path-row">
-                  <input type="text" class="admin-input" id="ctPathInput" placeholder="Folder path" />
-                  <button type="button" class="btn-admin-action" id="ctBrowseBtn">Browse…</button>
-                </div>
-                <div class="ct-viewmode-row">
-                  <label class="admin-field-label" for="ctViewModeSelect">View</label>
-                  <select class="admin-select" id="ctViewModeSelect" aria-label="View mode">
-                    <option value="flat">Flat</option>
-                    <option value="folder">Folder View</option>
-                  </select>
-                </div>
-                <div class="ct-add-actions">
-                  <button type="button" class="btn-primary" id="ctAddBtn">Add Tab</button>
-                  <button type="button" class="btn-admin-action" id="ctAddFavouritesBtn">Add Favourites Tab</button>
-                  <span class="admin-hint" id="ctCapHint" hidden>4 tabs already visible — hide one first.</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ── Home Page Strips (HOME_STRIPS_SPEC.md) ──────────────────── -->
-          <div class="admin-subsection">
-            <h3 class="admin-subsection-heading">Home Page Strips</h3>
-            <p class="admin-card-hint">
-              Reorder with the arrows — Continue Reading, Recently Added, Random Unread
-              and Random Genre are defaults and can't be edited or removed, only moved.
-              Up to 5 added strips, each based on one field+value or one folder.
-            </p>
-            <div class="admin-card">
-              <div class="folder-list" id="hsStripList"></div>
-              <div class="ct-add-form">
-                <input type="text" class="admin-input" id="hsNameInput" placeholder="Strip name" />
-
-                <div class="hs-basis-row">
-                  <label class="hs-radio"><input type="radio" name="hsBasis" value="field" checked> Field</label>
-                  <label class="hs-radio"><input type="radio" name="hsBasis" value="folder"> Folder</label>
-                </div>
-
-                <div class="ct-path-row" id="hsFieldRow">
-                  <select class="admin-select" id="hsFieldNameSelect">
-                    <option value="">Field…</option>
-                    <option value="genre">Genre</option>
-                    <option value="publisher">Publisher</option>
-                    <option value="writer">Writer</option>
-                    <option value="artist">Artist</option>
-                    <option value="format">Format</option>
-                    <option value="decade">Decade</option>
-                    <option value="year">Year</option>
-                    <option value="rating">Rating</option>
-                    <option value="bw">Black &amp; White</option>
-                  </select>
-                  <select class="admin-select" id="hsFieldValueSelect">
-                    <option value="">Value…</option>
-                  </select>
-                </div>
-
-                <div class="ct-path-row" id="hsFolderRow" hidden>
-                  <input type="text" class="admin-input" id="hsFolderInput" placeholder="Folder path" />
-                  <button type="button" class="btn-admin-action" id="hsBrowseBtn">Browse…</button>
-                </div>
-
-                <div class="hs-basis-row">
-                  <select class="admin-select" id="hsOrderModeSelect">
-                    <option value="random">Random</option>
-                    <option value="fixed">Fixed</option>
-                  </select>
-                  <select class="admin-select" id="hsSortFieldSelect" hidden>
-                    <option value="title">Title</option>
-                    <option value="newest">Newest</option>
-                    <option value="recent">Recent</option>
-                  </select>
-                </div>
-
-                <div class="ct-add-actions">
-                  <button type="button" class="btn-primary" id="hsAddBtn">Add Strip</button>
-                  <span class="admin-hint" id="hsCapHint" hidden>5 strips already added — delete one first.</span>
-                </div>
-              </div>
             </div>
           </div>
 

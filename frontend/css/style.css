@@ -1669,6 +1669,52 @@ body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
   min-height: 1em;
 }
 
+/* ── Settings nav (v2.6 Item 1 Phase C1) — category cards, then contextual
+   sub-item cards, driving a single content pane below. Mirrors admin.jsx's
+   NavCard/AdminCard/ContentHeading pattern. ─────────────────────────────── */
+.admin-nav-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-3);
+  margin-bottom: 12px;
+}
+.admin-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.admin-nav-grid--sm { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 24px; }
+.admin-nav-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px 12px;
+  min-height: 64px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.admin-nav-card:hover { border-color: var(--accent); }
+.admin-nav-card.active { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-text); }
+.admin-nav-grid--sm .admin-nav-card { padding: 12px 8px; min-height: 48px; color: var(--text-2); }
+.admin-nav-grid--sm .admin-nav-card.active { color: var(--accent-text); }
+.admin-content-heading {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+
 /* Admin card — general panel */
 .admin-card {
   background: var(--surface);

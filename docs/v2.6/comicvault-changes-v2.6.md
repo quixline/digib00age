@@ -121,10 +121,23 @@ phased across multiple sessions rather than one continuous build —
   toggle like before; matches the approved design exactly, documented as a
   deliberate behaviour change in `MENU_BAR_SPEC.md`/`CUSTOM_TABS_SPEC.md`.
   Manually verified in dark and light theme — see `v2.6/progress.md`.
-- **Phase C — queued next.** Admin page IA restructure (category → sub-item →
-  content panes) — the riskiest phase, must preserve every existing
-  `admin.js`/`processingTools.js`/`filePicker.js` wiring across ~20
-  sections while restyling.
+- **Phase C1 — ✅ built 2026-07-07.** Admin page IA restructure, part 1:
+  category → sub-item → content-pane nav for **Library Management** and
+  **Library Appearance** (the 10 sub-items Design actually built content
+  for) — see the mapping table above. Every existing `admin.html` element
+  ID preserved; `admin.js`/`processingTools.js`/`filePicker.js` untouched
+  except one new additive `bindAdminNav()` function. Home Page Strips and
+  Add/Remove Libraries moved out from behind the "Unlock advanced
+  settings" gate (`DECISIONS.md`). Manually verified in dark and light
+  theme, including one real functional round-trip test (Card Size change
+  → localStorage → revert) — see `v2.6/progress.md`.
+- **Phase C2 — queued next.** Processing Tools, Editor Options, Advanced
+  Settings — the undesigned three, built from the real-section mapping
+  above (Filename Editor / Convert Archives & Images / Folder Processing /
+  Sort by Filename / Genre List / Format List / Password Protection /
+  Change Server Port / Reader Location / Wipe Database / Wipe Reading
+  State). The riskiest remaining chunk of admin.js/processingTools.js
+  wiring — same ID-preserving approach as C1.
 - **Phase D — queued (added 2026-07-07, was missing from this list
   entirely until Tez caught it).** Browse screen filter/sort bar restyle —
   visual only, every current field/control stays (resolved 2026-07-07, see
@@ -136,5 +149,5 @@ phased across multiple sessions rather than one continuous build —
   detail visual polish (backdrop, issue rows, credits layout) per the
   design reference's `screens.jsx`.
 
-**Status:** Handed to Code 2026-07-07. Phases A and B built and verified
-same day. Phases C–E not yet started.
+**Status:** Handed to Code 2026-07-07. Phases A, B, and C1 built and
+verified same day. Phases C2, D, E not yet started.
