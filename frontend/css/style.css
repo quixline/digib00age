@@ -557,6 +557,7 @@ select.filter-select:focus,
   width: max-content;
   max-width: 220px;
   max-height: 320px;
+  overflow-x: hidden;
   overflow-y: auto;
   background: var(--surface-card);
   border: 1px solid var(--border);

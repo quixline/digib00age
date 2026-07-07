@@ -15,6 +15,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-07** — Web UI Redesign Phase D follow-up fix (v2.6 Item 1): a
+  stray horizontal scrollbar was showing on every open dropdown panel
+  (`.fd-panel` set `overflow-y` without `overflow-x`, which the CSS spec
+  computes to `auto` too) — fixed with `overflow-x: hidden`.
 - **2026-07-07** — Web UI Redesign Phase D follow-up (v2.6 Item 1): styled
   the Browse filter bar's *open* dropdown panel (screenshot-driven
   request) — new `frontend/js/filterDropdown.js` layers a themed custom

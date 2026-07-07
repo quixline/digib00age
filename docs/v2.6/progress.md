@@ -800,3 +800,18 @@ component that decision had ruled out.
   "kept native select" entry pointing at this session's reversal, plus a
   new entry documenting the sync mechanism (`Object.defineProperty` +
   `MutationObserver`) as its own non-obvious call.
+
+**Follow-up fix, same session:** Tez flagged a stray *horizontal*
+scrollbar showing up on every panel (screenshot: `filter-dd-menu-open.PNG`,
+the Year dropdown) — Design's own mockup never surfaces this since its
+fake data is short, but the real Year/Genre lists are long enough to need
+the `.fd-panel` vertical scroll added earlier this session, and that
+triggered it. Root cause: `.fd-panel` set `overflow-y: auto` without also
+setting `overflow-x` — per the CSS Overflow spec, when one axis is scrollable
+and the other is left `visible`, the browser computes the `visible` one to
+`auto` too, so the vertical scrollbar's own width was enough to tip the
+panel into horizontal overflow and show a second, unwanted scrollbar with
+its own left/right arrow buttons. Fixed with one line
+(`overflow-x: hidden`) — reloaded and re-checked Year and Genre, both
+clean, only the intended vertical scrollbar remains. No other files
+touched.
