@@ -502,9 +502,30 @@ async function loadCustomTabsNav() {
       tabViewModes[String(tab.id)] = tab.view_mode || 'flat';
       tabBasisTypes[String(tab.id)] = tab.basis_type || 'folder';
     });
+    sizeSidebarToContent();
   } catch (_) {
     // Sidebar still works without a Libraries list if this fails; not fatal.
   }
+}
+
+// Expanded sidebar width fits its widest row (longest Libraries name
+// included) instead of a fixed guess. Measured once after Libraries loads,
+// synchronously (no await in between reads/writes) so toggling
+// sidebar-collapsed off and back on to force labels visible for the
+// measurement never actually paints — no flash. Clamped so one absurdly
+// long custom-tab name can't blow the sidebar out to an unreasonable width.
+function sizeSidebarToContent() {
+  const sidebar = document.getElementById('appSidebar');
+  if (!sidebar) return;
+  const wasCollapsed = document.body.classList.contains('sidebar-collapsed');
+  if (wasCollapsed) document.body.classList.remove('sidebar-collapsed');
+  const prevInlineWidth = sidebar.style.width;
+  sidebar.style.width = 'max-content';
+  const measured = sidebar.getBoundingClientRect().width;
+  sidebar.style.width = prevInlineWidth;
+  if (wasCollapsed) document.body.classList.add('sidebar-collapsed');
+  const clamped = Math.min(Math.max(Math.ceil(measured), 140), 320);
+  document.documentElement.style.setProperty('--sidebar-w', clamped + 'px');
 }
 
 function isFolderViewTab(surface) {

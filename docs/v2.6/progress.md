@@ -258,3 +258,29 @@ a narrower sidebar:
 - Verified live (dark theme, hard-reloaded): expanded Libraries items show
   plain text only; collapsed rail shows the blue letter badges; no console
   errors.
+
+### Fourth follow-up — same day, dynamic sidebar width
+
+Tez confirmed the dots/badge/width changes above and asked for the
+expanded width to fit the longest item name dynamically, rather than a
+fixed guess (180px) — the real library only has short names ("2000 AD",
+"Favourites") right now, but a longer custom-tab name shouldn't get
+truncated or force a manual width bump later.
+
+- New `sizeSidebarToContent()` (`app.js`), called at the end of
+  `loadCustomTabsNav()` (so it runs after Libraries items are actually in
+  the DOM, on all three pages). Measures the sidebar's natural
+  `max-content` width with labels forced visible (briefly clears
+  `sidebar-collapsed` off `<body>`, measures, restores it — synchronous,
+  no `await` in between, so the browser never gets a chance to paint the
+  momentarily-uncollapsed state; no visible flash), clamps to 140–320px,
+  writes the result to a new `--sidebar-w` custom property on `:root`.
+  `.app-sidebar`'s width and `.sidebar-header-spacer`'s width
+  (`calc(var(--sidebar-w) - 60px)`) both read from the same variable, so
+  they can't drift apart the way the original hardcoded-pixel version
+  could have.
+- Tested with the real (short) library names — clamps to the 140px floor.
+  Tested again by temporarily renaming a Libraries item to a long string
+  via the console and re-running the sizing function — grew to 272px,
+  clamped correctly, no text clipping, header logo still shifted to the
+  right offset. No console errors.

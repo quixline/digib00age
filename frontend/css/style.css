@@ -64,6 +64,8 @@
     top-offset/height calc (Phase B) depends on this being defined at all,
     not just correct; was referenced in 3 places but never actually added
     to :root, so it silently resolved to nothing and broke sticky entirely. */
+  --sidebar-w: 180px; /* fallback before sizeSidebarToContent() (app.js)
+    measures the real longest-label width on load and overwrites this. */
   --space-12: 48px;
   --space-16: 64px;
 
@@ -243,7 +245,7 @@ ul { list-style: none; }
   justify-content: center;
 }
 .sidebar-header-spacer {
-  width: 120px; /* 180px expanded sidebar − 60px rail */
+  width: calc(var(--sidebar-w) - 60px); /* expanded sidebar width − 60px rail */
   flex-shrink: 0;
   transition: width var(--dur) var(--ease);
 }
@@ -357,7 +359,7 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
   top: var(--header-h);
   align-self: flex-start;
   height: calc(100vh - var(--header-h));
-  width: 180px;
+  width: var(--sidebar-w);
   flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
