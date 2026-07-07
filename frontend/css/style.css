@@ -60,6 +60,10 @@
   --space-6: 24px;
   --space-8: 32px;
   --space-10: 40px;
+  --header-h: 56px; /* .site-header's real height — .app-sidebar's sticky
+    top-offset/height calc (Phase B) depends on this being defined at all,
+    not just correct; was referenced in 3 places but never actually added
+    to :root, so it silently resolved to nothing and broke sticky entirely. */
   --space-12: 48px;
   --space-16: 64px;
 
@@ -185,6 +189,12 @@ ul { list-style: none; }
 /* Fixed height (not just padding) so --header-h is authoritative rather than
    an estimate — the sidebar's sticky top-offset/height calc (below) depends
    on this being exactly right, not approximately right. */
+/* .site-header is itself the flex row now — .sidebar-toggle-col and
+   .sidebar-header-spacer must sit at the TRUE viewport edge to line up with
+   .app-sidebar below (which is outside .container entirely), not inside the
+   max-width-1440px centered .container. Nesting them in .container broke
+   alignment on any viewport wider than 1440px, since .container centers
+   itself with empty margin on both sides while the sidebar doesn't. */
 .site-header {
   height: var(--header-h);
   background: var(--surface);
@@ -192,8 +202,12 @@ ul { list-style: none; }
   position: sticky;
   top: 0;
   z-index: 200;
+  display: flex;
+  align-items: center;
 }
 .site-header .inner {
+  flex: 1 1 0%;
+  min-width: 0;
   height: 100%;
   display: flex;
   align-items: center;

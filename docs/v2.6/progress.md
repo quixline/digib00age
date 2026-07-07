@@ -181,3 +181,54 @@ Tez tested live and flagged three fixable items, no show-stoppers:
   `style.css` serving old content after an edit). Flagged back to Tez to
   confirm on a hard reload; not independently reproducible, so no code
   change made for this specific item.
+
+### Second follow-up — same day, screenshots from Tez confirm/refute the above
+
+Tez sent three screenshots. Two things changed:
+
+- **Libraries dots — confirmed correct**, not a bug. Both screenshots (rail
+  collapsed and expanded) show properly coloured circles (blue 2000 AD,
+  gold Favourites) in both states — matches what this session's own testing
+  found. No further action.
+- **Hamburger alignment — genuinely still broken, screenshot proved it.**
+  Root cause was different from what the first fix addressed: the toggle
+  button was nested inside `.container.inner` (`max-width: 1440px; margin:
+  0 auto`), which centres itself with empty margin on both sides on any
+  viewport wider than 1440px — while `.app-sidebar` sits *outside* that
+  container, flush to the true left edge. The two were never structurally
+  guaranteed to align; the first fix only handled the toggle-stays-put/
+  logo-moves *behaviour*, not this positioning bug. Fixed by moving
+  `.sidebar-toggle-col`/`.sidebar-header-spacer` to be direct children of
+  `.site-header` (itself now the flex row) — siblings of `.container.inner`,
+  not nested inside it — so the toggle sits at the true viewport edge like
+  the sidebar does, and `.inner`'s own `.container` centring applies only to
+  the *remaining* space after it, matching how `.app-content`'s `.container`
+  behaves below.
+- **"Nav bar doesn't extend to the bottom" — root cause found: `--header-h`
+  was never defined.** It was referenced in three places (`.site-header`'s
+  height, `.app-sidebar`'s sticky `top`, `.app-sidebar`'s `height: calc(...)`)
+  but never added to `:root` — the token additions during Phase A listed a
+  "Layout" group (`--container-max`, `--container-pad`, `--header-h`) in
+  planning but only the first fix's own new usages of `--header-h` actually
+  got written, not a definition. An unresolvable `var()` makes the whole
+  property invalid, so `top` silently fell back to `auto` and `height`
+  fell back to content-size (~453px) — meaning the sidebar was **never
+  actually sticky or full-height at any point in Phase B**, on any page,
+  it just happened to look right in short viewports/short pages where the
+  natural content height was close enough to viewport height to not be
+  obviously wrong. Confirmed via `getComputedStyle` + a direct CSSOM rule
+  dump before fixing (`headerHVal: ""`, `computedTop: "auto"`) — a
+  scroll-to-bottom test on the 2483-issue "2000 AD" series page (very long
+  scroll, ~286,000px) now keeps both the header and the sidebar correctly
+  pinned throughout. This was the real, single root cause behind both the
+  "hamburger in the wrong place" *symptom Tez saw at a glance* (a stationary
+  header reads as "misplaced" when it should be moving with intent) and the
+  standalone "doesn't reach the bottom" report — fixing `--header-h` alone
+  would very likely have resolved most of the visual wrongness even without
+  the container-nesting fix above, but both were real bugs and both are now
+  fixed.
+- Verified end-to-end after both fixes: scrolled to the bottom of the "All"
+  grid (paginated, 5,427 titles) and the 2000 AD series page (2,483 issues)
+  at a 1920×1040 window — header and sidebar both remain pinned in every
+  case; toggle stays fixed, logo shifts on expand/collapse; dark and light
+  theme; no console errors.
