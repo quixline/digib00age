@@ -580,3 +580,46 @@ genuinely new standalone tool, **XML Tagging**.
   and the log's `auto` param change, new §11.6 XML Tagging section, top
   status note) and `comicvault-changes-v2.6.md` (Phase C2b marked ✅,
   checklist table, status line — Admin IA restructure now complete).
+
+### Follow-up — Phase C2c: "Unlock advanced settings" moved into the sub-item nav row
+
+Tez asked for a small layout fix right after C2b: the "Unlock advanced
+settings" checkbox was sitting in its own full-width row below the content
+panes (visually right under the sub-item cards, since everything above it
+collapses to zero height when hidden) — moved it up into the same row as
+the Advanced Settings sub-item cards (Password Protection / Change Server
+Port / Wipe Database / Wipe Reading State), as a compact "☐ Unlock" element
+at the end of that row, rather than its own separate row.
+
+- `admin.html`: wrapped `#adminSubitemNav` and a new compact
+  `#advancedLockWrap` label (same `#advancedLock` checkbox `<input>` node,
+  unmoved — critical, since `toggleAdvanced()`'s change listener is bound
+  once at init and would be lost if the node were destroyed/recreated) in
+  a shared `.admin-subitem-row` flex container. Removed the old standalone
+  `<div class="admin-card">` wrapper the checkbox previously lived in.
+  Label text shortened from "Unlock advanced settings" to just "Unlock"
+  per Tez's request, since the category card above it already says
+  "Advanced Settings."
+- `admin.js`: `bindAdminNav()`'s `renderSubitems()` now also toggles
+  `#advancedLockWrap`'s `hidden` attribute (`activeCat !== 'advanced-
+  settings'`) — the only logic change; `toggleAdvanced()` itself untouched.
+- `style.css`: new `.admin-subitem-row` (flex row, subitem grid takes
+  remaining space) and `.admin-lock-label--compact` (fixed intrinsic
+  width via `flex: 0 0 auto`, bordered/backgrounded to match the compact
+  nav-card style used elsewhere in this row, same 24px bottom margin as
+  the grid it sits beside so the row's bottom edge lines up).
+- **Verified manually**: checkbox renders compact and inline with the 4
+  sub-item cards only when Advanced Settings is the active category;
+  correctly disappears when switching to any other category (checked
+  Processing Tools specifically — 5 cards fill the row cleanly with no
+  stray checkbox); unlock toggle still enables/disables the fieldset
+  exactly as before. Dark and light theme, no console errors.
+- Noted but not investigated further: the very first click on a category
+  card immediately after a `location.reload()` sometimes produced no
+  visible change (category showed active/highlighted but no sub-item row
+  rendered), while a second click always worked correctly. Reproduced 3
+  times, always specifically right after a scripted reload, never during
+  normal interaction — reads as a reload/click race in the browser
+  automation tooling itself (the click landing on the pre-reload DOM a
+  moment before navigation completes), not a real product bug. Flagging
+  here in case it turns up again.

@@ -70,7 +70,13 @@
       <button type="button" class="admin-nav-card" data-category="editor-options">Editor Options</button>
       <button type="button" class="admin-nav-card" data-category="advanced-settings">Advanced Settings</button>
     </div>
-    <div class="admin-nav-grid admin-nav-grid--sm" id="adminSubitemNav" hidden></div>
+    <div class="admin-subitem-row">
+      <div class="admin-nav-grid admin-nav-grid--sm" id="adminSubitemNav" hidden></div>
+      <label class="admin-lock-label admin-lock-label--compact" id="advancedLockWrap" hidden>
+        <input type="checkbox" id="advancedLock" />
+        <span>Unlock</span>
+      </label>
+    </div>
 
     <div id="adminContentPane">
 
@@ -398,13 +404,12 @@
     <!-- ── Advanced Settings (v2.6 Item 1 Phase C2a) — these sub-items keep
          the existing "Unlock advanced settings" gate (unlike Editor Options
          above): they weren't reclassified, they're staying in the Advanced
-         Settings category, so the gate still makes sense here. ──────────── -->
-    <div class="admin-card">
-      <label class="admin-lock-label">
-        <input type="checkbox" id="advancedLock" />
-        <span>Unlock advanced settings</span>
-      </label>
-    </div>
+         Settings category, so the gate still makes sense here. The checkbox
+         itself lives up in #adminSubitemNav's row now (v2.6 Item 1 Phase
+         C2c) — #advancedLockWrap, toggled by bindAdminNav()'s
+         renderSubitems() — but keeps this exact <input id="advancedLock">
+         node, so toggleAdvanced()'s listener (bound once at init) is
+         unaffected. ──────────────────────────────────────────────────── -->
     <fieldset class="admin-fieldset" id="advancedFields" disabled>
 
       <!-- ── Password Protection (ADMIN_SPEC.md §7.1 / §7.2) ─────────── -->

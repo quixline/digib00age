@@ -77,6 +77,8 @@ function bindAdminNav() {
 
   function renderSubitems() {
     subitemNav.innerHTML = '';
+    const lockWrap = document.getElementById('advancedLockWrap');
+    if (lockWrap) lockWrap.hidden = activeCat !== 'advanced-settings';
     const cat = ADMIN_CATEGORIES.find(c => c.id === activeCat);
     if (!cat) { subitemNav.hidden = true; return; }
     subitemNav.hidden = false;

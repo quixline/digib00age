@@ -15,6 +15,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-07** — Web UI Redesign Phase C2c follow-up (v2.6 Item 1): moved
+  the "Unlock advanced settings" checkbox out of its own row into the
+  Advanced Settings sub-item nav row as a compact "Unlock" control, per
+  Tez's request right after C2b shipped. → `v2.6/progress.md` "Follow-up —
+  Phase C2c" (under the Phase C2b session entry)
 - **2026-07-07** — Web UI Redesign Phase C2b built (v2.6 Item 1): Admin page
   IA restructure completed with the last category, **Processing Tools**
   (Filename Editor, Converter: Archives & Images, new standalone **XML

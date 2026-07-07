@@ -1687,6 +1687,8 @@ body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
   margin-bottom: 12px;
 }
 .admin-nav-grid--sm { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 24px; }
+.admin-subitem-row { display: flex; align-items: stretch; gap: 8px; }
+.admin-subitem-row .admin-nav-grid--sm { flex: 1 1 auto; }
 .admin-nav-card {
   display: flex;
   align-items: center;
@@ -1896,6 +1898,15 @@ body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
   user-select: none;
 }
 .admin-lock-label input { cursor: pointer; accent-color: var(--accent); }
+.admin-lock-label--compact {
+  flex: 0 0 auto;
+  margin-bottom: 24px;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-weight: 700;
+}
 .admin-fieldset {
   border: none;
   padding: 0;
