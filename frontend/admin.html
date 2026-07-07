@@ -66,6 +66,7 @@
     <div class="admin-nav-grid" id="adminCategoryNav">
       <button type="button" class="admin-nav-card" data-category="library-mgmt">Library Management</button>
       <button type="button" class="admin-nav-card" data-category="library-appearance">Library Appearance</button>
+      <button type="button" class="admin-nav-card" data-category="processing-tools">Processing Tools</button>
       <button type="button" class="admin-nav-card" data-category="editor-options">Editor Options</button>
       <button type="button" class="admin-nav-card" data-category="advanced-settings">Advanced Settings</button>
     </div>
@@ -512,17 +513,22 @@
 
     </fieldset>
 
-    <!-- ── Processing Tools (admin-spec-section-12-processing-tools.md §12) ─── -->
-    <section class="admin-section" id="processingToolsSection">
-      <h2 class="admin-section-heading">Processing Tools</h2>
+    <!-- ── Processing Tools (v2.6 Item 1 Phase C2b) — category → sub-item →
+         content-pane nav, same ID-preserving pattern as Phase C1/C2a. Kept
+         id="processingToolsSection" on the wrapping div (dropped the old
+         <section><h2> wrapper, redundant once the category card carries
+         that label) so refreshProcessingToolsLocalGate() (processingTools.js)
+         still finds and disables every descendant when accessed
+         non-locally, same as before. ──────────────────────────────────── -->
+    <div id="processingToolsSection">
       <p class="admin-card-hint" id="ptLocalOnlyHint" hidden>
         Processing Tools perform real, irreversible filesystem changes and are only
         available from a local (127.0.0.1) session.
       </p>
 
-      <!-- ── File Rename (§12.1) ────────────────────────────────────────── -->
-      <div class="admin-subsection">
-        <h3 class="admin-subsection-heading">File Rename</h3>
+      <!-- ── Filename Editor (§11.1) ───────────────────────────────────── -->
+      <div class="admin-content-block" data-category="processing-tools" data-subitem="filename-editor" hidden>
+        <h3 class="admin-content-heading">Filename Editor</h3>
         <p class="admin-card-hint">
           Batch or single-file renaming of any file type, based on parsed/edited
           Series, Issue, Title, and Year values. No library scan is triggered.
@@ -597,8 +603,11 @@
         </div>
       </div>
 
-      <!-- ── Convert Archives (§11.2) ─────────────────────────────────────── -->
-      <div class="admin-subsection">
+      <!-- ── Converter: Archives & Images (§11.2 / §11.3) ──────────────── -->
+      <div class="admin-content-block" data-category="processing-tools" data-subitem="converter" hidden>
+        <h3 class="admin-content-heading">Converter: Archives &amp; Images</h3>
+
+        <div class="admin-subsection">
         <h3 class="admin-subsection-heading">Convert Archives</h3>
         <p class="admin-card-hint">
           Converts CBR or PDF files to CBZ. The original is kept as a <code>.bak</code>
@@ -660,17 +669,119 @@
             <progress id="convertImagesProgressBar" max="100" value="0" style="width:100%"></progress>
           </div>
         </div>
+        </div>
       </div>
 
-      <!-- ── Processing Folder Automation (§11.4) ─────────────────────────── -->
-      <div class="admin-subsection">
-        <h3 class="admin-subsection-heading">Processing Folder Automation</h3>
+      <!-- ── XML Tagging (§11.6, new — v2.6 Item 1 Phase C2b) ──────────── -->
+      <div class="admin-content-block" data-category="processing-tools" data-subitem="xml-tagging" hidden>
+        <h3 class="admin-content-heading">XML Tagging</h3>
+        <p class="admin-card-hint">
+          Matches CBZ/CBR files in a folder against ComicVine and writes the
+          matched metadata into each archive's ComicInfo.xml — same matching
+          engine Auto Processing's CT Auto-Tag stage uses (§11.4), run
+          manually against any folder. These settings are shared with Auto
+          Processing, not duplicated — saved here, read there too.
+        </p>
+        <div class="admin-card">
+          <div class="admin-field-row">
+            <label class="admin-field-label">Folder</label>
+            <div class="admin-field-input-wrap">
+              <div class="admin-field-input-row">
+                <input type="text" class="admin-input" id="xtFolderInput" readonly placeholder="No folder selected" />
+                <button class="btn-admin-action" id="xtBrowseBtn">Choose…</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-field-row">
+            <label class="admin-field-label"><input type="checkbox" id="pfCtSaveLowConfidence" checked> Save on Low Confidence</label>
+          </div>
+
+          <div class="admin-field-row">
+            <label class="admin-field-label" for="pfCtMatchThreshold">Match Ratio Threshold</label>
+            <div class="pt-rename-case-style">
+              <input type="range" id="pfCtMatchThreshold" min="10" max="100" value="80">
+              <span id="pfCtMatchThresholdValue">80</span>%
+            </div>
+          </div>
+
+          <div class="admin-field-row">
+            <label class="admin-field-label" for="pfComicVineKey">ComicVine API Key</label>
+            <div class="admin-field-input-wrap">
+              <div class="admin-field-input-row">
+                <input type="password" class="admin-input" id="pfComicVineKey" placeholder="Optional — uses shared rate-limited key if blank" autocomplete="off">
+                <button class="btn-admin-action" id="pfComicVineKeyTestBtn">Save &amp; Test</button>
+              </div>
+              <span class="admin-card-hint" id="pfComicVineKeyResult"></span>
+            </div>
+          </div>
+
+          <div class="pt-toolbar">
+            <button type="button" class="btn-primary" id="xtRunBtn">Run</button>
+          </div>
+          <div id="xtProgressWrap" hidden>
+            <p class="admin-card-hint">Running…</p>
+          </div>
+          <p class="admin-card-hint" id="xtResultLine" hidden></p>
+          <details id="xtResultDetail" hidden>
+            <summary>Details</summary>
+            <ul id="xtResultDetailList" class="pt-summary-error-list"></ul>
+          </details>
+        </div>
+      </div>
+
+      <!-- ── Folder Processing (§11.5) ─────────────────────────────────── -->
+      <div class="admin-content-block" data-category="processing-tools" data-subitem="folder-processing" hidden>
+        <h3 class="admin-content-heading">Folder Processing</h3>
+        <p class="admin-card-hint">
+          Moves each CBZ/CBR file directly inside the chosen folder into its own
+          same-named subfolder. Other file types are left alone. No library scan
+          is triggered.
+        </p>
+        <div class="admin-card">
+          <div class="admin-field-row">
+            <label class="admin-field-label" for="fsScriptSelect">Script</label>
+            <div class="admin-field-input-wrap">
+              <select class="admin-select" id="fsScriptSelect" disabled>
+                <option value="filename_sort" selected>Sort by Filename</option>
+              </select>
+            </div>
+          </div>
+          <div class="admin-field-row">
+            <label class="admin-field-label">Folder</label>
+            <div class="admin-field-input-wrap">
+              <div class="admin-field-input-row">
+                <input type="text" class="admin-input" id="fsFolderInput" readonly placeholder="No folder selected" />
+                <button class="btn-admin-action" id="fsBrowseBtn">Choose…</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-toolbar">
+            <button type="button" class="btn-primary" id="fsRunBtn">Run</button>
+          </div>
+          <div id="fsProgressWrap" hidden>
+            <p class="admin-card-hint">Running…</p>
+          </div>
+          <p class="admin-card-hint" id="fsResultLine" hidden></p>
+          <details id="fsResultDetail" hidden>
+            <summary>Details</summary>
+            <ul id="fsResultDetailList" class="pt-summary-error-list"></ul>
+          </details>
+        </div>
+      </div>
+
+      <!-- ── Auto Processing (§11.4) ───────────────────────────────────── -->
+      <div class="admin-content-block" data-category="processing-tools" data-subitem="auto-processing" hidden>
+        <h3 class="admin-content-heading">Auto Processing</h3>
         <p class="admin-card-hint">
           Runs Convert Archives, then CT Auto-Tag, then Convert Images (fixed order)
           against a single folder, on a schedule or on demand. File Rename is not
           part of this pipeline — its live-preview review is the only thing that
           safely catches a mis-parsed filename, and unattended automation removes
-          that check.
+          that check. CT Auto-Tag's detailed settings (match threshold, save on
+          low confidence, ComicVine API key) live in XML Tagging — shared config,
+          not duplicated.
         </p>
         <div class="admin-card">
           <div class="admin-field-row">
@@ -693,28 +804,7 @@
 
           <div class="admin-field-row">
             <label class="admin-field-label"><input type="checkbox" id="pfCtAutotagEnabled"> CT Auto-Tag</label>
-            <div class="pt-rename-case-style">
-              <label><input type="checkbox" id="pfCtSaveLowConfidence" checked> Save on Low Confidence</label>
-            </div>
-          </div>
-
-          <div class="admin-field-row">
-            <label class="admin-field-label" for="pfCtMatchThreshold">Match Ratio Threshold</label>
-            <div class="pt-rename-case-style">
-              <input type="range" id="pfCtMatchThreshold" min="10" max="100" value="80">
-              <span id="pfCtMatchThresholdValue">80</span>%
-            </div>
-          </div>
-
-          <div class="admin-field-row">
-            <label class="admin-field-label" for="pfComicVineKey">ComicVine API Key</label>
-            <div class="admin-field-input-wrap">
-              <div class="admin-field-input-row">
-                <input type="password" class="admin-input" id="pfComicVineKey" placeholder="Optional — uses shared rate-limited key if blank" autocomplete="off">
-                <button class="btn-admin-action" id="pfComicVineKeyTestBtn">Save &amp; Test</button>
-              </div>
-              <span class="admin-card-hint" id="pfComicVineKeyResult"></span>
-            </div>
+            <span class="admin-hint">Detailed settings in XML Tagging</span>
           </div>
 
           <div class="admin-field-row">
@@ -759,47 +849,7 @@
         </div>
       </div>
 
-      <!-- ── Sort by Filename (§11.5) ─────────────────────────────────────── -->
-      <div class="admin-subsection">
-        <h3 class="admin-subsection-heading">Sort by Filename</h3>
-        <p class="admin-card-hint">
-          Moves each CBZ/CBR file directly inside the chosen folder into its own
-          same-named subfolder. Other file types are left alone. No library scan
-          is triggered.
-        </p>
-        <div class="admin-card">
-          <div class="admin-field-row">
-            <label class="admin-field-label" for="fsScriptSelect">Script</label>
-            <div class="admin-field-input-wrap">
-              <select class="admin-select" id="fsScriptSelect" disabled>
-                <option value="filename_sort" selected>Sort by Filename</option>
-              </select>
-            </div>
-          </div>
-          <div class="admin-field-row">
-            <label class="admin-field-label">Folder</label>
-            <div class="admin-field-input-wrap">
-              <div class="admin-field-input-row">
-                <input type="text" class="admin-input" id="fsFolderInput" readonly placeholder="No folder selected" />
-                <button class="btn-admin-action" id="fsBrowseBtn">Choose…</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="pt-toolbar">
-            <button type="button" class="btn-primary" id="fsRunBtn">Run</button>
-          </div>
-          <div id="fsProgressWrap" hidden>
-            <p class="admin-card-hint">Running…</p>
-          </div>
-          <p class="admin-card-hint" id="fsResultLine" hidden></p>
-          <details id="fsResultDetail" hidden>
-            <summary>Details</summary>
-            <ul id="fsResultDetailList" class="pt-summary-error-list"></ul>
-          </details>
-        </div>
-      </div>
-    </section>
+    </div>
 
   </main>
 

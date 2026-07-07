@@ -15,6 +15,18 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-07** — Web UI Redesign Phase C2b built (v2.6 Item 1): Admin page
+  IA restructure completed with the last category, **Processing Tools**
+  (Filename Editor, Converter: Archives & Images, new standalone **XML
+  Tagging** tool, Folder Processing, Auto Processing). Real backend work:
+  new `backend/routers/xml_tagging.py`; `ct_autotag_log.py`'s
+  `append_entry()` gained an `auto` param (was automation-only); Match
+  Ratio Threshold/Save on Low Confidence/ComicVine API Key moved out of
+  Auto Processing's pane into XML Tagging's (same shared config/endpoints,
+  not duplicated). Every existing element ID preserved. Verified with a
+  real functional round-trip against synthetic scratch data. → `v2.6/
+  progress.md` "Phase C2b built (Admin IA restructure, part 3 — Processing
+  Tools, final category) (2026-07-07)"
 - **2026-07-07** — Web UI Redesign Phase C2a built (v2.6 Item 1): Admin page
   IA restructure extended to **Editor Options** (Genre List, Format List —
   unlocked, same treatment as Phase C1's Home Strips/Libraries) and

@@ -4,6 +4,26 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### v2.6 Item 1 Phase C2b: ct_autotag_log.md becomes standalone-capable (`auto` param)
+
+**Decided:** 2026-07-07, while building the new XML Tagging tool.
+
+**Why:** `ct_autotag_log.py`'s `append_entry()` unconditionally hardcoded the
+`[AUTO]` prefix, and its own docstring stated CT Auto-Tag "only ever runs...
+never as a standalone admin-UI tool" — true when written, no longer true once
+XML Tagging exists as a manual, one-folder-at-a-time trigger for the same
+underlying `ct_autotag_file()` call. Rather than start a second log file for
+manual runs (would split one tool's history across two files for no reason),
+added the same `auto: bool = False` parameter `convert_log.py`/
+`convert_images_log.py` already use, and updated `processing_folder.py`'s one
+call site to pass `auto=True` explicitly. Verified post-build: a real XML
+Tagging run against a scratch file produced a non-`[AUTO]` line sitting
+directly below pre-existing `[AUTO]` lines from real automation runs, in the
+same file, with no cross-contamination.
+
+**Where:** `backend/ct_autotag_log.py`, `backend/routers/processing_folder.py`
+(`_run_ct_autotag_stage()`), `docs/ADMIN_SPEC.md` §11.4.9/§11.6.3.
+
 ### v2.6 Item 1 Phase C2a: Genre List / Format List unlocked, rest of Advanced Settings stays locked
 
 **Decided:** 2026-07-07, before building Phase C2a (Admin IA restructure, part 2).

@@ -205,8 +205,10 @@ def _run_convert_archives_stage(folder: str, from_format: str, auto: bool) -> li
 
 
 def _run_ct_autotag_stage(folder: str, api_key: str, save_low_confidence: bool) -> list[dict]:
-    """No `auto` parameter — ct_autotag_log.md is automation-only (§11.4.9),
-    every line always carries [AUTO]."""
+    """Always logs with auto=True — this stage only ever runs as part of
+    Processing Folder Automation (Run Now or the scheduler), never
+    standalone. XML Tagging (v2.6 Item 1 Phase C2b) is the standalone path
+    and logs auto=False."""
     results = []
     for path in _ct_taggable_files(folder):
         filename = os.path.basename(path)
@@ -217,7 +219,7 @@ def _run_ct_autotag_stage(folder: str, api_key: str, save_low_confidence: bool) 
         logged_filename = os.path.basename(result.final_path) if result.final_path else filename
         ct_autotag_log.append_entry(
             logged_filename, result.confidence, result.tags_written,
-            result.series, result.issue, result.year, result.error,
+            result.series, result.issue, result.year, result.error, auto=True,
         )
         status = "failed" if not result.success else (
             "success_with_warning" if result.confidence == "low_confidence" else "success"

@@ -34,9 +34,6 @@ function initAdminBackLink() {
 // functions below need to change; they just now render into a block that
 // starts hidden until its nav card is picked.
 //
-// Processing Tools stays as its old always-visible section until Phase C2b
-// adds its category card alongside the content (new XML Tagging tool +
-// backend work — docs/v2.6/comicvault-changes-v2.6.md).
 const ADMIN_CATEGORIES = [
   { id: 'library-mgmt', label: 'Library Management', subItems: [
     { id: 'auto-scan', label: 'Auto Scan Settings' },
@@ -51,6 +48,13 @@ const ADMIN_CATEGORIES = [
     { id: 'theme', label: 'Theme Selection' },
     { id: 'card-size', label: 'Card Size' },
     { id: 'pagination', label: 'Pagination' },
+  ] },
+  { id: 'processing-tools', label: 'Processing Tools', subItems: [
+    { id: 'filename-editor', label: 'Filename Editor' },
+    { id: 'converter', label: 'Converter: Archives & Images' },
+    { id: 'xml-tagging', label: 'XML Tagging' },
+    { id: 'folder-processing', label: 'Folder Processing' },
+    { id: 'auto-processing', label: 'Auto Processing' },
   ] },
   { id: 'editor-options', label: 'Editor Options', subItems: [
     { id: 'genre-list', label: 'Genre List' },

@@ -847,6 +847,108 @@ function initFilenameSortTool() {
   document.getElementById('fsRunBtn').addEventListener('click', runFilenameSort);
 }
 
+// ── XML Tagging (§11.6) ──────────────────────────────────────────────────
+// Standalone CT Auto-Tag run against any folder. Match Ratio Threshold,
+// Save on Low Confidence, and the ComicVine API Key fields living in this
+// tool's pane are the same pfCtMatchThreshold/pfCtSaveLowConfidence/
+// pfComicVineKey elements Processing Folder Automation always used —
+// loadProcessingFolderConfig()/initProcessingFolderTool() above already
+// bind to them via getElementById regardless of where in the DOM they
+// physically sit, so no changes were needed there for the relocation.
+
+let xtPollTimer = null;
+
+function openXtBrowse() {
+  openFilePicker({
+    browseUrl: `${API}/admin/xml-tagging/browse`,
+    drivesUrl: `${API}/admin/xml-tagging/drives`,
+    mode: 'folder',
+    title: 'Choose Folder to Tag',
+    onConfirm: ([folderPath]) => {
+      document.getElementById('xtFolderInput').value = folderPath;
+    },
+  });
+}
+
+function renderXtResult(headline, isError, detailLines) {
+  const line = document.getElementById('xtResultLine');
+  line.textContent = headline;
+  line.className = 'admin-card-hint ' + (isError ? 'admin-backup-error' : 'admin-key-ok');
+  line.hidden = false;
+
+  const detail = document.getElementById('xtResultDetail');
+  const list = document.getElementById('xtResultDetailList');
+  list.innerHTML = '';
+  if (detailLines && detailLines.length) {
+    for (const d of detailLines) {
+      const li = document.createElement('li');
+      li.textContent = d;
+      list.appendChild(li);
+    }
+    detail.hidden = false;
+  } else {
+    detail.hidden = true;
+  }
+}
+
+async function runXmlTagging() {
+  const folder = document.getElementById('xtFolderInput').value;
+  if (!folder) {
+    showToast('Choose a folder first', true);
+    return;
+  }
+  const res = await postJSON('/xml-tagging/run', { folder });
+  if (res.started === false || res.detail) {
+    showToast(res.detail || res.message || 'Could not start run', true);
+    return;
+  }
+  document.getElementById('xtRunBtn').disabled = true;
+  document.getElementById('xtProgressWrap').hidden = false;
+  document.getElementById('xtResultLine').hidden = true;
+  document.getElementById('xtResultDetail').hidden = true;
+  pollXtStatus();
+}
+
+async function pollXtStatus() {
+  const status = await (await fetch(`${API}/admin/xml-tagging/status`)).json();
+
+  if (status.running) {
+    xtPollTimer = setTimeout(pollXtStatus, 700);
+    return;
+  }
+
+  clearTimeout(xtPollTimer);
+  document.getElementById('xtRunBtn').disabled = false;
+  document.getElementById('xtProgressWrap').hidden = true;
+
+  if (status.error) {
+    renderXtResult(`❌ Failed: ${status.error}`, true, []);
+    return;
+  }
+  if (!status.result) return; // idle poll, nothing ran
+
+  const { total, files } = status.result;
+  const tagged = files.filter(f => f.tags_written).length;
+  const noMatch = files.filter(f => f.confidence === 'no_match').length;
+  const skippedLow = files.filter(f => f.confidence === 'low_confidence' && !f.tags_written).length;
+  const failed = files.filter(f => f.status === 'failed');
+
+  if (!total) {
+    renderXtResult('No CBZ/CBR files found in this folder.', false, []);
+  } else {
+    renderXtResult(
+      `${failed.length ? '⚠️' : '✅'} ${tagged} tagged, ${noMatch} no match, ${skippedLow} low confidence skipped, ${failed.length} failed (of ${total})`,
+      !!failed.length,
+      failed.map(f => `${f.filename}: ${f.error}`)
+    );
+  }
+}
+
+function initXmlTaggingTool() {
+  document.getElementById('xtBrowseBtn').addEventListener('click', openXtBrowse);
+  document.getElementById('xtRunBtn').addEventListener('click', runXmlTagging);
+}
+
 // ── Local-only gating (§12 shared notes) ────────────────────────────────
 // Hooked from admin.js's refreshAuthSettingsUi(), which already fetches
 // GET /api/admin/auth/status once per refresh — avoids a second fetch here.
@@ -871,6 +973,7 @@ function initProcessingTools() {
   initConvertImagesTool();
   initProcessingFolderTool();
   initFilenameSortTool();
+  initXmlTaggingTool();
 }
 
 document.addEventListener('DOMContentLoaded', initProcessingTools);

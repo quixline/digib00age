@@ -66,9 +66,16 @@
 > Database, Wipe Reading State — all still behind the existing "Unlock advanced
 > settings" gate). Every field/ID unchanged, only navigation and the Danger
 > Zone→two-separate-sub-items split changed — see §7's intro note above for
-> detail. §11 (Processing Tools) is still reached by scrolling, per the old
-> layout — planned for Phase C2b, which also adds a new standalone **XML
-> Tagging** tool (see `docs/v2.6/comicvault-changes-v2.6.md`).
+> detail.
+>
+> **v2.6 Item 1 Phase C2b (2026-07-07):** the last category — **Processing
+> Tools** (Filename Editor, Converter: Archives & Images, **XML Tagging** [new
+> standalone tool, §11.6], Folder Processing, Auto Processing) — is now nav-
+> driven too, closing out the Admin IA restructure. Every pre-existing field/ID
+> unchanged; the only real behaviour change is CT Auto-Tag's detailed settings
+> relocating from Auto Processing's pane to XML Tagging's (shared config, see
+> §11.4.4/§11.6.1). The Admin page is fully migrated off the old
+> one-long-scrolling-page layout as of this phase.
 
 ---
 
@@ -1357,6 +1364,14 @@ in `config.json`.
 **CT Auto-Tag** (new, 2026-07-03 — see `DECISIONS.md`, four entries same date, and
 `EDITOR_SPEC.md` §9 for the Full Editor side of this feature):
 
+**v2.6 Item 1 Phase C2b (2026-07-07):** the enable toggle stays here, but the
+three detailed settings below (Save on Low Confidence, Match Ratio Threshold,
+ComicVine API key) moved to a new standalone **§11.6 XML Tagging** admin-UI
+pane — shared `config.json` keys, read by both panes, not duplicated. This
+subsection still documents them in full since the underlying config/behaviour
+is identical; §11.6 covers only what's new (the standalone folder-run tool
+itself).
+
 - Toggle: enabled/disabled (`processing_folder_ct_autotag_enabled`).
 - **Save on Low Confidence** toggle (`processing_folder_ct_save_low_confidence`,
   default ON): ON writes the best-guess tags to a low-confidence match and sets
@@ -1521,10 +1536,17 @@ DD/MM/YYYY HH:MM — [AUTO] filename.cbz [OK, 3 images skipped] (backed up to fi
 **CT Auto-Tag gets its own new `ct_autotag_log.md`**, same `[AUTO]`-prefix convention
 as the other two, rather than folding into either existing log — it isn't a
 variant of Convert Archives or Convert Images, distinct enough (confidence outcome,
-not a file-format transform) to warrant its own file. Manual runs of the same
-underlying tagging function (Full Editor's Search Online, `EDITOR_SPEC.md` §9) are
-**not** logged here — that's an interactive, one-file-at-a-time action, not a batch
-run; this log is specific to the automation stage.
+not a file-format transform) to warrant its own file. Manual, one-file-at-a-time
+matches (Full Editor's Search Online, `EDITOR_SPEC.md` §9) are still **not** logged
+here — that's an interactive action, not a batch run.
+
+**v2.6 Item 1 Phase C2b (2026-07-07):** `ct_autotag_log.md` is no longer
+automation-only. XML Tagging (§11.6) is a second, manual batch-run trigger for
+this same log — its lines carry no `[AUTO]` prefix, distinguishing them from
+Processing Folder Automation's runs in the same file. `ct_autotag_log.py`'s
+`append_entry()` gained an `auto: bool = False` parameter, matching
+`convert_log.py`/`convert_images_log.py`'s existing convention — this
+subsection's log-format description above is otherwise unchanged.
 
 Manual Convert Archives/Convert Images runs continue to use the existing untagged
 format (11.2.6, 11.3.7). `rename_log.md` (11.1.7) never carries an `[AUTO]` line —
@@ -1668,6 +1690,78 @@ scoped.
   brief), but a second script (a move-to-library tool, not yet written) is
   expected eventually, at which point this becomes a real dropdown with minimal
   rework.
+
+---
+
+### 11.6 XML Tagging
+
+**Built and manually tested 2026-07-07 — v2.6 Item 1 Phase C2b.**
+
+A standalone, single-folder run of the same CT Auto-Tag matching engine
+§11.4's Processing Folder Automation uses (`backend/ct_autotag.py`'s
+`ct_autotag_file()`) — pick any folder, run it once, see the result. Added
+because `New Admin Layout.md` (the source doc for `admin.jsx`'s Processing
+Tools categories) lists it as its own tool, separate from Auto Processing,
+and Tez confirmed it's genuinely new functionality, not just a settings
+relocation.
+
+#### 11.6.1 Scope
+
+- Folder picker (`mode: 'folder'`, same shared picker every other Processing
+  Tool uses) — no working-file-list, the folder itself is the only input,
+  same shape as §11.5's Folder Processing.
+- Iterates CBZ/CBR files directly inside the folder (`.bak` excluded, same
+  filter §11.4's `_ct_taggable_files()` uses), calling `ct_autotag_file()`
+  per file exactly as the automation stage does.
+- **No new settings of its own.** Match Ratio Threshold, Save on Low
+  Confidence, and the ComicVine API Key + Save & Test button physically live
+  in this pane (moved out of §11.4's, per Tez's direction) but read/write the
+  **same** `config.json` keys (`processing_folder_ct_match_threshold`,
+  `processing_folder_ct_save_low_confidence`, `comicvine_api_key`) and the
+  **same** existing endpoints (`/api/admin/processing-folder/config`,
+  `/api/admin/processing-folder/comicvine-key/test`) Auto Processing already
+  used — shared, not duplicated. `ct_bridge.identify_file()` already reads
+  `processing_folder_ct_match_threshold` straight from `get_config()`
+  itself, so the threshold needs no explicit pass-through at all.
+
+#### 11.6.2 Run & Result
+
+- Single "Run" button, background task + polled `/status`, same
+  running/result/error/finished_at shape as §11.5's Folder Processing.
+- Result summary: counts of tagged / no match / low confidence skipped /
+  failed (of total), with per-file failure detail expandable — mirrors the
+  aggregate line Processing Folder Automation's status poll already builds
+  for its own CT Auto-Tag stage (`PF_STAGE_LABELS`/`pollPfStatus()` in
+  `frontend/js/processingTools.js`).
+
+#### 11.6.3 Audit Log
+
+Shares `ct_autotag_log.md` with Processing Folder Automation's CT Auto-Tag
+stage (§11.4.9) — logs here carry **no** `[AUTO]` prefix, distinguishing a
+manual XML Tagging run from an automation run in the same file. See
+§11.4.9's Phase C2b note for the `append_entry(..., auto: bool = False)`
+signature change this required.
+
+#### 11.6.4 Implementation Notes (for Code)
+
+- `backend/routers/xml_tagging.py` — new router, modeled directly on
+  `backend/routers/filename_sort.py`'s shape (`browse`/`drives`/`run`/
+  `status`, own progress dataclass singleton). No new config or
+  ComicVine-key-test endpoints — the frontend pane calls
+  `processing_folder.py`'s existing ones directly.
+- `_taggable_files()` (CBZ/CBR minus `.bak`) is duplicated locally in
+  `xml_tagging.py` rather than imported from `processing_folder.py`'s
+  private `_ct_taggable_files()` — keeps the router independent, matching
+  `filename_sort.py`'s existing precedent of not importing from
+  `processing_folder.py`.
+- Registered in `main.py` under `/api/admin` with the same `_auth_gate`
+  dependency as every other Processing Tool router.
+- Frontend: the three relocated field-rows (`pfCtSaveLowConfidence`,
+  `pfCtMatchThreshold`, `pfComicVineKey`/`pfComicVineKeyTestBtn`/
+  `pfComicVineKeyResult`) kept their exact IDs when moved — `admin.js`'s
+  `loadProcessingFolderConfig()`/`initProcessingFolderTool()` needed zero
+  changes, they already bind via `getElementById` regardless of where in
+  the DOM the elements physically sit.
 
 ---
 

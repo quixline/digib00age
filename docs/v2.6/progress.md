@@ -460,3 +460,123 @@ standalone XML Tagging tool) so it's being kept separate.
   unlock/lock split and the Danger Zone sub-item split) and
   `comicvault-changes-v2.6.md` (Phase C2 split into C2a ✅ / C2b queued,
   checklist table, status line).
+
+## Session — 2026-07-07 — Phase C2b built (Admin IA restructure, part 3 — Processing Tools, final category)
+
+Extended the category → sub-item → content-pane nav to the last remaining
+category, **Processing Tools** — closing out the Admin IA restructure that
+started with Phase C1. Unlike C1/C2a, this phase had real backend work: a
+genuinely new standalone tool, **XML Tagging**.
+
+- **Re-verified the earlier backend research against live code** before
+  building anything (a memory claim isn't the same as current truth) —
+  confirmed `ct_autotag_file()`, `ct_bridge.identify_file()`,
+  `processing_folder.py`'s helpers, `ct_autotag_log.py`, and
+  `filename_sort.py`'s pattern all still matched what was recalled from
+  earlier in the session, plus one detail not previously noted:
+  `ct_bridge.identify_file()` (`ct_bridge.py:303`) already reads
+  `processing_folder_ct_match_threshold` straight from `get_config()`
+  itself — not passed in by the caller — so the threshold needed zero
+  plumbing to be automatically shared between Auto Processing and the new
+  XML Tagging pane.
+- **Backend — the only real new code in this item:**
+  - `ct_autotag_log.py`'s `append_entry()` gained an `auto: bool = False`
+    parameter (`prefix = "[AUTO] " if auto else ""`), matching
+    `convert_log.py`/`convert_images_log.py`'s existing convention. Its
+    docstring previously claimed CT Auto-Tag "only ever runs... never as a
+    standalone admin-UI tool" — no longer true, docstring corrected.
+    `processing_folder.py`'s one existing call site updated to pass
+    `auto=True` explicitly, preserving today's behaviour exactly (verified
+    via the log itself post-build — see below).
+  - New `backend/routers/xml_tagging.py`, modeled directly on
+    `filename_sort.py`'s shape: `browse`/`drives` (shared `file_picker.py`),
+    `run`/`status` (background task + polled progress dataclass singleton).
+    `_taggable_files()` (CBZ/CBR minus `.bak`) duplicated locally as a
+    5-line function rather than imported from `processing_folder.py`'s
+    private `_ct_taggable_files()` — keeps the router independent, matching
+    `filename_sort.py`'s existing precedent. **No new config or
+    ComicVine-key-test endpoints** — confirmed the existing
+    `/api/admin/processing-folder/config` and
+    `/api/admin/processing-folder/comicvine-key/test` endpoints already
+    handle the three shared fields generically, so XML Tagging's frontend
+    pane just calls those directly. This was the literal "shared, not
+    duplicated" behaviour Tez asked for, achieved with zero new backend
+    surface for settings.
+  - Registered `xml_tagging.router` in `main.py` under `/api/admin`, same
+    `_auth_gate` dependency as every other Processing Tool router.
+  - Import-checked (`python -c "import backend.main"`) before touching the
+    frontend — caught nothing, but cheap insurance given a real new module
+    was added.
+- **Frontend — `admin.html` restructure:**
+  - Dropped `#processingToolsSection`'s old `<section><h2>Processing
+    Tools</h2>` wrapper (redundant once the category card carries that
+    label — same move as Phase C2a's Advanced Settings), kept the `id` on
+    a plain `<div>` so `refreshProcessingToolsLocalGate()`
+    (`processingTools.js`) still finds and disables every descendant when
+    accessed non-locally, unchanged.
+  - Five `.admin-content-block[data-category="processing-tools"]` blocks:
+    Filename Editor (File Rename, unchanged), **Converter: Archives &
+    Images** (Convert Archives + Convert Images combined into one block,
+    each keeping its own nested `.admin-subsection` — the existing
+    `border-top` separator CSS already reads well for two stacked
+    subsections), **XML Tagging** (new folder-picker + Run + progress
+    markup, `xt*`-prefixed IDs mirroring Sort by Filename's `fs*`
+    convention, plus the three relocated field-rows), Folder Processing
+    (Sort by Filename, unchanged), Auto Processing (Processing Folder
+    Automation minus the three relocated fields — the old CT Auto-Tag
+    field-row split in two: the enable checkbox stays with a new "Detailed
+    settings in XML Tagging" hint, Save on Low Confidence's checkbox moved
+    out).
+  - Category card order follows `New Admin Layout.md`'s own sequence —
+    Processing Tools inserted as the 3rd card (between Library Appearance
+    and Editor Options), not appended last.
+- **Frontend — JS:** `admin.js` gained one more `ADMIN_CATEGORIES` entry
+  (`processing-tools`, 5 sub-items) — `bindAdminNav()` itself unchanged.
+  `processingTools.js` gained `openXtBrowse()`/`renderXtResult()`/
+  `runXmlTagging()`/`pollXtStatus()`/`initXmlTaggingTool()`, modeled 1:1 on
+  the existing `fs*` Sort by Filename functions, called from
+  `initProcessingTools()`. **No changes needed** to
+  `loadProcessingFolderConfig()`/`initProcessingFolderTool()` — both kept
+  working unchanged against the relocated field IDs regardless of new DOM
+  position, the same insight already validated for Genre/Format List in
+  C2a.
+- **Verified manually** in the browser (restarted the backend server to
+  pick up the new router — `Stop-Process` on the listening PID, confirmed
+  the port was free, relaunched `python start_server.py`, confirmed clean
+  startup log with no import errors):
+  - All 5 category cards render in the right order; Processing Tools shows
+    all 5 sub-items; Filename Editor / Converter / Folder Processing behave
+    exactly as before, just relocated; Auto Processing shows CT Auto-Tag as
+    enable-only with the real saved Processing Folder path
+    (`L:\Comic Archives\Processing\testing`) and no threshold/key fields;
+    XML Tagging shows the real saved Match Ratio Threshold (70%) and masked
+    ComicVine API key, proving the relocated fields still load from the
+    same shared config.
+  - **Hit a stale-browser-cache false alarm mid-verification** — after
+    editing `processingTools.js`, the new functions weren't found on
+    `window` even though `node --check` had passed and a fresh `fetch()` of
+    the same URL showed the new code was being served correctly. A hard
+    reload (Ctrl+Shift+R) fixed it immediately — the browser had cached the
+    old script and hadn't revalidated it across several soft
+    navigations/reloads. Not a real bug; noted here in case it recurs.
+  - **Real functional round-trip, scratch data only** (per `CLAUDE.md`
+    Section 6 — never touched the real library or `Processing` folder):
+    generated a synthetic 1-page CBZ in a scratch job-tmp folder (not
+    inside the repo or the real library), ran XML Tagging against it via
+    the actual `runXmlTagging()` UI function, polled to completion (real
+    ComicVine lookup happened — result came back `low_confidence`, correct
+    given the file has no real match). Confirmed `ct_autotag_log.md` got a
+    new line with **no `[AUTO]` prefix** sitting directly below several
+    pre-existing `[AUTO]`-prefixed lines from real prior automation runs —
+    proof both that the new `auto=False` standalone path and the untouched
+    `auto=True` automation path are both correctly wired. Scratch file
+    deleted immediately after.
+  - Re-clicked Save & Test on the relocated ComicVine API key field (same
+    real key, non-destructive) — "The API key is valid" confirmed the
+    button still hits the existing endpoint correctly from its new
+    location.
+  - Dark and light theme, no console errors on a fresh page load.
+- Updated `ADMIN_SPEC.md` (§11.4.4/§11.4.9 notes on the field relocation
+  and the log's `auto` param change, new §11.6 XML Tagging section, top
+  status note) and `comicvault-changes-v2.6.md` (Phase C2b marked ✅,
+  checklist table, status line — Admin IA restructure now complete).
