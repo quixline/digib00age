@@ -12,6 +12,7 @@
 
   <header class="site-header">
     <div class="container inner">
+      <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Show/hide sidebar" aria-label="Show/hide sidebar">&#9776;</button>
       <a href="/" class="site-logo">
         <img src="/static/images/lockup-light.png" alt="digib00age" class="site-logo-img site-logo-img--dark">
         <img src="/static/images/lockup-dark.png" alt="digib00age" class="site-logo-img site-logo-img--light">
@@ -20,18 +21,56 @@
     </div>
   </header>
 
-  <main class="container">
-
-    <nav class="back-nav" aria-label="Breadcrumb">
-      <a href="/" class="btn-primary" id="backLink">&#x2190; Back</a>
+  <div class="app-layout">
+    <nav class="app-sidebar" id="appSidebar" aria-label="Main navigation">
+      <div class="app-sidebar-section">
+        <button class="app-sidebar-item" data-surface="home" title="Home">
+          <span class="app-sidebar-monogram">Ho</span><span class="app-sidebar-item-label">Home</span>
+        </button>
+        <button class="app-sidebar-item" data-surface="all" title="All">
+          <span class="app-sidebar-monogram">Al</span><span class="app-sidebar-item-label">All</span>
+        </button>
+        <button class="app-sidebar-item" data-surface="singles" title="Singles">
+          <span class="app-sidebar-monogram">Si</span><span class="app-sidebar-item-label">Singles</span>
+        </button>
+        <button class="app-sidebar-item" data-surface="series" title="Series">
+          <span class="app-sidebar-monogram">Se</span><span class="app-sidebar-item-label">Series</span>
+        </button>
+      </div>
+      <div class="app-sidebar-divider"></div>
+      <div class="app-sidebar-section">
+        <button class="app-sidebar-item" data-quick-status="unread" title="Unread">
+          <span class="app-sidebar-glyph">&#9675;</span><span class="app-sidebar-item-label">Unread</span>
+        </button>
+        <button class="app-sidebar-item" data-quick-status="reading" title="Reading">
+          <span class="app-sidebar-glyph">&#9686;</span><span class="app-sidebar-item-label">Reading</span>
+        </button>
+        <button class="app-sidebar-item" data-quick-status="read" title="Read">
+          <span class="app-sidebar-glyph">&#10003;</span><span class="app-sidebar-item-label">Read</span>
+        </button>
+      </div>
+      <div class="app-sidebar-divider"></div>
+      <div class="app-sidebar-section">
+        <div class="section-label app-sidebar-section-label">Libraries</div>
+        <div id="sidebarLibraries"></div>
+      </div>
     </nav>
 
-    <!-- Populated by JS -->
-    <div id="issueContent">
-      <div class="loading-state" style="padding-top: 60px;">Loading…</div>
-    </div>
+    <div class="app-content">
+      <main class="container">
 
-  </main>
+        <nav class="back-nav" aria-label="Breadcrumb">
+          <a href="/" class="btn-primary" id="backLink">&#x2190; Back</a>
+        </nav>
+
+        <!-- Populated by JS -->
+        <div id="issueContent">
+          <div class="loading-state" style="padding-top: 60px;">Loading…</div>
+        </div>
+
+      </main>
+    </div>
+  </div>
 
   <script src="/static/js/app.js"></script>
   <script src="/static/js/editor_basic.js"></script>

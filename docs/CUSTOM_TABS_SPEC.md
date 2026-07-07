@@ -166,6 +166,13 @@ unchanged), then visible custom tabs in `created_at` order.
 If nav is currently static markup (per Section 4.3), it needs to render the custom-tab
 links dynamically from the nav config response.
 
+**v2.6 update (2026-07-07):** the nav itself moved from a top tab bar to a left
+sidebar (v2.6 Item 1 Phase B) — see the Change Log. The ordering and dynamic-render
+mechanism described above are otherwise unchanged: custom tabs still render from
+`GET /nav/config` in `created_at` order, just into the sidebar's "Libraries" section
+(UI copy only — this spec's "Custom Tabs" terminology is unchanged internally, per
+the open question flagged in `docs/v2.6/comicvault-changes-v2.6.md` Item 1).
+
 ### 5.3 Tab content page
 
 Reuse the existing All-tab rendering path (filter bar, sort, group-by, grid/list
@@ -216,6 +223,7 @@ layout.
 | 2026-06-23 | Resolved the folder-card image gap flagged 2026-06-22 (§9.2): random cached issue thumbnail from anywhere in the folder's subtree, re-rolled every request. Considered and rejected an explicit `folder.jpg`/`cover.jpg`/`poster.jpg` convention with its own thumbnail pipeline — reusing existing per-issue thumbnails achieves the same goal (better than a blank icon) with no new pipeline, file convention, or invalidation logic. | Design discussion 2026-06-23 session; see `comicvault-changes-v2.3.md`. |
 | 2026-06-23 | Built the above same day: `get_tab_folder_contents()` (`library.py`) now returns a `cover_path` per subfolder (random choice over issue ids already collected in its single pass); `buildFolderCard()` (`app.js`) renders it image-on-top/info-below (new `.folder-card.has-cover` CSS), falling back to the 📁 icon on no-cover or image load error. | Implementation session 2026-06-23; see `progress.md`. |
 | 2026-06-30 | Added §10 Favourites Tab (v2.4 Item 4) — new `basis_type` column (`'folder'`/`'favorites'`), library-wide favourites filtering reusing the existing flat-tab render path and client-side filter bar, dedicated "Add Favourites Tab" one-click control, `folder_path = ""` convention (no nullable-column migration), `view_mode` locked to `'flat'`, server-side guards rejecting Folder View endpoints/edits on favourites-basis rows, live-removal-on-unfavourite fix scoped to the shared toggle handler (benefits the existing All-tab filter too), and BUG-017 (All-tab Favourites filter missing favourited issues inside series) bundled into the same build. | Scoping session 2026-06-30 — `comicvault-changes-v2.4.md` Item 4; code read directly (`models.py`, `library.py`, `path_utils.py`, `admin.py`, `app.js`) before design decisions were made. |
+| 2026-07-07 | §5.2's nav bar moved from a top tab bar to a left sidebar ("Libraries" section, UI copy only). `loadCustomTabsNav()` (`app.js`) now renders into `#sidebarLibraries` instead of appending `.surface-btn`s to `.surface-nav`, and runs on `series.html`/`issue.html` too (not just the library page) so the Libraries list is always visible. Ordering and the `GET /nav/config` data source are unchanged. | v2.6 Item 1 Phase B (left sidebar nav) — see `docs/v2.6/progress.md`. |
 
 ---
 

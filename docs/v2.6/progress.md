@@ -84,3 +84,66 @@
   (digib00age in the UI, ComicVault everywhere else) rather than a rewrite —
   the rest of the doc's "ComicVault" usage is architecture/internal naming,
   correctly unchanged.
+
+## Session — 2026-07-07 — Web UI Redesign Phase B built
+
+- Replaced the top `.surface-nav` tab bar (Home/All/Singles/Series) and the
+  header's `.status-pills` row with a collapsible left sidebar
+  (`.app-sidebar`, 60px rail / 208px expanded, state in
+  `localStorage.cv_sidebar_collapsed`), per the design reference
+  (`Library.html`'s `App()` component and `parts.jsx`'s `AppHeader`).
+- **Real behaviour change, not just relocation:** read-status filtering
+  (Unread/Reading/Read) is no longer a per-surface toggle — it's a sidebar
+  shortcut that always jumps to the All surface, pre-filtered. Today you
+  could filter Series, Singles, or a custom tab by read-status in place;
+  after this phase that's gone, matching the approved design exactly (no
+  status-pill row exists anywhere in the reference — `screens.jsx`'s
+  `BrowseScreen` filter bar doesn't have one). Confirmed this wasn't an
+  oversight by re-checking the design reference before building, not after
+  a complaint. Also fixed a latent bug this surfaced: `getFilteredLibrary`'s
+  status filter applied unconditionally regardless of `activeSurface` — a
+  quick-status jump followed by a plain sidebar click to Series would have
+  silently kept filtering Series by the stale status with no visible
+  indicator. Fixed by resetting `activeStatus` on every `switchSurface()`
+  call unless it explicitly opts in via a new `keepStatus` flag (only the
+  quick-status handler sets it).
+- The design's `App` component keeps the sidebar mounted across Home/
+  Browse/Series/Issue (hidden only on Admin) — the real app doesn't have a
+  single SPA shell like the prototype does; `index.html`, `series.html`,
+  and `issue.html` are three separate pages sharing one `app.js`. Added the
+  same sidebar markup to all three. Series/Issue aren't part of the SPA
+  surface-switching machinery, so a sidebar click there is a real
+  `location.href` page load back to `index.html` (same pattern the existing
+  "← Back" links already use), including `?surface=all&status=unread`-style
+  params so a quick-status click from Series/Issue lands pre-filtered.
+- `loadCustomTabsNav()` now renders into the sidebar's Libraries section
+  (colour-dot + name, cycling `--accent`/`--favourite`/`--state-reading`/
+  `--danger`) and runs on all three pages, not just the library page.
+- Caught two gaps during implementation, not during testing: forgot the
+  `.app-content { flex: 1 1 0%; min-width: 0; }` rule needed for the
+  content column to actually fill the space beside the sidebar (would have
+  rendered too narrow); referenced a `.ds-eyebrow` class from the design
+  reference's own kit-local CSS that was never ported into the real
+  `style.css` — swapped for the app's existing near-identical
+  `.section-label` class instead of introducing a duplicate.
+- **Verified manually** — same method as Phase A (real backend against
+  `L:\Comic Archives`, read-only). Confirmed: collapse/expand persists
+  across reload; primary items (Home/All/Singles/Series) highlight
+  correctly and navigate; Libraries items (2000 AD, Favourites) navigate to
+  the right folder-view/flat content with correct active highlighting;
+  clicking Unread from inside a custom tab's Folder View correctly jumped
+  to All filtered (2,909 of 5,427 titles) with both All and Unread
+  highlighted; sidebar renders with nothing active on Series/Issue pages
+  (correct — neither maps to a `data-surface`); Admin page unaffected
+  (still no sidebar, Phase C territory); dark and light theme; no console
+  errors on any page. One process-cleanup gotcha worth remembering: this
+  session's `python start_server.py` actually ran as `pythonw.exe`, not
+  `python.exe` — the first stop-server attempt filtered on the wrong image
+  name and missed it; had to find it via `Get-NetTCPConnection -LocalPort
+  9424` instead.
+- Updated `MENU_BAR_SPEC.md` §2.6 (status pills — struck through, marked
+  superseded, original text kept per the doc's own convention) and
+  `CUSTOM_TABS_SPEC.md` §5.2 (nav bar — noted the sidebar move, Libraries
+  UI copy vs. unchanged internal "Custom Tabs" naming), both with their own
+  Change Log entries, since both docs described behaviour this phase
+  changed.

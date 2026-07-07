@@ -15,6 +15,16 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-07** — Web UI Redesign Phase B built (v2.6 Item 1): top
+  `.surface-nav` tab bar and the header's status-pills row replaced with a
+  collapsible left sidebar (Home/All/Singles/Series, Unread/Reading/Read
+  shortcuts, dynamic Libraries section), added to all three real pages
+  (index/series/issue). Read-status filtering is now a global "jump to
+  All, filtered" sidebar shortcut, not a per-surface toggle — a deliberate
+  behaviour narrowing matching the approved design, documented in
+  `MENU_BAR_SPEC.md`/`CUSTOM_TABS_SPEC.md`. Phase C (Admin IA restructure)
+  and D (Series/Issue visual polish) queued next. → `v2.6/progress.md` "Web
+  UI Redesign Phase B built (2026-07-07)"
 - **2026-07-07** — Web UI Redesign Phase A built (v2.6 Item 1, Design→Code
   handoff from the `digib00age` Claude Design project): design-token palette
   (colour/typography/spacing/elevation) merged into `style.css` site-wide, and

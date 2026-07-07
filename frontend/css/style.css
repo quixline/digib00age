@@ -20,6 +20,7 @@
   --accent-dim: var(--accent-hover);
   --accent-tint: color-mix(in srgb, var(--accent) 16%, transparent);
   --accent-text: #5C90FF;
+  --on-accent: #FFFFFF;
   --text: #F2F4F7;
   --text-2: #9BA1AC;
   --text-3: #5E6470;
@@ -210,26 +211,20 @@ ul { list-style: none; }
   :root:not([data-theme]) .site-logo-img--light { display: block; }
 }
 
-/* ── Surface nav ─────────────────────────────────────────────────────────── */
-.surface-nav {
-  display: flex;
-  gap: 2px;
-  background: var(--surface-2);
-  border-radius: 20px;
-  padding: 3px;
+/* ── Sidebar toggle (pinned in header, left of the logo) ─────────────────── */
+.sidebar-toggle-btn {
   flex-shrink: 0;
-}
-.surface-btn {
-  padding: 5px 13px;
-  border-radius: 16px;
-  font-size: 13px;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
   color: var(--text-3);
-  transition: all 0.15s;
-  white-space: nowrap;
+  font-size: 16px;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
-.surface-btn:hover { color: var(--text-2); }
-.surface-btn.active { background: var(--accent); color: #000; }
+.sidebar-toggle-btn:hover { color: var(--accent); background: var(--surface-2); }
 
 /* Settings gear — pushed to the far right of the header */
 .settings-btn {
@@ -307,28 +302,87 @@ ul { list-style: none; }
 .continue-strip::-webkit-scrollbar { height: 4px; }
 .continue-strip::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }
 
-/* Status pills — segmented control matching surface-nav style */
-.status-pills {
+/* ── App sidebar (v2.6 Item 1 Phase B) ───────────────────────────────────────
+   Replaces the old top .surface-nav tab bar and the .status-pills row (the
+   latter is not relocated — read-status filtering is now a global "jump to
+   All, filtered" shortcut here, not a per-surface filter; see
+   docs/v2.6/progress.md Phase B entry for why). Present on Home/Browse/
+   Series/Issue; absent on Admin. ───────────────────────────────────────── */
+.app-layout {
   display: flex;
-  background: var(--surface-2);
-  border-radius: 20px;
-  padding: 3px;
-  gap: 2px;
+  align-items: flex-start;
+}
+.app-content {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+.app-sidebar {
+  position: sticky;
+  top: var(--header-h);
+  align-self: flex-start;
+  height: calc(100vh - var(--header-h));
+  width: 208px;
   flex-shrink: 0;
-  margin-right: 4px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: var(--space-4) var(--space-2);
+  transition: width var(--dur) var(--ease);
 }
-.status-pill {
-  padding: 5px 13px;
-  border-radius: 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-3);
-  border: none;
-  transition: all 0.15s;
+body.sidebar-collapsed .app-sidebar { width: 60px; }
+
+.app-sidebar-section { display: flex; flex-direction: column; gap: 2px; }
+.app-sidebar-divider {
+  height: 1px;
+  background: var(--border);
+  margin: var(--space-3) var(--space-2);
+}
+.app-sidebar-section-label {
+  padding: 0 var(--space-2);
+  margin-bottom: var(--space-1);
+}
+body.sidebar-collapsed .app-sidebar-section-label { display: none; }
+
+.app-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
   white-space: nowrap;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
-.status-pill:hover { color: var(--text-2); }
-.status-pill.active { background: var(--accent); color: #000; }
+.app-sidebar-item:hover { background: var(--surface-2); color: var(--text); }
+.app-sidebar-item.active { background: var(--accent-tint); color: var(--accent-text); }
+body.sidebar-collapsed .app-sidebar-item { justify-content: center; padding: var(--space-2) 0; }
+body.sidebar-collapsed .app-sidebar-item-label { display: none; }
+
+.app-sidebar-monogram {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-xs);
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+}
+.app-sidebar-item.active .app-sidebar-monogram { background: var(--accent); color: var(--on-accent, #fff); }
+.app-sidebar-glyph { flex-shrink: 0; width: 22px; text-align: center; font-size: var(--text-base); }
+.app-sidebar-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin: 0 7px;
+}
 
 /* ── Unified menu bar (MENU_BAR_SPEC.md) — shared across Flat View and
    Folder View; sits above whichever surface is active. ───────────────────── */

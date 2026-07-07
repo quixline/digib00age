@@ -69,13 +69,22 @@ sit alongside the new controls consistently.
 The existing grid/list toggle (`SPEC.md` §20.5). No functional change — moved into
 the menu bar row for visual consistency.
 
-### 2.6 Status Pills *(layout fixed — V2.3 post-test fixes, Fix 1, 2026-06-26)*
+### 2.6 Status Pills — removed (v2.6 Item 1 Phase B, 2026-07-07)
 
-The `All / Unread / Reading / Read` status pills live in the site header (`#statusPills`,
-right after the search bar), not the menu bar itself — they were originally a separate
-row inside `.browse-controls` below the menu bar, which produced an unintended extra
-row. They're still tied to the same browse-surface visibility as the menu bar (shown
-whenever a Flat browse surface is active, hidden on Folder View and Home).
+**Superseded.** The `All / Unread / Reading / Read` header pill row described below no
+longer exists — see the Change Log. Read-status filtering is now the left sidebar's
+Unread/Reading/Read shortcut (`docs/v2.6/comicvault-changes-v2.6.md` Item 1), which
+always jumps to the All surface pre-filtered, rather than a per-surface toggle. Left
+the original text below as-written rather than editing it, per this doc's own
+convention (see `CUSTOM_TABS_SPEC.md`'s change-log preamble for the same pattern) —
+this section is the historical record of what changed and why.
+
+~~The `All / Unread / Reading / Read` status pills live in the site header
+(`#statusPills`, right after the search bar), not the menu bar itself — they were
+originally a separate row inside `.browse-controls` below the menu bar, which produced
+an unintended extra row. They're still tied to the same browse-surface visibility as
+the menu bar (shown whenever a Flat browse surface is active, hidden on Folder View
+and Home).~~
 
 ### 2.7 Secondary Filters (Genre / Format / Decade / Year / Publisher / Rating / B&W)
 *(extended to Folder View — V2.3 post-test fixes, additional step alongside Fix 1,
@@ -135,3 +144,4 @@ The menu bar also does not appear on the Admin page or the Full Editor.
 | 2026-06-23 | `MENU_BAR_SPEC.md` created — consolidates four inbox items (sort dropdown, Rated filter, Favourites filter, Folder View parity) into one unified menu bar spec. | Inbox triage 2026-06-23; Tez's explicit framing that Folder View should be functionally equal to Flat View. |
 | 2026-06-23 | Built. Folder cards in Folder View are not individually re-sorted by the sort dropdown (only flat file cards are) — most criteria don't map onto a folder aggregate the way they do a series aggregate. | Scope decision made during build rather than left unspecified; see `DECISIONS.md`. |
 | 2026-06-26 | Status pills moved from a separate `.browse-controls` row into the site header (§2.6); secondary filters + item count merged into the single menu-bar row, with `#groupBySelect` kept Flat-View-only (§2.7); secondary filters extended to Folder View's flat file cards, closing this spec's original Folder-View-parity gap. | Post-test fix pass (`docs/2.3-fixes.md` Fix 1) plus an additional step raised mid-session — see `docs/progress.md`. |
+| 2026-07-07 | §2.6 Status Pills removed entirely — no per-surface status-pill row anywhere, on any surface. Read-status filtering (`activeStatus`) now only exists as the left sidebar's Unread/Reading/Read shortcut, which always navigates to the All surface first. Clicking it from Series/Singles/a custom tab no longer filters that surface in place. | v2.6 Item 1 Phase B (left sidebar nav) — matches the approved Claude Design reference exactly, not a gap being filled; see `docs/v2.6/progress.md`. |

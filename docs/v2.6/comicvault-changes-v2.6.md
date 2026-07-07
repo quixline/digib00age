@@ -66,14 +66,20 @@ phased across multiple sessions rather than one continuous build —
   rename above. No structural/nav changes. Manually verified in dark and
   light theme across Home/Browse/Series/Issue/Admin — see
   `v2.6/progress.md` for the full build/verify log.
-- **Phase B — queued next.** Left sidebar nav replaces `.surface-nav` top
-  tabs (Home/Browse/Series/Issue).
-- **Phase C — queued.** Admin page IA restructure (category → sub-item →
+- **Phase B — ✅ built 2026-07-07.** Left sidebar nav replaces the top
+  `.surface-nav` tab bar and header status-pills row, across all three real
+  pages (index/series/issue — the design's single-SPA-shell assumption
+  doesn't hold in the real app). Read-status filtering is now a sidebar
+  shortcut that always jumps to All, pre-filtered — not a per-surface
+  toggle like before; matches the approved design exactly, documented as a
+  deliberate behaviour change in `MENU_BAR_SPEC.md`/`CUSTOM_TABS_SPEC.md`.
+  Manually verified in dark and light theme — see `v2.6/progress.md`.
+- **Phase C — queued next.** Admin page IA restructure (category → sub-item →
   content panes) — the riskiest phase, must preserve every existing
   `admin.js`/`processingTools.js`/`filePicker.js` wiring across ~20
   sections while restyling.
 - **Phase D — queued.** Series/Issue detail visual polish (backdrop, issue
   rows, credits layout) per the design reference's `screens.jsx`.
 
-**Status:** Handed to Code 2026-07-07. Phase A built and verified same day.
-Phases B–D not yet started.
+**Status:** Handed to Code 2026-07-07. Phases A and B built and verified
+same day. Phases C–D not yet started.

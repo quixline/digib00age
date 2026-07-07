@@ -383,7 +383,8 @@ function applyCardSize(size) {
 
 async function initLibrary() {
   try {
-    bindSurfaceNav();
+    bindSidebarToggle();
+    bindSidebarNav();
     bindFilterEvents();
     bindSearchEvents();
     await loadCustomTabsNav();
@@ -396,7 +397,11 @@ async function initLibrary() {
     viewFieldValue = params.get('value') || '';
     viewFolderPath = params.get('folder') || '';
     const reqPath  = params.get('path') || '';
-    await switchSurface(known ? reqSurface : 'home', { fromPopstate: true, path: reqPath });
+    // Sidebar quick-status shortcuts (Unread/Reading/Read) jump here from
+    // any page via ?surface=all&status=... — see bindSidebarNav().
+    const reqStatus = params.get('status') || '';
+    if (reqStatus) activeStatus = reqStatus;
+    await switchSurface(known ? reqSurface : 'home', { fromPopstate: true, path: reqPath, keepStatus: !!reqStatus });
   } catch (err) {
     console.error('initLibrary failed:', err);
     const homeStrips = document.getElementById('homeStrips');
@@ -411,12 +416,52 @@ async function initLibrary() {
 
 // ── Surface navigation ────────────────────────────────────────────────────────
 
-function bindSurfaceNav() {
-  // Delegated (rather than bound per-button) so custom-tab buttons injected
-  // later by loadCustomTabsNav() work without a second bind pass.
-  document.querySelector('.surface-nav').addEventListener('click', (e) => {
-    const btn = e.target.closest('.surface-btn');
-    if (btn) switchSurface(btn.dataset.surface);
+// v2.6 Item 1 Phase B — app-wide sidebar, shared across index.html/
+// series.html/issue.html (one shared script, see the DOMContentLoaded
+// dispatch below). Delegated (rather than bound per-button) so the
+// Libraries items injected later by loadCustomTabsNav() work without a
+// second bind pass.
+function bindSidebarToggle() {
+  const btn = document.getElementById('sidebarToggleBtn');
+  if (!btn) return;
+  document.body.classList.toggle('sidebar-collapsed', localStorage.getItem('cv_sidebar_collapsed') === '1');
+  btn.addEventListener('click', () => {
+    const collapsed = document.body.classList.toggle('sidebar-collapsed');
+    localStorage.setItem('cv_sidebar_collapsed', collapsed ? '1' : '0');
+  });
+}
+
+// Only index.html (data-page="library") runs the SPA surface-switching
+// machinery — series.html/issue.html aren't part of it, so a sidebar click
+// there is a real page navigation back to the library page.
+function bindSidebarNav() {
+  const sidebar = document.getElementById('appSidebar');
+  if (!sidebar) return;
+  const onLibraryPage = document.body.dataset.page === 'library';
+
+  sidebar.addEventListener('click', (e) => {
+    const surfaceBtn = e.target.closest('[data-surface]');
+    if (surfaceBtn) {
+      if (onLibraryPage) switchSurface(surfaceBtn.dataset.surface);
+      else location.href = `/?surface=${encodeURIComponent(surfaceBtn.dataset.surface)}`;
+      return;
+    }
+    const tabBtn = e.target.closest('[data-tab-surface]');
+    if (tabBtn) {
+      if (onLibraryPage) switchSurface(tabBtn.dataset.tabSurface);
+      else location.href = `/?surface=${encodeURIComponent(tabBtn.dataset.tabSurface)}`;
+      return;
+    }
+    const statusBtn = e.target.closest('[data-quick-status]');
+    if (statusBtn) {
+      const status = statusBtn.dataset.quickStatus;
+      if (onLibraryPage) {
+        activeStatus = status;
+        switchSurface('all', { keepStatus: true });
+      } else {
+        location.href = `/?surface=all&status=${encodeURIComponent(status)}`;
+      }
+    }
   });
 }
 
@@ -430,23 +475,31 @@ function isFlatSurface(surface) {
 }
 
 // Custom Tabs (CUSTOM_TABS_SPEC.md) — admin-managed, folder-scoped tabs,
-// appended after the fixed nav so they render last (Home, All, Singles,
-// Series, then visible custom tabs in created_at order).
+// surfaced in the sidebar's "Libraries" section (v2.6 Item 1 Phase B UI
+// copy — CUSTOM_TABS_SPEC.md's own "Custom Tabs" terminology is unchanged
+// internally), in created_at order. Runs on all three pages (library,
+// series, issue) so the Libraries list is always populated.
+const LIBRARY_DOT_COLORS = ['var(--accent)', 'var(--favourite)', 'var(--state-reading)', 'var(--danger)'];
+
 async function loadCustomTabsNav() {
   try {
     const nav = await apiFetch('/nav/config');
-    const container = document.querySelector('.surface-nav');
-    for (const tab of nav.custom_tabs || []) {
-      const btn = el('button', 'surface-btn', tab.name);
-      btn.dataset.surface = `tab-${tab.id}`;
-      btn.setAttribute('role', 'tab');
-      btn.setAttribute('aria-selected', 'false');
+    const container = document.getElementById('sidebarLibraries');
+    if (!container) return;
+    (nav.custom_tabs || []).forEach((tab, i) => {
+      const btn = el('button', 'app-sidebar-item');
+      btn.dataset.tabSurface = `tab-${tab.id}`;
+      btn.title = tab.name;
+      const dot = el('span', 'app-sidebar-dot');
+      dot.style.background = LIBRARY_DOT_COLORS[i % LIBRARY_DOT_COLORS.length];
+      btn.appendChild(dot);
+      btn.appendChild(el('span', 'app-sidebar-item-label', tab.name));
       container.appendChild(btn);
       tabViewModes[String(tab.id)] = tab.view_mode || 'flat';
       tabBasisTypes[String(tab.id)] = tab.basis_type || 'folder';
-    }
+    });
   } catch (_) {
-    // Fixed-tab nav still works if this fails; not fatal.
+    // Sidebar still works without a Libraries list if this fails; not fatal.
   }
 }
 
@@ -497,16 +550,26 @@ function updateSearchPlaceholder(surface) {
 }
 
 async function switchSurface(surface, opts = {}) {
-  const { fromPopstate = false, path = '' } = opts;
+  const { fromPopstate = false, path = '', keepStatus = false } = opts;
   exitSelectionMode();
   activeSurface = surface;
+  // Read-status filtering only exists as the sidebar's "jump to All,
+  // filtered" shortcut now (v2.6 Item 1 Phase B — no more per-surface
+  // status-pill row) — any other way of reaching switchSurface() drops it,
+  // so it never lingers invisibly on Series/Singles/a custom tab.
+  if (!keepStatus) activeStatus = '';
   const isBrowse  = isBrowseSurface(surface);
   const folderTab = isFolderViewTab(surface);
 
-  // Update tab state
-  document.querySelectorAll('.surface-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.surface === surface);
-    b.setAttribute('aria-selected', String(b.dataset.surface === surface));
+  // Update sidebar active state — primary items, Libraries items, and the
+  // Unread/Reading/Read shortcuts (only ever "active" together with the
+  // All surface, since that's the only surface they can filter).
+  document.querySelectorAll('.app-sidebar-item[data-surface], .app-sidebar-item[data-tab-surface]').forEach(b => {
+    const key = b.dataset.surface || b.dataset.tabSurface;
+    b.classList.toggle('active', key === surface);
+  });
+  document.querySelectorAll('[data-quick-status]').forEach(b => {
+    b.classList.toggle('active', surface === 'all' && b.dataset.quickStatus === activeStatus);
   });
 
   // Show/hide major views
@@ -515,7 +578,6 @@ async function switchSurface(surface, opts = {}) {
   document.getElementById('folderView').hidden = !folderTab;
   document.getElementById('searchWrap').hidden = !(isBrowse || surface === 'home');
   document.getElementById('menuBar').hidden    = !isBrowse;
-  document.getElementById('statusPills').hidden = !isBrowse || folderTab;
   document.getElementById('groupBySelect').hidden = !isBrowse || folderTab;
   document.getElementById('browseFilters').hidden = !isBrowse;
   document.getElementById('browseCount').hidden   = !isBrowse;
@@ -558,15 +620,15 @@ window.addEventListener('popstate', () => {
 // applied, since "Search All" is the label Home's search bar shows.
 async function redirectHomeSearchToAll(q) {
   activeSurface = 'all';
-  document.querySelectorAll('.surface-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.surface === 'all');
-    b.setAttribute('aria-selected', String(b.dataset.surface === 'all'));
+  activeStatus  = '';
+  document.querySelectorAll('.app-sidebar-item[data-surface], .app-sidebar-item[data-tab-surface]').forEach(b => {
+    b.classList.toggle('active', (b.dataset.surface || b.dataset.tabSurface) === 'all');
   });
+  document.querySelectorAll('[data-quick-status]').forEach(b => b.classList.remove('active'));
   document.getElementById('homeView').hidden   = true;
   document.getElementById('browseView').hidden = false;
   document.getElementById('folderView').hidden = true;
   document.getElementById('menuBar').hidden    = false;
-  document.getElementById('statusPills').hidden = false;
   document.getElementById('groupBySelect').hidden = false;
   document.getElementById('browseFilters').hidden = false;
   document.getElementById('browseCount').hidden   = false;
@@ -898,9 +960,7 @@ function clearAllFilters() {
   const favBtn = document.getElementById('favFilterBtn');
   if (favBtn) favBtn.classList.remove('active');
 
-  document.querySelectorAll('.status-pill').forEach(p => {
-    p.classList.toggle('active', p.dataset.status === '');
-  });
+  document.querySelectorAll('[data-quick-status]').forEach(b => b.classList.remove('active'));
 
   const input = document.getElementById('searchInput');
   if (input) { input.value = ''; }
@@ -1164,15 +1224,9 @@ function bindSearchEvents() {
 // ── Filter events ─────────────────────────────────────────────────────────────
 
 function bindFilterEvents() {
-  // Status pills
-  document.querySelectorAll('.status-pill').forEach(pill => {
-    pill.addEventListener('click', () => {
-      document.querySelectorAll('.status-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      activeStatus = pill.dataset.status;
-      renderBrowse();
-    });
-  });
+  // Status is no longer a per-surface filter-bar control — it's the
+  // sidebar's Unread/Reading/Read shortcut now (bindSidebarNav()), which
+  // always targets the All surface. Nothing to bind here for it.
 
   // Dropdown helpers
   const bindSelect = (id, setter) => {
@@ -1490,6 +1544,9 @@ function clearFolderViewSearch(tabId) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function initSeries() {
+  bindSidebarToggle();
+  bindSidebarNav();
+  loadCustomTabsNav();
   const issueId   = window.location.pathname.replace(/^\/series\//, '');
   const urlParams = new URLSearchParams(location.search);
   const from      = urlParams.get('from') || '';
@@ -1715,6 +1772,9 @@ async function markAllRead(issues) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 async function initIssue() {
+  bindSidebarToggle();
+  bindSidebarNav();
+  loadCustomTabsNav();
   const issueId = window.location.pathname.replace(/^\/issue\//, '');
   const content = document.getElementById('issueContent');
 
