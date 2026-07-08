@@ -7,6 +7,62 @@ Append-only; entries kept exactly as they were in `BUGS.md` at the time of move.
 
 ---
 
+### BUG-014 — Back-button regression: returns to Home instead of the originating tab
+
+**Found:** 2026-06-27, inbox capture (3 repro cases reported across two separate
+inbox lines). Third fix attempt — same defect class was already found and "fixed"
+twice before (`archive/comicvault-changes-2.1.md` Tier 1, 2026-06-21 and a
+2026-06-22 follow-up) only to resurface.
+
+**Root cause:** `frontend/js/app.js`'s `switchSurface()` (the function behind every
+Home/All/Singles/Series tab switch) only called `history.pushState()` for Folder View
+custom tabs — the four main browse surfaces never wrote anything to the URL. So when a
+user opened an issue/series (a real navigation) and hit Back, the browser returned to
+whatever the last *real* history entry was — almost always bare `/`, which then
+defaulted to Home. A second, independent bypass (`redirectHomeSearchToAll()`,
+triggered by typing in Home's search box) did the same thing via hand-rolled DOM
+changes that never touched history at all. Folder View already solved this correctly
+via `pushFolderViewUrl()` — it was the reference pattern, just never extended to the
+rest of the app.
+
+**Why this felt "random" across three fix attempts:** live testing (2026-07-08) found
+the *same* action (All → issue → Back) produced two different outcomes across two
+attempts — once correctly landing back on "All" (Chrome's back/forward cache silently
+restored the previous page's live JS state), once landing on Home (a real reload
+occurred, hitting the actual defect). The code bug was fully deterministic throughout;
+what made it look inconsistent was that browser bfcache heuristics randomly masked it.
+The 2026-06-21/22 fixes replaced a guessed-destination back link with a correct
+`window.history.back()` call, which was necessary but not sufficient — it depended on
+a real history entry existing for "the surface the user came from," which items above
+show was essentially never created for the four main tabs.
+
+**Fixed, 2026-07-08.** Extended Folder View's `pushState`/`popstate` convention
+(`/?surface=…&path=…`) to every surface: `switchSurface()` now writes the URL on every
+branch (not just Folder View), `redirectHomeSearchToAll()` was rewritten to route
+through `switchSurface()` instead of duplicating its DOM logic, the `popstate` listener
+and `initLibrary()` now share one `parseSurfaceState()` parser (previously two
+independently-drifting parsers) and restore `field`/`value`/`folder`/`status` in
+addition to `surface`/`path`, and the very first page load now gets a
+`history.replaceState()` so it's no longer indistinguishable from "no surface was ever
+recorded." The now-fully-dead `from=` query-param plumbing (`buildStripCard()`,
+`buildCoverCard()`, `buildIssueRow()`, `initSeries()`'s `from` read) was removed in the
+same session — it stopped being read by the back-link logic back in the 2026-06-21/22
+fix and had been inert ever since.
+
+Admin page's back link (`admin.js`) was reviewed and left unchanged — it's a
+structurally independent `history.back()` implementation whose only entry point is a
+literal `href="/"`, never routed through `switchSurface()` or the `surface=`
+convention, so it was never exposed to this defect.
+
+**Verified live** against the running dev server, each case run twice (a plain Back
+click, and a forced hard-reload-then-Back to guarantee a bfcache miss, since that's
+the scenario that actually broke before): All→issue→Back, Series→series-detail→Back,
+Series→series-detail→issue→Back→Back, Home-search→All→issue→Back, and Folder View's
+existing 2-level drill-down→Back→Back (confirmed not regressed by the `{replace}`
+option added to `pushFolderViewUrl()`). All land on the correct origin surface.
+
+---
+
 ### BUG-010 — 2000 AD writer credit link doesn't filter the issue list
 
 **Found:** 2026-06-23, inbox triage.

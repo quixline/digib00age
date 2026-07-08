@@ -411,20 +411,18 @@ async function initLibrary() {
     bindFilterEvents();
     bindSearchEvents();
     await loadCustomTabsNav();
-    // Honour ?surface= so the back button from detail pages returns to the right tab
-    const params     = new URLSearchParams(location.search);
-    const reqSurface = params.get('surface') || 'home';
-    const VALID      = ['home', 'series', 'singles', 'all', 'fieldview', 'folderview'];
-    const known      = VALID.includes(reqSurface) || reqSurface.startsWith('tab-');
-    viewField      = params.get('field') || '';
-    viewFieldValue = params.get('value') || '';
-    viewFolderPath = params.get('folder') || '';
-    const reqPath  = params.get('path') || '';
-    // Sidebar quick-status shortcuts (Unread/Reading/Read) jump here from
-    // any page via ?surface=all&status=... — see bindSidebarNav().
-    const reqStatus = params.get('status') || '';
-    if (reqStatus) activeStatus = reqStatus;
-    await switchSurface(known ? reqSurface : 'home', { fromPopstate: true, path: reqPath, keepStatus: !!reqStatus });
+    // Honour ?surface= so the back button from detail pages returns to the
+    // right tab. replace:true (not fromPopstate) so switchSurface() still
+    // annotates this very first history entry via replaceState — otherwise
+    // bare `/` (or a `/?surface=…` URL reached via a real link, e.g. a
+    // fieldview strip) is never distinguishable from "no surface was ever
+    // recorded" (BUG-014).
+    const st = parseSurfaceState(new URLSearchParams(location.search));
+    if (st.status) activeStatus = st.status;
+    await switchSurface(st.surface, {
+      path: st.path, field: st.field, value: st.value, folder: st.folder,
+      keepStatus: !!st.status, replace: true,
+    });
   } catch (err) {
     console.error('initLibrary failed:', err);
     const homeStrips = document.getElementById('homeStrips');
@@ -438,6 +436,25 @@ async function initLibrary() {
 }
 
 // ── Surface navigation ────────────────────────────────────────────────────────
+
+// BUG-014 fix — single shared URL<->state parser, used by both initLibrary()
+// (first load) and the popstate listener (Back/Forward). Two independent
+// parsers drifting out of sync with each other is exactly how BUG-014
+// happened, so there is deliberately only one now.
+const VALID_SURFACES = ['home', 'series', 'singles', 'all', 'fieldview', 'folderview'];
+
+function parseSurfaceState(params) {
+  const reqSurface = params.get('surface') || 'home';
+  const known = VALID_SURFACES.includes(reqSurface) || reqSurface.startsWith('tab-');
+  return {
+    surface: known ? reqSurface : 'home',
+    path:    params.get('path')   || '',
+    field:   params.get('field')  || '',
+    value:   params.get('value')  || '',
+    folder:  params.get('folder') || '',
+    status:  params.get('status') || '',
+  };
+}
 
 // v2.6 Item 1 Phase B — app-wide sidebar, shared across index.html/
 // series.html/issue.html (one shared script, see the DOMContentLoaded
@@ -597,8 +614,30 @@ function updateSearchPlaceholder(surface) {
   if (input) input.placeholder = SEARCH_PLACEHOLDERS[surface] || 'Search…';
 }
 
+// BUG-014 fix — builds the `/?surface=…` URL for a given surface + state,
+// same convention pushFolderViewUrl() already uses for Folder View.
+function buildSurfaceUrl(surface, { path = '', field = '', value = '', folder = '', status = '' } = {}) {
+  let href = `/?surface=${encodeURIComponent(surface)}`;
+  if (path)   href += `&path=${encodeURIComponent(path)}`;
+  if (field)  href += `&field=${encodeURIComponent(field)}`;
+  if (value)  href += `&value=${encodeURIComponent(value)}`;
+  if (folder) href += `&folder=${encodeURIComponent(folder)}`;
+  if (status) href += `&status=${encodeURIComponent(status)}`;
+  return href;
+}
+
+function writeSurfaceUrl(surface, { replace = false, ...urlOpts } = {}) {
+  const href = buildSurfaceUrl(surface, urlOpts);
+  if (replace) history.replaceState(null, '', href);
+  else         history.pushState(null, '', href);
+}
+
 async function switchSurface(surface, opts = {}) {
-  const { fromPopstate = false, path = '', keepStatus = false } = opts;
+  const {
+    fromPopstate = false, path = '', keepStatus = false,
+    field = '', value = '', folder = '', search,
+    replace = false,
+  } = opts;
   exitSelectionMode();
   activeSurface = surface;
   // Read-status filtering only exists as the sidebar's "jump to All,
@@ -608,6 +647,12 @@ async function switchSurface(surface, opts = {}) {
   if (!keepStatus) activeStatus = '';
   const isBrowse  = isBrowseSurface(surface);
   const folderTab = isFolderViewTab(surface);
+  // BUG-014 fix — these three are now fully derived from THIS call, never
+  // carried over from whatever surface was previously active, so popping
+  // back into a fieldview/folderview never renders with stale filter state.
+  viewField      = surface === 'fieldview'  ? field  : '';
+  viewFieldValue = surface === 'fieldview'  ? value  : '';
+  viewFolderPath = surface === 'folderview' ? folder : '';
 
   // Update sidebar active state — primary items, Libraries items, and the
   // Unread/Reading/Read shortcuts (only ever "active" together with the
@@ -637,6 +682,7 @@ async function switchSurface(surface, opts = {}) {
     const input = document.getElementById('searchInput');
     if (input) { input.value = ''; activeSearch = ''; }
     document.getElementById('searchClear').style.display = 'none';
+    if (!fromPopstate) writeSurfaceUrl(surface, { replace });
     await loadHome();
   } else if (folderTab) {
     const input = document.getElementById('searchInput');
@@ -645,44 +691,38 @@ async function switchSurface(surface, opts = {}) {
     folderViewSearchActive = false;
     viewTabPath = path;
     const tabId = surface.slice(4);
-    if (!fromPopstate) pushFolderViewUrl(surface, path);
+    if (!fromPopstate) pushFolderViewUrl(surface, path, { replace });
     await renderFolderView(tabId, viewTabPath);
   } else if (isBrowse) {
-    // Clear search when switching surface
     const input = document.getElementById('searchInput');
-    if (input) { input.value = ''; activeSearch = ''; }
-    document.getElementById('searchClear').style.display = 'none';
+    const q = search || '';
+    if (input) input.value = q;
+    activeSearch = q;
+    document.getElementById('searchClear').style.display = q ? 'block' : 'none';
+    if (!fromPopstate) {
+      writeSurfaceUrl(surface, {
+        field: viewField, value: viewFieldValue, folder: viewFolderPath,
+        status: activeStatus, replace,
+      });
+    }
     await loadBrowse();
   }
 }
 
 window.addEventListener('popstate', () => {
-  const params  = new URLSearchParams(location.search);
-  const surface = params.get('surface') || 'home';
-  const path    = params.get('path') || '';
-  switchSurface(surface, { fromPopstate: true, path });
+  const st = parseSurfaceState(new URLSearchParams(location.search));
+  if (st.status) activeStatus = st.status;
+  switchSurface(st.surface, {
+    fromPopstate: true, path: st.path, field: st.field, value: st.value,
+    folder: st.folder, keepStatus: !!st.status,
+  });
 });
 
 // Home's search bar has no list of its own to filter (it shows curated
 // strips) — typing a query redirects to the All tab with that query already
 // applied, since "Search All" is the label Home's search bar shows.
 async function redirectHomeSearchToAll(q) {
-  activeSurface = 'all';
-  activeStatus  = '';
-  document.querySelectorAll('.app-sidebar-item[data-surface], .app-sidebar-item[data-tab-surface]').forEach(b => {
-    b.classList.toggle('active', (b.dataset.surface || b.dataset.tabSurface) === 'all');
-  });
-  document.querySelectorAll('[data-quick-status]').forEach(b => b.classList.remove('active'));
-  document.getElementById('homeView').hidden   = true;
-  document.getElementById('browseView').hidden = false;
-  document.getElementById('folderView').hidden = true;
-  document.getElementById('menuBar').hidden    = false;
-  document.getElementById('groupBySelect').hidden = false;
-  document.getElementById('browseFilters').hidden = false;
-  document.getElementById('browseCount').hidden   = false;
-  updateSearchPlaceholder('all');
-  activeSearch = q;
-  await loadBrowse();
+  await switchSurface('all', { search: q });
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -774,7 +814,7 @@ function buildHomeStrip(strip) {
 
 function buildStripCard(item) {
   const isSingle = item.format_group === 'Singles';
-  const href = `/issue/${item.id}?from=home`;
+  const href = `/issue/${item.id}`;
 
   const state = item.read_status === 'read'    ? 'state-read'
               : item.read_status === 'reading'  ? 'state-part-read'
@@ -1149,12 +1189,11 @@ function buildCoverCard(s) {
     ? `field=${encodeURIComponent(viewField)}&value=${encodeURIComponent(viewFieldValue)}`
     : '';
   const searchQs = !fieldQs && activeSearch ? `q=${encodeURIComponent(activeSearch)}` : '';
-  const fromQs   = activeSurface ? `from=${activeSurface}` : '';
-  const qs       = [fromQs, fieldQs, searchQs].filter(Boolean).join('&');
-  const from     = qs ? `?${qs}` : '';
+  const qs       = [fieldQs, searchQs].filter(Boolean).join('&');
+  const suffix   = qs ? `?${qs}` : '';
   const href     = isSingle
-    ? `/issue/${s.series_anchor_id}${from}`
-    : `/series/${s.series_anchor_id}${from}`;
+    ? `/issue/${s.series_anchor_id}${suffix}`
+    : `/series/${s.series_anchor_id}${suffix}`;
   const state    = seriesReadState(s);
 
   const card = el('a', `cover-card ${state}${s.favorites ? ' is-favorite' : ''}`);
@@ -1362,9 +1401,10 @@ function bindFilterEvents() {
 // forward-navigation deep links to work, paired with the popstate listener
 // near switchSurface(). This is a deliberate departure from the simpler
 // history.back()-only pattern used elsewhere.
-function pushFolderViewUrl(surface, path) {
+function pushFolderViewUrl(surface, path, { replace = false } = {}) {
   const href = `/?surface=${surface}${path ? `&path=${encodeURIComponent(path)}` : ''}`;
-  history.pushState(null, '', href);
+  if (replace) history.replaceState(null, '', href);
+  else         history.pushState(null, '', href);
 }
 
 function goToFolderPath(tabId, newPath) {
@@ -1600,7 +1640,6 @@ async function initSeries() {
   loadCustomTabsNav();
   const issueId   = window.location.pathname.replace(/^\/series\//, '');
   const urlParams = new URLSearchParams(location.search);
-  const from      = urlParams.get('from') || '';
   // BUG-010: a series reached from a credit/field-filtered context (e.g. a
   // Writer credit link) should only list the issues matching that filter,
   // not the whole series.
@@ -1619,7 +1658,7 @@ async function initSeries() {
     document.title = `${data.series} — digib00age`;
     content.innerHTML = '';
     content.appendChild(buildSeriesHeader(data));
-    content.appendChild(buildIssueList(data, from));
+    content.appendChild(buildIssueList(data));
   } catch (_) {
     content.innerHTML =
       '<div class="empty-state" style="padding-top:60px">' +
@@ -1706,21 +1745,21 @@ function buildSeriesHeader(data) {
 
 // ── Issue list — flat by default (Section 20.7) ──────────────────────────────
 
-function buildIssueList(data, from) {
+function buildIssueList(data) {
   const wrapper = el('div', 'issue-list');
   const group   = el('div', 'arc-group');
-  for (const issue of data.issues) group.appendChild(buildIssueRow(issue, from));
+  for (const issue of data.issues) group.appendChild(buildIssueRow(issue));
   wrapper.appendChild(group);
   return wrapper;
 }
 
-function buildIssueRow(issue, from) {
+function buildIssueRow(issue) {
   const readState = issue.read_status === 'read'    ? 'state-read'
                   : issue.read_status === 'reading' ? 'state-reading' : '';
   const cls = ['issue-row', issue.missing ? 'missing' : '', readState, issue.favorites ? 'is-favorite' : '']
     .filter(Boolean).join(' ');
   const row = el('a', cls);
-  row.href  = `/issue/${issue.id}${from ? `?from=${from}` : ''}`;
+  row.href  = `/issue/${issue.id}`;
   makeSelectable(row, issue.id);
 
   // Thumbnail

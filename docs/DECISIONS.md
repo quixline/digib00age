@@ -167,6 +167,32 @@ UI for however long the gap lasted, a real regression, not just cosmetic.
 **Where:** `docs/v2.6/comicvault-changes-v2.6.md` Phase C2a/C2b split,
 `docs/ADMIN_SPEC.md` §11 (pending Phase C2b build).
 
+### v2.6 Item 1: "Libraries" is UI copy only — "Custom Tabs" stays the internal/spec name
+
+**Decided:** 2026-07-07, during Phase B (left sidebar nav) — resolving the open
+question raised the day before in `comicvault-changes-v2.6.md` Item 1 ("does
+this rename ripple into `CUSTOM_TABS_SPEC.md`'s own terminology, or does the
+spec keep 'Custom Tabs' as the internal/technical name while the UI surfaces
+'Libraries'?").
+
+**Why:** The Design reference renames the sidebar section "Libraries" and drops
+the old "Custom Tabs" label entirely from anything user-facing. But the
+underlying feature — `custom_tabs` table, `CustomTab` model, `/api/admin/
+custom-tabs` endpoints, `loadCustomTabsNav()`, `CUSTOM_TABS_SPEC.md` itself —
+has no reason to be renamed: it's the same code, same data model, same admin
+workflow, just relabelled where a user actually sees it. Treating this as a
+pure UI-copy change avoids a rename sweep across the backend, the spec, and
+every code comment for a change that's cosmetic everywhere except the sidebar
+label. Same pattern already used for the **digib00age** brand rename
+(ComicVault stays the internal/codebase name) — visible-copy renames don't
+automatically become internal renames unless there's a reason beyond "the
+mockup says so."
+
+**Where:** `frontend/js/app.js` (`loadCustomTabsNav()` renders into the
+sidebar's "Libraries" section — Change Log entry, `CUSTOM_TABS_SPEC.md` §5.2),
+`docs/CUSTOM_TABS_SPEC.md` (feature name, data model, and internal references
+all unchanged).
+
 ### v2.6 Item 1 Phase C1: Home Page Strips / Add-Remove Libraries — unlock them
 
 **Decided:** 2026-07-07, before building Phase C1 (Admin IA restructure).
@@ -1658,3 +1684,42 @@ for the same section. A second parallel section would split functionally
 identical tools across two admin headers for no structural reason.
 **Where:** `admin-spec-section-12-processing-tools.md` §12.2 (placed under the
 existing §12 header), `comicvault-changes-v2.4.md` Item 6.
+
+### BUG-014: diagnosed live (with browser automation) before writing any fix, rather than trusting the existing written diagnosis
+**Decided:** 2026-07-08, BUG-014 fix session.
+**Why:** BUG-014 had already been "fixed" twice before (2026-06-21, 2026-06-22)
+and resurfaced both times — Tez explicitly asked for a full diagnostic pass,
+including manually navigating the real app and recording outcomes, rather than
+another quick patch on top of the existing (pre-v2.6-redesign) diagnosis, because
+the bug's behavior had felt too inconsistent to trust a code-reading-only
+explanation. That instinct was correct: live testing found Chrome's back/forward
+cache was intermittently masking the underlying (fully deterministic) code
+defect, which is almost certainly why the two prior fixes looked like they'd
+worked in manual spot-checks but hadn't actually addressed the root cause.
+**Where:** `archive/bugs-fixed-archive.md` BUG-014 entry, `v2.6/progress.md`
+2026-07-08 session.
+
+### BUG-014 fix: dead `from=` param cleanup bundled into the same session, sequenced after verification
+**Decided:** 2026-07-08, BUG-014 fix session (Tez's call, asked directly).
+**Why:** The fix made ~4 spots of `from=` query-param construction
+(`buildStripCard()`, `buildCoverCard()`, `buildIssueRow()`, `initSeries()`)
+provably dead — they'd already stopped being read by the back-link logic back in
+the 2026-06-21/22 fix, but only became safe to prove dead once every surface
+switch reliably wrote real URL state (removing any chance a `from=` value was
+silently load-bearing somewhere backward-compatible). Bundled as a final
+sub-step in the same session rather than a separate follow-up, but deliberately
+sequenced *after* the behavioral fix passed its full verification pass, so a
+regression from cleanup couldn't get conflated with a regression from the fix
+itself.
+**Where:** `frontend/js/app.js` (`buildStripCard()`, `buildCoverCard()`,
+`buildIssueRow()`, `initSeries()`).
+
+### BUG-014 fix: Admin page's back link left unchanged
+**Decided:** 2026-07-08, BUG-014 fix session (Tez's call, asked directly).
+**Why:** `admin.js`'s back-link implementation is a separate, near-identical
+`history.back()` call, but structurally unrelated to BUG-014's mechanism — its
+only entry point is a literal `href="/"`, it never routes through
+`switchSurface()` or the app's `surface=` URL convention, so it was never
+exposed to this defect and already works correctly today. Hardening it anyway
+would have been scope creep against a working control with no bug to fix.
+**Where:** `frontend/js/admin.js` (unchanged).

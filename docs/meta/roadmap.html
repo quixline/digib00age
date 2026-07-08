@@ -116,11 +116,20 @@ bug count corrected 2026-07-05 (BUG-019/020/008 fixed 2026-07-04, BUG-017
 fixed 2026-07-05) · 2026-07-05 once more (Now #1 — Mobile → Server Sync —
 scoped, built, and closed same day; card removed, remaining two renumbered
 1-2; bug count corrected again — BUG-021 found during this item's manual
-verification pass) — see footnote</p>
+verification pass) · 2026-07-08 (Now #1 — Web UI Redesign, v2.6 Item 1 —
+built and fully verified across Phases A-E plus two cross-cutting follow-ups;
+card removed, Mobile UI Redesign renumbered to #1. Open flag, not decided
+here: header unification and the deferred Admin Custom Tabs field
+removal were explicitly parked "until Item 1 lands" — that's now true, but
+whether they move into Now is Tez's sequencing call, not assumed by this
+regeneration; still sitting in `ROADMAP.md`'s v2.6 section, not on this
+board) · 2026-07-08 once more (bug count corrected — BUG-014 fixed same day,
+standalone session outside Item 1; header unification itself remains open
+and unscoped) — see footnote</p>
 
 <div class="bugs-strip">
   <i class="ti ti-bug"></i>
-  <span><span class="count">5</span> open bugs — not on this sequence, ride along
+  <span><span class="count">4</span> open bugs — not on this sequence, ride along
   with whatever's being built. See <code>BUGS.md</code>.</span>
 </div>
 
@@ -131,9 +140,9 @@ verification pass) — see footnote</p>
     <div class="lane-head">
       <div>
         <div class="lane-title">Now</div>
-        <div class="lane-sub">Mobile → Server Sync (v2.5's last item) built and closed 2026-07-05 — next up is Web and Mobile UI redesign, scoped as two separate efforts</div>
+        <div class="lane-sub">Web UI Redesign (v2.6 Item 1) built and fully verified 2026-07-08 — Mobile UI Redesign is the only remaining scoped-and-queued item</div>
       </div>
-      <div class="lane-count">2</div>
+      <div class="lane-count">1</div>
     </div>
     <div class="cards">
 
@@ -141,32 +150,17 @@ verification pass) — see footnote</p>
         <div class="card-top">
           <div class="order-badge ob-now">1</div>
           <div>
-            <div class="c-title">Scope: Web UI Redesign</div>
-            <div class="c-sub">Split 2026-07-05 from the old single "v2.6 UI Redesign" placeholder</div>
-            <span class="chip blocked">possible — Claude Design</span>
-          </div>
-        </div>
-        <div class="c-detail">
-          Covers header unification (v2.3 Item 14) + BUG-014 (both share a
-          root cause — the four main surface tabs never call
-          <code>pushState</code>), the deferred Admin Custom Tabs field
-          removal, and other web-surface items parked pending "UI redesign."
-          Own discussion/design pass, possibly with Claude Design.
-          <div class="ref">ROADMAP.md — "v2.5 — holding list" · BUGS.md BUG-014</div>
-        </div>
-      </div>
-
-      <div class="card" onclick="this.classList.toggle('open')">
-        <div class="card-top">
-          <div class="order-badge ob-now">2</div>
-          <div>
             <div class="c-title">Scope: Mobile UI Redesign</div>
-            <div class="c-sub">Flutter-side counterpart to #1 — split out, not assumed same scope/timeline</div>
+            <div class="c-sub">Flutter-side counterpart to the completed Web UI Redesign — split out, not assumed same scope/timeline</div>
             <span class="chip blocked">possible — Claude Design</span>
           </div>
         </div>
         <div class="c-detail">
-          <div class="ref">ROADMAP.md — "v2.5 — holding list"</div>
+          Not started. `docs/v2.6/progress.md`'s 2026-07-06 session note
+          confirmed this stays a separate, independently-scoped item — the
+          web redesign's phased build (tokens/nav → Admin IA → filter bar →
+          detail polish) isn't assumed to carry over 1:1 to Flutter.
+          <div class="ref">ROADMAP.md — "v2.5 — holding list" · v2.6/progress.md "Session — 2026-07-06"</div>
         </div>
       </div>
 

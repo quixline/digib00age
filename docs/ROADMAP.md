@@ -7,8 +7,8 @@ than building it; `archive/comicvault-changes-2.1.md` and
 `archive/v2.3/comicvault-changes-v2.3.md` (closed 2026-06-29),
 `archive/v2.4/comicvault-changes-v2.4.md` (closed 2026-07-02), and
 `archive/v2.5/comicvault-changes-v2.5.md` (closed 2026-07-05) covered the prior
-active queues. No active build queue right now — `docs/v2.6/` hasn't been created
-yet; real scoping starts whenever that triage session happens (see "v2.6" above).
+active queues. 
+
 
 ---
 
@@ -40,12 +40,13 @@ project narrative through v2.3's close.
 
 ---
 
-## v2.6 — UI Redesign (blocked on Claude Design exploration)
+## v2.6 — UI Redesign (active — `docs/v2.6/` created 2026-07-06)
 
-Two items share the same blocking dependency — a parked exploration with Claude
-Design on overall UI redesign direction, not yet started. Both should be revisited
-together once that direction exists, since either could change what the other needs
-to do.
+**No longer blocked.** Web UI redesign (nav, colour, typography, spacing, Admin
+page) scoped visually in Claude Design and handed to Code 2026-07-07 — tracked as
+v2.6 Item 1 in `docs/v2.6/comicvault-changes-v2.6.md`. The two items below
+(header unification, back-button fix) remain deliberately deferred until Item 1
+lands, not bundled into it — see that doc's "explicitly out of scope" note.
 
 **v2.3 Item 14 — Site-wide: unify the main header across Series/Issue detail pages**
 (moved here 2026-06-28, originally scoped 2026-06-27)
@@ -82,22 +83,20 @@ header unification here means nav tabs + search + admin-gear link + logout only.
   pages call, rather than duplicating `bindSurfaceNav()`/`bindSearchEvents()`/the
   admin-link wiring a third time.
 
-**`BUG-014` (back-button regression) — sequence with Item 14, not independently:**
-the issue/series back-links already use real `window.history.back()` (a code
-comment there says this replaced the old `from=` param logic). But the four main
-surface tabs (Home/All/Singles/Series, `bindSurfaceNav()`) never call `pushState` —
-switching tabs only updates a JS variable, the URL stays bare `/`. Folder View
-*does* call `pushState` on every drill-down (`pushFolderViewUrl()` — already
-explicitly documented in `app.js` as "a deliberate departure from the simpler
-`history.back()`-only pattern used elsewhere"). So: user on All (URL still `/`) →
-opens an issue → real navigation pushes `/issue/123` onto history → Back → browser
-correctly returns to the literal previous entry, bare `/` → page loads defaulting to
-Home. The `?from=all`/`?from=series`/`?from=singles` params still being attached
-when building card links (`buildCoverCard()` etc.) are dead code — already ignored
-by both detail pages. **Recommended fix:** extend Folder View's existing `pushState`
-pattern to the four main surface tabs; once in place, Item 14's nav links on the
-detail pages can just point at `/?surface=all` etc. and back-navigation works
-correctly for free. Full write-up in `BUGS.md` BUG-014.
+**`BUG-014` (back-button regression) — fixed 2026-07-08, no longer needs to
+sequence with Item 14.** Was originally noted here as needing to move together
+with header unification, on the theory Item 14's new nav links on the detail
+pages could just point at `/?surface=all` etc. once the underlying `pushState`
+gap was closed. Live testing during the fix found the bug was real and
+deterministic but was being intermittently masked by Chrome's back/forward
+cache in manual spot-checks — which is almost certainly why it survived two
+earlier "fixes" undetected. Fixed by extending Folder View's already-working
+`pushState`/`popstate` pattern to the four main surface tabs; the dead
+`?from=`param plumbing this note originally flagged was removed in the same
+session. Full write-up in `archive/bugs-fixed-archive.md` BUG-014. **Item 14
+itself (header markup missing from `issue.html`/`series.html`) remains open
+and unscoped** — the code-reading findings above are still current, this was
+just the one piece that no longer has to wait for Item 14 to land.
 
 Needs a quick scoping pass to confirm current header variants before Code starts,
 whenever this gets picked back up.

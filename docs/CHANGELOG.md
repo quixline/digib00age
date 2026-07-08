@@ -15,6 +15,12 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-08** — BUG-014 fixed: back-button regression (landed on Home
+  instead of the originating tab). Root cause was `switchSurface()` never
+  writing to the URL for the four main browse surfaces; extended Folder
+  View's already-working `pushState`/`popstate` pattern app-wide. Live
+  testing also found Chrome's back/forward cache was randomly masking the
+  bug in manual testing, explaining why two prior fixes didn't stick.
 - **2026-07-08** — Web UI Redesign Phase E built (v2.6 Item 1): Series/
   Issue detail visual polish — **v2.6 Item 1 is now fully complete.** A
   line-by-line comparison against Design's `SeriesScreen`/`IssueScreen`

@@ -991,3 +991,53 @@ credits/summary layout" (Issue).
   still saying "not yet built") — **v2.6 Item 1 (Web UI Redesign) is now
   fully complete**, every phase A through E plus both cross-cutting
   follow-ups built and verified.
+
+## Session — 2026-07-08 — BUG-014 fixed (back-button regression)
+
+- Not part of Item 1 — BUG-014 was explicitly deferred out of the redesign
+  (see 2026-07-06 entry above); this was its own standalone session, done
+  now that Item 1 is closed out.
+- Full diagnostic pass before any code change, per Tez's request: two
+  parallel Explore agents independently re-read `app.js`/`issue.html`/
+  `series.html` against current (post-redesign) code rather than trusting
+  the 2026-06-27 diagnosis already in `BUGS.md`, then live browser testing
+  against the running dev server actually reproduced the bug.
+- **Key finding:** the identical action (All → issue → Back) produced two
+  different outcomes across two live attempts — once correctly landing back
+  on "All" (Chrome's back/forward cache silently restored the previous
+  page's live JS state), once landing on Home (a real reload occurred,
+  hitting the actual defect). This explains why the same bug class survived
+  two prior "fixes" (2026-06-21, 2026-06-22) without ever being caught as
+  still-broken — bfcache was randomly masking it in manual testing.
+- **Root cause:** `switchSurface()` in `app.js` only called `pushState` for
+  Folder View custom tabs; the four main browse surfaces (Home/All/Singles/
+  Series) never wrote to the URL, so `history.back()` from a detail page
+  fell through to bare `/`, which defaulted to Home. A second bypass,
+  `redirectHomeSearchToAll()`, had the same defect independently.
+- **Fix:** extended Folder View's already-working `pushState`/`popstate`
+  convention app-wide — `switchSurface()` now writes the URL on every
+  branch, `redirectHomeSearchToAll()` now routes through `switchSurface()`
+  instead of duplicating its logic, `initLibrary()` and the `popstate`
+  listener now share one `parseSurfaceState()` parser (previously two,
+  independently drifting) and restore `field`/`value`/`folder`/`status` in
+  addition to `surface`/`path`, and the first page load now gets a
+  `history.replaceState()`. Removed the now-fully-dead `from=` query-param
+  plumbing in the same session (deferred until after verification passed,
+  per Tez's call, so cleanup and behavioral fix didn't get conflated).
+  Admin page's independent back-link (`admin.js`) reviewed and left
+  unchanged — structurally unrelated to this bug (never routed through
+  `switchSurface()`), per Tez's call.
+- **Verified manually**, live against the dev server (`:9424`), each case
+  run twice — a plain Back click, and a forced hard-reload-then-Back to
+  guarantee a bfcache miss, since that's the scenario that actually broke
+  before: All→issue→Back, Series→series-detail→Back,
+  Series→series-detail→issue→Back→Back, Home-search→All→issue→Back, and
+  Folder View's existing 2-level drill-down→Back→Back (confirmed the new
+  `{replace}` option on `pushFolderViewUrl()` didn't regress it). All land
+  on the correct origin surface. Full account, including the exact live
+  repro sequence that caught the bfcache nuance, in `BUG-014`'s entry in
+  `archive/bugs-fixed-archive.md`.
+- `docs/BUGS.md` updated — BUG-014 moved to `archive/bugs-fixed-archive.md`;
+  BUG-015 annotated noting this fix incidentally clears stale `field=`/
+  `value=` from the URL on surface switch as a side effect, but does not
+  fix BUG-015 itself (dropdown/clear-control gaps remain open).
