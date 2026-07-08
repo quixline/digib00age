@@ -63,6 +63,77 @@ option added to `pushFolderViewUrl()`). All land on the correct origin surface.
 
 ---
 
+### BUG-015 — Genre field-view filter has no UI way to clear, and survives back-navigation incorrectly
+
+**Found:** 2026-06-27, inbox capture.
+
+**Where:** Selecting a genre from an issue page correctly navigates to a filtered
+field-view (`/?surface=fieldview&field=genre&value=Comedy`). From there, the Genre
+dropdown didn't visually reflect the active filter, a different tab switch left the
+filter and URL value untouched underneath, and stale URL state meant back-navigation
+into a visually-reset list could restore the wrong filter.
+
+**Tez's initial proposed fix** — add a "Clear" first row to the Genre dropdown — was
+investigated and found to only cover the genre case. Fieldview is not genre-specific:
+it's also reached via writer/artist credit links and admin-configured home strips
+(publisher/format/decade/year/rating/B&W, per `admin.js`'s `HS_FIELD_LABELS`), and
+there's no dropdown at all for writer/artist in the toolbar — a Genre-dropdown-only fix
+would have left those cases with no clear mechanism whatsoever.
+
+**Root cause:** two completely separate, unrelated mechanisms shared the word "Genre."
+The Genre dropdown (`<select id="genreFilter">`) is bound to a module-level
+`activeGenre` variable, applying an additional client-side narrowing layer on top of
+whatever pool is loaded. Fieldview (`viewField`/`viewFieldValue`, set only inside
+`switchSurface()`) drives a separate, server-scoped API call. Neither touched the
+other, and fieldview itself showed zero context — no banner, no indicator, just a
+generic "N Titles" count with no mention of what was filtering it.
+
+**Fixed, 2026-07-08.** Rather than touch the Genre dropdown, generalized an existing,
+better-fitting pattern already in the codebase — the Series detail page's BUG-010 fix,
+which shows a "Showing X of Y issues — filtered by Z. View full series" banner with a
+real-navigation clear link for an analogous scoped-view problem. Added a generic
+fieldview banner (`renderFieldviewBanner()`, `app.js`) shown above the cover grid
+whenever `activeSurface === 'fieldview'`, reading `"{count} Titles — {FieldLabel}:
+{value}"` with a "Clear filter" link doing a real navigation to `/?surface=all` — a
+real page navigation rather than a JS state reset, sidestepping the exact class of
+"JS state vs. URL" desync bug that caused BUG-014. Writer/artist values are a
+`Person.id`, not human-readable — added a `label=` URL param, populated at the two
+credit-link-construction sites (which already have the name in scope) and via a new
+`field_value_label` field resolved server-side in `backend/routers/home.py` for the
+one site (admin home-strip links) that doesn't have the name client-side. `viewField`/
+`viewFieldValue`/new `viewFieldLabel` state threads through the same shared
+`parseSurfaceState()`/`buildSurfaceUrl()`/`writeSurfaceUrl()` path the BUG-014 fix
+established, rather than adding a second, independently-drifting parser.
+`hasActiveFilters()`/`clearAllFilters()` were deliberately left blind to fieldview
+state (commented explaining why) — blanking `viewField`/`viewFieldValue` in place
+without changing `activeSurface` would empty the grid via a cache-miss, not unfilter
+it; leaving a fieldview genuinely requires a real navigation, which the banner's own
+link already provides.
+
+**Bonus (Tez's call):** the Genre dropdown now cosmetically mirrors an active genre
+fieldview's value (purely visual, doesn't touch `activeGenre`), synced once per
+`switchSurface()` call rather than on every re-render, specifically to avoid fighting
+a user's own manual dropdown selection while already on a fieldview.
+
+**Robustness fix found during live verification:** `renderFieldviewBanner()` initially
+had no null-check on the banner DOM element, which crashed the entire render pipeline
+(stuck on "Loading…") when a stale cached copy of `index.html` (predating this fix)
+was served alongside a fresh `app.js` — a realistic scenario across any deploy where
+HTML/JS versions can momentarily skew, not just a testing artifact. Added a guard.
+
+**Verified live** against the running dev server, including the two highest-risk paths
+end-to-end: a genre tag on an issue page, a writer credit link (URL carries
+`&label=`, banner shows the resolved name not the numeric id, survives a hard
+refresh and Back/Forward), a temporary admin-configured writer-basis home strip
+(confirming the new backend `field_value_label` round-trips correctly — "4 Titles —
+Writer: A. J. Lieberman"), the Clear filter link, cleanup-on-navigate-away via the
+sidebar, a secondary Format-dropdown filter layered on top of a fieldview (banner
+count updates correctly, the global Clear button clears only the Format narrowing and
+leaves the fieldview scoping intact), and decade/B&W value formatting ("1990s",
+"Yes"/"No"). Test home-strip scaffolding removed after verification.
+
+---
+
 ### BUG-010 — 2000 AD writer credit link doesn't filter the issue list
 
 **Found:** 2026-06-23, inbox triage.

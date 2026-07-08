@@ -1204,6 +1204,20 @@ select.filter-select:focus,
   border-color: var(--accent);
   color: var(--accent);
 }
+/* BUG-015 — fieldview filter banner */
+.fieldview-banner {
+  font-size: 13px;
+  color: var(--text-2);
+  margin-bottom: 14px;
+}
+.fieldview-banner-clear {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.fieldview-banner-clear:hover {
+  text-decoration: underline;
+}
 .btn-primary {
   display: inline-flex;
   align-items: center;

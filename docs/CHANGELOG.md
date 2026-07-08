@@ -15,6 +15,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-08** — BUG-015 fixed: fieldview filter (genre tag/writer/artist/
+  home-strip links) had no UI way to clear and showed no indication of what
+  was filtering it. Genre dropdown "Clear" row (the initial proposal) only
+  covered genre; generalized the Series page's existing scoped-view banner
+  pattern for fieldview instead, with a real-navigation clear link. Writer/
+  artist values resolved to a display name via a new `label=` param plus a
+  backend `field_value_label` addition for home-strip links.
 - **2026-07-08** — BUG-014 fixed: back-button regression (landed on Home
   instead of the originating tab). Root cause was `switchSurface()` never
   writing to the URL for the four main browse surfaces; extended Folder

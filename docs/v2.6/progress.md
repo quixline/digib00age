@@ -1041,3 +1041,53 @@ credits/summary layout" (Issue).
   BUG-015 annotated noting this fix incidentally clears stale `field=`/
   `value=` from the URL on surface switch as a side effect, but does not
   fix BUG-015 itself (dropdown/clear-control gaps remain open).
+
+## Session — 2026-07-08 — BUG-015 fixed (fieldview filter had no clear/indicator)
+
+- Standalone session, same day as BUG-014, not part of Item 1.
+- Tez's initial proposed fix was a "Clear" first row in the Genre dropdown.
+  Investigation found this only covers the genre case — fieldview is also
+  reached via writer/artist credit links and admin-configured home strips
+  (publisher/format/decade/year/rating/B&W), none of which have a dropdown
+  to attach a clear-row to. Presented the gap and an alternative to Tez via
+  the plan-mode question flow; Tez approved the alternative.
+- **Root cause:** the Genre dropdown (`activeGenre`) and the fieldview
+  mechanism (`viewField`/`viewFieldValue`) are two fully separate,
+  unrelated pieces of state that happened to share the word "Genre."
+  Fieldview itself showed zero context — no banner, no indicator, a
+  generic "N Titles" count with no mention of what was filtering it.
+- **Fix:** generalized the Series detail page's existing BUG-010 banner
+  pattern ("Showing X of Y — filtered by Z. View full series") for the
+  fieldview surface generically — a new `renderFieldviewBanner()` reads
+  `"{count} Titles — {FieldLabel}: {value}"` with a real-navigation "Clear
+  filter" link to `/?surface=all` (real navigation, not a JS state reset —
+  deliberately avoiding the class of bug BUG-014 just closed). Writer/
+  artist values are a `Person.id`, not human-readable — added a `label=`
+  URL param, threaded through the same shared `parseSurfaceState()`/
+  `buildSurfaceUrl()`/`writeSurfaceUrl()` path BUG-014 established, plus a
+  new `field_value_label` field resolved server-side in
+  `backend/routers/home.py` for the one link-construction site (admin
+  home-strip links) that doesn't have the person's name client-side.
+  `hasActiveFilters()`/`clearAllFilters()` deliberately left blind to
+  fieldview state (commented why — blanking it in place would empty the
+  grid via a cache-miss, not unfilter it).
+- **Bonus (Tez's call):** Genre dropdown now cosmetically mirrors an active
+  genre fieldview's value, synced once per surface switch (not on every
+  re-render) so it doesn't fight a user's own manual dropdown selection.
+- **Robustness fix found live:** `renderFieldviewBanner()` initially had no
+  null-check on its DOM element — crashed the whole render pipeline (stuck
+  "Loading…") when a stale cached `index.html` (predating this fix) was
+  served alongside a fresh `app.js`, a realistic deploy-skew scenario, not
+  just a testing artifact. Added a guard.
+- **Verified manually**, live against the dev server (`:9424`): genre tag,
+  writer credit link (label survives hard refresh and Back/Forward), a
+  temporary admin-configured writer-basis home strip (confirming the new
+  backend `field_value_label` round-trips — "4 Titles — Writer: A. J.
+  Lieberman"), Clear filter link, cleanup-on-navigate-away, a secondary
+  Format-dropdown filter layered on a fieldview (banner count updates,
+  global Clear only clears the Format narrowing), and decade/B&W value
+  formatting. Test home-strip scaffolding removed after verification —
+  hit a native `confirm()` dialog blocking Claude-in-Chrome automation on
+  the admin Delete button, asked Tez to click it manually. Full account in
+  `BUG-015`'s entry in `archive/bugs-fixed-archive.md`.
+- `docs/BUGS.md` updated — BUG-015 moved to `archive/bugs-fixed-archive.md`.

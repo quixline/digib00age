@@ -4,6 +4,27 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Small/cosmetic UI changes don't need the full process
+
+**Decided:** 2026-07-08, in a Chat session, formalizing a threshold that had been
+discussed verbally but not written down anywhere Code or Cowork would see it.
+
+**Why:** The full process (scope in Chat, track as a build-queue item or bug,
+Design→Code handoff, `DECISIONS.md` entry) exists to keep structural changes —
+navigation, routing, information architecture — deliberate and reviewable, since
+those are the changes with the widest blast radius. Applying that same weight to
+purely cosmetic tweaks (colour, spacing, typography, copy, element position/sizing
+within an existing layout) adds process friction with no corresponding benefit, and
+risks Code either skipping the "required" steps informally (silent drift from the
+documented process) or over-processing trivial changes. Splitting the two
+explicitly avoids both failure modes. This decision itself is the kind of
+non-obvious judgment call this log exists for; the threshold's mechanics live in
+`CLAUDE.md` Section 5 and `docs/meta/working-rules.md` rather than being restated
+here.
+
+**Where:** `CLAUDE.md` Section 5 ("Doc-update threshold"), `docs/meta/working-rules.md`
+("Structural vs. cosmetic threshold").
+
 ### v2.6 Item 1 Phase E: Issue backdrop doesn't extend behind the "← Back" button
 
 **Decided:** 2026-07-08, while building the new Issue detail backdrop.
@@ -1723,3 +1744,38 @@ only entry point is a literal `href="/"`, it never routes through
 exposed to this defect and already works correctly today. Hardening it anyway
 would have been scope creep against a working control with no bug to fix.
 **Where:** `frontend/js/admin.js` (unchanged).
+
+### BUG-015 fix: generalized scoped-view banner instead of a Genre-dropdown "Clear" row
+**Decided:** 2026-07-08, BUG-015 fix session (Tez's call, after being presented
+with the alternative).
+**Why:** Tez's initial proposal — add a "Clear" first row to the Genre filter
+dropdown — was investigated and found to only solve the genre case. Fieldview
+(the actual mechanism behind the bug) is reached via genre tags, writer/artist
+credit links, and admin-configured home strips (publisher/format/decade/year/
+rating/B&W too) — there's no dropdown at all for writer/artist in the toolbar,
+so a Genre-dropdown-only fix would have left one of the two primary entry
+points with no clear mechanism whatsoever. Generalized the Series detail
+page's existing BUG-010 banner pattern (a scoped-view indicator + a
+real-navigation clear link) for the fieldview surface instead — it already
+solved the identical shape of problem, and a real navigation sidesteps the
+"JS state vs. URL" desync class of bug BUG-014 had just been fixed for.
+**Where:** `frontend/js/app.js` (`renderFieldviewBanner()`), `archive/
+bugs-fixed-archive.md` BUG-015 entry.
+
+### BUG-015 fix: writer/artist fieldview display name carried via URL `label=` param, not resolved client-side from the id
+**Decided:** 2026-07-08, BUG-015 fix session.
+**Why:** Fieldview's `value` for writer/artist is a `Person.id`, not
+human-readable. Resolving it via an extra API round-trip (e.g. fetching
+`/browse/writers` on every writer/artist fieldview load) was rejected in favor
+of carrying a `label=` query param, since the two credit-link-construction
+sites already have the person's display name in scope at the moment the link
+is built (BUG-014's shared `parseSurfaceState()`/`buildSurfaceUrl()`/
+`writeSurfaceUrl()` path made adding a fourth param straightforward). The one
+site without a name in hand client-side — admin home-strip "view all" links —
+gets it resolved server-side instead (`field_value_label` in
+`backend/routers/home.py`, mirroring `admin.js`'s existing
+`ensureHsPersonNameCache()` pattern for the same underlying problem), since
+that endpoint already has DB access and this avoids a second round-trip on
+every library page load.
+**Where:** `frontend/js/app.js` (credit links, `stripViewAllHref()`),
+`backend/routers/home.py` (`_resolve_added_strip()`).

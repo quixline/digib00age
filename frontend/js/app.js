@@ -373,7 +373,27 @@ let activeSearch    = '';
 // clickable heading (HOME_STRIPS_SPEC.md 5.2), not part of the persistent nav.
 let viewField       = '';
 let viewFieldValue  = '';
+let viewFieldLabel  = '';   // BUG-015: display label for viewFieldValue when the raw value
+                             // isn't human-readable (writer/artist Person.id) — '' when the
+                             // value is already self-describing (genre/publisher/etc.)
 let viewFolderPath  = '';
+
+// BUG-015: mirrors admin.js's HS_FIELD_LABELS (admin.js) — duplicated rather
+// than shared because index.html and admin.html load separate, non-module
+// script sets. Keep both in sync if a field is ever added/renamed.
+const FIELDVIEW_LABELS = {
+  genre: 'Genre', publisher: 'Publisher', writer: 'Writer', artist: 'Artist',
+  format: 'Format', decade: 'Decade', year: 'Year', rating: 'Rating', bw: 'Black & White',
+};
+
+function fieldviewValueDisplay(field, value, label) {
+  if (label) return label;                                        // writer/artist, when resolved
+  if (field === 'decade') return `${value}s`;                      // "1990" -> "1990s"
+  if (field === 'bw')     return value === 'yes' ? 'Yes' : 'No';
+  if (field === 'writer' || field === 'artist') return `#${value}`; // unresolved id fallback
+  return value;                                                    // genre/publisher/format/year/rating
+}
+
 let viewLibraryCache = {};      // cache key (see loadBrowse) -> /api/library response
 let searchLibraryCache = {};    // query (lowercased) -> /api/library?q=… response (BUG-010:
                                  // server-scoped so issue_count reflects only matching issues,
@@ -420,7 +440,7 @@ async function initLibrary() {
     const st = parseSurfaceState(new URLSearchParams(location.search));
     if (st.status) activeStatus = st.status;
     await switchSurface(st.surface, {
-      path: st.path, field: st.field, value: st.value, folder: st.folder,
+      path: st.path, field: st.field, value: st.value, label: st.label, folder: st.folder,
       keepStatus: !!st.status, replace: true,
     });
   } catch (err) {
@@ -451,6 +471,7 @@ function parseSurfaceState(params) {
     path:    params.get('path')   || '',
     field:   params.get('field')  || '',
     value:   params.get('value')  || '',
+    label:   params.get('label')  || '',
     folder:  params.get('folder') || '',
     status:  params.get('status') || '',
   };
@@ -616,11 +637,12 @@ function updateSearchPlaceholder(surface) {
 
 // BUG-014 fix — builds the `/?surface=…` URL for a given surface + state,
 // same convention pushFolderViewUrl() already uses for Folder View.
-function buildSurfaceUrl(surface, { path = '', field = '', value = '', folder = '', status = '' } = {}) {
+function buildSurfaceUrl(surface, { path = '', field = '', value = '', label = '', folder = '', status = '' } = {}) {
   let href = `/?surface=${encodeURIComponent(surface)}`;
   if (path)   href += `&path=${encodeURIComponent(path)}`;
   if (field)  href += `&field=${encodeURIComponent(field)}`;
   if (value)  href += `&value=${encodeURIComponent(value)}`;
+  if (label)  href += `&label=${encodeURIComponent(label)}`;
   if (folder) href += `&folder=${encodeURIComponent(folder)}`;
   if (status) href += `&status=${encodeURIComponent(status)}`;
   return href;
@@ -635,7 +657,7 @@ function writeSurfaceUrl(surface, { replace = false, ...urlOpts } = {}) {
 async function switchSurface(surface, opts = {}) {
   const {
     fromPopstate = false, path = '', keepStatus = false,
-    field = '', value = '', folder = '', search,
+    field = '', value = '', label = '', folder = '', search,
     replace = false,
   } = opts;
   exitSelectionMode();
@@ -652,6 +674,7 @@ async function switchSurface(surface, opts = {}) {
   // back into a fieldview/folderview never renders with stale filter state.
   viewField      = surface === 'fieldview'  ? field  : '';
   viewFieldValue = surface === 'fieldview'  ? value  : '';
+  viewFieldLabel = surface === 'fieldview'  ? label  : '';
   viewFolderPath = surface === 'folderview' ? folder : '';
 
   // Update sidebar active state — primary items, Libraries items, and the
@@ -701,11 +724,27 @@ async function switchSurface(surface, opts = {}) {
     document.getElementById('searchClear').style.display = q ? 'block' : 'none';
     if (!fromPopstate) {
       writeSurfaceUrl(surface, {
-        field: viewField, value: viewFieldValue, folder: viewFolderPath,
+        field: viewField, value: viewFieldValue, label: viewFieldLabel, folder: viewFolderPath,
         status: activeStatus, replace,
       });
     }
     await loadBrowse();
+    // BUG-015 bonus (Tez's call) — cosmetic, one-time-per-switch sync of the
+    // Genre dropdown's displayed value when landing on a genre fieldview, so
+    // it doesn't just show the placeholder while a genre is actually active.
+    // Deliberately NOT touching activeGenre (see hasActiveFilters()/
+    // clearAllFilters() comments) and deliberately done only here — once per
+    // switchSurface() call, not on every _renderBrowsePage() re-render —
+    // so a manual dropdown pick while already on a genre fieldview isn't
+    // fought/reverted by a subsequent secondary-filter re-render. Runs after
+    // loadBrowse() resolves so genreFilter's <option>s (populated by
+    // populateFilterDropdowns(), awaited inside loadBrowse()) already exist.
+    const genreSelect = document.getElementById('genreFilter');
+    if (genreSelect) {
+      const isGenreFieldview = surface === 'fieldview' && viewField === 'genre' && !!viewFieldValue;
+      genreSelect.value = isGenreFieldview ? viewFieldValue : activeGenre;
+      genreSelect.classList.toggle('active', isGenreFieldview || !!activeGenre);
+    }
   }
 }
 
@@ -713,7 +752,7 @@ window.addEventListener('popstate', () => {
   const st = parseSurfaceState(new URLSearchParams(location.search));
   if (st.status) activeStatus = st.status;
   switchSurface(st.surface, {
-    fromPopstate: true, path: st.path, field: st.field, value: st.value,
+    fromPopstate: true, path: st.path, field: st.field, value: st.value, label: st.label,
     folder: st.folder, keepStatus: !!st.status,
   });
 });
@@ -764,7 +803,10 @@ function stripViewAllHref(strip) {
   // Defaults (basis_type 'builtin') don't get a listing page in this round —
   // HOME_STRIPS_SPEC.md only requires this for admin-added field/folder strips.
   if (strip.basis_type === 'field') {
-    return `/?surface=fieldview&field=${encodeURIComponent(strip.field_name)}&value=${encodeURIComponent(strip.field_value)}`;
+    // BUG-015: writer/artist strips carry a Person.id value — field_value_label
+    // (resolved server-side, backend/routers/home.py) supplies the display name.
+    const label = strip.field_value_label ? `&label=${encodeURIComponent(strip.field_value_label)}` : '';
+    return `/?surface=fieldview&field=${encodeURIComponent(strip.field_name)}&value=${encodeURIComponent(strip.field_value)}${label}`;
   }
   if (strip.basis_type === 'folder') {
     return `/?surface=folderview&folder=${encodeURIComponent(strip.folder_path)}`;
@@ -1028,6 +1070,8 @@ function sortComparator(a, b) {
   return activeSortDir === 'desc' ? -cmp : cmp;
 }
 
+// BUG-015: deliberately blind to viewField/viewFieldValue (fieldview scoping)
+// — see clearAllFilters()'s matching comment for why.
 function hasActiveFilters() {
   return activeSearch || activeStatus || activeGenre || activePublisher ||
     activeFormat || activeDecade ||
@@ -1035,6 +1079,15 @@ function hasActiveFilters() {
 }
 
 function clearAllFilters() {
+  // BUG-015: deliberately does NOT touch viewField/viewFieldValue. Blanking
+  // them here without also changing activeSurface would make
+  // getFilteredLibrary() look up viewLibraryCache['field::'] — undefined —
+  // and render an empty grid, not an unfiltered one. Leaving a fieldview
+  // requires a real navigation; see the fieldview banner's own "Clear
+  // filter" link (renderFieldviewBanner()) for that path. This function
+  // still correctly clears a secondary dropdown filter (e.g. Format) layered
+  // on top of a fieldview while leaving the fieldview scoping itself intact
+  // — that's deliberate, not an oversight.
   activeStatus = activeGenre = activePublisher =
     activeFormat = activeDecade = activeYear = activeRating = activeBW = activeSearch = activeStars = '';
   activeFavorites = false;
@@ -1060,6 +1113,32 @@ function renderBrowse() {
   _renderBrowsePage();
 }
 
+// BUG-015: generic "you're filtered, here's how to clear it" indicator for
+// the fieldview surface (genre tags / writer+artist credit links / admin
+// home-strip "view all" links can all land here). Called from
+// _renderBrowsePage() (not loadBrowse()) so it stays correct when a
+// secondary dropdown filter is layered on top via renderActiveSurface(),
+// and gets cleanup-on-navigate-away for free — every surface's render pass
+// hides it when activeSurface isn't 'fieldview'. Clear link is a real
+// navigation (not a JS state reset) — see series-filter-banner precedent
+// (BUG-010) and the reasoning in DECISIONS.md for why that matters here.
+function renderFieldviewBanner(displayCount) {
+  const banner = document.getElementById('fieldviewBanner');
+  if (!banner) return;
+  if (activeSurface !== 'fieldview' || !viewField || !viewFieldValue) {
+    banner.hidden = true;
+    banner.textContent = '';
+    return;
+  }
+  const fieldLabel   = FIELDVIEW_LABELS[viewField] || viewField;
+  const valueDisplay = fieldviewValueDisplay(viewField, viewFieldValue, viewFieldLabel);
+  banner.textContent = `${displayCount.toLocaleString()} Titles — ${fieldLabel}: ${valueDisplay} `;
+  const clearLink = el('a', 'fieldview-banner-clear', 'Clear filter');
+  clearLink.href = '/?surface=all';
+  banner.appendChild(clearLink);
+  banner.hidden = false;
+}
+
 function _renderBrowsePage() {
   exitSelectionMode();
   const grid    = document.getElementById('coverGrid');
@@ -1083,6 +1162,7 @@ function _renderBrowsePage() {
   countEl.textContent = suffix
     ? `${displayCount.toLocaleString()} ${suffix}`
     : displayCount.toLocaleString();
+  renderFieldviewBanner(displayCount);
   clearBtn.style.display = hasActiveFilters() ? 'inline-block' : 'none';
 
   grid.innerHTML = '';
@@ -2018,7 +2098,10 @@ function buildIssueDetail(data) {
       people.forEach((person, idx) => {
         if (idx > 0) valueCell.appendChild(document.createTextNode(', '));
         const link = el('a', 'credit-link', person.name);
-        link.href = `/?surface=fieldview&field=${fieldName}&value=${person.person_id}`;
+        // BUG-015: value is a Person.id, not human-readable — carry the
+        // display name along so the fieldview banner can show it.
+        link.href = `/?surface=fieldview&field=${fieldName}&value=${person.person_id}` +
+          `&label=${encodeURIComponent(person.name)}`;
         valueCell.appendChild(link);
       });
       grid.appendChild(valueCell);

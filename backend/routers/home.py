@@ -13,7 +13,7 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
-from backend.models import CustomTab, HomeStrip, Issue, IssueGenre, ReadingProgress
+from backend.models import CustomTab, HomeStrip, Issue, IssueGenre, Person, ReadingProgress
 from backend.path_utils import is_under, matches_field
 
 router = APIRouter(tags=["home"])
@@ -178,6 +178,18 @@ def _resolve_added_strip(row: HomeStrip, db: Session, pm: dict[int, str], pr: di
     else:
         issues = random.sample(issues, min(STRIP_SIZE, len(issues)))
 
+    # BUG-015: writer/artist field_value is a Person.id, not human-readable —
+    # resolve a display label server-side so the frontend's fieldview banner
+    # doesn't have to show a raw id (mirrors admin.js's ensureHsPersonNameCache()).
+    field_value_label = None
+    if row.basis_type == "field" and row.field_name in ("writer", "artist"):
+        try:
+            person = db.query(Person).filter(Person.id == int(row.field_value)).first()
+        except (TypeError, ValueError):
+            person = None
+        if person:
+            field_value_label = person.name
+
     return {
         "id": row.id,
         "title": row.name,
@@ -185,6 +197,7 @@ def _resolve_added_strip(row: HomeStrip, db: Session, pm: dict[int, str], pr: di
         "basis_type": row.basis_type,
         "field_name": row.field_name,
         "field_value": row.field_value,
+        "field_value_label": field_value_label,
         "folder_path": row.folder_path,
     }
 

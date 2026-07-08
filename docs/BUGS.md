@@ -100,39 +100,6 @@ already tears it down immediately after). Apply the same checkpoint step to
 
 ---
 
-### BUG-015 — Genre field-view filter (`?surface=fieldview&field=genre&value=X`) has no UI way to clear, and survives back-navigation incorrectly
-
-**Note, 2026-07-08 (BUG-014 fix):** the BUG-014 fix incidentally improves part of this
-bug's symptom set as a side effect — since every surface switch now rewrites the URL,
-switching away from a `fieldview` state to `all`/`series`/etc. now correctly drops
-`field=`/`value=` from the URL, instead of leaving them to linger as described below.
-**Not fixed by that change:** the Genre dropdown still doesn't visually reflect an
-active `field=genre&value=X` filter, and there's still no UI control to clear a
-fieldview filter while staying on the fieldview surface — both remain open below.
-
-**Found:** 2026-06-27, inbox capture.
-
-**Where:** Selecting a genre from an issue page correctly navigates to a filtered
-field-view (`/?surface=fieldview&field=genre&value=Comedy`). From there:
-- The Genre dropdown on that filtered view still shows "Genre" (not the active
-  value "Comedy"), so it doesn't visibly reflect the active filter.
-- Selecting a different tab changes the surface but leaves the genre filter and URL
-  value untouched underneath.
-- Selecting a different genre from the dropdown, then resetting via "Genre" in the
-  dropdown, does visually reset the displayed list — but the URL itself still says
-  `value=Comedy`.
-- Because of that stale URL, opening an issue/series from the (visually reset) list
-  and then pressing back restores the Comedy-filtered view, since back-navigation
-  re-reads the (never-actually-cleared) URL.
-
-**Impact:** No reliable way to fully clear a field-view genre filter via the UI once
-set — dropdown state, displayed list, and URL state can all disagree with each
-other simultaneously.
-
-**Not fixed.**
-
----
-
 ### BUG-013 — Scanner doesn't detect a same-mtime, different-size file change
 
 **Found:** 2026-06-24, v2.3 Item 7 build session (confirming ADMIN_SPEC.md §8's
