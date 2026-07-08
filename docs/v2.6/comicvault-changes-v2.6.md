@@ -1,13 +1,16 @@
 # ComicVault — v2.6: Build Plan
 
-> **Status: Item 1 handed to Code 2026-07-07 — not yet built.** `docs/v2.6/`
-> created 2026-07-06, alongside Item 1's handoff, per `ROADMAP.md`'s
-> established pattern (working folder created alongside implementation,
-> not ahead of it). This redesign was scoped visually in Claude Design
-> (canvas exploration + inline annotations), not through a written spec
-> pass — exact layout, colour, typography, and spacing values live in the
-> Design handoff itself, not duplicated here. This doc tracks scope
-> boundaries, decisions, and build status only.
+> **Status: Item 1 — ✅ complete as of 2026-07-08.** Handed to Code
+> 2026-07-07, built across Phases A/B/C1/C2a/C2b/C2c/D/E plus two
+> cross-cutting follow-ups (open-dropdown-panel styling, CoverCard
+> selection circle) — see each phase's own status note below for detail.
+> `docs/v2.6/` created 2026-07-06, alongside Item 1's handoff, per
+> `ROADMAP.md`'s established pattern (working folder created alongside
+> implementation, not ahead of it). This redesign was scoped visually in
+> Claude Design (canvas exploration + inline annotations), not through a
+> written spec pass — exact layout, colour, typography, and spacing
+> values live in the Design handoff itself, not duplicated here. This doc
+> tracks scope boundaries, decisions, and build status only.
 >
 > **How to use this document**
 > This is the ordered build queue for v2.6. Paste into a Claude Code
@@ -48,8 +51,8 @@ turns up.):**
 | Home | Strips unchanged | out of scope (unchanged) |
 | **Browse (All/Singles/Series/a custom tab's flat listing)** | Filter/sort bar restyled — visual only, every existing field/control kept. | D ✅ |
 | **CoverCard (Browse grid + Folder View — Home strips excluded, no selection feature there)** | Hover-reveal selection circle added, closing the one real gap found in a full Design-vs-implementation scan of `CoverCard.jsx` (read-state colours, badges, progress bar, hover-lift all already matched from Phase A). | ✅ (2026-07-08, cross-cutting, not tied to one lettered phase) |
-| Series detail | Blurred cover backdrop, issue-row treatment, tag/genre chips | E (renumbered from old "Phase D") |
-| Issue detail | Cover + action-button column, credits/summary layout | E (renumbered from old "Phase D") |
+| Series detail | Backdrop opacity bug fixed (was rendering full-strength, not the intended subtle wash); issue-row treatment, tag/genre chips, credits layout all already matched Design, confirmed via line-by-line comparison, not just assumed. | E ✅ |
+| Issue detail | New faint cover backdrop added (previously had none at all). Two-column layout, badges, credits, ratings, toggle buttons all already matched Design. | E ✅ |
 | Admin | Category → sub-item → content-pane IA restructure | C1 ✅ / C2a ✅ / C2b ✅ — complete |
 
 **Browse filter/sort bar — what's actually different (found in
@@ -216,13 +219,29 @@ phased across multiple sessions rather than one continuous build —
   see `v2.6/progress.md` for the full comparison-scan results (everything
   else in `CoverCard.jsx` already matched, Phase A's token remap having
   done a genuinely thorough job).
-- **Phase E — queued (renumbered from the old "Phase D").** Series/Issue
-  detail visual polish (backdrop, issue rows, credits layout) per the
-  design reference's `screens.jsx`.
+- **Phase E — ✅ built 2026-07-08.** Series/Issue detail visual polish.
+  Line-by-line comparison of Design's `screens.jsx` (`SeriesScreen`/
+  `IssueScreen`) and `elevation.css` tokens against the real
+  `style.css`/`app.js` found the scope was much narrower than the
+  original checklist framing implied — issue-row treatment, genre tag
+  chips, credits grid, rating stars, status/favourite toggle buttons were
+  all already matching (same pattern as the Browse/CoverCard scans
+  earlier this item). Two real, concrete gaps: (1) `.series-backdrop-img`
+  had `opacity: 1.5` (clamps to full strength — a bug, not a design
+  choice) instead of Design's intended `0.28` wash; (2) the Issue detail
+  page had no backdrop at all. Formalized `--blur-backdrop`/
+  `--backdrop-opacity`/`--backdrop-overlay` as real tokens (values read
+  directly from Design's `elevation.css`), fixed the Series bug, and
+  added a new faint 440px top-fading backdrop to `buildIssueDetail()`
+  matching Design's fainter/taller Issue-page variant. See
+  `v2.6/progress.md` for the full comparison and `DECISIONS.md` for the
+  one scope call made along the way (the backdrop doesn't extend behind
+  the static "← Back" button).
 
 **Status:** Handed to Code 2026-07-07. Phases A, B, C1, C2a, C2b, and D
 (plus its open-dropdown-panel follow-up and a small C2b follow-up polish)
-built and verified 2026-07-07; the CoverCard selection circle followed on
-2026-07-08 — the Admin IA restructure is complete, the Browse bar
-(including its open dropdowns) and CoverCard both now match the Design
-reference. Phase E not yet started.
+built and verified 2026-07-07; the CoverCard selection circle and Phase E
+followed on 2026-07-08 — **v2.6 Item 1 (Web UI Redesign) is now
+complete.** The Admin IA restructure, the Browse bar (including its open
+dropdowns), CoverCard, and Series/Issue detail all now match the Design
+reference.

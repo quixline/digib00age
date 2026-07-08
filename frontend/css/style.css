@@ -101,6 +101,13 @@
   --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.55);
   --shadow-toast: 0 4px 24px rgba(0, 0, 0, 0.5);
 
+  /* Backdrop recipe (v2.6 Item 1 Phase E) — series/issue detail cover
+     backdrops: image → blur → dark overlay → gradient fade. Same values
+     in both themes (Design's elevation.css doesn't override these for light). */
+  --blur-backdrop: 3px;
+  --backdrop-opacity: 0.28;
+  --backdrop-overlay: rgba(0, 0, 0, 0.45);
+
   /* Motion */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -1091,7 +1098,11 @@ select.filter-select:focus,
   min-height: 180px;
 }
 
-/* Blurred backdrop image — 20-30% opacity */
+/* Blurred backdrop image — v2.6 Item 1 Phase E: was hardcoded to
+   opacity:1.5 (clamps to 1.0 — full strength, not the subtle wash this
+   comment always said it should be) and hardcoded blur/overlay values
+   that happened to already match Design's tokens by coincidence — now
+   references them directly. */
 .series-backdrop {
   position: absolute;
   inset: 0;
@@ -1103,8 +1114,8 @@ select.filter-select:focus,
   height: 100%;
   object-fit: cover;
   object-position: center top;
-  opacity: 1.5;
-  filter: blur(3px);
+  opacity: var(--backdrop-opacity);
+  filter: blur(var(--blur-backdrop));
   transform: scale(1.08); /* prevent blur edges */
   display: block;
 }
@@ -1114,7 +1125,7 @@ select.filter-select:focus,
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: var(--backdrop-overlay);
   z-index: 1;
 }
 
@@ -1348,6 +1359,42 @@ select.filter-select:focus,
 }
 
 /* ── Issue detail page ───────────────────────────────────────────────────── */
+
+/* Faint cover backdrop (v2.6 Item 1 Phase E) — taller and much fainter
+   than the Series page's, fading via a gradient mask rather than a flat
+   overlay so it reads as barely-there texture, not a focal element.
+   Starts just below the always-visible "← Back" button (static markup in
+   issue.html, not built here) rather than behind it — a deliberate
+   simplification, not worth restructuring static markup for a few px. */
+#issueContent { position: relative; }
+.issue-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 440px;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+.issue-backdrop-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  opacity: 0.18;
+  display: block;
+}
+.issue-backdrop-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, var(--bg) 0%, var(--bg) 8%, transparent 55%, var(--bg) 100%);
+}
+.issue-content {
+  position: relative;
+  z-index: 1;
+}
+
 .issue-layout {
   display: grid;
   grid-template-columns: 200px 1fr;

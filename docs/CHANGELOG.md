@@ -15,6 +15,17 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-08** — Web UI Redesign Phase E built (v2.6 Item 1): Series/
+  Issue detail visual polish — **v2.6 Item 1 is now fully complete.** A
+  line-by-line comparison against Design's `SeriesScreen`/`IssueScreen`
+  found the scope was much smaller than assumed (issue-row treatment,
+  genre tags, credits grid, ratings already matched). Two real gaps
+  fixed: `.series-backdrop-img` had `opacity: 1.5` (a bug — clamps to
+  full strength, not the intended 0.28 wash) and the Issue detail page
+  had no backdrop at all (added a new faint 440px top-fading one).
+  Formalized `--blur-backdrop`/`--backdrop-opacity`/`--backdrop-overlay`
+  as real tokens. → `v2.6/progress.md` "Phase E built (Series/Issue detail
+  visual polish) — v2.6 Item 1 complete (2026-07-08)"
 - **2026-07-08** — Web UI Redesign: CoverCard selection circle (v2.6 Item
   1): full Design-vs-implementation scan (`CoverCard.jsx` and other
   remaining components pulled from the Design bundle) found one real gap

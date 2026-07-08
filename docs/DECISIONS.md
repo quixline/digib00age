@@ -4,6 +4,29 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### v2.6 Item 1 Phase E: Issue backdrop doesn't extend behind the "← Back" button
+
+**Decided:** 2026-07-08, while building the new Issue detail backdrop.
+
+**Why:** Design's `IssueScreen` renders the backdrop as the first element
+inside the page, with the back button and everything else sitting in a
+`position:relative; z-index:1` wrapper on top of it — so the backdrop
+visually extends behind the back button too. The real app's back button
+(`#backLink`) is static markup in `issue.html`, a DOM sibling *before*
+`#issueContent` (not something `buildIssueDetail()` builds, and not
+something any other Phase E work touched) — matching Design exactly here
+would mean restructuring `issue.html`'s static layout for a purely
+cosmetic few pixels of overlap, a different and riskier class of change
+than the contained `app.js`/`style.css` edits everything else in this
+phase used. Kept the backdrop scoped to `#issueContent` (started with
+`position: relative` on that container) — it starts just below the back
+button instead of behind it. Flagging this explicitly rather than either
+silently shipping the visual gap unmentioned or scope-creeping into static
+markup for a nicety nobody asked for.
+
+**Where:** `frontend/js/app.js` (`buildIssueDetail()`), `frontend/css/
+style.css` (`#issueContent`, `.issue-backdrop`).
+
 ### v2.6 Item 1 Phase D: kept native `<select>` filter dropdowns, didn't rebuild as Design's custom popup component
 
 **Decided:** 2026-07-07, while building Phase D (Browse filter/sort bar

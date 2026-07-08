@@ -1861,6 +1861,23 @@ async function initIssue() {
 function buildIssueDetail(data) {
   const page = document.createDocumentFragment();
 
+  // Faint cover backdrop (v2.6 Item 1 Phase E) — sits behind everything
+  // below via #issueContent's positioning context; the rest of this
+  // function's output goes into .issue-content (position:relative) so it
+  // stacks above it.
+  if (data.cover_path) {
+    const backdrop = el('div', 'issue-backdrop');
+    const bdImg     = el('img', 'issue-backdrop-img');
+    bdImg.src = data.cover_path;
+    bdImg.alt = '';
+    bdImg.setAttribute('aria-hidden', 'true');
+    backdrop.appendChild(bdImg);
+    backdrop.appendChild(el('div', 'issue-backdrop-fade'));
+    page.appendChild(backdrop);
+  }
+
+  const contentWrap = el('div', 'issue-content');
+
   // ── Two-column layout ──
   const layout = el('div', 'issue-layout');
 
@@ -1981,13 +1998,14 @@ function buildIssueDetail(data) {
   }
 
   layout.append(coverCol, metaCol);
-  page.appendChild(layout);
+  contentWrap.appendChild(layout);
 
   // ── Prev / Next navigation ──
   if (data.prev_issue_id || data.next_issue_id) {
-    page.appendChild(buildIssueNav(data));
+    contentWrap.appendChild(buildIssueNav(data));
   }
 
+  page.appendChild(contentWrap);
   return page;
 }
 

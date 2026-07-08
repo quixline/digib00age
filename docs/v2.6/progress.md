@@ -905,3 +905,89 @@ digib00age\selection-dot.PNG`).
   CoverCard, cross-cutting bullet in the phase list, status line) — logged
   as its own item since it doesn't map to a single lettered phase
   (Browse + Folder View, not tied to Phase D's filter-bar-only scope).
+
+## Session — 2026-07-08 — Phase E built (Series/Issue detail visual polish) — v2.6 Item 1 complete
+
+Tez said "kick off Phase E" — the last item on the build queue, described
+since it was first written as "blurred cover backdrop, issue-row
+treatment, tag/genre chips" (Series) and "Cover + action-button column,
+credits/summary layout" (Issue).
+
+- **Scanned before building, same discipline as the CoverCard work**: read
+  Design's actual `screens.jsx` (`SeriesScreen`/`IssueScreen`) — already
+  fetched earlier this session for other research — plus, newly this
+  session, `elevation.css` and `colors.css` (the actual token source,
+  never read directly before now; `--shadow-modal` was the only elevation
+  token previously confirmed). Compared every rule against the real
+  `style.css`/`app.js`.
+- **Confirmed already matching (no action needed) — this phase turned out
+  much smaller than the checklist framing implied, a third time this
+  session:** issue-row treatment (coloured left border per read-state,
+  tinted background for "reading", circular status button with matching
+  border/fill colours) — already present, matches Design's `issueRow()`/
+  `StatusButton` almost exactly. Genre tag chips, credits grid
+  (`grid-template-columns: auto 1fr`, same gap values), `.meta-section`'s
+  divider — `margin-top:20px; padding-top:16px; border-top:1px solid
+  var(--border)` is **literally identical** to Design's `Section`
+  component, not just close. Rating stars (already tuned per a prior
+  SPEC.md pass), status/favourite toggle buttons, `.cover-card.selected`'s
+  ring (uses the exact same formula as Design's `--ring-selected` token).
+  Series backdrop's blur (`3px`, exact token match) and dark overlay
+  (`rgba(0,0,0,0.45)`, exact token match) were also already correct —
+  hardcoded to the same literal values Design's tokens resolve to, just
+  not expressed as tokens yet.
+- **Two real, confirmed gaps:**
+  1. **A genuine bug**, not a missing feature: `.series-backdrop-img {
+     opacity: 1.5; }` — CSS clamps this to `1.0`, so the backdrop rendered
+     at full strength instead of Design's intended `0.28` subtle wash.
+     Probably the single biggest reason the series page read as "off"
+     relative to Design despite everything else already matching.
+  2. **The Issue detail page had no backdrop at all** — `buildIssueDetail()`
+     never built one. Design gives Issue its own variant: taller (440px),
+     much fainter (`opacity: 0.18` vs Series' `0.28`), fading via a
+     4-stop gradient mask rather than a flat dark overlay, so it reads as
+     barely-there texture behind the two-column layout rather than a
+     focal element.
+- **Built the fix:**
+  - Formalized `--blur-backdrop` (`3px`), `--backdrop-opacity` (`0.28`),
+    `--backdrop-overlay` (`rgba(0,0,0,0.45)`) as real `:root` tokens
+    (values copied directly from Design's `elevation.css`, identical
+    across both themes — Design doesn't override them for light).
+  - Series: swapped `.series-backdrop-img`'s `opacity`/`filter` and
+    `.series-hero-wrap::before`'s `background` to reference the new
+    tokens instead of the old hardcoded literals — fixes the opacity bug
+    and makes both backdrops (series + the new issue one) share one
+    source of truth.
+  - Issue: `buildIssueDetail()` (`app.js`) now prepends an `.issue-
+    backdrop` (image + a `linear-gradient(to bottom, var(--bg) 0%,
+    var(--bg) 8%, transparent 55%, var(--bg) 100%)` fade div) before
+    building its existing content, then wraps that existing content
+    (the two-column layout + prev/next nav, completely unchanged) in a
+    new `.issue-content` (`position:relative; z-index:1`) so it stacks
+    above the backdrop. Added `#issueContent { position: relative; }` so
+    the backdrop's `position:absolute` anchors correctly. No changes to
+    `issue.html`'s static markup.
+  - **Deliberate scope call, flagged rather than silently done or
+    scope-crept:** Design's backdrop extends behind the "← Back" button
+    too, but the real app's back button (`#backLink`) is static markup in
+    `issue.html`, a DOM sibling *before* `#issueContent` — not something
+    `buildIssueDetail()` builds. Restructuring static markup to move it
+    into the backdrop's stacking context wasn't worth it for a few pixels
+    of cosmetic overlap; the backdrop starts just below the back button
+    instead. Logged as its own `DECISIONS.md` entry.
+- **Verified manually**: opened a busy-cover series ("2000 AD") — backdrop
+  now visibly subtle/washed-out compared to before, cover art recognisable
+  as texture, not competing with the title/genre-tags text for attention.
+  Opened issue #1 of the same series — new faint backdrop visible behind
+  the top of the page (title art readable as a watermark), fading out by
+  roughly the credits section; two-column layout, badges, credits,
+  ratings, toggle buttons, prev/next nav all rendered exactly as before,
+  no regression from the new wrapper div. Repeated both checks in light
+  theme — backdrop reads correctly against the light background too, no
+  contrast issues introduced. No console errors on a fresh load.
+- Updated `comicvault-changes-v2.6.md` (checklist table rows for Series/
+  Issue detail, Phase E phase-list bullet, both status notes — including
+  the top-of-doc header, stale since the item was first handed off and
+  still saying "not yet built") — **v2.6 Item 1 (Web UI Redesign) is now
+  fully complete**, every phase A through E plus both cross-cutting
+  follow-ups built and verified.
