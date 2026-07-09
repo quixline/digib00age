@@ -1281,3 +1281,14 @@ already-running live server/DB, or read-only OS-level inspection.
   `docs/INDEX.md`'s active/authoritative table. No `BUGS.md`/`ROADMAP.md`/
   build-queue entries this session — triaging which findings to actually act
   on, and when, is a deliberately separate later decision.
+- **Packaged the methodology as a reusable skill**, `.claude/skills/
+  perf-diagnostics/`, at Tez's request before closing the session — a
+  future re-run (after a fix, or just to check for regressions) shouldn't
+  have to rediscover the gotchas this pass hit the hard way (the `localhost`
+  IPv6-fallback artifact, the cold-idle probe's cache-reuse mistake). The
+  skill folder holds the ground rules, known gotchas, phased methodology,
+  and the six actual working scripts from this session (plus a new
+  `0_find_targets.py` helper to refresh the hardcoded series/issue/tab IDs
+  those scripts target, since those will drift as the library changes).
+  `docs/PERFORMANCE.md` now points to the skill instead of expecting a
+  future session to re-derive the method from its own prose.

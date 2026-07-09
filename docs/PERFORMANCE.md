@@ -12,6 +12,13 @@ in this baseline pass changed application behavior — no code was edited, no
 fixes were applied. Deciding what (if anything) to fix, and when, is a
 separate triage step against `BUGS.md`/`ROADMAP.md`/a future build queue.
 
+**To re-run this baseline** (after a fix, or just to check for regressions),
+use the `perf-diagnostics` skill (`.claude/skills/perf-diagnostics/`) rather
+than re-deriving the methodology from §2 below — it packages the same
+ground rules, the gotchas this first pass hit and fixed (the `localhost`
+DNS artifact, the cold-idle-probe cache-reuse mistake), and the actual
+working scripts as reusable starting points.
+
 ---
 
 ## 1. Baseline — 2026-07-09
