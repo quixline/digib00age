@@ -94,7 +94,11 @@
           <option value="issues">Issues</option>
           <option value="pages" id="sortPagesOpt">Pages</option>
         </select>
+        <span class="menu-bar-divider"></span>
         <button class="sort-dir-btn" id="sortDirBtn" title="Toggle ascending/descending">&#8593;</button>
+        <span class="menu-bar-divider"></span>
+        <button class="view-toggle-btn" id="viewToggle" title="Toggle list/grid view">&#9783;</button>
+        <span class="menu-bar-divider"></span>
         <select class="filter-select" id="starRatingFilter" aria-label="Rated">
           <option value="">Rated</option>
           <option value="1">&#9733; 1</option>
@@ -103,6 +107,7 @@
           <option value="4">&#9733; 4</option>
           <option value="5">&#9733; 5</option>
         </select>
+        <span class="menu-bar-divider"></span>
         <button class="fav-filter-btn" id="favFilterBtn" title="Show favourites only">&#9733; Favourites</button>
         <span class="menu-bar-divider"></span>
 
@@ -116,25 +121,34 @@
           <option value="writer">Writer</option>
           <option value="format">Format</option>
         </select>
+        <span class="menu-bar-divider"></span>
 
         <!-- Secondary filters — shared by Flat browse and Folder View alike. -->
         <div class="browse-filters" id="browseFilters">
           <select class="filter-select" id="genreFilter"     aria-label="Genre"><option value="">Genre</option></select>
+          <span class="menu-bar-divider"></span>
           <select class="filter-select" id="formatFilter"    aria-label="Format"><option value="">Format</option></select>
+          <span class="menu-bar-divider"></span>
           <select class="filter-select" id="decadeFilter"    aria-label="Decade"><option value="">Decade</option></select>
+          <span class="menu-bar-divider"></span>
           <select class="filter-select" id="yearFilter"      aria-label="Year"><option value="">Year</option></select>
-          <select class="filter-select" id="publisherFilter" aria-label="Publisher"><option value="">Publisher</option></select>
+          <span class="menu-bar-divider"></span>
           <select class="filter-select" id="ratingFilter"    aria-label="Rating"><option value="">Rating</option></select>
+          <span class="menu-bar-divider"></span>
           <select class="filter-select" id="bwFilter"        aria-label="B&amp;W">
             <option value="">B&amp;W</option>
             <option value="yes">Yes</option>
             <option value="no">No</option>
           </select>
-          <button class="filter-clear" id="filterClear">Clear</button>
         </div>
 
         <div class="menu-bar-trailing">
-          <button class="view-toggle-btn" id="viewToggle" title="Toggle list/grid view">&#9783;</button>
+          <!-- Fieldview filter banner (BUG-015) — populated by renderFieldviewBanner() -->
+          <p class="fieldview-banner" id="fieldviewBanner" hidden></p>
+          <!-- Dropdown-filter Clear pill — same trailing slot as the fieldview
+               banner's own Clear link, so both entry points land in the same
+               place next to the count (Tez's tweak pass, 2026-07-09). -->
+          <button class="filter-clear" id="filterClear">Clear Filter</button>
           <span class="browse-count" id="browseCount"></span>
         </div>
        </div>
@@ -152,9 +166,6 @@
         <!-- ── BROWSE SURFACES (Series / Singles / All) ────────────────────── -->
         <div id="browseView" hidden>
 
-          <!-- Fieldview filter banner (BUG-015) — populated by renderFieldviewBanner() -->
-          <p class="fieldview-banner" id="fieldviewBanner" hidden></p>
-
           <!-- Cover grid -->
           <div class="cover-grid" id="coverGrid">
             <div class="loading-state">Loading library…</div>
@@ -167,7 +178,8 @@
         <!-- ── FOLDER VIEW (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9) -->
         <div id="folderView" hidden>
           <nav class="back-nav folder-view-nav">
-            <div class="folder-breadcrumb" id="folderBreadcrumb"></div>
+            <a href="/" class="btn-primary" id="folderBackBtn">&#x2190; Back</a>
+            <span class="folder-search-label" id="folderSearchLabel" hidden></span>
             <button class="btn-primary" id="folderMarkAllBtn">Mark all read</button>
           </nav>
           <div class="cover-grid" id="folderGrid">

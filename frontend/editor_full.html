@@ -17,7 +17,6 @@
         <img src="/static/images/lockup-dark.png" alt="digib00age" class="site-logo-img site-logo-img--light">
       </a>
       <span class="admin-page-label">Full Editor</span>
-      <button type="button" class="btn-admin-action" id="feSearchOnlineBtn">Search Online</button>
       <a href="/admin" class="settings-btn" title="Admin / Settings" aria-label="Settings">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="3"/>
@@ -29,6 +28,12 @@
   </header>
 
   <main class="container admin-main">
+    <div class="fe-toolbar-row">
+      <div class="fe-toolbar-group">
+        <button type="button" class="btn-admin-action" id="feSearchOnlineBtn">Search ComicVine</button>
+        <a href="https://www.goodreads.com" target="_blank" rel="noopener noreferrer" class="btn-admin-action">Search GoodReads</a>
+      </div>
+    </div>
     <div class="fe-layout">
 
       <!-- ── Column 1 — File Management + Queue ──────────────────────────── -->

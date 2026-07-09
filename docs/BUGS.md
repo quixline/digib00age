@@ -25,6 +25,14 @@ case didn't get visibly clobbered, and neither option worked.
 - The standalone Windows reader EXE built during V1 was never rebuilt or
   moved across into this V2 checkout — it isn't present/functional here.
 
+**Update 2026-07-09:** the "Read" button referenced above has been removed
+from `issue.html` entirely (Tez's UI tweak-pass call) — the
+`comicvault://read/{id}` link had no handler on a plain desktop browser, so
+it did nothing useful outside the Flutter app anyway. This doesn't fix or
+worsen this bug (there was never a working web reader either way) — it just
+means there's now no reader-related control anywhere in the web UI at all.
+See `SPEC.md` §11 and `DECISIONS.md`.
+
 **Impact:** No way to exercise or verify reading-progress behavior from a
 desktop/browser context without the Flutter app. Blocked one verification
 step for v2.5 Item 3 (confirming `server_kept` visually, beyond the

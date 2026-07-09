@@ -15,6 +15,20 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-09** — Post-redesign UI tweak pass (not a formal build-queue
+  item): header login/logout drift fixed on Issue/Series detail (missing
+  settings-cog markup); Folder View's breadcrumb replaced with a real "←
+  Back" button; Grid/List toggle relocated and "|" separators added
+  throughout the menu bar; Publisher filter dropdown removed (stays as a
+  Group by option); "Read" button removed from Issue detail
+  (`comicvault://` deep link, non-functional outside the Flutter app);
+  Series detail Genre tags fixed to be real links (parity with Issue
+  detail); Clear Filter pill unified in both look and position across the
+  dropdown-filter and fieldview-banner trigger paths; login popup
+  compacted with a new Cancel button; Full Editor's "Search Online"
+  renamed "Search ComicVine" plus a new "Search GoodReads" link, both
+  centred over the XML Editor column; Admin's Last Scan card trimmed to
+  date-only. Full detail in `v2.6/progress.md`.
 - **2026-07-08** — BUG-015 fixed: fieldview filter (genre tag/writer/artist/
   home-strip links) had no UI way to clear and showed no indication of what
   was filtering it. Genre dropdown "Clear" row (the initial proposal) only

@@ -492,8 +492,8 @@ body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
   flex-wrap: wrap;
 }
 
-/* Trailing group — view toggle + count, pushed to the right end of the bar
-   together (Design groups them, not just the count). */
+/* Trailing group — pushed to the right end of the bar. View toggle moved out
+   (now sits with sort-dir/Rated, Tez's tweak pass) — just the count here now. */
 .menu-bar-trailing {
   display: flex;
   align-items: center;
@@ -574,7 +574,13 @@ select.filter-select:focus,
   display: flex;
   flex-direction: column;
   gap: 1px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
 }
+.fd-panel::-webkit-scrollbar { width: 8px; }
+.fd-panel::-webkit-scrollbar-track { background: transparent; }
+.fd-panel::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: var(--radius-pill); }
+.fd-panel::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
 .fd-opt {
   padding: 7px 10px;
   border-radius: var(--radius-xs);
@@ -587,19 +593,29 @@ select.filter-select:focus,
 .fd-opt.selected { background: var(--accent-tint); color: var(--accent-text); font-weight: 700; }
 .fd-opt.selected:hover { background: var(--accent-tint); color: var(--accent-text); }
 .fd-opt-disabled { opacity: 0.4; cursor: default; pointer-events: none; }
-.filter-clear {
+/* Solid accent + on-accent text — same "active" look as the collapsed
+   sidebar's single-letter Library badges (.app-sidebar-lib-badge). Shared
+   by the dropdown-filter Clear button (.filter-clear, hidden by default —
+   JS toggles it via style.display) and the fieldview banner's Clear link
+   (.fieldview-banner-clear, always shown when appended) so both "you're
+   filtered, here's how to clear it" affordances look identical regardless
+   of which one put you there. */
+.filter-clear { display: none; }
+.filter-clear, .fieldview-banner-clear {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-2);
-  background: none;
+  color: var(--on-accent);
+  background: var(--accent);
   border: none;
-  padding: 5px 6px;
-  display: none;
+  border-radius: var(--radius-pill);
+  padding: 5px 12px;
   cursor: pointer;
   white-space: nowrap;
-  transition: color var(--dur) var(--ease);
+  text-decoration: none;
+  transition: background var(--dur) var(--ease);
 }
-.filter-clear:hover { color: var(--accent); }
+.fieldview-banner-clear { display: inline-block; }
+.filter-clear:hover, .fieldview-banner-clear:hover { background: var(--accent-hover); }
 
 /* ── Home strips ─────────────────────────────────────────────────────────── */
 .home-strip { padding: 18px 0 4px; }
@@ -966,11 +982,8 @@ select.filter-select:focus,
 
 
 /* ── Folder View (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9) ── */
-.folder-view-nav { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-.folder-breadcrumb { font-size: 14px; color: var(--text-2); }
-.folder-breadcrumb a { color: var(--text-2); text-decoration: none; }
-.folder-breadcrumb a:hover { color: var(--accent); }
-.folder-breadcrumb span { color: var(--text); font-weight: 600; }
+.folder-view-nav { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: var(--space-3); }
+.folder-search-label { font-size: 14px; color: var(--text-2); }
 
 .folder-card {
   background: var(--surface);
@@ -1204,20 +1217,17 @@ select.filter-select:focus,
   border-color: var(--accent);
   color: var(--accent);
 }
-/* BUG-015 — fieldview filter banner */
+/* BUG-015 — fieldview filter banner. Sits inline in .menu-bar-trailing,
+   before the count (moved 2026-07-09 to drop the duplicate title count that
+   used to open this banner's own text — the trailing count already shows
+   it once). */
 .fieldview-banner {
   font-size: 13px;
   color: var(--text-2);
-  margin-bottom: 14px;
+  white-space: nowrap;
+  margin: 0;
 }
-.fieldview-banner-clear {
-  color: var(--accent);
-  font-weight: 600;
-  text-decoration: none;
-}
-.fieldview-banner-clear:hover {
-  text-decoration: underline;
-}
+.fieldview-banner .fieldview-banner-clear { margin-left: 8px; }
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -1431,18 +1441,6 @@ select.filter-select:focus,
   flex-direction: column;
   gap: 8px;
 }
-.btn-read {
-  display: block;
-  text-align: center;
-  background: var(--accent);
-  color: #000;
-  font-size: 15px;
-  font-weight: 700;
-  padding: 10px 18px;
-  border-radius: 20px;
-  transition: background 0.15s;
-}
-.btn-read:hover { background: var(--accent-dim); }
 .btn-status-toggle {
   display: block;
   text-align: center;
@@ -2278,6 +2276,15 @@ select.filter-select:focus,
   justify-content: space-between;
   padding: 18px 20px 0;
 }
+
+/* Compact login/no-password modal — 60% narrower than the shared
+   .editor-modal width (which is sized for the much wider metadata editor),
+   with a consistent 10px horizontal inset replacing the base chrome's 20px. */
+.login-modal { max-width: 288px; }
+.login-modal .editor-modal-header,
+.login-modal .editor-actions { padding-left: 10px; padding-right: 10px; }
+.login-modal .editor-error { margin-left: 10px; margin-right: 10px; }
+.login-modal .editor-field { padding: 0 10px; }
 .editor-modal-title { font-size: 17px; font-weight: 700; }
 .log-viewer-content {
   margin: 16px 20px 20px;
@@ -2471,6 +2478,21 @@ select.filter-select:focus,
 }
 
 /* ── Full Editor toolbox (EDITOR_SPEC.md Section 5) ──────────────────────────── */
+/* Same column template as .fe-layout below (340px / 1fr / 368px), so
+   "Search Online" sits centred over the XML Editor column exactly, at any
+   viewport width — not an eyeballed margin guess. */
+.fe-toolbar-row {
+  display: grid;
+  grid-template-columns: 340px 1fr 368px;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+.fe-toolbar-group {
+  grid-column: 2;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
 .fe-layout {
   display: grid;
   grid-template-columns: 340px 1fr 368px;

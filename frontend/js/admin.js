@@ -247,9 +247,12 @@ function renderScanSection(scanState, missingCount, logStatus) {
   grid.innerHTML = '';
   logStatus = logStatus || {};
 
+  // Card shows the date only — scan_logs.append_last_scan_entry() writes the
+  // persisted fallback as "DD/MM/YYYY HH:MM — Duration: HH:MM:SS" (full detail
+  // for the Logs viewer); split() drops the time/duration for this summary card.
   const lastScan = scanState.finished_at
-    ? new Date(scanState.finished_at).toLocaleString()
-    : (scanState.last_scan_persisted || 'Never');
+    ? new Date(scanState.finished_at).toLocaleDateString()
+    : (scanState.last_scan_persisted ? scanState.last_scan_persisted.split(' ')[0] : 'Never');
 
   // Scan Now card — first
   const scanCard = document.createElement('div');

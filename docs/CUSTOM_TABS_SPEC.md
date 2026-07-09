@@ -224,6 +224,7 @@ layout.
 | 2026-06-23 | Built the above same day: `get_tab_folder_contents()` (`library.py`) now returns a `cover_path` per subfolder (random choice over issue ids already collected in its single pass); `buildFolderCard()` (`app.js`) renders it image-on-top/info-below (new `.folder-card.has-cover` CSS), falling back to the 📁 icon on no-cover or image load error. | Implementation session 2026-06-23; see `progress.md`. |
 | 2026-06-30 | Added §10 Favourites Tab (v2.4 Item 4) — new `basis_type` column (`'folder'`/`'favorites'`), library-wide favourites filtering reusing the existing flat-tab render path and client-side filter bar, dedicated "Add Favourites Tab" one-click control, `folder_path = ""` convention (no nullable-column migration), `view_mode` locked to `'flat'`, server-side guards rejecting Folder View endpoints/edits on favourites-basis rows, live-removal-on-unfavourite fix scoped to the shared toggle handler (benefits the existing All-tab filter too), and BUG-017 (All-tab Favourites filter missing favourited issues inside series) bundled into the same build. | Scoping session 2026-06-30 — `comicvault-changes-v2.4.md` Item 4; code read directly (`models.py`, `library.py`, `path_utils.py`, `admin.py`, `app.js`) before design decisions were made. |
 | 2026-07-07 | §5.2's nav bar moved from a top tab bar to a left sidebar ("Libraries" section, UI copy only). `loadCustomTabsNav()` (`app.js`) now renders into `#sidebarLibraries` instead of appending `.surface-btn`s to `.surface-nav`, and runs on `series.html`/`issue.html` too (not just the library page) so the Libraries list is always visible. Ordering and the `GET /nav/config` data source are unchanged. | v2.6 Item 1 Phase B (left sidebar nav) — see `docs/v2.6/progress.md`. |
+| 2026-07-09 | §9.6's Folder View breadcrumb (`renderFolderBreadcrumb()`) removed, replaced by a "← Back" button using the same real-history pattern as Series/Issue's back links; search-mode label split out into its own `#folderSearchLabel` element. | Tez's post-redesign UI tweak pass, now that `BUG-014` made `history.back()` reliable app-wide — see `docs/v2.6/progress.md` and `DECISIONS.md`. |
 
 ---
 
@@ -277,10 +278,12 @@ one level down.
 **Navigation uses real browser history**, via the surface convention
 `?surface=tab-{id}&path=<relative-path>` (a deliberate explicit `history.pushState`
 per drill-down, paired with one `popstate` listener — this SPA never does a real page
-load on a surface switch, unlike the simpler `history.back()`-only pattern Issue/
-Series back-links use, which is enough for them since they only ever need to go up
-one level). Back/forward/refresh/bookmark/share-link all land on the exact folder
-level expected. Breadcrumbs derive from the URL's `path` param.
+load on a surface switch). Back/forward/refresh/bookmark/share-link all land on the
+exact folder level expected.
+
+**On-page back control changed 2026-07-09:** the drill-down navigation above (and
+its per-level `pushState` entries) is unchanged, but the visible "go back" UI is
+not a breadcrumb anymore — see the note at the end of §9.6.
 
 ### 9.3 Folder View — Search mode
 
@@ -320,7 +323,16 @@ matching what the folder's displayed issue count represents.
   generalised with non-2000AD-specific labels).
 - `path`-based history wiring (`pushFolderViewUrl()`, `goToFolderPath()`, one
   `popstate` listener).
-- Breadcrumb rendering from the active path (`renderFolderBreadcrumb()`).
+- ~~Breadcrumb rendering from the active path (`renderFolderBreadcrumb()`).~~
+  **Removed 2026-07-09** — `renderFolderBreadcrumb()` deleted along with the
+  `#folderBreadcrumb` element. Replaced by a real "← Back" button (`#folderBackBtn`),
+  the same `window.history.back()`-when-possible / `href="/"`-fallback pattern
+  Series/Issue's own back links use (`BUG-014`'s fix). Trades the breadcrumb's
+  jump-to-any-ancestor-level shortcut for consistency with the rest of the app —
+  Tez's explicit call once BUG-014 made `history.back()` reliable app-wide; see
+  `DECISIONS.md`. The search-mode label that used to render into the breadcrumb
+  element (`"Search results for \"…\""`) now has its own dedicated element,
+  `#folderSearchLabel`, next to the Back button.
 - Search-mode toggle wired into the existing inline search bar
   (`startFolderViewSearch()` / `clearFolderViewSearch()`), scoped to surfaces where
   `isFolderViewTab(activeSurface)` is true.

@@ -356,7 +356,6 @@ let tabLibraryCache = {};       // custom tab id (string) -> /api/library?tab_id
 let activeSurface   = 'home';   // home | series | singles | all
 let activeStatus    = '';       // '' | unread | reading | read
 let activeGenre     = '';
-let activePublisher = '';
 let activeFormat    = '';
 let activeDecade    = '';
 let activeYear      = '';
@@ -971,14 +970,12 @@ async function populateFilterDropdowns() {
   };
 
   const genres     = [...new Set(allLibrary.flatMap(s => s.genres  || []))].sort();
-  const publishers = [...new Set(allLibrary.map(s => s.publisher).filter(Boolean))].sort();
   const years      = [...new Set(allLibrary.map(s => s.year).filter(Boolean))].sort((a,b) => b-a);
   const decades    = [...new Set(years.map(y => Math.floor(y/10)*10))].sort((a,b) => b-a);
   const formats    = [...new Set(allLibrary.flatMap(s => s.formats  || []))].sort();
   const ratings    = [...new Set(allLibrary.flatMap(s => s.age_ratings || []))].sort();
 
   addOpts('genreFilter',     genres,     null);
-  addOpts('publisherFilter', publishers, null);
   addOpts('yearFilter',      years,      null);
   addOpts('decadeFilter',    decades,    d => `${d}s`);
   addOpts('formatFilter',    formats,    null);
@@ -1036,7 +1033,6 @@ function getFilteredLibrary() {
 
   // Dropdowns
   if (activeGenre)     pool = pool.filter(s => (s.genres     || []).includes(activeGenre));
-  if (activePublisher) pool = pool.filter(s => s.publisher === activePublisher);
   if (activeFormat)    pool = pool.filter(s => (s.formats    || []).includes(activeFormat));
   if (activeRating)    pool = pool.filter(s => (s.age_ratings|| []).includes(activeRating));
   if (activeDecade)    pool = pool.filter(s => s.year && Math.floor(s.year/10)*10 === parseInt(activeDecade));
@@ -1073,7 +1069,7 @@ function sortComparator(a, b) {
 // BUG-015: deliberately blind to viewField/viewFieldValue (fieldview scoping)
 // — see clearAllFilters()'s matching comment for why.
 function hasActiveFilters() {
-  return activeSearch || activeStatus || activeGenre || activePublisher ||
+  return activeSearch || activeStatus || activeGenre ||
     activeFormat || activeDecade ||
     activeYear || activeRating || activeBW || activeStars || activeFavorites;
 }
@@ -1088,11 +1084,11 @@ function clearAllFilters() {
   // still correctly clears a secondary dropdown filter (e.g. Format) layered
   // on top of a fieldview while leaving the fieldview scoping itself intact
   // — that's deliberate, not an oversight.
-  activeStatus = activeGenre = activePublisher =
+  activeStatus = activeGenre =
     activeFormat = activeDecade = activeYear = activeRating = activeBW = activeSearch = activeStars = '';
   activeFavorites = false;
 
-  ['genreFilter','publisherFilter',
+  ['genreFilter',
    'formatFilter','decadeFilter','yearFilter','ratingFilter','bwFilter','starRatingFilter'].forEach(id => {
     const el_ = document.getElementById(id);
     if (el_) { el_.value = ''; el_.classList.remove('active'); }
@@ -1122,7 +1118,7 @@ function renderBrowse() {
 // hides it when activeSurface isn't 'fieldview'. Clear link is a real
 // navigation (not a JS state reset) — see series-filter-banner precedent
 // (BUG-010) and the reasoning in DECISIONS.md for why that matters here.
-function renderFieldviewBanner(displayCount) {
+function renderFieldviewBanner() {
   const banner = document.getElementById('fieldviewBanner');
   if (!banner) return;
   if (activeSurface !== 'fieldview' || !viewField || !viewFieldValue) {
@@ -1132,8 +1128,8 @@ function renderFieldviewBanner(displayCount) {
   }
   const fieldLabel   = FIELDVIEW_LABELS[viewField] || viewField;
   const valueDisplay = fieldviewValueDisplay(viewField, viewFieldValue, viewFieldLabel);
-  banner.textContent = `${displayCount.toLocaleString()} Titles — ${fieldLabel}: ${valueDisplay} `;
-  const clearLink = el('a', 'fieldview-banner-clear', 'Clear filter');
+  banner.textContent = `${fieldLabel}: ${valueDisplay} `;
+  const clearLink = el('a', 'fieldview-banner-clear', 'Clear Filter');
   clearLink.href = '/?surface=all';
   banner.appendChild(clearLink);
   banner.hidden = false;
@@ -1162,7 +1158,7 @@ function _renderBrowsePage() {
   countEl.textContent = suffix
     ? `${displayCount.toLocaleString()} ${suffix}`
     : displayCount.toLocaleString();
-  renderFieldviewBanner(displayCount);
+  renderFieldviewBanner();
   clearBtn.style.display = hasActiveFilters() ? 'inline-block' : 'none';
 
   grid.innerHTML = '';
@@ -1409,7 +1405,6 @@ function bindFilterEvents() {
   };
 
   bindSelect('genreFilter',     v => activeGenre     = v);
-  bindSelect('publisherFilter', v => activePublisher = v);
   bindSelect('formatFilter',    v => activeFormat    = v);
   bindSelect('decadeFilter',    v => activeDecade    = v);
   bindSelect('yearFilter',      v => activeYear      = v);
@@ -1497,9 +1492,10 @@ async function renderFolderView(tabId, path) {
   const grid = document.getElementById('folderGrid');
   grid.innerHTML = '<div class="loading-state">Loading…</div>';
   document.getElementById('folderMarkAllBtn').hidden = false;
+  document.getElementById('folderSearchLabel').hidden = true;
 
-  // Secondary filter dropdowns (genre/format/decade/year/publisher/rating/
-  // B&W) are global across the whole library — populate them here too, since
+  // Secondary filter dropdowns (genre/format/decade/year/rating/B&W) are
+  // global across the whole library — populate them here too, since
   // Folder View can be the first surface a session ever loads.
   if (!allLibrary.length) {
     try { allLibrary = await apiFetch('/library'); } catch (_) { /* dropdowns just stay empty */ }
@@ -1509,7 +1505,15 @@ async function renderFolderView(tabId, path) {
     filtersReady = true;
   }
 
-  renderFolderBreadcrumb(tabId, path);
+  // Real browser history, not a guessed destination — same pattern as the
+  // Series/Issue "← Back" buttons (BUG-014 fix).
+  const folderBackBtn = document.getElementById('folderBackBtn');
+  folderBackBtn.onclick = (e) => {
+    if (window.history.length > 1) {
+      e.preventDefault();
+      window.history.back();
+    }
+  };
 
   const cacheKey = `${tabId}:${path}`;
   let data;
@@ -1541,7 +1545,6 @@ async function renderFolderView(tabId, path) {
   // file cards only; folders have no precomputed per-field aggregate to test
   // against, so they stay navigable regardless of these filters.
   if (activeGenre)     files = files.filter(f => (f.genres || []).includes(activeGenre));
-  if (activePublisher) files = files.filter(f => f.publisher === activePublisher);
   if (activeFormat)    files = files.filter(f => f.format === activeFormat);
   if (activeRating)    files = files.filter(f => f.age_rating === activeRating);
   if (activeDecade)    files = files.filter(f => f.year && Math.floor(f.year / 10) * 10 === parseInt(activeDecade));
@@ -1567,33 +1570,6 @@ async function renderFolderView(tabId, path) {
   }
 
   document.getElementById('folderMarkAllBtn').onclick = () => markFolderViewRead(tabId, path);
-}
-
-function renderFolderBreadcrumb(tabId, path) {
-  const breadcrumb = document.getElementById('folderBreadcrumb');
-  breadcrumb.innerHTML = '';
-
-  const rootLink = el('a', '', 'Root');
-  rootLink.href = '#';
-  rootLink.onclick = (e) => { e.preventDefault(); goToFolderPath(tabId, ''); };
-  breadcrumb.appendChild(rootLink);
-
-  const parts = path.split('/').filter(Boolean);
-  let accumulated = '';
-  parts.forEach((part, index) => {
-    accumulated += (index === 0 ? '' : '/') + part;
-    breadcrumb.appendChild(document.createTextNode(' / '));
-    const isLast = index === parts.length - 1;
-    if (isLast) {
-      breadcrumb.appendChild(el('span', '', part));
-    } else {
-      const link = el('a', '', part);
-      link.href = '#';
-      const target = accumulated;
-      link.onclick = (e) => { e.preventDefault(); goToFolderPath(tabId, target); };
-      breadcrumb.appendChild(link);
-    }
-  });
 }
 
 function buildFolderCard(tabId, currentPath, folder) {
@@ -1686,7 +1662,9 @@ async function startFolderViewSearch(tabId, q) {
     folderViewSearchActive = true;
   }
   document.getElementById('folderMarkAllBtn').hidden = true;
-  document.getElementById('folderBreadcrumb').textContent = `Search results for "${q}"`;
+  const searchLabel = document.getElementById('folderSearchLabel');
+  searchLabel.textContent = `Search results for "${q}"`;
+  searchLabel.hidden = false;
 
   const resultsGrid = document.getElementById('folderGrid');
   resultsGrid.innerHTML = '<div class="loading-state">Loading…</div>';
@@ -1792,10 +1770,15 @@ function buildSeriesHeader(data) {
   const pubParts = [data.publisher, data.year].filter(Boolean);
   if (pubParts.length) hero.appendChild(el('p', 'series-pub', pubParts.join(' · ')));
 
-  // Genre tags
+  // Genre tags — each links to a filtered list of every issue with that
+  // genre (same fieldview plumbing as the Issue detail page's genre tags).
   if (data.genres && data.genres.length) {
     const tags = el('div', 'genre-tags');
-    for (const g of data.genres) tags.appendChild(el('span', 'genre-tag', g));
+    for (const g of data.genres) {
+      const link = el('a', 'genre-tag', g);
+      link.href = `/?surface=fieldview&field=genre&value=${encodeURIComponent(g)}`;
+      tags.appendChild(link);
+    }
     hero.appendChild(tags);
   }
 
@@ -2010,10 +1993,6 @@ function buildIssueDetail(data) {
   coverCol.appendChild(img);
 
   const actions = el('div', 'issue-actions');
-  const readBtn = el('a', 'btn-read', 'Read');
-  readBtn.href = `comicvault://read/${data.id}`;
-  readBtn.title = 'Open in ComicVault app';
-  actions.appendChild(readBtn);
   actions.appendChild(buildStatusToggle(data));
   actions.appendChild(buildFavoriteToggle(data));
   actions.appendChild(buildRatingControl(data));

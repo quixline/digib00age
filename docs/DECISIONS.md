@@ -1779,3 +1779,79 @@ that endpoint already has DB access and this avoids a second round-trip on
 every library page load.
 **Where:** `frontend/js/app.js` (credit links, `stripViewAllHref()`),
 `backend/routers/home.py` (`_resolve_added_strip()`).
+
+### Folder View "← Back" button replaces the Root/segment breadcrumb
+**Decided:** 2026-07-09, v2.6 UI tweak-pass session — Tez's explicit call.
+**Why:** Folder View's breadcrumb (`Root / 1981 / …`) let you jump directly
+to any ancestor level, which a single "← Back" button can't do — only one
+step at a time. Tez asked for the trade anyway, specifically because
+`BUG-014`'s fix (2026-07-08) made `window.history.back()` reliable app-wide;
+before that fix, a simple back button risked landing on the wrong place,
+which is presumably why Folder View had a breadcrumb instead of the same
+back-button pattern Series/Issue already used. Reusing that exact pattern
+(`history.back()` when possible, `href="/"` fallback) also means the
+underlying `pushState`-per-folder-level history is untouched — browser back/
+forward, refresh, and bookmarks still land on the right level; only the
+on-page control changed.
+**Where:** `frontend/js/app.js` (`renderFolderBreadcrumb()` removed,
+`renderFolderView()`), `frontend/index.html` (`#folderBackBtn`,
+`#folderSearchLabel`), `frontend/css/style.css`, `CUSTOM_TABS_SPEC.md` §9.6.
+
+### Publisher filter dropdown removed from Browse filters, kept as a Group By option
+**Decided:** 2026-07-09, v2.6 UI tweak-pass session — Tez's explicit call.
+**Why:** Tez asked to remove the Publisher dropdown from the secondary
+filters row specifically (not Group By, a separate control that also lists
+Publisher). Required removing every reference to `activePublisher` (pool
+filter, Folder View filter, `hasActiveFilters()`, `clearAllFilters()`,
+`bindSelect()`) rather than just the `<select>` markup — `populateFilterDropdowns()`'s
+`addOpts()` helper has no null-guard on a missing element, so leaving the
+population call in place would have thrown on every page load and silently
+broken every *other* filter dropdown too, not just Publisher.
+**Where:** `frontend/index.html`, `frontend/js/app.js`, `MENU_BAR_SPEC.md` §2.7.
+
+### "Read" button removed from Issue detail
+**Decided:** 2026-07-09, v2.6 UI tweak-pass session — Tez's explicit call.
+**Why:** The button deep-linked via `comicvault://read/{id}`, a custom URL
+scheme only the Flutter app registers a handler for. On a plain desktop
+browser it did nothing — there's no web reader (`BUG-021`, `SPEC.md` §11,
+by design). Removing it doesn't fix or worsen `BUG-021`; it just removes a
+non-functional-outside-the-Flutter-app affordance from the page it was
+confusingly sitting on. `buildStatusToggle()`'s "Mark as Read" button is a
+separate, unrelated control and was not touched.
+**Where:** `frontend/js/app.js` (`buildIssueDetail()`), `frontend/css/style.css`
+(`.btn-read` removed), `SPEC.md` §11, `BUGS.md` BUG-021.
+
+### Clear Filter pill unified across both trigger paths
+**Decided:** 2026-07-09, v2.6 UI tweak-pass session, after two rounds of
+back-and-forth with Tez pointing out the two paths still looked/sat
+differently.
+**Why:** Two independent systems both surface a "you're filtered, clear it"
+affordance — the dropdown-filter `#filterClear` button and the fieldview
+banner's own `.fieldview-banner-clear` link (reached via a Genre/Writer/
+Artist link on an issue/series page). They'd drifted to different visual
+treatments and different positions. Rather than pick one "correct" version
+and special-case the other, gave both elements one shared CSS rule (solid
+`var(--accent)` background, `var(--on-accent)` text — matching the collapsed
+sidebar's single-letter Library badges, which Tez identified as the
+reference "active" look) and moved `#filterClear` out of `#browseFilters`
+into `.menu-bar-trailing`, the same slot the fieldview banner already used.
+Deliberately did **not** add a "Field: Value" text label for the dropdown
+case to match the fieldview banner's full layout — dropdown filters can be
+several at once (Genre + Format + B&W simultaneously), and there's no single
+"Field: Value" that unambiguously represents that combination the way
+fieldview's always-exactly-one-field/value pair does. Position and pill
+styling were the concrete, repeatedly-flagged complaint; the label text
+wasn't asked for beyond the position/colour fix.
+**Where:** `frontend/index.html`, `frontend/css/style.css`,
+`frontend/js/app.js` (`renderFieldviewBanner()`), `MENU_BAR_SPEC.md` §2.7.
+
+### Login/no-password modal narrowed via `.login-modal`, not the shared `.editor-modal`
+**Decided:** 2026-07-09, v2.6 UI tweak-pass session.
+**Why:** `.editor-modal` is shared by the login popup, the "no password set"
+dialog, and the much larger Editor Basic/Full metadata-editor modals. Tez
+asked to shrink the login popup by 60% with a tighter 10px inset — scoped
+every change to `.login-modal` (already present on both the login popup and
+the no-password dialog, applied alongside `.editor-modal`) so the Basic/Full
+Editor modals are completely unaffected.
+**Where:** `frontend/css/style.css` (`.login-modal`), `frontend/login_popup.html`
+(`#loginCancelBtn`), `frontend/js/auth.js` (`hideLoginPopup()`), `ADMIN_SPEC.md` §7.1.2.

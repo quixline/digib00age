@@ -432,7 +432,12 @@ These ComicInfo.xml fields are intentionally not stored:
 **Files:** `frontend/index.html`, `series.html`, `issue.html`, `admin.html`
 **Responsive:** Yes — works on desktop browser and mobile (phone/tablet)
 **Note:** The web UI covers browsing and issue detail. The reader is the Flutter app (Phase 5).
-`reader.html` is NOT built — the Read button in `issue.html` deep-links into the Flutter app.
+`reader.html` is NOT built. `issue.html` originally had a "Read" button deep-linking
+into the Flutter app via `comicvault://read/{id}`; **removed 2026-07-09** (v2.6
+UI tweak pass — see `DECISIONS.md`) since the custom URL scheme has no handler on a
+plain desktop browser, so the button did nothing useful outside the Flutter app
+itself. There is now no reader trigger anywhere in the web UI — ties into `BUGS.md`
+BUG-021.
 
 ### Library home (`/`)
 - Top strip: "Continue reading" — issues with status="reading"
@@ -457,7 +462,8 @@ These ComicInfo.xml fields are intentionally not stored:
 - Credits block: writer, penciller, inker, colorist, letterer, cover artist
 - Characters list, teams, story arc
 - Age rating
-- **"Read" button** → deep-links to Flutter app via custom URL scheme: `comicvault://read/{id}`
+- ~~**"Read" button** → deep-links to Flutter app via custom URL scheme: `comicvault://read/{id}`~~
+  **Removed 2026-07-09** — see §11's note above and `DECISIONS.md`.
 - Mark read / unread toggle
 
 #### Admin page (/admin)
@@ -743,7 +749,11 @@ User can also switch manually in Settings.
 - Recently opened local files listed on Library screen when in local mode
 
 ### Deep link integration with web UI
-The web UI's Read button on `issue.html` fires:
+**Web-UI side removed 2026-07-09** — `issue.html`'s "Read" button (the only web
+trigger for this) was removed since the scheme has no handler on a plain desktop
+browser (see `DECISIONS.md`, `BUGS.md` BUG-021). The scheme itself is unaffected —
+this section documents the Flutter app's own registration, which nothing in this
+build session touched:
 ```
 comicvault://read/{issue_id}
 ```

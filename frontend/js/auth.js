@@ -22,6 +22,7 @@ function ensureLoginPopupLoaded() {
 
 function wireLoginChrome() {
   document.getElementById('loginForm').addEventListener('submit', onLoginSubmit);
+  document.getElementById('loginCancelBtn').addEventListener('click', hideLoginPopup);
 }
 
 async function onLoginSubmit(e) {
@@ -62,6 +63,10 @@ function hideLoginPopup() {
   popupShowing = false;
   const overlay = document.getElementById('loginOverlay');
   if (overlay) overlay.hidden = true;
+  const passwordInput = document.getElementById('login-password');
+  if (passwordInput) passwordInput.value = '';
+  const errorBox = document.getElementById('loginError');
+  if (errorBox) { errorBox.hidden = true; errorBox.textContent = ''; }
 }
 
 const PROTECTED_PATHS = ['/admin', '/editor'];

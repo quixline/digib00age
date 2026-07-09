@@ -67,7 +67,9 @@ sit alongside the new controls consistently.
 ### 2.5 View Toggle (Grid / List)
 
 The existing grid/list toggle (`SPEC.md` §20.5). No functional change — moved into
-the menu bar row for visual consistency.
+the menu bar row for visual consistency; **relocated again 2026-07-09** from the
+trailing group (next to the title count) to sit right after the sort ascend/
+descend toggle, per Tez's tweak-pass direction — see Change Log.
 
 ### 2.6 Status Pills — removed (v2.6 Item 1 Phase B, 2026-07-07)
 
@@ -86,27 +88,46 @@ an unintended extra row. They're still tied to the same browse-surface visibilit
 the menu bar (shown whenever a Flat browse surface is active, hidden on Folder View
 and Home).~~
 
-### 2.7 Secondary Filters (Genre / Format / Decade / Year / Publisher / Rating / B&W)
+### 2.7 Secondary Filters (Genre / Format / Decade / Year / Rating / B&W)
 *(extended to Folder View — V2.3 post-test fixes, additional step alongside Fix 1,
 2026-06-26)*
 
-The secondary filter dropdowns plus the title/item count and Clear button
-(`#browseFilters` / `#browseCount`) render in the same single menu-bar row as the
+**Publisher removed from this row 2026-07-09** — Tez's tweak-pass call; Publisher
+stays available as a `#groupBySelect` grouping option, just not as its own filter
+dropdown. See Change Log and `DECISIONS.md`.
+
+The secondary filter dropdowns render in the same single menu-bar row as the
 sort/rated/fav/view-toggle controls — previously a separate `.browse-controls` row
 below the menu bar, now merged into one row per Tez's direction ("the whole row
 needs to be in line with the items above and below"). **Grouping (`#groupBySelect`)
 is the one control that stays Flat-View-only** — Folder View already groups by
 directory structure, so a second grouping mechanism doesn't apply there.
 
-These filters now also apply to Folder View's flat file cards (folders themselves
+**Clear button relocated 2026-07-09** — `#filterClear` no longer lives inside
+`#browseFilters`; it now sits in the trailing group (`.menu-bar-trailing`), right
+before `#browseCount`, the same slot the fieldview banner's own "Clear filter" link
+occupies (`renderFieldviewBanner()`, `BUG-015`). Both now share one CSS treatment
+(solid accent pill, matching the sidebar's collapsed Library letter-badges) so the
+"you're filtered, here's how to clear it" affordance looks and sits identically
+regardless of whether the active filter came from a dropdown or a Genre/Writer/
+Artist link on an issue/series page. See `DECISIONS.md`.
+
+These filters also apply to Folder View's flat file cards (folders themselves
 have no per-field aggregate to filter against, so they stay navigable regardless of
 filter state) — closing the gap this spec's §1 framing originally called out.
-`renderFolderView()` filters `files` by `genres`/`format`/`age_rating`/`year`/
-`publisher`/`black_and_white` using the same predicates Flat View uses, just against
-singular issue fields instead of a series aggregate's plural fields. The dropdown
-options are populated from a global `/library` fetch the first time any browse
-surface (flat or folder) loads — entering directly on a folder tab no longer leaves
-the dropdowns empty.
+`renderFolderView()` filters `files` by `genres`/`format`/`age_rating`/`year`
+using the same predicates Flat View uses, just against singular issue fields
+instead of a series aggregate's plural fields (`publisher` filtering dropped from
+this list 2026-07-09 alongside the dropdown's removal). The dropdown options are
+populated from a global `/library` fetch the first time any browse surface (flat or
+folder) loads — entering directly on a folder tab no longer leaves the dropdowns
+empty.
+
+**Vertical divider separators (`.menu-bar-divider`) extended 2026-07-09** — a
+hairline divider now sits between every control across the whole row (sort dropdown,
+ascend/descend, view toggle, Rated, Favourites, Group by, and each of the six
+secondary filters), not just the one divider that previously sat between
+Favourites and Group by.
 
 ---
 
@@ -145,3 +166,4 @@ The menu bar also does not appear on the Admin page or the Full Editor.
 | 2026-06-23 | Built. Folder cards in Folder View are not individually re-sorted by the sort dropdown (only flat file cards are) — most criteria don't map onto a folder aggregate the way they do a series aggregate. | Scope decision made during build rather than left unspecified; see `DECISIONS.md`. |
 | 2026-06-26 | Status pills moved from a separate `.browse-controls` row into the site header (§2.6); secondary filters + item count merged into the single menu-bar row, with `#groupBySelect` kept Flat-View-only (§2.7); secondary filters extended to Folder View's flat file cards, closing this spec's original Folder-View-parity gap. | Post-test fix pass (`docs/2.3-fixes.md` Fix 1) plus an additional step raised mid-session — see `docs/progress.md`. |
 | 2026-07-07 | §2.6 Status Pills removed entirely — no per-surface status-pill row anywhere, on any surface. Read-status filtering (`activeStatus`) now only exists as the left sidebar's Unread/Reading/Read shortcut, which always navigates to the All surface first. Clicking it from Series/Singles/a custom tab no longer filters that surface in place. | v2.6 Item 1 Phase B (left sidebar nav) — matches the approved Claude Design reference exactly, not a gap being filled; see `docs/v2.6/progress.md`. |
+| 2026-07-09 | Publisher filter dropdown removed from §2.7 (stays as a Group by option only); Grid/List toggle (§2.5) relocated from the trailing count group to sit with sort ascend/descend + Rated; vertical divider separators extended between every control in the row; Clear button (§2.7) relocated from `#browseFilters` into the trailing group next to the title count and unified visually with the fieldview banner's own Clear link. | Tez's post-redesign UI tweak pass — see `docs/v2.6/progress.md` and `DECISIONS.md`. |

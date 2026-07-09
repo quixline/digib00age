@@ -1091,3 +1091,122 @@ credits/summary layout" (Issue).
   the admin Delete button, asked Tez to click it manually. Full account in
   `BUG-015`'s entry in `archive/bugs-fixed-archive.md`.
 - `docs/BUGS.md` updated — BUG-015 moved to `archive/bugs-fixed-archive.md`.
+
+## Session — 2026-07-09 — Post-redesign UI tweak pass
+
+Not a formal v2.6 build-queue item — Tez went through the live web app page by
+page, flagging spacing/positioning/consistency issues and a few small feature
+asks against the (already-complete) redesign. Verified live throughout by Tez
+against the running dev server on `:9424` (a Code-managed preview server
+couldn't be started — the port was already bound by Tez's own tray-app
+instance pointed at the real library, so all verification this session was
+Tez's own manual refresh-and-check, not a Claude Code browser session).
+
+- **Header login/logout drift (`issue.html`, `series.html`):** both pages were
+  missing the settings-cog `<a class="settings-btn">` markup index.html has —
+  the cog's `margin-left: auto` is what pushes itself *and* the Logout button
+  after it to the header's right edge; without it, Logout just sat right
+  after the logo. Added the missing markup to both pages. (`guide.html` has
+  the same gap but Tez confirmed it isn't visibly broken there — left alone.)
+- **2000 AD "Mark all read" spacing:** `.folder-view-nav` had no bottom
+  margin, so the button/breadcrumb row butted straight up against the cover
+  grid below with zero gap — unlike Flat View's `.menu-bar`, which uses
+  `margin-bottom: 12px` for the same purpose. Added `margin-bottom:
+  var(--space-3)` (12px) to `.folder-view-nav` only, matching the design
+  system's existing spacing scale — not the shared `.back-nav` class Issue
+  detail's breadcrumb also uses.
+- **Folder View back button:** replaced the `Root / 1981 / …` clickable
+  breadcrumb with a real "← Back" button, reusing the exact
+  `history.back()`-when-possible / `href="/"`-fallback pattern Series/Issue
+  already use — safe now that BUG-014 (2026-07-08) made real-history
+  navigation reliable app-wide. `renderFolderBreadcrumb()` deleted along with
+  `#folderBreadcrumb`. Caught a dependency while removing it: Folder View's
+  search box used to write its "Search results for…" message into that same
+  breadcrumb element — gave it its own `#folderSearchLabel` span instead so
+  search still shows what you searched for. See `DECISIONS.md`.
+- **Grid/List toggle relocated:** moved from the trailing group (next to the
+  title count) to sit right after the sort ascend/descend button, before
+  Rated — `A–Z | ↑ | ⊞ | Rated | ★ Favourites`.
+- **"|" separators throughout the menu bar:** `.menu-bar-divider` (already
+  used once, between Favourites and Group by) extended between every control
+  in the row — sort dropdown, ascend/descend, view toggle, Rated,
+  Favourites, Group by, and each of the six secondary filter dropdowns.
+- **Dropdown scrollbars restyled:** `.fd-panel` (the custom popup list
+  `filterDropdown.js` builds over every native `<select>`) had the default
+  OS scrollbar, which didn't blend with the dark theme. Added thin
+  `scrollbar-color`/`::-webkit-scrollbar-thumb` styling using `--surface-3`/
+  `--text-3` tokens — applies to every filter dropdown site-wide since they
+  all share this one class, and adapts automatically in light theme too via
+  the existing CSS variables.
+- **Fieldview banner deduped:** the banner (shown when arriving via a Genre/
+  Writer/Artist link) used to open with its own "{count} Titles" text, which
+  duplicated the count already shown in `.menu-bar-trailing`. Moved the
+  banner element into `.menu-bar-trailing` itself (before `#browseCount`)
+  and dropped the duplicate count from its text — now just
+  "Genre: Thriller Clear Filter   3,301 Titles" in one row rather than two
+  rows repeating the number.
+- **Publisher filter removed** from the secondary filters dropdown row
+  (`#browseFilters`) — every reference to `activePublisher` removed from
+  `frontend/js/app.js` (pool filter, Folder View filter, `hasActiveFilters()`,
+  `clearAllFilters()`, `bindSelect()`, `populateFilterDropdowns()`'s
+  `addOpts()` call, which has no null-guard and would have thrown on load if
+  left pointing at a removed element). Publisher stays available as a Group
+  by option (`#groupBySelect`), a separate, untouched control. See
+  `DECISIONS.md`.
+- **"Read" button removed from Issue detail** — the `comicvault://read/{id}`
+  deep-link button, non-functional on a plain desktop browser (no web reader
+  exists — `BUG-021`). `buildStatusToggle()`'s "Mark as Read" button is
+  separate and untouched. `SPEC.md` §11 and `BUGS.md` BUG-021 updated to
+  match. See `DECISIONS.md`.
+- **Series detail Genre tags fixed to be real links** — were plain `<span>`,
+  not `<a>`, unlike Issue detail's genre tags (which already link to
+  `/?surface=fieldview&field=genre&value=…`). Matched the Issue detail
+  pattern exactly.
+- **Clear Filter pill unified — two rounds of fixes:**
+  1. Restyled `#filterClear` from a plain text link to a solid accent pill
+     (`var(--accent)` background, `var(--on-accent)` text) matching the
+     collapsed sidebar's single-letter Library badges — Tez's reference for
+     what an "active" filter control should look like.
+  2. Discovered the fieldview banner's own "Clear filter" link
+     (`.fieldview-banner-clear`) was a *second*, differently-styled and
+     differently-positioned "clear the filter" control — plain text link,
+     sitting inline in the banner text rather than as a pill next to the
+     count. Gave both elements the same CSS rule and moved `#filterClear` out
+     of `#browseFilters` into `.menu-bar-trailing` (the fieldview banner's own
+     slot), so both trigger paths — a dropdown selection or a Genre/Writer/
+     Artist link — now land the pill in the exact same place. Text
+     capitalization matched too ("Clear Filter" both places). Deliberately
+     did not add a "Field: Value" label to the dropdown case — see
+     `DECISIONS.md` for why.
+- **Login popup — compact + Cancel:** `.login-modal` (shared with the "no
+  password set" dialog, not the larger Editor Basic/Full modals) narrowed
+  60% (720px → 288px shared `.editor-modal` width) with a consistent 10px
+  horizontal inset. Added a "Cancel" button — there was previously no way to
+  dismiss the popup without entering a password. `hideLoginPopup()` extended
+  to clear the password field and any error message on close, so a later
+  reopen doesn't show stale state.
+- **Full Editor toolbar:** "Search Online" renamed **"Search ComicVine"**
+  (it's specifically a ComicVine search) and moved out of the header into a
+  new row directly above the three-column layout, sharing `.fe-layout`'s
+  exact `340px / 1fr / 368px` grid template so it sits centred over the XML
+  Editor column at any window width — not an eyeballed margin. Added a new
+  **"Search GoodReads"** link alongside it in the same row/group — a plain
+  `target="_blank"` link to goodreads.com, no field wiring, Tez's addition.
+- **Admin "Last Scan" card — date only:** was showing a full date+time
+  string (`toLocaleString()`), and the persisted-restart-survival fallback
+  (`scanState.last_scan_persisted`, read straight from `last_scan_log.md`'s
+  last line) also showed a trailing `Duration: HH:MM:SS` since that log line
+  format bundles both. Switched the live path to `toLocaleDateString()` and
+  split the persisted fallback string on its first space to keep just the
+  date. The log file itself is untouched — full time + duration detail is
+  still one "Logs" click away. Caught via a browser-cache false alarm: the
+  first refresh after this fix still showed the old format, traced to a
+  stale cached `admin.js` (FastAPI's static file serving sends no explicit
+  cache-control headers) — a hard refresh confirmed the fix was correct all
+  along.
+
+**Docs updated same session:** `SPEC.md` §11 (Read button removed, deep-link
+section note), `MENU_BAR_SPEC.md` §2.5/§2.7 + Change Log, `CUSTOM_TABS_SPEC.md`
+§9.2/§9.6 + Change Log, `EDITOR_SPEC.md` §9.4 + Change Log, `ADMIN_SPEC.md`
+§7.1.2/§4 + Change Log, `BUGS.md` (BUG-021 annotated), `DECISIONS.md` (six new
+entries).
