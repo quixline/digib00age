@@ -15,6 +15,14 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-09** — First performance-diagnostics baseline (not a build-queue
+  item, no code changes): confirmed two hard N+1 findings (`/api/library`
+  fires 7,508 queries, `/api/series/{largest}` fires 4,969) and a reader
+  page-cache gap (never-read vs re-read pages cost the same) with real
+  numbers across in-process, HTTP, and browser tests; cover images never
+  honor cache revalidation (0/15 sampled got a 304); USB drive itself tested
+  healthy, cold-idle drive effect inconclusive. New standing doc
+  `docs/PERFORMANCE.md`.
 - **2026-07-09** — Post-redesign UI tweak pass (not a formal build-queue
   item): header login/logout drift fixed on Issue/Series detail (missing
   settings-cog markup); Folder View's breadcrumb replaced with a real "←

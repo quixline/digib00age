@@ -55,6 +55,7 @@ the same: both span every version by design.
 | `ROADMAP.md` | Paused/future work, explicitly out of scope until unblocked | Active |
 | `INBOX.md` | Raw, untriaged capture (bugs/changes/features) before they're placed in the docs above | Active — see `meta/working-rules.md` for the full workflow |
 | `TESTING.md` | Standing verification approach/runbook | Active |
+| `PERFORMANCE.md` | Standing performance-diagnostics baseline + reusable methodology (parallel to `TESTING.md`, for speed/load rather than correctness) | Active — first baseline established 2026-07-09 |
 | `CHANGELOG.md` | Terse one-line-per-entry index, points back to the current version's `progress.md` | Active |
 
 **`admin-spec-section-12-processing-tools.md` retired 2026-07-01** — folded into

@@ -1210,3 +1210,74 @@ section note), `MENU_BAR_SPEC.md` §2.5/§2.7 + Change Log, `CUSTOM_TABS_SPEC.md
 §9.2/§9.6 + Change Log, `EDITOR_SPEC.md` §9.4 + Change Log, `ADMIN_SPEC.md`
 §7.1.2/§4 + Change Log, `BUGS.md` (BUG-021 annotated), `DECISIONS.md` (six new
 entries).
+
+## Session — 2026-07-09 — First performance-diagnostics baseline (not a build-queue item)
+
+Tez asked for a diagnostics-only pass — no benchmarks existed yet, no fixes or
+functional changes in scope, just finding and quantifying real bottlenecks,
+with the USB-attached (bus-powered, no wall adapter) library drive `L:\Comic
+Archives` called out explicitly as a variable to isolate. Zero application
+code was touched; every measurement came from standalone read-only scratch
+scripts (outside the repo, per `TESTING.md`'s existing convention) against the
+already-running live server/DB, or read-only OS-level inspection.
+
+- **Two hard, numbers-backed N+1 findings, confirmed identically in-process,
+  over HTTP, and in a real browser:** `GET /api/library` (the main
+  browse/listing endpoint, hit on nearly every navigation) fires **7,508 SQL
+  queries** and takes ~4s — caused by `i.genres` being accessed per-issue via
+  a lazy relationship with no `joinedload`/`selectinload` anywhere in the
+  codebase, plus one extra `ReadingProgress` query per unique series (2,080
+  series). `GET /api/series/{id}` for the library's largest series ("2000
+  AD", 2,483 issues) fires **4,969 queries** (~2.6s) from one
+  `ReadingProgress` query per issue with no batching — a normal 25-issue
+  series (Postal) takes only 53 queries (~30ms) for comparison, confirming
+  clean linear N+1 scaling. Both were reproduced as genuine multi-second
+  waits in an actual browser click-through, not just synthetic numbers.
+- **Cover images never honor cache revalidation:** confirmed live that a
+  byte-exact `If-None-Match` still gets a 200 with the full body back (0/15
+  sampled covers ever got a 304); no `Cache-Control` header is set anywhere
+  in `reader.py`. A full "All library" grid view re-transfers all ~80MB of
+  visible thumbnails from local disk every single time, even when nothing
+  changed.
+- **Reader page-serving has zero caching, proven end-to-end:** flipping to a
+  never-before-read page and re-flipping to an already-viewed page cost the
+  same (22.8ms vs 22.7ms median) — `_sorted_pages()` re-opens the archive and
+  re-parses the whole ZIP central directory on every single
+  `/api/page/{id}/{n}` call (cold `archive_namelist()` alone costs a median
+  42.5ms, vs 0.6ms warm), while raw sequential disk throughput for the same
+  files is healthy (91.4MB/s median) — confirms this is app-level overhead,
+  not the drive.
+- **USB drive itself is not the bottleneck** — raw sequential throughput
+  measured healthy and consistent (75-95MB/s across ~130 sampled files, two
+  independent test passes). A genuine cold-idle probe (drive left untouched
+  12 minutes, then a fresh never-touched file read) came back inconclusive:
+  one of two valid samples showed roughly half the expected throughput for
+  its size, the other was normal — not enough to confirm or rule out a
+  USB-power-management effect; flagged as an open follow-up rather than
+  overclaimed. (First idle-probe attempt re-read the *same* file after 12
+  minutes and got an impossible 1,718MB/s — proved Windows' RAM file cache
+  survives well past 12 minutes regardless of drive state, not a spin-down
+  finding; corrected the method to always use a fresh file per rep.)
+- **Found and corrected a red herring in the session's own tooling, not the
+  app:** an early HTTP-timing pass hitting literal `localhost:9424` showed a
+  uniform +2000-2700ms floor on *every* endpoint, including one whose actual
+  DB work takes under 1ms. Root cause (confirmed via a raw socket test):
+  Windows resolves `localhost` to IPv6 (`::1`) first, the server binds IPv4
+  only, and the refused IPv6 attempt takes ~2000ms before falling back —
+  not a ComicVault bug, and real browsers are unaffected (Happy Eyeballs
+  races IPv4/IPv6 rather than trying sequentially). Re-ran everything against
+  `127.0.0.1` for accurate numbers; documented for any future scripts on this
+  host.
+- **Not measured this pass, flagged as follow-ups:** Full Editor's
+  page-preview endpoint (admin-auth-gated; code inspection alone flags it as
+  the highest-risk unmeasured area — full-resolution, base64-in-JSON, no
+  caching), scanner behaviour at real scale (all 18 historical log entries
+  were near-no-op incremental runs, not representative of processing a real
+  batch of new files), and a true cold-server-restart baseline (stayed
+  warm-only against the already-running tray-app server, per Tez's call).
+- Wrote up the full baseline, ranked findings table, raw data, and a reusable
+  methodology as a new standing doc, **`docs/PERFORMANCE.md`** (parallel to
+  `TESTING.md`, for speed/load rather than correctness) — added to
+  `docs/INDEX.md`'s active/authoritative table. No `BUGS.md`/`ROADMAP.md`/
+  build-queue entries this session — triaging which findings to actually act
+  on, and when, is a deliberately separate later decision.
