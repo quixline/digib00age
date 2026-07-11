@@ -4,6 +4,30 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Basic Editor async save: silent failure after navigating away is acceptable
+
+**Decided:** 2026-07-11, scoping the Basic Editor's async-save fix (`INBOX.md`
+"[feature] to scope... quick save hits a bottleneck").
+
+**Why:** Making the save "fire and forget" (close the modal immediately,
+finish the archive rebuild + rescan in the background) means the user can
+navigate away before the rebuild completes. If it then fails — rare: disk
+full, permission error, a locked file — there's no in-app mechanism to tell
+them once they've left the page, short of building a new persistent
+cross-page notification system (localStorage-tracked pending saves + a
+poll-on-load indicator visible from any page). Asked Tez directly rather
+than assuming either way: confirmed a silent failure is acceptable — a
+toast only while still on the issue page, nothing otherwise. Discoverable
+by reopening the Basic Editor on that issue and noticing the edit didn't
+take (the field values come from the live file, so a failed save just
+reads back as the pre-edit values). This is safe to accept because the
+archive rewrite can't half-fail into a corrupted file: `_rebuild_archive()`
+(`backend/editor/archive_io.py`) stages the new zip fully before an atomic
+`os.replace()` — a failure at any point up to that swap leaves the original
+file completely untouched.
+
+**Where:** `EDITOR_SPEC.md` §6.1 Change Log (2026-07-11), `docs/v2.6/progress.md`.
+
 ### Small/cosmetic UI changes don't need the full process
 
 **Decided:** 2026-07-08, in a Chat session, formalizing a threshold that had been

@@ -2498,6 +2498,13 @@ select.filter-select:focus,
   color: #ffb3b3;
   font-size: 13px;
 }
+/* Neutral variant — "a previous save is still finishing," not an actual
+   error (Basic Editor async save, INBOX.md 2026-07-11). */
+.editor-error--notice {
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface-2));
+  border-color: var(--accent);
+  color: var(--text);
+}
 .editor-actions {
   display: flex;
   justify-content: flex-end;

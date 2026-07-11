@@ -1371,3 +1371,104 @@ bug ticket, per `CLAUDE.md` Section 5's cosmetic threshold.
 - `docs/SPEC.md` §20.18 updated in place for both corrections rather than
   appending a second entry, since the earlier description was simply wrong,
   not superseded.
+
+## Session — 2026-07-11 — Basic Editor async save (INBOX.md, second item worked this session)
+
+`POST /api/editor/{issue_id}` used to run field validation, XML merge, the
+full archive rebuild, and a single-file rescan all synchronously — the
+popup stayed open ("Saving…") for the whole round trip, dominated by the
+archive rebuild (extract-all → rebuild-zip-from-scratch → atomic replace,
+scales with page count, not XML size). Tez wanted to navigate away as soon
+as Save is clicked. Planned in Plan Mode first (two Explore-agent research
+passes covering the current save flow and the codebase's existing
+background-job pattern, then a Plan agent to work out the concrete diff)
+before writing any code — see the approved plan for the full design
+rationale.
+
+- **Backend (`backend/routers/editor_basic.py`):** split
+  `save_editor_fields()` — validation + XML merge stay synchronous (still
+  422s immediately on bad input); the archive rewrite + rescan moved into a
+  new `_finish_save()` background-task worker, mirroring
+  `admin.py`'s `_run_scan_background()` (fresh `SessionLocal()`, since the
+  request-scoped session and the `issue` ORM object loaded from it are both
+  gone by the time a `BackgroundTasks` callback runs — the worker re-queries
+  `Issue` by id instead of being passed the original ORM object). Progress
+  tracked per-issue (`dict[int, EditorSaveProgress]`, not a single global
+  singleton like the Processing Tools use), since the Basic Editor can be
+  opened against different issues from different tabs. New `409` guard
+  against a second concurrent save on the same issue (set
+  `running=True` synchronously before queuing, closing the race window
+  between two fast back-to-back POSTs). New `GET .../save-status` polling
+  endpoint. `GET /api/editor/{issue_id}` gained a `saving` flag so the popup
+  can detect and block a conflicting edit if a save for that issue is still
+  finishing.
+- **Frontend (`frontend/js/editor_basic.js`):** `onEditorSubmit()` now
+  closes the modal immediately on `pending: true` instead of waiting for
+  the rebuild, shows a "Saving in background…" toast, and starts a
+  self-rescheduling `setTimeout` poll of the new status endpoint (same
+  pattern as `processingTools.js`'s `pollXtStatus()`) — on completion,
+  toasts "Saved" and calls the existing `onSaved()` callback
+  (`initIssue()`) so the issue page picks up the new data; on error, toasts
+  the failure and leaves the page as-is. New `showEditorToast()` reuses the
+  existing `.admin-toast` CSS classes directly (`style.css` is loaded
+  globally, not just on the Admin page — only `admin.js` itself is
+  Admin-only) rather than duplicating that CSS. `openEditorModal()` now
+  reads the `saving` flag and, if true, shows a neutral notice
+  (`.editor-error--notice`, new CSS, reuses `var(--accent)` instead of the
+  base rule's red) and disables the form fields + Save — Cancel/Close stay
+  enabled either way, so the notice never traps the user in the modal.
+- **Accepted trade-off, confirmed with Tez before building:** if a
+  background save fails after the user has already navigated away, it's
+  silent — no new cross-page/persistent notification system, discoverable
+  only by reopening the editor and seeing the edit didn't take. Safe either
+  way since the archive rewrite only replaces the original file via an
+  atomic `os.replace()` after the new file is fully staged, so a failure
+  never corrupts anything. Full rationale in `DECISIONS.md`.
+- **Verified manually**, real backend, scratch data only — never touched
+  `L:\Comic Archives` (`CLAUDE.md` §6). Registered a temporary `Issue` row
+  in the live DB pointing at a scratch multi-page CBZ built in the session
+  scratchpad (first 60 pages/38KB — rebuilt too fast to observe the
+  in-flight window at all once the OS file cache warmed up; regenerated at
+  120 pages/34.5MB of random-noise JPEGs, ~3.7s cold-cache rebuild, for the
+  timing-sensitive checks), confirmed via direct DB query afterward that
+  cleanup removed it and the real library was never touched.
+  - **Discovered mid-session: the live server doesn't hot-reload**
+    (`reload=False` in `start_server.py`) — the first pass of testing was
+    silently exercising the *old* synchronous code the whole time (matching
+    response shape gave it away: `series`/`number` fields with no
+    `pending` key). Asked Tez before restarting the tray app's server via
+    the local-only `/api/admin/restart` endpoint (same one used in prior
+    sessions for this exact purpose) rather than doing it unprompted, since
+    it's Tez's live personal server and could interrupt something he's
+    doing on another device — confirmed, restarted, re-tested against the
+    real new code from there.
+  - Real click-through: edit a field, Save — modal closed near-instantly,
+    "Saving in background…" toast, page auto-refreshed with the new value
+    once the background task finished; confirmed the *archive itself* (not
+    just the DB) had the new XML and all pages intact by reading the CBZ
+    directly afterward, across three separate saves.
+  - 409 guard: two concurrent `POST`s (fired via `Promise.all` in the
+    browser) — first got `200 {pending: true}`, second got `409`.
+  - In-flight `saving` flag: a same-script POST-then-immediate-GET (no
+    round trip in between) showed `saving: true`/`running: true` right
+    after a `pending: true` response, and the poll loop correctly resolved
+    to `running: false` once the background task finished.
+  - Frontend notice rendering: a UI-click-based attempt to catch this live
+    kept missing the window (background rebuild finishing faster than the
+    browser-automation tool round trips once the scratch file was
+    OS-cache-warm) — switched to intercepting `window.fetch` to force a
+    `saving: true` response and confirmed the notice, disabled fields, and
+    disabled Save render correctly, with Cancel/Close staying enabled. Hit
+    the project's known stale-browser-cache gotcha once during this
+    (`progress.md`'s Phase C2b precedent) — a hard reload fixed it; the
+    first "the notice doesn't render" result was the browser serving a
+    cached pre-edit copy of `editor_basic.js`, not a real bug.
+  - Validation still blocks synchronously: an intentionally incomplete
+    payload (Summary only, no Genre/Format/AgeRating) got `422` with the
+    expected enforced-field errors, no background task queued.
+  - Toast styling: both the neutral "Saving…" and the red `--error` variant
+    confirmed visually correct.
+  - No console errors at any point across the session.
+- `docs/EDITOR_SPEC.md` §6.1 rewritten for the new async shape + Change Log
+  entry; `docs/DECISIONS.md` entry for the silent-failure trade-off;
+  `docs/CHANGELOG.md` one-liner.

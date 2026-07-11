@@ -15,6 +15,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-11** — Basic Editor save made async: the modal now closes as
+  soon as validation passes instead of blocking on the archive rebuild;
+  the rebuild + rescan finish in the background (poll `GET /api/editor/
+  {issue_id}/save-status`), with a toast on completion/failure and a `409`
+  guard against a second concurrent save on the same issue. Accepted
+  trade-off: a background failure after navigating away is silent
+  (`DECISIONS.md`).
 - **2026-07-11** — Inbox cosmetic pass (5 items, not a build-queue item):
   favourite badge changed from gold star to red heart on white bg (true
   circle, fixed same session after an egg-shape report); unread badge text

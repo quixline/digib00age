@@ -115,7 +115,23 @@ async function openEditorModal(issueId, onSaved) {
     document.getElementById('editorOverlay').hidden = false;
     return;
   }
-  const { fields } = await res.json();
+  const { fields, saving } = await res.json();
+
+  const form = document.getElementById('editorForm');
+  // Cancel stays enabled either way — this only ever gates the fields and
+  // Save, never the user's ability to dismiss the modal.
+  const controls = form.querySelectorAll('input, select, textarea, #editorSaveBtn');
+  if (saving) {
+    errorBox.hidden = false;
+    errorBox.classList.add('editor-error--notice');
+    errorBox.textContent =
+      'A previous save for this issue is still finishing in the background — close and reopen in a moment.';
+    for (const el of controls) el.disabled = true;
+    document.getElementById('editorOverlay').hidden = false;
+    return;
+  }
+  errorBox.classList.remove('editor-error--notice');
+  for (const el of controls) el.disabled = false;
 
   setField('ed-series', fields.Series);
   setField('ed-title', fields.Title);
@@ -239,6 +255,12 @@ async function onEditorSubmit(e) {
       body: JSON.stringify({ fields }),
     });
 
+    if (res.status === 409) {
+      const body = await res.json().catch(() => ({}));
+      errorBox.hidden = false;
+      errorBox.textContent = body?.detail || 'A save is already in progress for this issue.';
+      return;
+    }
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       const messages = body?.detail?.errors || [body?.detail || 'Save failed.'];
@@ -247,9 +269,16 @@ async function onEditorSubmit(e) {
       return;
     }
 
+    const body = await res.json();
     const onSaved = currentOnSaved;
+    const issueId = currentIssueId;
     closeEditorModal();
-    if (onSaved) onSaved();
+    if (body.pending) {
+      showEditorToast('Saving in background…');
+      pollEditorSaveStatus(issueId, onSaved);
+    } else if (onSaved) {
+      onSaved();
+    }
   } catch (err) {
     errorBox.hidden = false;
     errorBox.textContent = 'Network error — save did not complete.';
@@ -257,4 +286,48 @@ async function onEditorSubmit(e) {
     saveBtn.textContent = 'Save';
     updateSaveButtonState();
   }
+}
+
+// Self-rescheduling poll (not setInterval — same pattern as
+// processingTools.js's pollXtStatus()) for the background archive
+// rewrite + rescan queued by onEditorSubmit. If the user navigates away
+// before this finishes, the timer is just torn down by the browser — no
+// cleanup needed, that silent-on-navigate-away behaviour is deliberate
+// (DECISIONS.md).
+async function pollEditorSaveStatus(issueId, onSaved) {
+  let status;
+  try {
+    status = await (await fetch(`/api/editor/${issueId}/save-status`)).json();
+  } catch (_) {
+    setTimeout(() => pollEditorSaveStatus(issueId, onSaved), 700);
+    return;
+  }
+  if (status.running) {
+    setTimeout(() => pollEditorSaveStatus(issueId, onSaved), 700);
+    return;
+  }
+  if (status.error) {
+    showEditorToast('Save failed: ' + status.error, true);
+    return;
+  }
+  showEditorToast('Saved');
+  if (onSaved) onSaved();
+}
+
+// Reuses the existing .admin-toast/.admin-toast--show/.admin-toast--error
+// CSS (style.css is loaded globally, not just on the Admin page) with its
+// own element id — issue.html doesn't load admin.js, so admin.js's own
+// showToast() isn't available here.
+function showEditorToast(msg, isError = false) {
+  let toast = document.getElementById('editorToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'editorToast';
+    toast.className = 'admin-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.toggle('admin-toast--error', isError);
+  toast.classList.add('admin-toast--show');
+  setTimeout(() => toast.classList.remove('admin-toast--show'), 3500);
 }

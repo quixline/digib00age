@@ -477,12 +477,23 @@ no ambiguity to resolve).
 - `GET /api/editor/{issue_id}` — load current field values for the popup form, sourced by
   reading the live XML out of the file at that issue's `file_path` (not from the DB columns
   directly, since the DB may already be slightly stale relative to the file — the XML is the
-  source of truth for the editor).
-- `POST /api/editor/{issue_id}` — accepts the submitted field set, runs it through the shared
-  field-merge + archive-rebuild core (Section 3), writes the file, then **automatically
-  triggers a rescan of that single file** (reusing the same logic that already backs `POST
-  /api/scan/file?path=` — now an in-process function call rather than a webhook, since editor
-  and reader now live in the same app).
+  source of truth for the editor). Also returns `saving: true` if a save for this issue is
+  currently in flight in the background (see below) — the popup shows a wait notice and
+  disables the form instead of allowing a conflicting second edit.
+- `POST /api/editor/{issue_id}` — **async save, built 2026-07-11** (INBOX.md — the archive
+  rebuild used to block the whole request, holding the modal open for the full round trip).
+  Validates the submitted fields and merges them into the live XML **synchronously** (still
+  returns 422 immediately on bad input, same as before), then queues the slow part — the
+  field-merge + archive-rebuild core (Section 3), the file write, and the automatic single-file
+  rescan (reusing the same logic that backs `POST /api/scan/file?path=`) — as a FastAPI
+  background task, and returns immediately with `{success: true, pending: true, issue_id}`.
+  Returns `409` if a save for this issue is already in progress (one background rebuild per
+  issue at a time — a second save can't start until the first has finished writing).
+- `GET /api/editor/{issue_id}/save-status` — poll target for the above:
+  `{running, result, error, finished_at}`, keyed per issue (not a single global run like the
+  Processing Tools use, since the Basic Editor can be opened against different issues from
+  different tabs). Defaults to `{running: false, ...}` if that issue was never saved this
+  process's lifetime (e.g. after a server restart).
 - `GET /api/editor/genres` — shared with Full Editor, Section 4.1.
 
 ### 6.2 Field set
@@ -757,3 +768,4 @@ they aren't lost:
 | 2026-07-03 | **Added Section 9, ComicTagger Integration (Full Editor)** — transcribed from four scoping sessions (`DECISIONS.md`, four 2026-07-03 entries): architecture (CT libraries imported directly, no CLI wrapper), `NeedsReview` XML flag + its red-border/count visual indicator (§9.3, reuses the favourited-card border mechanism, not §3.5's badge pattern), the single global "Search Online" trigger and its read-from-form field source (Series required; Issue #/Year/Issue Count optional; Title confirmed unused in either of CT's own search paths), the Select Series/Select Issue modal (one container, two steps — not CT's native two stacked windows), and full-overwrite-on-confirm semantics matching §3.3. Sections 9–12 renumbered to 10–13 to make room (old §9 "What This Build Round Does Not Include" is now §10, etc.) — no other content changed by the renumbering. Not yet built; same standing status as the rest of this document. | v2.5 #1 — four scoping sessions 2026-07-03, this pass transcribes the locked decisions from `DECISIONS.md` into the build-facing spec so Code has what it needs to start. |
 | 2026-07-04 | **Section 9 built and manually verified** (v2.5 Item 1) — see `docs/v2.5/progress.md` for the full build narrative. Confirms the section as scoped, plus one build-time addition not previously specified: the `GenericMetadata` → ComicVault field-dict mapping (`backend/ct_bridge.py`) captures every field CT/ComicVine supplies that maps to a standard ComicInfo.xml tag (mirroring `comicapi/tags/comicrack.py`'s own write mapping field-for-field — Month, Day, Notes, Inker, Colorist, Letterer, CoverArtist, Editor, Web, Volume, AlternateSeries/Number/Count, SeriesGroup, Characters, Teams, Locations), not just the fields this section's Main/More tabs expose. This was a live-testing correction, not a spec decision made in advance — an initial build-time judgment call to map only editor-exposed fields turned out to not match Tez's actual intent (capture everything, even fields the UI never displays). Genre/Format/AgeRating/BlackAndWhite remain excluded from this mapping — confirmed as a different, correctness-driven exclusion (enforced-dropdown validation integrity; a literal `"on"`/`"Yes"` semantic mismatch for BlackAndWhite), not a "not shown so not captured" one. | v2.5 Item 1 build + Tez's live-testing pass, 2026-07-03/04; see `DECISIONS.md` for the fuller rationale. |
 | 2026-07-09 | §9.4 — "Search Online" renamed **"Search ComicVine"** and relocated out of the header into its own row directly above the three-column layout, sharing `.fe-layout`'s exact grid columns so it sits centred over the XML Editor column. New **"Search GoodReads"** external link added alongside it in the same row — plain `target="_blank"` link to goodreads.com, no field wiring. | Tez's post-redesign UI tweak pass — see `docs/v2.6/progress.md`. |
+| 2026-07-11 | **§6.1 — Basic Editor save made async ("fire and forget").** `POST /api/editor/{issue_id}` used to run the whole field-merge + archive-rebuild + rescan chain synchronously, blocking the popup open for the full round trip (dominated by the archive rebuild, which scales with page count). Now only validates + merges the XML synchronously (still 422s immediately on bad input) and queues the rebuild + rescan as a background task, returning `{success, pending: true, issue_id}` right away; new `GET .../save-status` polling endpoint; new `saving` flag on `GET /api/editor/{issue_id}` plus a `409` guard against a second concurrent save on the same issue. Accepted trade-off, confirmed with Tez: if a background save fails after the user has already navigated away, it's silent (discoverable only by reopening the editor) — no new cross-page notification system. Safe either way since `os.replace()` only swaps in the rebuilt archive after it's fully staged, so a failure never corrupts the original file. Full rationale in `DECISIONS.md`; build narrative in `docs/v2.6/progress.md`. | Inbox 2026-07-11 — "quick save hits a bottleneck," scoped and built same day. |
