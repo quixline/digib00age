@@ -24,6 +24,14 @@ function el(tag, cls, text) {
   return node;
 }
 
+// Personal-rating pill (bottom-right of card/cover) — vertical stack of gold
+// stars, one per rating point. Inbox 2026-07-11.
+function buildRatingPill(rating) {
+  const pill = el('div', 'card-rating-pill');
+  for (let i = 0; i < rating; i++) pill.appendChild(el('span', 'rating-star', '★'));
+  return pill;
+}
+
 function debounce(fn, ms) {
   let timer;
   return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
@@ -1294,6 +1302,8 @@ function buildCoverCard(s) {
     wrap.appendChild(el('span', 'unread-badge', s.unread_count));
   }
 
+  if (s.personal_rating > 0) wrap.appendChild(buildRatingPill(s.personal_rating));
+
   // Part-read progress bar (grid view)
   if (state === 'state-part-read') {
     const pct  = Math.round((s.read_count / s.issue_count) * 100);
@@ -1622,6 +1632,8 @@ function buildFolderFileCard(issue) {
   img.onerror = () => { wrap.innerHTML = '<div class="cover-placeholder">📖</div>'; };
   wrap.appendChild(img);
   wrap.appendChild(buildSelectDot(issue.id));
+
+  if (issue.personal_rating > 0) wrap.appendChild(buildRatingPill(issue.personal_rating));
 
   if (state === 'state-part-read' && issue.page_count > 0) {
     const pct = Math.min(100, Math.round((issue.current_page / issue.page_count) * 100));

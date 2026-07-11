@@ -15,6 +15,16 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 ---
 
+- **2026-07-11** — Inbox cosmetic pass (5 items, not a build-queue item):
+  favourite badge changed from gold star to red heart on white bg (true
+  circle, fixed same session after an egg-shape report); unread badge text
+  changed from black to white; new personal-rating pill (vertical gold
+  stars, bottom-right of grid cards, matches bottom-toolbar rating pill
+  styling); selected-card indicator changed from a blue dot to a gold
+  checkmark on dark grey; all Admin stat cards (Library Stats + all six
+  Library Scan cards) now share one uniform borderless baseline, corrected
+  same session from an initial 3-of-6 mismatch — functional status borders
+  (scan in progress, unread log entries) unaffected.
 - **2026-07-09** — First performance-diagnostics baseline (not a build-queue
   item, no code changes): confirmed two hard N+1 findings (`/api/library`
   fires 7,508 queries, `/api/series/{largest}` fires 4,969) and a reader

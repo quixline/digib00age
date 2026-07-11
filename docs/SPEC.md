@@ -1028,6 +1028,48 @@ for the web UI itself.)
 
 ---
 
+### 20.18 Card Icon/Badge Refresh & Personal-Rating Pill (2026-07-11, built 2026-07-11)
+
+Cosmetic pass, `INBOX.md` triage — supersedes some of §20.17's badge detail above,
+which stays for history rather than being rewritten in place.
+
+**Favourite badge:** the top-left badge is now a red heart (`♥`, `#e02424`) on a
+white circular background, replacing the gold star on a dark translucent
+background. Size and 1px black border unchanged from §20.17. Explicit equal
+width/height (20×20px, flex-centred) — needed because the heart glyph's own
+metrics aren't square like the star's were, which stretched the `border-radius:
+50%` circle into an egg shape when sized by content+padding alone (caught by
+Tez from a live screenshot, fixed same session).
+
+**Unread badge:** the top-right pill's text is now white, replacing black, for
+better contrast against the blue background.
+
+**Personal-rating pill (new):** grid cards for a rated issue (`personal_rating`
+1–5) show a small pill in the bottom-right corner of the cover — background/border
+match the existing bottom-toolbar rating pill (`.selection-rate`) — containing a
+vertical stack of gold stars, one per rating point, growing upward from the
+bottom. Hidden entirely when unrated. Series-aggregate cards show the cover
+issue's own rating, same aggregation precedent as the existing favourite-badge
+`any()` logic. Web UI only (grid/card views); not shown on the flat issue-list row
+or Home Strip cards.
+
+**Card-selected indicator:** the small circle at the bottom-left of a selected
+card (hover-reveal, §Multi-select) now shows a gold checkmark on a dark grey
+background, replacing the plain blue filled dot.
+
+**Admin stat cards — uniform borderless baseline:** every `.stat-card` (the
+Library Stats row plus all six Library Scan cards, `ADMIN_SPEC.md` §3–4) now
+has a transparent 1px border rather than the visible grey `var(--border)` —
+first pass only stripped it from three of the six Scan cards (Scan Now, Last
+Scan, Changed Files), leaving an inconsistent mix; corrected same session to
+apply uniformly. `#scanNowCard`'s previously-distinct default white border is
+also gone, so it now matches the rest at rest. The functional status borders
+(green while a scan is running, green on a card whose log has unviewed
+entries — §8) are unchanged and still show, since they only override
+`border-color`, not `border-style`.
+
+---
+
 ### 20.16 Writer/Artist Click-Through (Tier 4 Item 3, 2026-06-21)
 
 `/issue/{id}`'s Writer/Artist credits are clickable links to

@@ -1292,3 +1292,82 @@ already-running live server/DB, or read-only OS-level inspection.
   those scripts target, since those will drift as the library changes).
   `docs/PERFORMANCE.md` now points to the skill instead of expecting a
   future session to re-derive the method from its own prose.
+
+## Session — 2026-07-11 — Inbox cosmetic pass (5 items)
+
+Worked through `INBOX.md`'s cosmetic/change items first, per Tez's request at
+session start. All five are pure visual restyles of existing card elements
+plus one small new pill — no build-queue item, no `DECISIONS.md` entry, no
+bug ticket, per `CLAUDE.md` Section 5's cosmetic threshold.
+
+- **Favourite badge → red heart, white bg** (`style.css`): swapped the `★`
+  content for `♥`, gold → `#e02424` red, translucent-black bg → solid white.
+  Border/size/position unchanged.
+- **Unread badge text → white**: `.unread-badge`'s `color: #000` → `#fff`.
+- **Personal-rating pill (new)**: added `.card-rating-pill`/`.rating-star`
+  CSS (bg/border matching the existing `.selection-rate` bottom-toolbar
+  pill) and a `buildRatingPill()` helper in `app.js`, called from both grid
+  card builders (`buildCard` for Series/Singles/All, `buildFolderFileCard`
+  for Custom Tab Folder View) whenever `personal_rating > 0` — renders a
+  vertical stack of gold stars, one per rating point, bottom-right of the
+  cover, growing upward. Confirmed `personal_rating` is already present on
+  the API payloads both builders consume (`/api/library`, `/library/tab/
+  {id}/folder`) — no backend change needed. Not added to the flat issue-list
+  row or Home Strip cards (neither shows the favourite/unread badges either,
+  so this follows the same existing precedent).
+- **Card-selected dot → gold tick, dark grey bg**: `.select-dot`'s selected
+  state now sets a dark grey (`#333`) circle background with a `✓` gold
+  (`var(--favourite)`) glyph, replacing the small solid blue dot.
+- **Admin Scan cards — outline removed from 3 of 6**: added `id`s
+  (`lastScanCard`, `changedFilesCard`) alongside the existing `scanNowCard`
+  in `admin.js`'s `renderScanSection()`, then `border: none` on those three
+  IDs in `style.css`. Files Found / New Files / Missing Records intentionally
+  keep the default `.stat-card` border — only the three named in the inbox
+  line change.
+- **Verified manually** in a real Chrome tab against the live tray-app
+  server (`localhost:9424`, hard-reloaded to bypass a stale-cache false
+  start where the old star/black-badge briefly still showed): favourite
+  heart and rating pill both confirmed on real favourited/rated titles
+  (`2000 AD Presents Sci-Fi Thrillers`, `Neuromancer`, `110 Per¢`); unread
+  badge's white text confirmed on a partially-read series; selected-card
+  gold tick confirmed by actually selecting a card via the multi-select
+  flow; Admin page confirmed Scan Now/Last Scan/Changed Files borderless
+  while Files Found/New Files/Missing Records keep theirs. No console
+  errors at any point.
+- `docs/SPEC.md` §20.18 added (all five behaviours). `INBOX.md`'s five
+  lines struck through with destination annotations. No spec update needed
+  for `ADMIN_SPEC.md` §4 — it never claimed anything about card borders, so
+  nothing there was made inaccurate.
+
+**Same-session follow-up, after Tez's review:**
+
+- **Favourite heart badge was egg-shaped** (screenshot: `fav.PNG`) — the `♥`
+  glyph's own metrics aren't square like the `★` star's were, so sizing the
+  badge by content+padding alone stretched the `border-radius:50%` circle
+  into an oval. Fixed with explicit `width:20px; height:20px;` and flex
+  centring, so the circle is a true circle regardless of glyph shape.
+- **Admin card outline fix corrected — scope was wrong, not the styling.**
+  Tez: "I should've said make all the card outlines the same" — the first
+  pass stripped the border from only 3 of the 6 Scan-section cards, leaving
+  a visibly inconsistent row (plus `#scanNowCard` already had its own
+  distinct default white border, pre-dating this session, that the first
+  pass didn't touch). Reworked: removed the per-ID `border: none` overrides
+  and the now-unnecessary `lastScanCard`/`changedFilesCard` IDs in
+  `admin.js`; changed `.stat-card`'s own base border to `1px solid
+  transparent` (not `border: none`, so the border box still exists for
+  state overrides to colour in) — applies uniformly to all six Scan cards
+  *and* the five Library Stats cards above them, one rule instead of an
+  ID allowlist. Removed `#scanNowCard { border-color: #fff; }`'s special
+  default so it matches the rest at rest. Left `#scanNowCard.is-scanning`'s
+  and `.has-pending`'s green `border-color` overrides untouched — those are
+  real status indicators (scan in progress / unread log entries, §8), not
+  decorative outline, and only set colour so they still render correctly
+  against the new transparent baseline.
+- **Verified manually** again after both fixes: heart badge zoomed-in
+  screenshot confirms a true circle; Admin page confirms all six Scan cards
+  plus the five Library Stats cards share the same borderless idle look,
+  with the green "unviewed log entries" indicator still showing correctly
+  on Last Scan (real pending state, not a bug). No console errors.
+- `docs/SPEC.md` §20.18 updated in place for both corrections rather than
+  appending a second entry, since the earlier description was simply wrong,
+  not superseded.

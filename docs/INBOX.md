@@ -6,13 +6,14 @@ real classification and placement happens in a triage session with Claude
 Chat. This file should never need "getting right" before something goes in it.
 
 **Tag convention** — one of:
+
 - `[bug]` — something that was scoped, planned, and implemented, but doesn't
- work correctly.
+  work correctly.
 - `[change]` — something already in place that should look or behave
- differently (most likely front-end/visual — "add a border colour around X").
+  differently (most likely front-end/visual — "add a border colour around X").
 - `[feature]` — something new that doesn't exist yet.
 - `[unknown]` — not sure which of the above it is yet. Better to mark unknown
- than guess wrong on purpose.
+  than guess wrong on purpose.
 
 Add a guess at the destination doc if one's obvious (`BUGS.md` /
 `comicvault-changes-*.md` / `ROADMAP.md`) — skip it if you don't know, that's
@@ -38,12 +39,28 @@ until triaged — only processed lines ever leave.
 
 ## Unprocessed
 
-(empty — add lines below this heading as they come to you)
-
+* [feature] to scope - in the basic editor only I want to speed up the UX - currently a quick save hits a bottleneck when saving because the editor stays on screen until the archive has been rebuilt with the new xml data - possible solutions? the objective is to have the process running and allow user to navigate away as soon as save is activated
+* Project Folder: [change] remove the symlink to docs - google drive isn't required to be in the loop anymore
+  
+  ---
+* [bug] investigate missing Design assests - favicon.png, icon-oo.png and other data that was part of the Redesign from Design
+* [bug] a performance review was carried out and found bottle necks that need sorting
 
 ---
 
 ## Processed (awaiting Sunday prune)
+
+### Triaged 2026-07-11
+
+- ~~[change] the favourite icon in the top left corner of the cards from a gold star to a red heart with white bg~~ → built same session, `SPEC.md` §20.18.
+
+- ~~[change] the pill for number of unread titles after a series has been started, top right corner of the card from blue bg an black text to blue with white text~~ → built same session, `SPEC.md` §20.18.
+
+- ~~[feature] add a new pill to the bottom right of the card/cover make the bg of the pill the same as the star pill in the bottom bar with gold stars. have the stars starting from the bottom right going up/increasing in a vertical column~~ → built same session as the personal-rating pill, `SPEC.md` §20.18.
+
+- ~~[change] the blue dot in the middle of the 'card selected' in the bottom left of the card to a gold tick with dark grey bg~~ → built same session, `SPEC.md` §20.18.
+
+- ~~[change] remove the card outline from Scan Now, Last Scanned and Changed files in the admin area~~ → built same session, `SPEC.md` §20.18. First pass only stripped 3 of 6 cards, leaving a mismatched row — Tez corrected the ask to "all the card outlines the same"; reworked to a uniform borderless baseline across all Admin stat cards (Library Stats + all six Scan cards), functional status borders (scanning/pending) unaffected.
 
 ### Triaged 2026-07-05
 
