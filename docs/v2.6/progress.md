@@ -1568,3 +1568,58 @@ rationale.
   historical entries that mention Cowork's nightly scan or a Chat triage
   session — those describe what was true when written and stay as
   narrative record, same reasoning as the prior session's entry.
+
+## Session — 2026-07-12 (same day, second follow-up) — Stale-cover false alarm investigated; bulk star-rating bug found and fixed (BUG-022)
+
+Tez reported a Singles issue (`Dusk - Poor Tom (2000)`, id 3414) showing the
+wrong cover after a bad duplicate-named file was removed from the archive and
+a rescan ran. Investigated read-only first, in plan mode.
+
+- **Stale-cover report — not a real bug, confirmed by direct evidence, not
+  just theory.** Extracted the archive's current front-cover entry
+  (`bu_Dusk_00fc.jpg`, no more duplicate names) and the cached
+  `backend/thumbnails/3414.jpg`, compared them visually — identical, correct
+  cover. Thumbnail file's mtime (18:43:20) is after the archive's mtime
+  (18:41:53), proving the scanner's unconditional `_generate_thumbnail()`
+  call (`backend/scanner.py`) did regenerate it correctly. DB row, cached
+  JPEG, and archive were already fully consistent — Tez confirmed live it
+  was resolved by a browser refresh. No code change, no `BUGS.md` entry
+  (not a real defect). Worth remembering for next time: `/api/cover/{id}`
+  has no `Cache-Control` header and no versioned URL, so a browser can serve
+  a stale copy after any cover regeneration — flagged as a latent
+  perf/correctness improvement, not acted on since nothing is actually
+  broken today (only surfaces as a confusing false alarm, as here).
+- **New bug found via the same investigation session:** selecting card(s)
+  and applying a star rating from the bottom multi-select toolbar didn't
+  update the card(s) — no visible change, looked like a persistence bug.
+- **Root cause:** `frontend/js/app.js`'s bulk-action toolbar
+  (`ensureSelectionToolbar()`) routes every button through
+  `runBulkAction(path, extraBody, applyFn)`, which only patches the DOM/
+  cache if a third `applyFn` argument is passed (`applyReadStateToDom`,
+  `applyFavoriteToDom` both do this). The two rating call sites (clear +
+  5 stars) never passed one — a gap left over from `.card-rating-pill`
+  (`SPEC.md` §20.18) being added 2026-07-11, after the original bulk-toolbar
+  code, with no equivalent `applyRatingToDom` ever added. The backend write
+  itself (`POST /api/progress/bulk/rate`) was correct throughout — this was
+  purely a client-side reflection gap, confirmed by reading the single-issue
+  rating control (self-patches its own state, unaffected) and by a scratch
+  DB read showing the rating persisted correctly even before the fix.
+- **Fixed:** added `applyRatingToDom(ids, rating)` / `_patchRatingInCaches`
+  (mirrors `applyFavoriteToDom`/`_patchFavoritesInCaches`) and wired them as
+  the `applyFn` for both rating call sites.
+- **Verified live** against the running dev server (`localhost:9424`, real
+  library, read/write-safe scratch verification only) — drove the actual UI
+  functions (`selectOrToggle`, real `.click()` on the toolbar's star/clear
+  buttons) on a real browse-grid card: `.card-rating-pill` appeared/updated/
+  disappeared immediately with no reload, cache (`allLibrary`) patched
+  correctly, and cross-checked against the live DB (`personal_rating`
+  column) at each step to rule out a cache-only false positive.
+- **Docs:** logged directly to `docs/archive/bugs-fixed-archive.md` as
+  BUG-022 (found-and-fixed in one session, per `CLAUDE.md`'s allowance for
+  that) rather than round-tripping through `BUGS.md` first.
+- **Also noted:** `docs/INDEX.md` currently claims "no active version folder
+  right now" for v2.6, but `docs/v2.6/progress.md` (this file) has been the
+  live, current log since 2026-07-06 — `INDEX.md` is stale on this point.
+  Flagged to Tez rather than silently corrected, since `CLAUDE.md` treats
+  `INDEX.md` as the authority on doc status and this is exactly the kind of
+  drift that's caused problems before (`archive/doc-scan-issues.md`).

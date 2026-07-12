@@ -16,9 +16,10 @@ within a single doc, a later-dated or higher-numbered section overrides an earli
   (narrative log, scoped to just this version's sessions). When a version closes,
   the whole folder moves into `docs/archive/vN.M/` as one bundle. **v2.5 closed
   2026-07-05** (Items 1–3: ComicTagger + ComicVine integration, Sort by Filename,
-  Mobile ↔ Server Reading-State Sync — all built and manually verified) — no
-  active version folder right now; `docs/v2.6/` gets created whenever real v2.6
-  scoping/building begins (see `ROADMAP.md` "v2.6").
+  Mobile ↔ Server Reading-State Sync — all built and manually verified).
+  **`docs/v2.6/` is the current active version folder**, created 2026-07-06 (Item
+  1 — Web UI Redesign — built and closed out 2026-07-08; the folder has stayed
+  active since for follow-ups and bug fixes logged against v2.6).
 - **`docs/archive/`** (renamed from `historical/` 2026-06-29) — closed-out build
   queues, their matching `progress.md`, one-time setup/research docs, and the fixed
   bug history. **Out of focus, not out of reach** — Code still has full access

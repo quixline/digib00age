@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-12** — Fixed BUG-022: bulk star rating from the multi-select
+  bottom toolbar wasn't reflected on cards (backend was already correct;
+  client-side DOM/cache patch was missing). Also investigated a stale-cover
+  report (Dusk - Poor Tom) and confirmed it was a browser-cache false alarm,
+  not a defect.
 - **2026-07-12** — `docs/` converted from a Google Drive junction to a plain
   repo folder (git tracking unaffected); Cowork's nightly doc-scan automation
   retired as a consequence, its files moved to `archive/`.

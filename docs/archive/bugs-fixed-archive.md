@@ -7,6 +7,50 @@ Append-only; entries kept exactly as they were in `BUGS.md` at the time of move.
 
 ---
 
+### BUG-022 — Bulk star rating (multi-select bottom toolbar) doesn't update cards
+
+**Found:** 2026-07-12, user report while investigating an unrelated stale-cover
+report (that one turned out to be a browser-cache false alarm, not a real bug —
+not logged). Selecting one or more cards and clicking a star in the bottom
+selection toolbar's rating widget produced no visible change on the card(s).
+
+**Where:** `frontend/js/app.js`. The bulk-action toolbar
+(`ensureSelectionToolbar()`) wires every button through
+`runBulkAction(path, extraBody, applyFn)`, which POSTs to the bulk endpoint and
+then, only if a third `applyFn` argument was passed, patches the DOM/cache to
+reflect the change immediately (`applyReadStateToDom`, `applyFavoriteToDom`).
+The two star-rating call sites (clear-rating and the five rating buttons) never
+passed an `applyFn` — so nothing patched the `.card-rating-pill` or the cached
+`personal_rating` in `allLibrary`/`tabLibraryCache`/`viewLibraryCache`/
+`searchLibraryCache` after a successful bulk rate.
+
+**Root cause:** the `.card-rating-pill` UI (`SPEC.md` §20.18) was added
+2026-07-11, after the original bulk-toolbar code — `applyReadStateToDom`/
+`applyFavoriteToDom` existed for the badges that were present at the time, but
+no equivalent `applyRatingToDom` was ever added for the pill. The backend write
+itself (`POST /api/progress/bulk/rate` → `bulk_set_rating()` in
+`backend/routers/progress.py`) was correct throughout and shared with the
+single-issue rating control (which self-patches its own local state, so it
+never depended on `runBulkAction`'s `applyFn` and wasn't affected) — this was a
+client-side reflection gap, not a persistence bug. Confirmed via a scratch DB
+read that the rating persisted correctly even before the fix; a full reload
+would have shown it.
+
+**Fixed, 2026-07-12.** Added `applyRatingToDom(ids, rating)` /
+`_patchRatingInCaches(id, rating)` (mirroring `applyFavoriteToDom`/
+`_patchFavoritesInCaches`) and wired them as the `applyFn` for both the
+clear-rating and per-star click handlers in `ensureSelectionToolbar()`.
+
+**Verified live** against the running dev server via direct function calls
+(`selectOrToggle`, then a real `.click()` on the toolbar's star/clear buttons)
+on a browse-grid card: the `.card-rating-pill` appeared with the correct star
+count immediately after rating, and disappeared immediately after clearing —
+both times without a page reload, and both times confirmed against the actual
+DB row (`personal_rating` column) to rule out a false-positive from cache-only
+patching.
+
+---
+
 ### BUG-014 — Back-button regression: returns to Home instead of the originating tab
 
 **Found:** 2026-06-27, inbox capture (3 repro cases reported across two separate

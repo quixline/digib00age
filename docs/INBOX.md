@@ -39,26 +39,30 @@ Example:
 
 ---
 
-* Project Folder: [change] remove the symlink to docs - google drive isn't required to be in the loop anymore
-  
-  ---
-* [bug] investigate missing Design assests - favicon.png, icon-oo.png and other data that was part of the Redesign from Design
-* [bug] if incorrect cover is detected by user - removed from archive, library scan detects change but old cover persists (Dusk: Poor Tom)
-* [bug] the rating from the bottom bar doesn't work when selecting one or multiple cards doesn't change the rating
-* [bug] a performance review was carried out and found bottle necks that need sorting
+[bug] a performance review was carried out and found bottle necks, find the review and plan the execution
 
 ---
 
 ## Processed
 
+12-7-2026
+
+- ~~[bug] the rating from the bottom bar doesn't work when selecting one or multiple cards doesn't change the rating~~
+
+- ~~[bug] if cover is removed from archive, library scan detects change but old cover persists (eg Dusk: Poor Tom)~~ **was not a bug but a page/browser refresh/time is and it's now showing.**
+
+* ~~Project Folder: [change] remove the symlink to docs - google drive isn't required to be in the loop anymore~~
+
+* ~~[bug] investigate missing Design assests - favicon.png, icon-oo.png and other data that was part of the Redesign from Design~~
+
 2026-07-05
 
+- ~~[feature] to scope - in the basic editor only I want to speed up the UX - currently a quick save hits a bottleneck when saving because the editor stays on screen until the archive has been rebuilt with the new xml data - possible solutions? the objective is to have the process running and allow user to navigate away as soon as save is activated~~
 * ~~[change] the favourite icon in the top left corner of the cards from a gold star to a red heart with white bg~~
 * ~~[change] the pill for number of unread titles after a series has been started, top right corner of the card from blue bg an black text to blue with white text~~
 * ~~[feature] add a new pill to the bottom right of the card/cover make the bg of the pill the same as the star pill in the bottom bar with gold stars. have the stars starting from the bottom right going up/increasing in a vertical column~~
 * ~~[change] the blue dot in the middle of the 'card selected' in the bottom left of the card to a gold tick with dark grey bg~~
 * ~~[change] remove the card outline from Scan Now, Last Scanned and Changed files in the admin area~~
-* ~~[feature] to scope - in the basic editor only I want to speed up the UX - currently a quick save hits a bottleneck when saving because the editor stays on screen until the archive has been rebuilt with the new xml data - possible solutions? the objective is to have the process running and allow user to navigate away as soon as save is activated~~ → built same session, async save (`EDITOR_SPEC.md` §6.1, `DECISIONS.md`)
 
 ### Triaged 2026-07-05
 

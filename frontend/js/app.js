@@ -197,13 +197,15 @@ function ensureSelectionToolbar() {
   const clearStar = el('button', 'rating-star rating-clear', '✕');
   clearStar.type  = 'button';
   clearStar.title = 'Clear rating';
-  clearStar.addEventListener('click', () => runBulkAction('/progress/bulk/rate', { rating: 0 }));
+  clearStar.addEventListener('click', () =>
+    runBulkAction('/progress/bulk/rate', { rating: 0 }, ids => applyRatingToDom(ids, 0)));
   rateWrap.appendChild(clearStar);
   for (let i = 1; i <= 5; i++) {
     const star = el('button', 'rating-star', '★');
     star.type  = 'button';
     star.title = `Rate ${i}`;
-    star.addEventListener('click', () => runBulkAction('/progress/bulk/rate', { rating: i }));
+    star.addEventListener('click', () =>
+      runBulkAction('/progress/bulk/rate', { rating: i }, ids => applyRatingToDom(ids, i)));
     rateWrap.appendChild(star);
   }
   actions.appendChild(rateWrap);
@@ -335,6 +337,31 @@ function _patchFavoritesInCaches(id, value) {
   for (const pool of pools) {
     const lib = (pool || []).find(s => s.series_anchor_id === id);
     if (lib) lib.favorites = value;
+  }
+}
+
+// Bulk star rating — mirrors applyFavoriteToDom/_patchFavoritesInCaches.
+// Swaps the .card-rating-pill in place so the selection toolbar's rating
+// widget reflects immediately, without depending on a full reload.
+function applyRatingToDom(ids, rating) {
+  for (const id of ids) {
+    const node = document.querySelector(`[data-issue-id="${id}"]`);
+    const wrap = node && node.querySelector('.cover-img-wrap');
+    if (wrap) {
+      const existing = wrap.querySelector('.card-rating-pill');
+      if (existing) existing.remove();
+      if (rating > 0) wrap.appendChild(buildRatingPill(rating));
+    }
+    _patchRatingInCaches(id, rating);
+  }
+}
+
+function _patchRatingInCaches(id, rating) {
+  const pools = [allLibrary, ...Object.values(tabLibraryCache),
+    ...Object.values(viewLibraryCache), ...Object.values(searchLibraryCache)];
+  for (const pool of pools) {
+    const lib = (pool || []).find(s => s.series_anchor_id === id);
+    if (lib) lib.personal_rating = rating;
   }
 }
 
