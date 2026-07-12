@@ -21,8 +21,8 @@ within a single doc, a later-dated or higher-numbered section overrides an earli
   scoping/building begins (see `ROADMAP.md` "v2.6").
 - **`docs/archive/`** (renamed from `historical/` 2026-06-29) — closed-out build
   queues, their matching `progress.md`, one-time setup/research docs, and the fixed
-  bug history. **Out of focus, not out of reach** — Code and Chat both still have
-  full access any time something needs revisiting; this folder is a "less
+  bug history. **Out of focus, not out of reach** — Code still has full access
+  any time something needs revisiting; this folder is a "less
   frequently needed" shelf, not a deleted one.
 - **`docs/meta/`** — Claude/working-process docs (not project architecture):
   `working-rules.md`, `voice-and-style.md`, `about-me.md`, `build-plan.html`,
@@ -70,20 +70,25 @@ separate file; `ADMIN_SPEC.md` is the sole authority for Processing Tools now.
 | `README.md` | Orientation — how to run things, repo map, where to start reading (repo root, not `docs/`) |
 | `DECISIONS.md` | Rationale log — *why*, not *what*, non-obvious calls only. **Pending a dedicated entry-by-entry review (flagged 2026-06-29)** — some entries are closed-chapter, others are standing rationale current specs still point back to; needs sorting before any of it moves to archive. |
 
-## Doc-scan automation (Cowork) — retired 2026-07-12
+## Doc-scan automation (Cowork) — retired 2026-07-12, cancelled for good
 
 Cowork's nightly drift-scan depended on `docs/` being a Google Drive-synced
 junction (see `CLAUDE.md` Section 2). That junction has been removed — `docs/`
-is now a plain repo folder — so the scan has no mechanism left to run on. All
-four files below have been moved into `docs/archive/` as a point-in-time
-record; see `meta/working-rules.md` "Cowork nightly doc-scan (retired
-2026-07-12)" for the full note. No replacement drift-checking mechanism is in
-place.
+is now a plain repo folder — and **the scan itself was cancelled and won't be
+running again**, not paused pending a replacement. All four files below have
+been moved into `docs/archive/` as a point-in-time record; see
+`meta/working-rules.md` "Master controller" and "Cowork nightly doc-scan
+(retired 2026-07-12)" for the full note. Claude Code is now the master
+controller for doc consistency directly — no scanning mechanism in the loop
+at all. Session continuity comes from two other layers instead: a
+`SessionEnd` hook (personal, cross-project summary capture, outside this
+repo) and this project's own doc set (`progress.md`, `CHANGELOG.md`,
+`DECISIONS.md`), unchanged from how they've always worked.
 
 ## `docs/archive/` — out of focus, not out of reach
 
 Closed-out build queues, their matching `progress.md`, one-time setup/research docs,
-and fixed-bug history. Code and Chat read these directly whenever something needs
+and fixed-bug history. Code reads these directly whenever something needs
 revisiting — nothing here is gone, it's just not part of the day-to-day working set.
 
 | Doc | What it was for |

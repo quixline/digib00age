@@ -4,6 +4,28 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Claude Code as master controller; Cowork's scan cancellation confirmed permanent
+
+**Decided:** 2026-07-12, same session as the `docs/` junction removal, as a
+follow-up once Tez confirmed the nightly scan wasn't coming back.
+
+**Why:** The project used to split process across three tools — Chat for
+planning/triage, Cowork for nightly doc drift-scanning, Design for UI
+mockups — with Code building whatever the others had scoped. Tez confirmed
+the nightly scan was cancelled for good (not paused pending a replacement),
+and clarified the bigger picture: Code is now the master controller for
+everything — planning, triage, build, docs — with one exception: outside
+planning docs (a Design mockup, notes from a Chat conversation) still get
+dropped into the repo as reference material when they exist, just not as a
+required upstream stage Code waits on. Two things now cover what the old
+three-way split covered: a `SessionEnd` hook (personal, cross-project
+conversational summary, outside this repo) and this project's own doc set
+(`progress.md`/`CHANGELOG.md`/`DECISIONS.md`), which were already how
+substance got tracked — only the scan and the presumption of a separate
+Chat-run triage stage go away. Documented in
+`docs/meta/working-rules.md` "Master controller" and reflected in
+`CLAUDE.md` Sections 2, 4, and 5.
+
 ### Retire Cowork's nightly doc-scan rather than reconfigure it
 
 **Decided:** 2026-07-12, while removing the `docs/` Google Drive junction.

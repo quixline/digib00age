@@ -1524,3 +1524,47 @@ rationale.
   `working-rules.md`'s structural-change threshold — that's about
   Cowork's planning role generally, a separate question from the
   nightly-scan mechanism this session retired.
+
+## Session — 2026-07-12 (same day, follow-up) — Confirmed scan cancellation is permanent; Claude Code is now master controller
+
+- Tez followed up on the item flagged above: the nightly scan wasn't left
+  open as "no replacement yet" — it's cancelled outright, won't run again.
+  Tez also clarified the bigger picture the flagged item was gesturing at:
+  Claude Code is now the **master controller** for this project — planning,
+  triage, build, and docs all happen in a Code session — with one
+  exception: outside planning docs (a Design mockup, notes from a Chat
+  conversation) still get dropped into the repo as reference material when
+  they exist, just not as a required upstream stage Code waits on.
+- Also clarified how session continuity works now that the scan is gone:
+  a `SessionEnd` hook captures a plain-text conversational summary into
+  `the_brain` (personal, cross-project record, separate from this repo)
+  every time a Claude Code session ends — additional to, not a substitute
+  for, this project's own doc updates (`progress.md`, `CHANGELOG.md`,
+  `DECISIONS.md`) which still happen exactly as `working-rules.md` and
+  `CLAUDE.md` describe.
+- **Docs updated:**
+  - `docs/meta/working-rules.md` — added a "Master controller" section up
+    top; reworded the structural-threshold bullet, the Inbox-triage
+    bullet, the roadmap.html wholesale-regen note, and the version-lifecycle
+    bullet to point at Code instead of "Chat"/"Chat triage pass"; firmed up
+    the Cowork-retirement note from "no replacement mechanism yet" to
+    "cancelled for good."
+  - `CLAUDE.md` — §2's citation of the old scan-issues file repointed to
+    its new `archive/` path; §4 (roadmap.html bullet) repointed the
+    placement-decision call from "a triage session with Chat" to Code as
+    master controller; §4 gained a note distinguishing the `SessionEnd`
+    hook from this project's own close-of-session doc updates; §5's
+    Structural bullet reworded to drop the "Chat/Cowork → docs → Design →
+    Code" pipeline language in favour of Code-as-master-controller, with
+    outside planning docs as optional reference input.
+  - `docs/INDEX.md` — retirement section reworded to state the scan is
+    cancelled permanently, not paused; "Code and Chat" read-access line for
+    `archive/` simplified to "Code."
+  - `docs/DECISIONS.md` — new entry ("Claude Code as master controller;
+    Cowork's scan cancellation confirmed permanent") capturing this
+    session's clarification, kept separate from yesterday's
+    retire-vs-reconfigure entry rather than editing it in place.
+- **Not touched:** `docs/DECISIONS.md`/`docs/ROADMAP.md`'s pre-existing
+  historical entries that mention Cowork's nightly scan or a Chat triage
+  session — those describe what was true when written and stay as
+  narrative record, same reasoning as the prior session's entry.

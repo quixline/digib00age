@@ -16,6 +16,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 - **2026-07-12** — `docs/` converted from a Google Drive junction to a plain
   repo folder (git tracking unaffected); Cowork's nightly doc-scan automation
   retired as a consequence, its files moved to `archive/`.
+- **2026-07-12** — Confirmed the doc-scan cancellation is permanent, not
+  pending a replacement; Claude Code is now the master controller for
+  planning/triage/build/docs, with outside planning docs (Design, Chat)
+  treated as reference input rather than a required pipeline stage.
 
 ---
 
