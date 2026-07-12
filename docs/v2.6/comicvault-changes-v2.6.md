@@ -265,9 +265,16 @@ drive effect, the `localhost` DNS artifact) are out of scope here — see
   series = 2,080 round-trips). In-process check: **7,508 → 13 queries,
   3.9-4.1s → ~0.63-0.67s median**. Manually verified: All Library loads
   visibly faster, no console errors, after a reader-server restart.
-- **Phase 2 — not started.** `GET /api/series/{id}` N+1 for large series
-  (finding #2): batch the per-issue `ReadingProgress` query the same way
-  Folder View's existing `progress_map` pattern already does.
+- **Phase 2 — ✅ built and manually verified 2026-07-12.** `GET /api/series/{id}`
+  N+1 for large series (finding #2): batched the per-issue `ReadingProgress`
+  query the same way Folder View's existing `progress_map` pattern already
+  does. Also found and fixed a second N+1 the original baseline didn't name
+  as root cause — the series-wide genre aggregation (`all_genres`) was also
+  lazy-loading `Issue.genres` per issue; fixed with the same
+  `selectinload(Issue.genres)` pattern as Phase 1. In-process check: 2000 AD
+  (2,483 issues) **4,969 → 9 queries, 2.5-2.7s → ~0.33-0.42s median**; Postal
+  (25 issues) 53 → 5 queries. Manually verified live after a reader-server
+  restart: 2000 AD loads fast, no console errors.
 - **Phase 3 — not started.** Reader page-serving (findings #4/#5): cache
   the sorted page list per issue in-process instead of re-parsing the ZIP
   central directory on every `/api/page/{id}/{n}` call.

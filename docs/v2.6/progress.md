@@ -1585,6 +1585,33 @@ rationale.
 - **Next:** Phase 2 — `GET /api/series/{id}` N+1 for large series, same
   `ReadingProgress`-batching pattern Folder View's `progress_map` already
   uses.
+
+## Session — 2026-07-12 (same day, follow-up) — Performance fixes Phase 2: `/api/series/{id}` N+1
+
+- **Phase 2 built:** `backend/routers/library.py`'s `get_series()`
+  (`GET /api/series/{issue_id}`) had `_progress_for(iss.id, db)` called once
+  per issue in the loop building `issue_list` — one `ReadingProgress` query
+  per issue in the series (finding #2's named root cause). Fixed with a
+  batched `progress_map` built once across `issues_sorted`, same pattern as
+  Folder View's existing `progress_map` and Phase 1's library fix.
+- **Found along the way, not named in the original baseline:** the
+  series-wide `all_genres` aggregation (`for i in issues for g in i.genres`)
+  was a second, separate N+1 — the query-count math in the original baseline
+  (4,969 for a 2,483-issue series) only adds up as *two* per-issue queries
+  (progress + genres), not one. Fixed with `selectinload(Issue.genres)` on
+  the `all_issues` query, same pattern as Phase 1.
+- **Verified:** in-process query-count check — 2000 AD (2,483 issues):
+  4,969 → 9 queries, 2.5-2.7s → ~0.33-0.42s median. Postal (25 issues, the
+  baseline's "typical series" comparison point): 53 → 5 queries. Tez
+  restarted the reader server via the tray app and confirmed live: 2000 AD
+  loads fast, no console errors.
+- **Docs updated:** `v2.6/comicvault-changes-v2.6.md` (Item 2 Phase 2 marked
+  done), this file, `CHANGELOG.md`, `PERFORMANCE.md` (Phase 2 re-baseline
+  appended to §1, and the finding #2 root-cause note amended to mention the
+  genres N+1 it didn't originally catch).
+- **Next:** Phase 3 — reader page-serving (findings #4/#5), cache the
+  sorted page list per issue instead of re-parsing the ZIP central
+  directory on every page request.
   - `docs/INDEX.md` — retirement section reworded to state the scan is
     cancelled permanently, not paused; "Code and Chat" read-access line for
     `archive/` simplified to "Code."

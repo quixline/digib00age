@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-12** — Performance fixes Phase 2 (v2.6 Item 2): fixed two N+1
+  queries in `GET /api/series/{id}` for large series (per-issue
+  `ReadingProgress` query, plus a lazy-loaded-genres N+1 the original
+  baseline hadn't named) — 2000 AD (2,483 issues) 4,969 queries/2.5-2.7s
+  down to 9 queries/~0.33-0.42s. See `PERFORMANCE.md` for the re-baseline.
 - **2026-07-12** — Performance fixes Phase 1 (v2.6 Item 2): fixed the two
   N+1 queries in `GET /api/library` (lazy-loaded genres, per-series
   `ReadingProgress` query) — 7,508 queries/3.9-4.1s down to 13 queries/

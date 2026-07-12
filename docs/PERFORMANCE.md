@@ -36,7 +36,7 @@ no wall adapter).
 | # | Finding | Median / p95 | Query count | Root cause | Fixable-in-code? | User-visible impact |
 |---|---|---|---|---|---|---|
 | 1 | `GET /api/library` (All library load) | 3.9-4.1s median, p95 4.4s | **7,508 queries** | N+1: `i.genres` accessed per-issue via lazy relationship (no `joinedload`/`selectinload` anywhere in the codebase) across ~5,400 issues, plus one extra `ReadingProgress` query per unique series (2,080 series) | **Yes** — eager-load genres/credits, batch the progress query once | High — hit on nearly every navigation to All/Series/Singles; confirmed identical in-process, over HTTP, and in a real browser load |
-| 2 | `GET /api/series/{id}` for a large series (2000 AD, 2,483 issues) | 2.5-2.7s | **4,969 queries** | N+1: one `ReadingProgress` query per issue in the series (no batching, unlike Folder View's `progress_map` pattern) | **Yes** — same batching pattern Folder View already uses | High for large series specifically — confirmed as a real multi-second wait in an actual browser click-through. A typical 25-issue series (Postal) takes 53 queries / 27-40ms — ~94x fewer queries for ~99x fewer issues, i.e. clean linear N+1 scaling |
+| 2 | `GET /api/series/{id}` for a large series (2000 AD, 2,483 issues) | 2.5-2.7s | **4,969 queries** | N+1: one `ReadingProgress` query per issue in the series (no batching, unlike Folder View's `progress_map` pattern) **plus a second, separate N+1 not caught at the time** — the series-wide genre aggregation also lazy-loaded `Issue.genres` per issue (the query count only adds up as two per-issue queries, not one — found and fixed in the Phase 2 re-baseline below) | **Yes** — same batching pattern Folder View already uses, plus `selectinload` for genres | High for large series specifically — confirmed as a real multi-second wait in an actual browser click-through. A typical 25-issue series (Postal) takes 53 queries / 27-40ms — ~94x fewer queries for ~99x fewer issues, i.e. clean linear N+1 scaling |
 | 3 | Cover images never honor conditional revalidation | n/a (per-request cost small; cumulative cost is the issue) | n/a | No `Cache-Control` header set anywhere (`backend/routers/reader.py`); confirmed live that a byte-exact `If-None-Match` still returns 200 with the full body, 0/15 sampled covers ever got a 304 | **Yes** — add cache headers / honor conditional GET | Medium-high cumulative — every "All library" grid view re-transfers all ~80MB of visible thumbnails from scratch, every visit, forever, even though nothing changed |
 | 4 | No page cache in the reader | 22.7-22.8ms per page (this test file) | n/a | `_sorted_pages()` re-opens the archive and re-enumerates the **entire** namelist on every single `/api/page/{id}/{n}` call; confirmed a never-before-read page costs the same (22.8ms) as re-flipping to an already-viewed page (22.7ms) — genuinely zero caching benefit | **Yes** — cache the sorted page list per issue (and optionally recent page bytes) | Currently small in absolute terms for typical-sized issues, but scales directly with page-image size/count — will be much more noticeable on the library's larger/higher-res issues |
 | 5 | `archive_namelist()` cold-open cost | median 42.5ms cold vs 0.6ms warm | n/a | Every archive open re-parses the ZIP central directory from scratch (median 42.5ms), while raw sequential disk throughput for the same files is healthy (91.4MB/s median) — this is app-level per-call overhead, not disk speed | **Yes** — same fix as #4 (avoid re-opening per request) | Compounds directly into #4; this is the specific mechanism behind it |
@@ -58,6 +58,16 @@ no wall adapter).
   aggregation over ~5,400 issues (grouping, sorting, set comprehensions),
   not DB round-trips — not re-measured at the query level separately since
   it's no longer the dominant cost this finding was flagging.
+- **Finding #2, Phase 2 fix — 2026-07-12.** `GET /api/series/{id}`'s
+  per-issue `ReadingProgress` N+1 fixed with a batched `progress_map`
+  (Folder View's existing pattern); also fixed a second N+1 the original
+  pass didn't name as root cause — series-wide genre aggregation lazy-
+  loading `Issue.genres` per issue — with `selectinload`. See
+  `v2.6/comicvault-changes-v2.6.md` Item 2 Phase 2 and `v2.6/progress.md`.
+  In-process query-count check: 2000 AD (2,483 issues) **4,969 → 9
+  queries, 2.5-2.7s → ~0.33-0.42s median**; Postal (25 issues) 53 → 5
+  queries. Manually verified live after a reader-server restart: 2000 AD
+  loads fast, no console errors.
 
 ### What's *not* a problem
 

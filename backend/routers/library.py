@@ -427,6 +427,7 @@ def get_series(
 
     all_issues = (
         db.query(Issue)
+        .options(selectinload(Issue.genres))
         .filter(Issue.series == series_name)
         .order_by(Issue.volume, Issue.number, Issue.id)
         .all()
@@ -449,10 +450,19 @@ def get_series(
 
     issues_sorted = sorted(issues, key=issue_sort)
 
+    # Batched once across the series (was one query per issue — a 2,483-issue
+    # series meant 2,483 round-trips), same pattern as Folder View's progress_map.
+    progress_map = {
+        p.issue_id: p
+        for p in db.query(ReadingProgress)
+        .filter(ReadingProgress.issue_id.in_([i.id for i in issues_sorted]))
+        .all()
+    }
+
     # Build issue list with progress
     issue_list = []
     for iss in issues_sorted:
-        prog = _progress_for(iss.id, db)
+        prog = progress_map.get(iss.id)
         issue_list.append({
             "id": iss.id,
             "number": iss.number,
