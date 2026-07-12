@@ -1670,6 +1670,46 @@ rationale.
   the original baseline (admin-auth-gated); needs a real measurement pass
   through an authenticated browser session before deciding whether/what to
   fix.
+
+## Session — 2026-07-13 (same day, follow-up) — Performance fixes Phase 5: Full Editor page-preview
+
+- Finding #6 was the one baseline finding never actually measured (code
+  inspection only, deliberately avoiding a scripted admin login with the
+  real password). Tez temporarily disabled admin password protection so
+  this session could measure it live via Claude-in-Chrome, without ever
+  handling the password directly (still off-limits per the credential
+  rule even with permission granted).
+- **Measured:** loaded the 1,220-page "East of West: The End of Times
+  Compendium" into the Full Editor (`http://127.0.0.1:9424/editor`,
+  `file_id=5`). Direct HTTP timing against the live server:
+  `/api/editor/full/files/5/page/{n}` took 25-330ms per page, transferring
+  up to 3.7MB of base64-encoded JSON, with **zero improvement on repeat
+  requests** to the same page (page 0: 68ms→65ms, page 1: 30ms→25ms) —
+  confirmed the same root cause as findings #4/#5 (the ZIP central
+  directory re-parsed on every call), just living in
+  `backend/routers/editor_full.py`, a separate module from `reader.py`
+  that doesn't share its Phase 3 cache.
+- **Scope decision (Tez):** fix only the page-list N+1, not the
+  full-res/base64 image encoding itself — the latter is a bigger, more
+  invasive change with real editor-UX tradeoffs (image quality) that
+  wasn't part of this pass.
+- **Phase 5 built:** added `_cached_image_list()` to
+  `backend/routers/editor_full.py` — same `(mtime, size)`-keyed cache
+  pattern as Phase 3's `_sorted_pages()` — and pointed both
+  `get_file_preview()` and `get_file_page()` at it instead of each
+  independently re-calling `archive_formats.archive_namelist()`.
+- **Verified:** re-added the same compendium after Tez restarted the
+  server, re-timed via direct HTTP: repeat page requests now show a real
+  cache benefit (page 0: 153ms→53ms, page 1: 91ms→16ms) instead of the
+  pre-fix flat/no-improvement pattern. Cleared the editor's working-file
+  list via the API afterward to leave no residue (no library/DB writes
+  occurred at any point — this endpoint only reads from working-set files
+  outside the library).
+- **Docs updated:** `v2.6/comicvault-changes-v2.6.md` (Item 2 Phase 5
+  marked done, Item 2 marked complete overall), this file, `CHANGELOG.md`,
+  `PERFORMANCE.md` (finding #6 and Phase 5 re-baseline). **v2.6 Item 2
+  (Performance fixes) is now complete** — all 5 phases from the
+  2026-07-09 baseline built and verified.
   - `docs/INDEX.md` — retirement section reworded to state the scan is
     cancelled permanently, not paused; "Code and Chat" read-access line for
     `archive/` simplified to "Code."

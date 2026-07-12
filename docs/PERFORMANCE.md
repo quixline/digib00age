@@ -40,7 +40,7 @@ no wall adapter).
 | 3 | Cover images never honor conditional revalidation | ~~n/a (cumulative cost)~~ **Fixed 2026-07-13** | n/a | No `Cache-Control` header set anywhere (`backend/routers/reader.py`); confirmed live that a byte-exact `If-None-Match` still returns 200 with the full body, 0/15 sampled covers ever got a 304 — root cause: Starlette's `FileResponse` computes an ETag automatically but has no logic to check it against an incoming `If-None-Match`, so a 304 was structurally impossible before this fix | **Done** — see Phase 4 re-baseline below | Medium-high cumulative — every "All library" grid view re-transfers all ~80MB of visible thumbnails from scratch, every visit, forever, even though nothing changed |
 | 4 | No page cache in the reader | ~~22.7-22.8ms per page~~ **Fixed 2026-07-13** | n/a | `_sorted_pages()` re-opens the archive and re-enumerates the **entire** namelist on every single `/api/page/{id}/{n}` call; confirmed a never-before-read page costs the same (22.8ms) as re-flipping to an already-viewed page (22.7ms) — genuinely zero caching benefit | **Done** — see Phase 3 re-baseline below | Currently small in absolute terms for typical-sized issues, but scales directly with page-image size/count — will be much more noticeable on the library's larger/higher-res issues |
 | 5 | `archive_namelist()` cold-open cost | ~~median 42.5ms cold vs 0.6ms warm~~ **Fixed 2026-07-13** | n/a | Every archive open re-parses the ZIP central directory from scratch (median 42.5ms), while raw sequential disk throughput for the same files is healthy (91.4MB/s median) — this is app-level per-call overhead, not disk speed | **Done** — same fix as #4 (avoid re-opening per request) | Compounds directly into #4; this is the specific mechanism behind it |
-| 6 | Full Editor page-preview (`GET /api/editor/full/files/{id}/page/{n}`) | Not measured this pass (sits behind admin auth; deferred rather than scripting a login with the real password) | n/a | From code inspection only: full-resolution image, base64-encoded into JSON, no downscaling, no caching — re-fetches/re-encodes/re-transfers the same page on every Prev/Next | Likely yes, once measured | Unmeasured but flagged as the single highest-risk unmeasured area — worth a dedicated pass through an authenticated browser session |
+| 6 | Full Editor page-preview (`GET /api/editor/full/files/{id}/page/{n}`) | ~~Not measured this pass~~ **Measured and partially fixed 2026-07-13** | n/a | Confirmed live (1,220-page compendium): 25-330ms/page, up to 3.7MB base64 JSON, zero improvement on repeat requests — same root cause as #4/#5 (ZIP central directory re-parsed every call), independently, in `editor_full.py`. Full-resolution image, base64-encoded into JSON, no downscaling — that part deliberately left unfixed (see Phase 5 re-baseline) | **Partially done** — page-list N+1 fixed; full-res/base64 encoding is a separate, more invasive change not done this pass | Confirmed real and significant on large issues — see Phase 5 re-baseline below |
 | 7 | Scanner duration | 5-14s across 18 historical runs (24/06-09/07) | n/a | All 18 logged runs were near-no-op incremental scans (`new_files_log.md` shows only 2 new files logged across that whole span) — this is the "walk ~5,500 files, find nothing changed" floor, **not** a representative "process N new files" number. Code shows up to 3 archive-opens per new/changed file | Unknown — untested at real scale this pass | Unmeasured for the case that matters (a real batch of new files); flagged for a dedicated instrumented run with explicit sign-off (writes thumbnails/DB rows) |
 | 8 | USB raw sequential throughput | 77-95MB/s median across two independent samples (Phase A1, Phase D1) | n/a | Healthy, consistent USB 3.0 HDD performance — no evidence of a systemic problem | n/a — not a code issue | Low — the drive itself is not the bottleneck for typical reads |
 | 9 | Post-idle drive throughput (cold-idle probe) | 1 of 2 valid samples showed ~39MB/s (vs ~84-88MB/s expected for that file size); the other showed 65MB/s (normal range) | n/a | Inconclusive — see §3. Possibly a link-power-state effect, possibly just that specific file's disk location; single differently-sized samples can't separate the two | n/a | Unresolved — see follow-up note in §3 |
@@ -89,6 +89,22 @@ no wall adapter).
   fresh request 200 with headers, matching `If-None-Match` → 304 empty
   body. Manually verified live: All Library loads faster, no console
   errors.
+- **Finding #6, Phase 5 fix — 2026-07-13.** Measured live for the first
+  time (Tez temporarily disabled admin password protection for this).
+  1,220-page compendium: 25-330ms per page, up to 3.7MB base64 JSON,
+  **zero improvement on repeat requests** (page 0: 68ms→65ms, page 1:
+  30ms→25ms) — confirmed the same root cause as findings #4/#5, just
+  living independently in `backend/routers/editor_full.py` (doesn't share
+  `reader.py`'s Phase 3 cache). **Scope call:** fixed only the page-list
+  N+1 (`_cached_image_list()`, same `(mtime, size)` pattern as Phase 3) —
+  the full-res/base64 image encoding itself was deliberately left unfixed,
+  a separate, more invasive change with editor-UX tradeoffs. Verified via
+  direct HTTP against the live server after a restart: repeat requests now
+  show a real cache benefit (page 0: 153ms→53ms, page 1: 91ms→16ms)
+  instead of the pre-fix flat/no-improvement pattern. See
+  `v2.6/comicvault-changes-v2.6.md` Item 2 Phase 5 and `v2.6/progress.md`.
+  **v2.6 Item 2 (Performance fixes) is now complete** — all 5 phases from
+  this baseline built and verified.
 
 ### What's *not* a problem
 

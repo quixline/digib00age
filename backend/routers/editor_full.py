@@ -55,6 +55,30 @@ from backend.editor.xml_parser import COMICINFO_TAGS, parse_comicinfo_xml
 
 router = APIRouter(tags=["editor-full"])
 
+_image_list_cache: dict[str, tuple[tuple[float, int], list[str]]] = {}
+
+
+def _cached_image_list(archive_path: str) -> list[str]:
+    """
+    Sorted in-archive image filenames, cached per archive path and keyed on
+    (mtime, size) so a changed file invalidates automatically — same fix as
+    PERFORMANCE.md findings #4/#5 (backend/routers/reader.py's
+    _sorted_pages), applied here since this module re-parsed the ZIP
+    central directory on every single preview/page call independently
+    (finding #6).
+    """
+    stat = os.stat(archive_path)
+    cache_key = (stat.st_mtime, stat.st_size)
+    cached = _image_list_cache.get(archive_path)
+    if cached and cached[0] == cache_key:
+        return cached[1]
+
+    image_files = sorted(
+        f for f in archive_formats.archive_namelist(archive_path) if f.lower().endswith(IMAGE_EXTENSIONS)
+    )
+    _image_list_cache[archive_path] = (cache_key, image_files)
+    return image_files
+
 # CBR added v2.4 Item 5/11 (EDITOR_SPEC.md §3.1) — Full Editor's pre-library
 # intake needs to handle CBR the same as CBZ; saving rebuilds it as .cbz.
 ALLOWED_EXTENSIONS = {".cbz", ".cbr"}
@@ -273,9 +297,7 @@ def resolve_file_xml(file_id: str, payload: dict = Body(...)):
 def get_file_preview(file_id: str):
     entry = _get_working_file_or_404(file_id)
     try:
-        image_files = sorted(
-            f for f in archive_formats.archive_namelist(entry["path"]) if f.lower().endswith(IMAGE_EXTENSIONS)
-        )
+        image_files = _cached_image_list(entry["path"])
         return {"image_list": image_files, "total_pages": len(image_files)}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
@@ -285,9 +307,7 @@ def get_file_preview(file_id: str):
 def get_file_page(file_id: str, page_num: int):
     entry = _get_working_file_or_404(file_id)
     try:
-        image_files = sorted(
-            f for f in archive_formats.archive_namelist(entry["path"]) if f.lower().endswith(IMAGE_EXTENSIONS)
-        )
+        image_files = _cached_image_list(entry["path"])
         if page_num < 0 or page_num >= len(image_files):
             raise HTTPException(status_code=404, detail="Page number out of range")
 

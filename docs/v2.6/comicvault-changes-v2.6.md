@@ -299,7 +299,27 @@ drive effect, the `localhost` DNS artifact) are out of scope here — see
   the network log — a browser-automation cache-revalidation quirk, not a
   server issue, ruled out by the direct-HTTP check against the same
   process).
-- **Phase 5 — not started.** Full Editor page-preview (finding #6):
-  unmeasured in the original baseline (admin-auth-gated) — needs a real
-  measurement pass through an authenticated browser session before
-  deciding whether/what to fix.
+- **Phase 5 — ✅ built and manually verified 2026-07-13.** Full Editor
+  page-preview (finding #6): unmeasured in the original baseline
+  (admin-auth-gated) — Tez temporarily disabled admin password protection
+  so this could be measured live. On a 1,220-page compendium, page loads
+  took 25-330ms each (up to 3.7MB base64 JSON per page) with **zero**
+  improvement on repeat requests — confirmed the same root cause as
+  findings #4/#5 (re-parsing the ZIP central directory on every call), just
+  in `backend/routers/editor_full.py`, a separate module that didn't share
+  `reader.py`'s Phase 3 cache. **Scope call:** fixed the page-list N+1 only
+  (same `(mtime, size)`-keyed cache pattern as Phase 3, via a new
+  `_cached_image_list()` used by both `/preview` and `/page/{n}`) —
+  deliberately left the full-res/base64 image encoding itself unfixed, a
+  separate, more invasive change with editor-UX tradeoffs (image quality)
+  not in scope for this pass. Verified via direct HTTP against the live
+  server: repeat page requests dropped from flat/no-improvement
+  (68ms→65ms) to a real cache benefit (153ms→53ms, 91ms→16ms across
+  different pages).
+
+**Status:** All 5 phases built and manually verified 2026-07-12/13 —
+**v2.6 Item 2 (Performance fixes) is now complete.** Every fixable finding
+from the 2026-07-09 `PERFORMANCE.md` baseline has been addressed; the
+not-fixable-in-code findings (scanner-at-scale, cold-idle drive effect, the
+`localhost` DNS artifact) remain as documented, unfixed observations per
+`PERFORMANCE.md` §1/§3.

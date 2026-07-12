@@ -13,6 +13,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-13** — Performance fixes Phase 5 (v2.6 Item 2): fixed the
+  Full Editor's page-preview N+1 (finding #6, measured live for the first
+  time this session) — `backend/routers/editor_full.py` now caches the
+  archive's sorted image list instead of re-parsing it on every
+  preview/page call. **v2.6 Item 2 (Performance fixes) is now complete**
+  — all 5 phases from the 2026-07-09 baseline built and verified. See
+  `PERFORMANCE.md` for the re-baseline.
 - **2026-07-13** — Performance fixes Phase 4 (v2.6 Item 2): `GET
   /api/cover/{id}` now sends `Cache-Control`/`ETag` and honors
   `If-None-Match` with a real 304 (Starlette's `FileResponse` computed an
