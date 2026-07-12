@@ -275,9 +275,17 @@ drive effect, the `localhost` DNS artifact) are out of scope here — see
   (2,483 issues) **4,969 → 9 queries, 2.5-2.7s → ~0.33-0.42s median**; Postal
   (25 issues) 53 → 5 queries. Manually verified live after a reader-server
   restart: 2000 AD loads fast, no console errors.
-- **Phase 3 — not started.** Reader page-serving (findings #4/#5): cache
-  the sorted page list per issue in-process instead of re-parsing the ZIP
-  central directory on every `/api/page/{id}/{n}` call.
+- **Phase 3 — ✅ built and manually verified 2026-07-13.** Reader
+  page-serving (findings #4/#5): `_sorted_pages()`
+  (`backend/routers/reader.py`) now caches the sorted page list per archive
+  path in-process, keyed on `(mtime, size)` so a rescan/replace invalidates
+  automatically, instead of re-parsing the ZIP central directory on every
+  `/api/page/{id}/{n}`, `/api/issue/{id}/pages`, and cover-fallback call.
+  In-process check (issue 11, Four Horsemen #1): cold parse 5,483ms (this
+  file was genuinely cold-disk this run, consistent with finding #9's
+  cold-idle drive variance, not a regression) → warm cache-hit
+  0.08-0.13ms. Manually verified live after a reader-server restart:
+  flipping through several pages of a comic, no console errors.
 - **Phase 4 — not started.** Cover image caching (finding #3): add
   `Cache-Control` headers and honor conditional `If-None-Match` GETs in
   `backend/routers/reader.py`.

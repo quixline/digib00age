@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-13** — Performance fixes Phase 3 (v2.6 Item 2): reader's
+  `_sorted_pages()` now caches the sorted page list per archive (keyed on
+  mtime+size), instead of re-parsing the ZIP central directory on every
+  page request. Cache-hit ~0.1ms vs a cold parse. See `PERFORMANCE.md` for
+  the re-baseline.
 - **2026-07-12** — Performance fixes Phase 2 (v2.6 Item 2): fixed two N+1
   queries in `GET /api/series/{id}` for large series (per-issue
   `ReadingProgress` query, plus a lazy-loaded-genres N+1 the original

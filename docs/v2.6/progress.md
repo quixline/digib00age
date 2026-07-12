@@ -1612,6 +1612,30 @@ rationale.
 - **Next:** Phase 3 — reader page-serving (findings #4/#5), cache the
   sorted page list per issue instead of re-parsing the ZIP central
   directory on every page request.
+
+## Session — 2026-07-13 — Performance fixes Phase 3: reader page-serving cache
+
+- **Phase 3 built:** `backend/routers/reader.py`'s `_sorted_pages()` re-parsed
+  the CBZ/CBR's ZIP central directory (`archive_formats.archive_namelist()`)
+  on every call — hit by `/api/page/{id}/{n}`, `/api/issue/{id}/pages`, and
+  the cover fallback path alike, with zero caching benefit even for
+  re-flipping to an already-viewed page (findings #4/#5). Added an
+  in-process cache keyed on `archive_path → ((mtime, size), sorted_pages)` —
+  an `os.stat()` check (cheap) gates a cache hit, and a changed file on disk
+  (rescan/replace) invalidates automatically since its `(mtime, size)` key
+  changes.
+- **Verified:** in-process check on issue 11 (Four Horsemen #1, the same
+  file the original baseline's Phase D2 used): cold parse 5,483ms this run
+  (this specific file was genuinely cold-disk, consistent with finding #9's
+  known cold-idle drive variance — not a regression from this change) →
+  warm cache-hit 0.08-0.13ms. Tez restarted the reader server and read
+  through several pages of a comic live, no console errors.
+- **Docs updated:** `v2.6/comicvault-changes-v2.6.md` (Item 2 Phase 3
+  marked done), this file, `CHANGELOG.md`, `PERFORMANCE.md` (Phase 3
+  re-baseline appended to §1).
+- **Next:** Phase 4 — cover image caching (finding #3): `Cache-Control`
+  headers + honoring conditional `If-None-Match` GETs in
+  `backend/routers/reader.py`.
   - `docs/INDEX.md` — retirement section reworded to state the scan is
     cancelled permanently, not paused; "Code and Chat" read-access line for
     `archive/` simplified to "Code."

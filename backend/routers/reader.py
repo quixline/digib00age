@@ -9,6 +9,7 @@ GET /api/issue/{id}/download  Serve the whole CBZ/CBR file (mobile offline downl
 from __future__ import annotations
 
 import io
+import os
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -30,21 +31,42 @@ IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff", "
 # Helpers
 # ---------------------------------------------------------------------------
 
+_page_list_cache: dict[str, tuple[tuple[float, int], list[str]]] = {}
+
+
 def _sorted_pages(archive_path: str) -> list[str]:
     """
     Return filenames inside the CBZ/CBR that look like images, sorted
     alphabetically. This is the canonical page order — same logic as the
     scanner uses for covers.
+
+    Cached in-process per archive_path, keyed on (mtime, size) so a changed
+    file on disk (rescan/replace) invalidates automatically — avoids
+    re-parsing the ZIP central directory on every page request
+    (PERFORMANCE.md findings #4/#5).
     """
+    try:
+        stat = os.stat(archive_path)
+    except OSError as exc:
+        raise HTTPException(status_code=500, detail=f"Cannot read archive: {exc}")
+
+    cache_key = (stat.st_mtime, stat.st_size)
+    cached = _page_list_cache.get(archive_path)
+    if cached and cached[0] == cache_key:
+        return cached[1]
+
     try:
         names = [
             n for n in archive_formats.archive_namelist(archive_path)
             if Path(n).suffix.lower() in IMAGE_EXTENSIONS
             and not Path(n).name.startswith(".")  # skip hidden files
         ]
-        return sorted(names)
+        pages = sorted(names)
     except (*archive_formats.BAD_ARCHIVE_EXCEPTIONS, FileNotFoundError) as exc:
         raise HTTPException(status_code=500, detail=f"Cannot read archive: {exc}")
+
+    _page_list_cache[archive_path] = (cache_key, pages)
+    return pages
 
 
 def _mime_for(filename: str) -> str:
