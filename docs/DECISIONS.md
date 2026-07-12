@@ -4,6 +4,22 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Full Editor page-preview: fix the page-list N+1, leave full-res/base64 encoding alone
+
+**Decided:** 2026-07-13, during v2.6 Item 2 Phase 5 (Performance fixes).
+
+**Why:** Finding #6 in `PERFORMANCE.md`'s baseline (never actually measured
+until this session — admin-auth-gated) turned out to have two distinct
+costs once measured live: an archive re-parse-per-call N+1 (same root
+cause as findings #4/#5) and a full-resolution, base64-encoded, uncached
+image payload (up to 3.7MB per page on a large compendium). Fixing the
+first is the same low-risk, already-proven pattern as Phase 3. Fixing the
+second would mean downscaling preview images and/or caching encoded page
+bytes — a bigger change that touches editor image quality, a UX tradeoff
+worth its own discussion rather than folding into a performance-fix pass.
+Chose to fix only the N+1 this session and leave the encoding cost as a
+documented, flagged follow-up in `PERFORMANCE.md` finding #6.
+
 ### Claude Code as master controller; Cowork's scan cancellation confirmed permanent
 
 **Decided:** 2026-07-12, same session as the `docs/` junction removal, as a
