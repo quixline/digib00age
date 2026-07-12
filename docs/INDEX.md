@@ -10,8 +10,7 @@ within a single doc, a later-dated or higher-numbered section overrides an earli
 ## Folder structure (as of 2026-06-29 doc cleanup)
 
 - **`docs/` (root)** — active, not version-scoped: feature specs, `BUGS.md` (open
-  only), `ROADMAP.md`, `INBOX.md`, `TESTING.md`, `CHANGELOG.md`, `INDEX.md`. In
-  scope for Cowork's nightly scan.
+  only), `ROADMAP.md`, `INBOX.md`, `TESTING.md`, `CHANGELOG.md`, `INDEX.md`.
 - **`docs/vN.M/`** — the *current* version's own working set, created fresh each
   version: `comicvault-changes-vN.M.md` (the build queue) and `progress.md`
   (narrative log, scoped to just this version's sessions). When a version closes,
@@ -22,9 +21,9 @@ within a single doc, a later-dated or higher-numbered section overrides an earli
   scoping/building begins (see `ROADMAP.md` "v2.6").
 - **`docs/archive/`** (renamed from `historical/` 2026-06-29) — closed-out build
   queues, their matching `progress.md`, one-time setup/research docs, and the fixed
-  bug history. **Out of focus for Cowork's nightly scan, not out of reach** —
-  Code and Chat both still have full access any time something needs revisiting;
-  this folder is a "less frequently needed" shelf, not a deleted one.
+  bug history. **Out of focus, not out of reach** — Code and Chat both still have
+  full access any time something needs revisiting; this folder is a "less
+  frequently needed" shelf, not a deleted one.
 - **`docs/meta/`** — Claude/working-process docs (not project architecture):
   `working-rules.md`, `voice-and-style.md`, `about-me.md`, `build-plan.html`,
   `roadmap.html`.
@@ -71,21 +70,21 @@ separate file; `ADMIN_SPEC.md` is the sole authority for Processing Tools now.
 | `README.md` | Orientation — how to run things, repo map, where to start reading (repo root, not `docs/`) |
 | `DECISIONS.md` | Rationale log — *why*, not *what*, non-obvious calls only. **Pending a dedicated entry-by-entry review (flagged 2026-06-29)** — some entries are closed-chapter, others are standing rationale current specs still point back to; needs sorting before any of it moves to archive. |
 
-## Doc-scan automation (Cowork)
+## Doc-scan automation (Cowork) — retired 2026-07-12
 
-| Doc | Purpose |
-|---|---|
-| `doc-scan-issues.md` | Append-only log of drift/contradictions Cowork's nightly scan finds. Sunday prune to `doc-scan-issues-archive.md`. |
-| `doc-scan-state.md` | Cowork's internal scan-state tracking (last-scanned timestamps etc.) |
-| `cowork-notes.md` | Cowork session log |
-| `cowork-doc-scan-instructions.md` | Authoritative current copy of Cowork's nightly scan instructions — **paste into Cowork's live scheduled-task config now**, it reflects the 2026-06-29 folder rename (`archive/`) and the per-version `docs/vX.Y/` working folder. Once pasted, this file gets archived as a point-in-time record (same pattern as the 2026-06-28 copy now at `archive/cowork-doc-scan-instructions.md`, which is stale — don't paste that one). |
+Cowork's nightly drift-scan depended on `docs/` being a Google Drive-synced
+junction (see `CLAUDE.md` Section 2). That junction has been removed — `docs/`
+is now a plain repo folder — so the scan has no mechanism left to run on. All
+four files below have been moved into `docs/archive/` as a point-in-time
+record; see `meta/working-rules.md` "Cowork nightly doc-scan (retired
+2026-07-12)" for the full note. No replacement drift-checking mechanism is in
+place.
 
 ## `docs/archive/` — out of focus, not out of reach
 
 Closed-out build queues, their matching `progress.md`, one-time setup/research docs,
-and fixed-bug history. **Excluded from Cowork's nightly scan** by default, but Code
-and Chat read these directly whenever something needs revisiting — nothing here is
-gone, it's just not part of the day-to-day working set.
+and fixed-bug history. Code and Chat read these directly whenever something needs
+revisiting — nothing here is gone, it's just not part of the day-to-day working set.
 
 | Doc | What it was for |
 |---|---|
@@ -101,23 +100,28 @@ gone, it's just not part of the day-to-day working set.
 | `v2.3/2.3-fixes.md` | The 9 post-test fixes implemented same day as the above, 2026-06-26 |
 | `comicvault-changes-2.1.md` | Planning backlog / build queue, 2.1 — closed out 2026-06-22 |
 | `comicvault-changes-v2.2.md` | v2.2: remove 2000 AD fixed tab + Folder View for Custom Tabs — closed out 2026-06-22 |
-| `cowork-doc-scan-instructions.md` | The instruction text pasted into Cowork's live scheduled-task config on 2026-06-28. Archived once copied over — the live copy lives in the Cowork task itself, not here; this file is a point-in-time record, not something to keep editing. |
+| `cowork-doc-scan-instructions.md` | The nightly-scan instruction text last pasted into Cowork's scheduled-task config, dated 2026-06-29. Moved here 2026-07-12 when the scan itself was retired (see "Doc-scan automation (Cowork) — retired" above) — point-in-time record only. |
 | `v2_investigation_report.md` | Pre-port investigation of the standalone CAPT metadata editor (architecture, bugs, what was worth porting). Referenced by `EDITOR_SPEC.md` §1 for background. |
 | `V2_MIGRATION_SETUP.md` | One-time filesystem/git task: clone V1 into the `comicvault_v2` folder and repoint to its own GitHub remote. Executed 2026-06-18. |
 | `V2_FOLLOWUP_COMMIT_AND_SCANNER_FIX.md` | One-time follow-up: commit migration housekeeping + fix the scanner thumbnail-skip bug (`bugs-fixed-archive.md` BUG-001). Executed 2026-06-18. |
 | `pre_migration_report.csv` | Data artifact, not a doc — output of `backend/editor/migration_report.py`'s one-time data-hygiene scan. |
+| `doc-scan-issues.md` | Append-only log of drift/contradictions Cowork's nightly scan found, back when that scan ran. Retired 2026-07-12 alongside the Drive junction it depended on. |
+| `doc-scan-issues-archive.md` | Sunday-prune archive of the above. |
+| `doc-scan-state.md` | Cowork's internal scan-state tracking (last-scanned timestamps etc.) — dead now the scan is retired. |
+| `cowork-notes.md` | Cowork session log from when Cowork had direct Drive access to `docs/`. |
 
 `comicvault-changes-2.1.md` (renamed from `comicvault-changes.md` on close-out) itself
 supersedes a now-removed file, `v2_1-main-new-features.md`, that `CUSTOM_TABS_SPEC.md`
 and `HOME_STRIPS_SPEC.md` used to point to — if you find an older reference to either
 filename anywhere, treat it as a typo for `comicvault-changes-2.1.md`.
 
-**Known gap (found 2026-06-27, not yet fully addressed):** a closed-out doc dropping
-out of the active scan means anything it was quietly still tracking (e.g. the Admin
-Card Size control, found at the bottom of `comicvault-changes-2.1.md`, never carried
-into `ADMIN_SPEC.md` until backfilled 2026-06-27) can sit invisible indefinitely.
-Cowork's scan only re-checks *changed* files — a closed doc that stops changing drops
-out of scope permanently. No fix in place yet; flagged for a dedicated pass.
+**Historical note (found 2026-06-27, moot since the 2026-07-12 scan retirement):** a
+closed-out doc dropping out of the active scan meant anything it was quietly still
+tracking (e.g. the Admin Card Size control, found at the bottom of
+`comicvault-changes-2.1.md`, never carried into `ADMIN_SPEC.md` until backfilled
+2026-06-27) could sit invisible indefinitely, since Cowork's scan only re-checked
+*changed* files. No live scan exists anymore, so this specific gap no longer
+applies — kept here as a lesson if any future drift-checking mechanism gets built.
 
 ## `docs/meta/` — Claude-facing process docs, not project architecture
 

@@ -1472,3 +1472,55 @@ rationale.
 - `docs/EDITOR_SPEC.md` §6.1 rewritten for the new async shape + Change Log
   entry; `docs/DECISIONS.md` entry for the silent-failure trade-off;
   `docs/CHANGELOG.md` one-liner.
+
+## Session — 2026-07-12 — Removed the docs/ Google Drive junction, retired Cowork's nightly doc-scan
+
+- **Goal:** Tez no longer needs Google Drive/Cowork in the loop for
+  `docs/`. Removed the Windows directory junction and replaced it with a
+  real folder in the repo containing the same files, then checked and
+  updated everything that assumed the junction existed.
+- **Migration:** confirmed via `fsutil reparsepoint query` that `docs/`
+  was a genuine NTFS junction (Mount Point) into
+  `C:\Users\tezdr\My Drive (quixlinedesign@gmail.com)\Dev_Folders\Workshop\
+  comicvault_v2\project_docs`, and that git already tracked the real file
+  content directly (`core.symlinks=false`, blobs are plain `100644`
+  files) — so removing the junction changes nothing from git's
+  perspective. Robocopied all 44 files (31 git-tracked + 13 gitignored
+  Cowork/meta files) from the junction-resolved path into a staging
+  folder, removed the junction with `rmdir` (link only, target untouched
+  — verified the original Drive folder still has all 44 files
+  afterward), renamed staging into place as `docs/`, cleared a stray
+  inherited ReadOnly attribute, and confirmed write access. `git status`
+  and `git ls-files docs` were byte-for-byte identical before and after
+  (same 31 tracked files, same two pre-existing modified files —
+  `INBOX.md`, `meta/roadmap.html` — untouched by the swap).
+- **Impact check surfaced a second, bigger thing:** Cowork's nightly
+  doc-scan automation (drift/contradiction checking across the doc set)
+  was built entirely on top of that junction — `meta/working-rules.md`
+  and `meta/cowork-doc-scan-instructions.md` described it, logged to
+  `doc-scan-issues.md`, tracked state in `doc-scan-state.md`. With the
+  junction gone, Cowork has no path into these docs anymore. Asked Tez
+  whether to retire that workflow or leave it for a separate
+  Cowork-side reconfiguration — **Tez chose retire**.
+- **Retirement done:** moved `doc-scan-state.md` and
+  `meta/cowork-doc-scan-instructions.md` (both gitignored, never
+  git-tracked) into `docs/archive/` as point-in-time records, alongside
+  the already-archived `cowork-notes.md` and `doc-scan-issues.md`/
+  `doc-scan-issues-archive.md`. Added a retirement note to
+  `meta/working-rules.md` and rewrote `INDEX.md`'s "Doc-scan automation
+  (Cowork)" section to match. Left `DECISIONS.md`/`ROADMAP.md`'s
+  historical entries mentioning Cowork's nightly scan untouched — those
+  are rationale/narrative log, describing what was true when written,
+  not live claims.
+- **Docs updated:** `CLAUDE.md` §2 (junction description → plain-folder
+  description, gitignored so not part of this commit), `README.md`
+  (dropped the junction pointer line), `docs/INDEX.md` (folder-structure
+  section, doc-scan-automation section, archive table, the 2026-06-27
+  known-gap note marked moot), `docs/meta/working-rules.md` (archive
+  description, Inbox-workflow bullet, new retirement note — gitignored,
+  not part of this commit).
+- **Not touched, flagged for later:** the broader "Chat/Cowork → docs →
+  Design → Code → docs → git workflow" phrase in `CLAUDE.md` §5 and
+  `working-rules.md`'s structural-change threshold — that's about
+  Cowork's planning role generally, a separate question from the
+  nightly-scan mechanism this session retired.

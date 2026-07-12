@@ -4,6 +4,21 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Retire Cowork's nightly doc-scan rather than reconfigure it
+
+**Decided:** 2026-07-12, while removing the `docs/` Google Drive junction.
+
+**Why:** Cowork's nightly drift-scan (`doc-scan-issues.md`, `doc-scan-state.md`,
+`cowork-doc-scan-instructions.md`) depended entirely on Cowork having live Drive
+access to `docs/` via that junction. Tez no longer wants Google Drive in the
+loop, which removes the scan's only access path. Asked Tez whether to retire
+the workflow outright or leave the docs alone pending a separate
+Cowork-side reconfiguration (e.g. pointed at GitHub instead) — **chose
+retire**: no replacement mechanism assumed or half-built. The three
+scan-specific files moved to `docs/archive/` as point-in-time records rather
+than being deleted, in case a future drift-checking mechanism gets built and
+wants the prior instructions as a reference.
+
 ### Basic Editor async save: silent failure after navigating away is acceptable
 
 **Decided:** 2026-07-11, scoping the Basic Editor's async-save fix (`INBOX.md`

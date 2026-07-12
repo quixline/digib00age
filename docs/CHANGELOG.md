@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-12** — `docs/` converted from a Google Drive junction to a plain
+  repo folder (git tracking unaffected); Cowork's nightly doc-scan automation
+  retired as a consequence, its files moved to `archive/`.
+
 ---
 
 - **2026-07-11** — Basic Editor save made async: the modal now closes as

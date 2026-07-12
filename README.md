@@ -3,9 +3,7 @@
 A personal, local comic book server for a single user on a home network. Serves a CBZ
 collection with metadata read from embedded `ComicInfo.xml`.
 
-Start here, then see `docs/INDEX.md` for the full doc map. (`docs/` is a directory
-junction into a Google Drive-synced folder, used for Claude Cowork planning access —
-see `CLAUDE.md` Section 2.)
+Start here, then see `docs/INDEX.md` for the full doc map.
 
 ## Architecture
 
