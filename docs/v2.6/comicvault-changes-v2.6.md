@@ -286,9 +286,19 @@ drive effect, the `localhost` DNS artifact) are out of scope here — see
   cold-idle drive variance, not a regression) → warm cache-hit
   0.08-0.13ms. Manually verified live after a reader-server restart:
   flipping through several pages of a comic, no console errors.
-- **Phase 4 — not started.** Cover image caching (finding #3): add
-  `Cache-Control` headers and honor conditional `If-None-Match` GETs in
-  `backend/routers/reader.py`.
+- **Phase 4 — ✅ built and manually verified 2026-07-13.** Cover image
+  caching (finding #3): `GET /api/cover/{id}` (`backend/routers/reader.py`)
+  now sends `Cache-Control: public, max-age=86400` + an `ETag`, and honors
+  `If-None-Match` with a real `304` — Starlette's `FileResponse` computed an
+  ETag but never checked it against the incoming request, so nothing was
+  ever actually revalidated before this fix. Verified via `TestClient`
+  in-process, then against the live already-restarted server over direct
+  HTTP: first request 200 with headers, second request with that ETag as
+  `If-None-Match` → 304. Tez confirmed live: All Library loads faster with
+  no console errors (a same-URL scripted browser reload didn't show 304s in
+  the network log — a browser-automation cache-revalidation quirk, not a
+  server issue, ruled out by the direct-HTTP check against the same
+  process).
 - **Phase 5 — not started.** Full Editor page-preview (finding #6):
   unmeasured in the original baseline (admin-auth-gated) — needs a real
   measurement pass through an authenticated browser session before

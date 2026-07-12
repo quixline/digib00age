@@ -12,7 +12,9 @@ import io
 import os
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+import hashlib
+
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response, FileResponse
 from sqlalchemy.orm import Session
 
@@ -149,11 +151,20 @@ def get_page(issue_id: int, page_number: int, db: Session = Depends(get_db)):
 # GET /api/cover/{issue_id}
 # ---------------------------------------------------------------------------
 
+COVER_CACHE_CONTROL = "public, max-age=86400"
+
+
 @router.get("/cover/{issue_id}")
-def get_cover(issue_id: int, db: Session = Depends(get_db)):
+def get_cover(issue_id: int, request: Request, db: Session = Depends(get_db)):
     """
     Serve the pre-generated thumbnail for an issue.
     Falls back to extracting the first page directly if no thumbnail exists.
+
+    Sends Cache-Control + ETag and honors If-None-Match with a real 304
+    (PERFORMANCE.md finding #3 — Starlette's FileResponse computes an ETag
+    but never checks it against the incoming request, so nothing was ever
+    actually revalidated; every grid view re-transferred every visible
+    thumbnail from scratch).
     """
     config = get_config()
     thumb_dir = Path(config["thumbnail_dir"])
@@ -166,7 +177,13 @@ def get_cover(issue_id: int, db: Session = Depends(get_db)):
     thumb_path = thumb_dir / f"{issue_id}.jpg"
 
     if thumb_path.exists():
-        return FileResponse(str(thumb_path), media_type="image/jpeg")
+        stat = thumb_path.stat()
+        etag_base = f"{stat.st_mtime}-{stat.st_size}"
+        etag = f'"{hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()}"'
+        headers = {"Cache-Control": COVER_CACHE_CONTROL, "ETag": etag}
+        if request.headers.get("if-none-match") == etag:
+            return Response(status_code=304, headers=headers)
+        return FileResponse(str(thumb_path), media_type="image/jpeg", headers=headers)
 
     # Fallback — extract first page from CBZ on the fly
     issue = db.query(Issue).filter(Issue.id == issue_id).first()
@@ -185,7 +202,7 @@ def get_cover(issue_id: int, db: Session = Depends(get_db)):
     except (*archive_formats.BAD_ARCHIVE_EXCEPTIONS, *archive_formats.ENTRY_NOT_FOUND_EXCEPTIONS) as exc:
         raise HTTPException(status_code=500, detail=f"Cannot read cover page: {exc}")
 
-    return Response(content=data, media_type=mime)
+    return Response(content=data, media_type=mime, headers={"Cache-Control": COVER_CACHE_CONTROL})
 
 
 # ---------------------------------------------------------------------------

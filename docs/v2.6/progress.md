@@ -1636,6 +1636,40 @@ rationale.
 - **Next:** Phase 4 — cover image caching (finding #3): `Cache-Control`
   headers + honoring conditional `If-None-Match` GETs in
   `backend/routers/reader.py`.
+
+## Session — 2026-07-13 (same day, follow-up) — Performance fixes Phase 4: cover Cache-Control/ETag/304
+
+- **Phase 4 built:** `GET /api/cover/{issue_id}` (`backend/routers/reader.py`)
+  had no `Cache-Control` header and never honored conditional GET — root
+  cause (finding #3): Starlette's `FileResponse` computes and sends an
+  `ETag`/`Last-Modified` automatically, but has no logic anywhere to check
+  an incoming `If-None-Match` against it, so a `304` was never possible even
+  though the ETag was already present in every response. Added an explicit
+  `Cache-Control: public, max-age=86400` header, computed the ETag manually
+  (same md5(mtime+size) formula `FileResponse` already used, so any
+  previously-cached client ETag stays valid), and check
+  `request.headers["if-none-match"]` before building the `FileResponse`,
+  returning a bare 304 with no body on a match. The rare CBZ-extraction
+  fallback path (thumbnail missing — ~0% of requests, coverage is ~100%)
+  got the `Cache-Control` header too, without the conditional-GET logic
+  (not worth the complexity for a path that's essentially never hit).
+- **Verified:** `TestClient` in-process check — fresh request 200 with
+  `Cache-Control`/`ETag`, matching `If-None-Match` → 304 with empty body,
+  stale `If-None-Match` → full 200. Re-confirmed against the live,
+  already-restarted server over direct HTTP (same result). Tez confirmed
+  live in the browser: All Library loads faster, no console errors. A
+  scripted browser reload via Claude-in-Chrome didn't show 304s in its
+  network log on a same-URL `navigate()` — traced to a browser-automation
+  cache-revalidation quirk (scripted navigation doesn't exercise HTTP cache
+  revalidation the way a real user reload does), ruled out as a server
+  issue by the direct-HTTP check against the identical running process.
+- **Docs updated:** `v2.6/comicvault-changes-v2.6.md` (Item 2 Phase 4
+  marked done), this file, `CHANGELOG.md`, `PERFORMANCE.md` (finding #3 and
+  Phase 4 re-baseline).
+- **Next:** Phase 5 — Full Editor page-preview (finding #6), unmeasured in
+  the original baseline (admin-auth-gated); needs a real measurement pass
+  through an authenticated browser session before deciding whether/what to
+  fix.
   - `docs/INDEX.md` — retirement section reworded to state the scan is
     cancelled permanently, not paused; "Code and Chat" read-access line for
     `archive/` simplified to "Code."
