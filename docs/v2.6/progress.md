@@ -1557,6 +1557,34 @@ rationale.
     Structural bullet reworded to drop the "Chat/Cowork → docs → Design →
     Code" pipeline language in favour of Code-as-master-controller, with
     outside planning docs as optional reference input.
+
+## Session — 2026-07-12 (same day, follow-up) — Performance fixes Phase 1: `/api/library` N+1
+
+- Found and triaged `docs/PERFORMANCE.md`'s 2026-07-09 baseline — nothing
+  from it had been queued anywhere yet. Ranked the fixable findings by
+  impact, agreed with Tez to track the work as v2.6 Item 2 (folder stayed
+  open for follow-ups per `INDEX.md`) and to close each phase out (build →
+  manual test → commit) before starting the next, rather than batching all
+  fixes into one test pass.
+- **Phase 1 built:** `backend/routers/library.py`'s `get_library()`
+  (`GET /api/library`) had two N+1s — `Issue.genres` accessed per-issue via
+  a lazy relationship across ~5,400 issues, and a `ReadingProgress` query
+  re-run once per unique series (2,080 series) instead of batched. Fixed
+  with `selectinload(Issue.genres)` on the initial query and one
+  `ReadingProgress` query across every issue in scope, built into a
+  `read_map` before the per-series loop instead of inside it.
+- **Verified:** in-process query-count check (same methodology as
+  `PERFORMANCE.md` Phase B) confirmed 7,508 → 13 queries, 3.9-4.1s →
+  ~0.63-0.67s median. The live reader-server subprocess doesn't autoreload
+  (plain `subprocess.Popen`, no `--reload`), so it needed a restart to pick
+  up the change — Tez restarted it via the tray app and confirmed live: All
+  Library loads visibly faster, no console errors.
+- **Docs updated:** `v2.6/comicvault-changes-v2.6.md` (new Item 2, Phase 1
+  marked done, Phases 2-5 scoped), this file, `CHANGELOG.md`,
+  `PERFORMANCE.md` (Phase 1 re-baseline appended to §1).
+- **Next:** Phase 2 — `GET /api/series/{id}` N+1 for large series, same
+  `ReadingProgress`-batching pattern Folder View's `progress_map` already
+  uses.
   - `docs/INDEX.md` — retirement section reworded to state the scan is
     cancelled permanently, not paused; "Code and Chat" read-access line for
     `archive/` simplified to "Code."

@@ -46,6 +46,19 @@ no wall adapter).
 | 9 | Post-idle drive throughput (cold-idle probe) | 1 of 2 valid samples showed ~39MB/s (vs ~84-88MB/s expected for that file size); the other showed 65MB/s (normal range) | n/a | Inconclusive — see §3. Possibly a link-power-state effect, possibly just that specific file's disk location; single differently-sized samples can't separate the two | n/a | Unresolved — see follow-up note in §3 |
 | 10 | `localhost` vs `127.0.0.1` on this host | ~2000-2700ms added to **every** request via `localhost`; eliminated entirely via `127.0.0.1` | n/a | Windows resolves `localhost` to IPv6 (`::1`) first; the server binds IPv4 only; the refused IPv6 attempt takes ~2000ms before falling back to IPv4 (confirmed via raw socket test) | No — not a ComicVault issue, a Windows network-stack artifact on this host | None for real browser users (Chrome/Edge/Firefox use Happy Eyeballs and race IPv4/IPv6, so they're not affected) — but any script, curl command, or non-browser tool that hits literal `localhost:9424` on this machine eats a consistent ~2s tax per request. **Use `127.0.0.1` for any future diagnostic scripts on this host.** |
 
+### Re-baselines (fixes applied against this baseline)
+
+- **Finding #1, Phase 1 fix — 2026-07-12.** `GET /api/library`'s two N+1s
+  fixed (`selectinload(Issue.genres)` + a single batched `ReadingProgress`
+  query instead of one per series) — see `v2.6/comicvault-changes-v2.6.md`
+  Item 2 Phase 1 and `v2.6/progress.md` for the full change. In-process
+  query-count check: **7,508 → 13 queries, 3.9-4.1s → ~0.63-0.67s median**.
+  Manually verified live after a reader-server restart: All Library loads
+  visibly faster, no console errors. The remaining ~0.63s is Python-level
+  aggregation over ~5,400 issues (grouping, sorting, set comprehensions),
+  not DB round-trips — not re-measured at the query level separately since
+  it's no longer the dominant cost this finding was flagging.
+
 ### What's *not* a problem
 
 - Raw USB drive throughput is healthy and consistent (75-95MB/s across ~130

@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from backend.database import get_db
 from backend.models import CustomTab, Issue, IssueCredit, IssueGenre, Person, ReadingProgress
@@ -149,7 +149,7 @@ def get_library(
     the filter shows counts scoped to the matching issues only (intended for
     folder/field/search-scoped views).
     """
-    query = db.query(Issue).filter(Issue.missing == False)
+    query = db.query(Issue).options(selectinload(Issue.genres)).filter(Issue.missing == False)
     if group:
         query = query.filter(Issue.format_group == group)
 
@@ -182,6 +182,15 @@ def get_library(
     for issue in all_issues:
         series_map.setdefault(issue.series, []).append(issue)
 
+    # Batched once across every issue in scope (was one query per series —
+    # 2,080 series meant 2,080 round-trips for the unfiltered library).
+    all_progress = (
+        db.query(ReadingProgress)
+        .filter(ReadingProgress.issue_id.in_([i.id for i in all_issues]))
+        .all()
+    )
+    read_map = {p.issue_id: p.status for p in all_progress}
+
     result = []
     for series_name, issues in sorted(series_map.items(), key=lambda x: x[0].lstrip("'\"").lower()):
         cover_issue = sorted(
@@ -189,14 +198,6 @@ def get_library(
             key=lambda i: (float(i.number) if i.number and _is_numeric(i.number) else 9999, i.id)
         )[0]
 
-        # Count unread
-        issue_ids = [i.id for i in issues]
-        read_statuses = (
-            db.query(ReadingProgress)
-            .filter(ReadingProgress.issue_id.in_(issue_ids))
-            .all()
-        )
-        read_map = {p.issue_id: p.status for p in read_statuses}
         unread_count = sum(
             1 for i in issues if read_map.get(i.id, "unread") == "unread"
         )

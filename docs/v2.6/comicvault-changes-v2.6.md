@@ -245,3 +245,36 @@ followed on 2026-07-08 — **v2.6 Item 1 (Web UI Redesign) is now
 complete.** The Admin IA restructure, the Browse bar (including its open
 dropdowns), CoverCard, and Series/Issue detail all now match the Design
 reference.
+
+---
+
+## Item 2 — Performance fixes (from the 2026-07-09 `PERFORMANCE.md` baseline)
+
+**Feature.** Working through the fixable findings ranked in
+`docs/PERFORMANCE.md`'s first baseline, one at a time — each phase gets its
+own manual test + commit before the next starts (per `CLAUDE.md` Section 3).
+Not-fixable-in-code findings from that baseline (scanner-at-scale, cold-idle
+drive effect, the `localhost` DNS artifact) are out of scope here — see
+`PERFORMANCE.md` §1 for why.
+
+- **Phase 1 — ✅ built and manually verified 2026-07-12.** `GET /api/library`
+  N+1 fix (`backend/routers/library.py`): eager-load `Issue.genres` via
+  `selectinload` (was accessed per-issue via lazy relationship across
+  ~5,400 issues) and batch the per-series `ReadingProgress` query into one
+  query across all issues in scope (was one query per unique series, 2,080
+  series = 2,080 round-trips). In-process check: **7,508 → 13 queries,
+  3.9-4.1s → ~0.63-0.67s median**. Manually verified: All Library loads
+  visibly faster, no console errors, after a reader-server restart.
+- **Phase 2 — not started.** `GET /api/series/{id}` N+1 for large series
+  (finding #2): batch the per-issue `ReadingProgress` query the same way
+  Folder View's existing `progress_map` pattern already does.
+- **Phase 3 — not started.** Reader page-serving (findings #4/#5): cache
+  the sorted page list per issue in-process instead of re-parsing the ZIP
+  central directory on every `/api/page/{id}/{n}` call.
+- **Phase 4 — not started.** Cover image caching (finding #3): add
+  `Cache-Control` headers and honor conditional `If-None-Match` GETs in
+  `backend/routers/reader.py`.
+- **Phase 5 — not started.** Full Editor page-preview (finding #6):
+  unmeasured in the original baseline (admin-auth-gated) — needs a real
+  measurement pass through an authenticated browser session before
+  deciding whether/what to fix.

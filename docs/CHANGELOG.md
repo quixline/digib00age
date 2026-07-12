@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-12** — Performance fixes Phase 1 (v2.6 Item 2): fixed the two
+  N+1 queries in `GET /api/library` (lazy-loaded genres, per-series
+  `ReadingProgress` query) — 7,508 queries/3.9-4.1s down to 13 queries/
+  ~0.63-0.67s. See `PERFORMANCE.md` for the re-baseline.
 - **2026-07-12** — Fixed BUG-022: bulk star rating from the multi-select
   bottom toolbar wasn't reflected on cards (backend was already correct;
   client-side DOM/cache patch was missing). Also investigated a stale-cover
