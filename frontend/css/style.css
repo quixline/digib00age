@@ -194,29 +194,40 @@ ul { list-style: none; }
   padding: 0 20px;
 }
 
-/* ── Random library-page cover background (INBOX 2026-07-13) ────────────────
+/* ── Random library-page cover background (INBOX 2026-07-13, corrected
+   2026-07-13 — full content-area width, not just the centered .container) ──
    Home / Browse (All, Singles, Series, custom tabs) / Folder View all render
-   inside this one <main>, so one background layer here covers every surface.
-   Same image → blur → fade recipe as .series-backdrop/.issue-backdrop, but
-   anchored to the top-right corner instead of a top-to-bottom wash — cover
-   choice and visibility toggling are app.js's setPageBackground(). */
-.page-main { position: relative; }
-#homeView, #browseView, #folderView { position: relative; z-index: 1; }
+   inside .app-content, so one fixed background layer covers every surface
+   without being clipped to the centered 1440px .container column. Pinned to
+   the viewport (left offset tracks --sidebar-w, including its collapsed
+   width) rather than scrolling with page content, so it always fills the
+   real visible content area regardless of page height. Same image → blur →
+   fade recipe as .series-backdrop/.issue-backdrop, anchored to the top-right
+   corner instead of a top-to-bottom wash — cover choice and visibility
+   toggling are app.js's setPageBackground(). */
+#homeView, #browseView, #folderView, .menu-bar { position: relative; z-index: 1; }
 
 .page-bg {
-  position: absolute;
-  inset: 0;
+  position: fixed;
+  top: var(--header-h);
+  left: var(--sidebar-w);
+  right: 0;
+  bottom: 0;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+  transition: left var(--dur) var(--ease);
 }
+body.sidebar-collapsed .page-bg { left: 60px; }
 .page-bg-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: top right;
   opacity: 0.4;
-  filter: blur(28px);
+  /* saturate+sepia mute any strong colour cast (blue-toned covers read too
+     blue at this size/blur otherwise) instead of a flat grey wash */
+  filter: blur(28px) saturate(0.6) sepia(0.15);
   transform: scale(1.15); /* keeps blurred edges off-canvas */
   -webkit-mask-image: radial-gradient(circle at top right, #000 0%, transparent 70%);
           mask-image: radial-gradient(circle at top right, #000 0%, transparent 70%);

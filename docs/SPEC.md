@@ -1073,12 +1073,12 @@ also gone, so it now matches the rest at rest. The functional status borders
 entries — §8) are unchanged and still show, since they only override
 `border-color`, not `border-style`.
 
-### 20.19 Random Library-Page Cover Background (2026-07-13, built 2026-07-13)
+### 20.19 Random Library-Page Cover Background (2026-07-13, built 2026-07-13; corrected same day — full content-area width + reduced blue cast)
 
 `INBOX.md` triage. Home, Browse (All/Singles/Series), and every custom
-tab (flat or Folder View) share one `<main class="page-main">` element
-(`frontend/index.html`) — a single background layer inside it
-(`#pageBg`/`#pageBgImg`) covers every one of these surfaces.
+tab (flat or Folder View) render inside `.app-content`, so one shared
+background layer (`#pageBg`/`#pageBgImg`, `frontend/index.html`) covers
+every one of these surfaces.
 
 - **Cover source:** picked at random from whatever's actually shown on the
   active surface, never the whole library — Home draws from the union of
@@ -1090,17 +1090,27 @@ tab (flat or Folder View) share one `<main class="page-main">` element
 - **Timing:** picked once per surface-entry (`renderBrowse()`/`loadHome()`/
   `renderFolderView()`), not on every filter tweak or pagination click, so
   it stays stable while browsing within a surface instead of flickering.
+- **Geometry:** `position: fixed`, pinned to the real viewport rather than
+  scrolling with page content — `top: var(--header-h)`,
+  `left: var(--sidebar-w)` (tracks the sidebar's collapsed width too), so
+  it fills the whole visible content area next to the sidebar, not just
+  the centered 1440px `.container` column. First cut clipped it to the
+  centered container, leaving flat gutters on wide screens — corrected
+  same day from a live screenshot.
 - **Visual recipe:** same image → blur → fade idea as the existing
-  `.series-backdrop`/`.issue-backdrop` (§20.6), but anchored to the
-  top-right corner via a radial mask (`radial-gradient(circle at top
-  right, …)`) instead of a top-to-bottom wash — 40% opacity, 28px blur,
-  fading fully transparent by ~70% of the gradient radius. Effect is a
-  subtle wash, mostly covered by foreground content on a densely-packed
-  grid — most visible in the gaps between Home strips and while a page is
-  still loading.
+  `.series-backdrop`/`.issue-backdrop` (§20.6), anchored to the top-right
+  corner via a radial mask (`radial-gradient(circle at top right, …)`)
+  instead of a top-to-bottom wash — 40% opacity, 28px blur, `saturate(0.6)
+  sepia(0.15)` to mute strong colour casts (blue-toned covers read too
+  blue otherwise — also corrected same day), fading fully transparent by
+  ~70% of the gradient radius. Effect is a subtle wash, mostly covered by
+  foreground content on a densely-packed grid — most visible in the gaps
+  between Home strips and while a page is still loading.
 - **Where:** `frontend/index.html` (`.page-bg`/`.page-bg-img` markup),
-  `frontend/css/style.css` (`.page-main`, `.page-bg`, `.page-bg-img`),
-  `frontend/js/app.js` (`setPageBackground()` plus its three call sites).
+  `frontend/css/style.css` (`.page-bg`, `.page-bg-img`, and the
+  `position: relative; z-index: 1` elevation on `#homeView`/`#browseView`/
+  `#folderView`/`.menu-bar`), `frontend/js/app.js` (`setPageBackground()`
+  plus its three call sites).
 
 ---
 

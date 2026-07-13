@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-13** — Random cover background correction: now spans the full
+  content area (was clipped to the centered `.container` column, leaving
+  flat gutters on wide screens) and mutes blue-toned covers instead of
+  reading overly blue. See `v2.6/progress.md` "Random cover background:
+  full-width + reduce blue cast".
 - **2026-07-13** — Random library-page cover background: Home, Browse
   (All/Singles/Series), and custom tabs (flat or Folder View) now show a
   subtle blurred cover image behind the page, anchored top-right, randomly

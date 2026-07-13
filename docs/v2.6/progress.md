@@ -1904,3 +1904,34 @@ a rescan ran. Investigated read-only first, in plan mode.
   visual breakage, reverted the theme override after testing). No console
   errors on any surface.
 - **Docs:** `SPEC.md` §20.19 added.
+
+## Session — 2026-07-13 (same day, follow-up) — Random cover background: full-width + reduce blue cast
+
+- Tez flagged two problems from a real screenshot (wide viewport): (1) the
+  background was clipped to the centered 1440px `.container` column,
+  leaving plain flat gutters on either side on any screen wider than that
+  — should cover the full content area instead; (2) the wash read too
+  blue.
+- **Full-width fix:** `.page-bg` changed from `position: absolute` (sized
+  to `.page-main`'s box) to `position: fixed`, pinned to the actual
+  viewport — `top: var(--header-h)`, `left: var(--sidebar-w)` (with a
+  `body.sidebar-collapsed` override matching the sidebar's own 60px
+  collapsed width), `right: 0`, `bottom: 0`. This also means it no longer
+  scales with page height the way the old absolute-inside-`.page-main`
+  version did (relevant for Home, which can get tall with many strips).
+  Needed `#homeView`/`#browseView`/`#folderView`/`.menu-bar` all elevated
+  to `position: relative; z-index: 1` (menu-bar didn't need this before —
+  it never spatially overlapped the old container-scoped bg — but does
+  now that the bg spans the full content area including the menu-bar row).
+- **Blue-cast fix:** added `saturate(0.6) sepia(0.15)` to `.page-bg-img`'s
+  filter, muting any strong colour cast (many covers skew cool/blue) into
+  a more neutral warm-grey wash rather than trying to hand-tune per-image.
+  Another judgment call on ambiguous units, same as the original 40%/50%
+  figures — ready to adjust if it reads wrong.
+- **Verified live:** resized the browser to 1920px wide, confirmed the
+  glow now extends to the real right edge of the viewport (not stopping
+  at the old ~1440px column boundary) and reads a muted warm-grey instead
+  of blue. Confirmed the sidebar (both expanded and collapsed states) and
+  header stay completely clean — no bleed-through — and that the menu
+  bar's filter dropdowns/count still render crisply above the now-full-
+  span background. No console errors.
