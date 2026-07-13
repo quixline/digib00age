@@ -39,13 +39,6 @@ Example:
 
 ---
 
-[change] add a slight zoom and 80% white border 'on hover' over the cover image in issue/id
-
-[change] add a random cover image to the page (<>container<>) bg on library pages (home, all, singles, series and custom tabs) the image should only be chosen from the current library page so for a custom library like 2000 AD only 2000 AD covers should be shown. The bg image should fill the container div and start at 40% transparancey with 50% blur from the top right fading completely out 
-
-
-
-
 
 
 
@@ -58,6 +51,10 @@ Example:
 - ~~[change] add pagination to /series/id~~ → built directly this session (no separate triage pass) as v2.6 Item 3 — see `comicvault-changes-v2.6.md`/`progress.md`
 
 - ~~[change] replace taskbar icon with icon-oo.png - keep current green dot for server running, red for stopped - or offer alternative options if available~~ → `icon-oo.png` turned out to be a non-square 166×100 logo lockup, unusable as a tray glyph as-is; used `favicon.png` (square, transparent bg) instead, kept the existing 3-state dot mechanism unchanged — see `DECISIONS.md` "Tray icon base glyph"
+
+- ~~[change] add a slight zoom and 80% white border 'on hover' over the cover image in issue/id~~ → built directly this session (cosmetic, no triage ritual) — `.issue-cover-img:hover` in `frontend/css/style.css`; see `progress.md` "Issue Detail cover: hover zoom + white border"
+
+- ~~[change] add a random cover image to the page (<>container<>) bg on library pages (home, all, singles, series and custom tabs) the image should only be chosen from the current library page so for a custom library like 2000 AD only 2000 AD covers should be shown. The bg image should fill the container div and start at 40% transparancey with 50% blur from the top right fading completely out~~ → built directly this session — see `progress.md` "Random library-page cover background"
 
 - ~~[bug] a performance review was carried out and found bottle necks, find the review and plan the execution~~
 

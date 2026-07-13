@@ -1073,6 +1073,35 @@ also gone, so it now matches the rest at rest. The functional status borders
 entries — §8) are unchanged and still show, since they only override
 `border-color`, not `border-style`.
 
+### 20.19 Random Library-Page Cover Background (2026-07-13, built 2026-07-13)
+
+`INBOX.md` triage. Home, Browse (All/Singles/Series), and every custom
+tab (flat or Folder View) share one `<main class="page-main">` element
+(`frontend/index.html`) — a single background layer inside it
+(`#pageBg`/`#pageBgImg`) covers every one of these surfaces.
+
+- **Cover source:** picked at random from whatever's actually shown on the
+  active surface, never the whole library — Home draws from the union of
+  all currently-loaded strip items, Browse/flat custom tabs draw from
+  `getFilteredLibrary()`'s current surface pool, Folder View draws from the
+  current directory's own folders+files. A custom tab like 2000 AD only
+  ever shows a 2000 AD cover, by construction (the pool passed in is
+  already scoped server-side to that tab/folder).
+- **Timing:** picked once per surface-entry (`renderBrowse()`/`loadHome()`/
+  `renderFolderView()`), not on every filter tweak or pagination click, so
+  it stays stable while browsing within a surface instead of flickering.
+- **Visual recipe:** same image → blur → fade idea as the existing
+  `.series-backdrop`/`.issue-backdrop` (§20.6), but anchored to the
+  top-right corner via a radial mask (`radial-gradient(circle at top
+  right, …)`) instead of a top-to-bottom wash — 40% opacity, 28px blur,
+  fading fully transparent by ~70% of the gradient radius. Effect is a
+  subtle wash, mostly covered by foreground content on a densely-packed
+  grid — most visible in the gaps between Home strips and while a page is
+  still loading.
+- **Where:** `frontend/index.html` (`.page-bg`/`.page-bg-img` markup),
+  `frontend/css/style.css` (`.page-main`, `.page-bg`, `.page-bg-img`),
+  `frontend/js/app.js` (`setPageBackground()` plus its three call sites).
+
 ---
 
 ### 20.16 Writer/Artist Click-Through (Tier 4 Item 3, 2026-06-21)

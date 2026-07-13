@@ -13,6 +13,15 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-13** — Random library-page cover background: Home, Browse
+  (All/Singles/Series), and custom tabs (flat or Folder View) now show a
+  subtle blurred cover image behind the page, anchored top-right, randomly
+  picked from whatever that surface actually shows (never the whole
+  library) and re-picked once per surface-entry. See `SPEC.md` §20.19 and
+  `v2.6/progress.md` "Random library-page cover background".
+- **2026-07-13** — Issue Detail cover now has a slight zoom + white border
+  on hover. See `v2.6/progress.md` "Issue Detail cover: hover zoom + white
+  border".
 - **2026-07-13** — Tray icon base glyph now reuses `favicon.png` (the
   digib00age mark) instead of the old programmatic purple book glyph; the
   existing 3-state coloured dot (green/amber/red) is unchanged. Visual-only

@@ -1860,3 +1860,47 @@ a rescan ran. Investigated read-only first, in plan mode.
   from the new transparent border, hovered the cover and confirmed the
   zoom + white border both render as expected (zoomed screenshot). No
   console errors.
+
+## Session — 2026-07-13 (same day, follow-up) — Random library-page cover background
+
+- From `INBOX.md`: "add a random cover image to the page (container) bg on
+  library pages (home, all, singles, series and custom tabs)... only from
+  the current library page... fill the container div... 40% transparency
+  with 50% blur from the top right fading completely out."
+- Read `frontend/index.html` first rather than guessing at "container" —
+  Home, Browse (All/Singles/Series), and Folder View/flat custom tabs all
+  render inside the same single `<main class="container">`, so one shared
+  background layer there covers every listed surface with no per-page
+  duplication.
+- **Built:** `frontend/index.html` — new `#pageBg`/`#pageBgImg` markup,
+  first child of `<main class="page-main">`. `frontend/css/style.css` —
+  `.page-bg-img` fills the container (matches `.series-backdrop`'s
+  image/blur recipe) with a `radial-gradient(circle at top right, …)`
+  mask so it's visually anchored to the top-right corner and fades fully
+  transparent by ~70% of the radius; 0.4 opacity, 28px blur (both
+  calibrated judgment calls — "50% blur"/"40% transparency" aren't literal
+  CSS units, picked what read well against real covers, same as the hover-
+  effect task's border opacity call). `frontend/js/app.js` — new
+  `setPageBackground(pool)` picks one random `cover_path` from whatever
+  pool is passed in and shows/hides `#pageBg`; wired into three call
+  sites so the pool is always scoped to what that surface actually shows:
+  `renderBrowse()` (`getFilteredLibrary()` — covers Home's "All" redirect,
+  Browse, and flat custom tabs), `loadHome()` (union of all loaded strip
+  items), `renderFolderView()` (`[...folders, ...files]` for the current
+  directory only). Picked once per surface-entry, not on every filter/
+  pagination re-render, so it doesn't flicker while browsing within a
+  surface.
+- **Verified live** against the running dev server (`localhost:9424`,
+  read-only): confirmed via `getBoundingClientRect()`/computed-style
+  inspection that the element renders with the right opacity/blur/mask
+  values and a real `cover_path`-derived `src`; visually confirmed the
+  top-right glow on the "All" surface (clearly visible while loading,
+  subtler once the grid fills the space — expected, matches the existing
+  backdrop pattern's "wash, not a dominant graphic" intent). Confirmed
+  scoping on the 2000 AD Folder View tab (`tab-3`) at both the year-folder
+  level and inside a year (file level) — background pool is built directly
+  from that fetch's own `folders`/`files` arrays, so it's scoped by
+  construction, not by a filter that could leak. Checked light theme (no
+  visual breakage, reverted the theme override after testing). No console
+  errors on any surface.
+- **Docs:** `SPEC.md` §20.19 added.

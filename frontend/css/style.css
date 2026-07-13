@@ -194,6 +194,35 @@ ul { list-style: none; }
   padding: 0 20px;
 }
 
+/* ── Random library-page cover background (INBOX 2026-07-13) ────────────────
+   Home / Browse (All, Singles, Series, custom tabs) / Folder View all render
+   inside this one <main>, so one background layer here covers every surface.
+   Same image → blur → fade recipe as .series-backdrop/.issue-backdrop, but
+   anchored to the top-right corner instead of a top-to-bottom wash — cover
+   choice and visibility toggling are app.js's setPageBackground(). */
+.page-main { position: relative; }
+#homeView, #browseView, #folderView { position: relative; z-index: 1; }
+
+.page-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.page-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top right;
+  opacity: 0.4;
+  filter: blur(28px);
+  transform: scale(1.15); /* keeps blurred edges off-canvas */
+  -webkit-mask-image: radial-gradient(circle at top right, #000 0%, transparent 70%);
+          mask-image: radial-gradient(circle at top right, #000 0%, transparent 70%);
+  display: block;
+}
+
 /* ── Site header ─────────────────────────────────────────────────────────── */
 /* Fixed height (not just padding) so --header-h is authoritative rather than
    an estimate — the sidebar's sticky top-offset/height calc (below) depends

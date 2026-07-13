@@ -827,12 +827,17 @@ async function loadHome() {
       homeStrips.innerHTML =
         '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt=""><p>No content yet.</p></div>';
     }
+    // Home has no single filtered list of its own (it's curated strips) — the
+    // random background pool is the union of everything currently shown
+    // across all strips, not the whole library.
+    setPageBackground(stripsData.strips.flatMap(s => s.items || []));
   } catch (err) {
     clearTimeout(timerId);
     const msg   = err.name === 'AbortError' ? 'Server took too long to respond.' : err.message;
     homeStrips.innerHTML =
       '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
       `<p>${msg}<br><button onclick="loadHome()">Retry</button></p></div>`;
+    setPageBackground([]);
   }
 }
 
@@ -1142,8 +1147,29 @@ function clearAllFilters() {
   document.getElementById('searchClear').style.display = 'none';
 }
 
+// Random cover background (INBOX 2026-07-13) — one shared #pageBg layer
+// behind Home/Browse/Folder View (index.html, .page-bg). Picked once per
+// surface-entry (not on every filter/pagination re-render) from whatever
+// pool that surface passes in, so it never draws from outside the current
+// library page (e.g. a custom tab like 2000 AD only ever shows its own
+// covers) and doesn't flicker while filtering/paging within a surface.
+function setPageBackground(pool) {
+  const bg  = document.getElementById('pageBg');
+  const img = document.getElementById('pageBgImg');
+  if (!bg || !img) return;
+  const candidates = (pool || []).filter(item => item && item.cover_path);
+  if (!candidates.length) {
+    bg.hidden = true;
+    return;
+  }
+  const pick = candidates[Math.floor(Math.random() * candidates.length)];
+  img.src   = pick.cover_path;
+  bg.hidden = false;
+}
+
 function renderBrowse() {
   currentPage = 1;
+  setPageBackground(getFilteredLibrary());
   _renderBrowsePage();
 }
 
@@ -1571,6 +1597,7 @@ async function renderFolderView(tabId, path) {
   } catch (err) {
     grid.innerHTML =
       '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt=""><p>Could not load this folder.</p></div>';
+    setPageBackground([]);
     return;
   }
 
@@ -1601,6 +1628,11 @@ async function renderFolderView(tabId, path) {
   // alphabetical order — most sort criteria (newest/issues/pages) don't map
   // cleanly onto a folder aggregate the way they do a series aggregate.
   files = [...files].sort(sortComparator);
+
+  // Folder View's own current-directory contents — never the whole tab or
+  // the whole library, matching the "current library page" scoping rule
+  // (e.g. a 2000 AD year folder only draws from that folder's own covers).
+  setPageBackground([...folders, ...files]);
 
   grid.innerHTML = '';
   for (const folder of folders) grid.appendChild(buildFolderCard(tabId, path, folder));
