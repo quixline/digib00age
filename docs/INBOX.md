@@ -39,18 +39,35 @@ Example:
 
 ---
 
-[bug] a performance review was carried out and found bottle necks, find the review and plan the execution
+[change] replace taskbar icon with icon-oo.png - keep current green dot for server running, red for stopped - or offer alternative options if available
+
+[change] add a slight zoom and 80% white border 'on hover' over the cover image in issue/id
+
+[change] add a random cover image to the page (<>container<>) bg on library pages (home, all, singles, series and custom tabs) the image should only be chosen from the current library page so for a custom library like 2000 AD only 2000 AD covers should be shown. The bg image should fill the container div and start at 40% transparancey with 50% blur from the top right fading completely out 
+
+
+
+
+
+
 
 ---
 
 ## Processed
+
+13-7-2026
+
+- ~~[change] add pagination to /series/id~~ → built directly this session (no separate triage pass) as v2.6 Item 3 — see `comicvault-changes-v2.6.md`/`progress.md`
+
+- ~~[bug] a performance review was carried out and found bottle necks, find the review and plan the execution~~
+
+- 
 
 12-7-2026
 
 - ~~[bug] the rating from the bottom bar doesn't work when selecting one or multiple cards doesn't change the rating~~
 
 - ~~[bug] if cover is removed from archive, library scan detects change but old cover persists (eg Dusk: Poor Tom)~~ **was not a bug but a page/browser refresh/time is and it's now showing.**
-
 * ~~Project Folder: [change] remove the symlink to docs - google drive isn't required to be in the loop anymore~~
 
 * ~~[bug] investigate missing Design assests - favicon.png, icon-oo.png and other data that was part of the Redesign from Design~~

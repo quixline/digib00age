@@ -1776,3 +1776,32 @@ a rescan ran. Investigated read-only first, in plan mode.
   Flagged to Tez rather than silently corrected, since `CLAUDE.md` treats
   `INDEX.md` as the authority on doc status and this is exactly the kind of
   drift that's caused problems before (`archive/doc-scan-issues.md`).
+
+## Session — 2026-07-13 (same day, follow-up) — Series Detail page pagination (v2.6 Item 3)
+
+- From `INBOX.md`: "add pagination to /series/id" — the Series Detail
+  page's issue list rendered every issue in the series flat, unpaginated,
+  unlike every other browse surface (`SPEC.md` §20.13 already specified
+  page-number navigation "on browse pages" but the Series Detail page had
+  never picked it up).
+- **Built:** `frontend/js/app.js` — `initSeries()` now caches the full
+  `/api/series/{id}` response (`seriesPageData`) and renders through a new
+  `renderSeriesIssuePage()`, which slices to the current page
+  (`seriesCurrentPage`) using the same global `pageSize` setting Browse
+  already reads from `cv_page_size`. Pulled Browse's existing
+  `renderPagination()` click/render logic out into a shared
+  `renderPaginationControls(container, current, totalPages, onPageChange)`
+  helper — both Browse and Series Detail now call the same function, so the
+  page-number control (`‹ 1 2 3 … N ›`) is guaranteed identical rather than
+  a second copy that could drift. `/api/series/{id}` is unchanged — still
+  returns the full issue list in one response; slicing is client-side, same
+  pattern Browse already uses for its filtered library.
+- **Verified live** against the running dev server (`localhost:9424`, real
+  library, read-only — no destructive actions, no data mutated): 2000 AD
+  (series id 79, 2,483 issues) correctly paginates into 50 pages of 50, last
+  page (50) ends at issue #2484 with exactly 33 rows and `›` disabled;
+  Postal (series id 4616, 25 issues, under one page) renders all 25 with an
+  empty pagination container, matching Browse's own single-page behaviour.
+  No console errors on either page load.
+- **Docs:** `SPEC.md` §20.6 and §20.13 updated to note the Series Detail
+  issue list is now paginated. `INBOX.md` line struck through and annotated.

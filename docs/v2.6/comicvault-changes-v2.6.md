@@ -323,3 +323,30 @@ from the 2026-07-09 `PERFORMANCE.md` baseline has been addressed; the
 not-fixable-in-code findings (scanner-at-scale, cold-idle drive effect, the
 `localhost` DNS artifact) remain as documented, unfixed observations per
 `PERFORMANCE.md` §1/§3.
+
+---
+
+## Item 3 — Series Detail page pagination
+
+**Feature.** From `INBOX.md`: "add pagination to /series/id" — the Series
+Detail page's issue list (`SPEC.md` §20.6/20.7) rendered every issue in the
+series flat, unpaginated, unlike every other browse surface. Large series
+(2000 AD, 2,483 issues) rendered the entire list in one page load with no
+way to jump around it.
+
+- **✅ built and manually verified 2026-07-13.** Client-side pagination
+  added to the Series Detail issue list (`frontend/js/app.js`
+  `initSeries()`/`renderSeriesIssuePage()`), reusing the same page-size
+  setting (`cv_page_size`, admin-configurable per `SPEC.md` §20.13) and the
+  same page-number control look/behaviour as Browse (`‹ 1 2 3 … N ›`) —
+  `renderPagination()`'s click/render logic was pulled out into a shared
+  `renderPaginationControls(container, current, totalPages, onPageChange)`
+  helper so both surfaces stay behaviourally identical instead of
+  duplicating the control. `/api/series/{id}` still returns the full issue
+  list in one response (unchanged); pagination slices client-side same as
+  Browse already does for its filtered library.
+- Verified live against the running dev server (`localhost:9424`, real
+  library, read-only): 2000 AD (2,483 issues) paginates into 50 pages of 50
+  (last page correctly 33 issues, `›` disabled on page 50); Postal (25
+  issues, under one page) shows no pagination row, matching Browse's
+  single-page behaviour. No console errors on either page load.

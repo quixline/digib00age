@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-13** — Series Detail page pagination (v2.6 Item 3): the
+  `/series/{id}` issue list is now paginated, same page-size setting and
+  page-number control as Browse — a large series (2000 AD, 2,483 issues) no
+  longer loads its whole issue list in one page. See `v2.6/progress.md`
+  "Series Detail page pagination (v2.6 Item 3)".
 - **2026-07-13** — Performance fixes Phase 5 (v2.6 Item 2): fixed the
   Full Editor's page-preview N+1 (finding #6, measured live for the first
   time this session) — `backend/routers/editor_full.py` now caches the

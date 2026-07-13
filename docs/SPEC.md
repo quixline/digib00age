@@ -877,6 +877,7 @@ A **list/grid toggle** applies on all browse surfaces (Home, Series, Singles, Al
 - **Header contents:** back button, mark-all-read button, title. Header ≈15% of a 10" tablet screen.
 - **Below header:** Publisher · Year, then genre tags, then # Issues, then the issue list.
 - **Issue list follows the grid/list view** (same cards, read-state colours, progress indicators) — including page count, reading progress, and per-issue description.
+- **Paginated** (added v2.6 Item 3, 2026-07-13) — same page-size setting and page-number control as Browse (20.13); a large series (e.g. 2000 AD, 2,483 issues) no longer renders its whole issue list in one page load.
 - **No Series Overview field** in V1 — per-issue descriptions cover the need. (A series-level overview would require new XML + DB + editor fields; deferred to a possible later version.)
 
 ### 20.7 Story Arc Grouping
@@ -954,7 +955,7 @@ Recorded so they aren't mistaken for code changes:
 
 - **Search-page back button (bug):** the Flutter search page currently exits the app when there are no results, with no way back. Add a back control.
 - **Settings/Admin icon:** add to the toolbar alongside admin-page development (Phase 6).
-- **Pagination:** page-size control lives on the **admin page** (not the browse toolbar). Options 50 / 100 / 200 / 500, default 50, global, set-and-forget (persists). Standard page-number navigation (1, 2, 3… with forward/back) on browse pages. **Home strips exempt** (fixed at 15). Admin can be opened in its own tab for a quick change.
+- **Pagination:** page-size control lives on the **admin page** (not the browse toolbar). Options 50 / 100 / 200 / 500, default 50, global, set-and-forget (persists). Standard page-number navigation (1, 2, 3… with forward/back) on browse pages **and the Series Detail issue list** (20.6, added v2.6 Item 3). **Home strips exempt** (fixed at 15). Admin can be opened in its own tab for a quick change.
 
 ### 20.14 Deferred to V2 (Noted, Not Built)
 

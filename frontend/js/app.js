@@ -446,6 +446,9 @@ let viewMode = localStorage.getItem('cv_view_mode') || 'grid';
 let currentPage = 1;
 let pageSize    = parseInt(localStorage.getItem('cv_page_size') || '50', 10);
 
+let seriesCurrentPage = 1;
+let seriesPageData    = null; // full /series/{id} response, cached for client-side paging
+
 // Card size control (library view) — percent labels are presets, not literal
 // scale factors; 25% matches the original fixed --card-min (120px) so the
 // default look is unchanged until a user picks a different size.
@@ -1235,30 +1238,36 @@ function pageWindow(current, total) {
 }
 
 function renderPagination(container, totalPages) {
+  renderPaginationControls(container, currentPage, totalPages, page => {
+    currentPage = page;
+    _renderBrowsePage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+// Shared by Browse (All/Series/Singles) and the Series detail issue list —
+// same look and paging behaviour everywhere pagination appears.
+function renderPaginationControls(container, current, totalPages, onPageChange) {
   container.innerHTML = '';
   if (totalPages <= 1) return;
 
   const makeBtn = (label, page, isCurrent, disabled) => {
     const btn = el('button', 'page-btn' + (isCurrent ? ' page-btn--current' : ''), label);
     if (disabled) btn.disabled = true;
-    else btn.addEventListener('click', () => {
-      currentPage = page;
-      _renderBrowsePage();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+    else btn.addEventListener('click', () => onPageChange(page));
     return btn;
   };
 
-  container.appendChild(makeBtn('‹', currentPage - 1, false, currentPage === 1));
+  container.appendChild(makeBtn('‹', current - 1, false, current === 1));
 
   let prev = null;
-  for (const p of pageWindow(currentPage, totalPages)) {
+  for (const p of pageWindow(current, totalPages)) {
     if (prev !== null && p - prev > 1) container.appendChild(el('span', 'page-ellipsis', '…'));
-    container.appendChild(makeBtn(String(p), p, p === currentPage, false));
+    container.appendChild(makeBtn(String(p), p, p === current, false));
     prev = p;
   }
 
-  container.appendChild(makeBtn('›', currentPage + 1, false, currentPage === totalPages));
+  container.appendChild(makeBtn('›', current + 1, false, current === totalPages));
 }
 
 function renderGrouped(grid, items) {
@@ -1752,10 +1761,15 @@ async function initSeries() {
       ? `?field=${encodeURIComponent(field)}&value=${encodeURIComponent(value)}`
       : q ? `?q=${encodeURIComponent(q)}` : '';
     const data = await apiFetch(`/series/${issueId}${qs}`);
+    seriesPageData    = data;
+    seriesCurrentPage = 1;
     document.title = `${data.series} — digib00age`;
     content.innerHTML = '';
     content.appendChild(buildSeriesHeader(data));
-    content.appendChild(buildIssueList(data));
+    const issueWrap = el('div');
+    issueWrap.id = 'seriesIssueWrap';
+    content.appendChild(issueWrap);
+    renderSeriesIssuePage();
   } catch (_) {
     content.innerHTML =
       '<div class="empty-state" style="padding-top:60px">' +
@@ -1853,6 +1867,32 @@ function buildIssueList(data) {
   for (const issue of data.issues) group.appendChild(buildIssueRow(issue));
   wrapper.appendChild(group);
   return wrapper;
+}
+
+// Slices seriesPageData.issues to the current page and (re)renders the
+// issue list + pagination controls, same paging behaviour as Browse
+// (renderPaginationControls) — called on load and on every page click.
+function renderSeriesIssuePage() {
+  const wrap = document.getElementById('seriesIssueWrap');
+  if (!wrap || !seriesPageData) return;
+
+  const issues     = seriesPageData.issues;
+  const totalPages = Math.max(1, Math.ceil(issues.length / pageSize));
+  seriesCurrentPage = Math.min(seriesCurrentPage, totalPages);
+
+  const start     = (seriesCurrentPage - 1) * pageSize;
+  const pageItems = issues.slice(start, start + pageSize);
+
+  wrap.innerHTML = '';
+  wrap.appendChild(buildIssueList({ issues: pageItems }));
+
+  const pagEl = el('div', 'pagination');
+  wrap.appendChild(pagEl);
+  renderPaginationControls(pagEl, seriesCurrentPage, totalPages, page => {
+    seriesCurrentPage = page;
+    renderSeriesIssuePage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 }
 
 function buildIssueRow(issue) {
