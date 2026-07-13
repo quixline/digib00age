@@ -1840,3 +1840,23 @@ a rescan ran. Investigated read-only first, in plan mode.
   icon live is Tez's to do, not something to interrupt mid-session for.
 - **Docs:** `SPEC.md` §3 updated (icon base glyph note). `DECISIONS.md` new
   entry. `INBOX.md` line struck through and annotated.
+
+## Session — 2026-07-13 (same day, follow-up) — Issue Detail cover: hover zoom + white border
+
+- From `INBOX.md`: "add a slight zoom and 80% white border 'on hover' over
+  the cover image in issue/id". Cosmetic-only (hover state on an existing
+  element, no layout/nav change) — per `CLAUDE.md`'s cosmetic/structural
+  threshold, built directly without a `DECISIONS.md` entry or build-queue
+  item.
+- **Built:** `frontend/css/style.css` — `.issue-cover-img` gets a
+  `3px solid transparent` border (reserves the space so hover doesn't
+  shift layout) and a `transform`/`border-color` transition using the
+  existing `--dur`/`--ease` motion tokens (respects
+  `prefers-reduced-motion` automatically, same as every other hover effect
+  site-wide). `:hover` scales to `1.04` and sets the border to
+  `rgba(255, 255, 255, 0.8)`.
+- **Verified live** against the running dev server (`localhost:9424`,
+  read-only): loaded `/issue/4616` (Postal #1), confirmed no layout shift
+  from the new transparent border, hovered the cover and confirmed the
+  zoom + white border both render as expected (zoomed screenshot). No
+  console errors.

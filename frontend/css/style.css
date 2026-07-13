@@ -1466,6 +1466,12 @@ select.filter-select:focus,
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6);
   background: var(--surface-2);
   display: block;
+  border: 3px solid transparent;
+  transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.issue-cover-img:hover {
+  transform: scale(1.04);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 .issue-actions {
   display: flex;
