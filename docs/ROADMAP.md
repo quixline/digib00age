@@ -282,9 +282,16 @@ Tez 2026-07-05:
    with Claude Design). Covers the header-unification/back-button work noted
    under BUG-014 above, the deferred Admin Custom Tabs field removal, and any
    other web-surface items already parked pending "UI redesign."
-4. **Scope: Mobile UI Redesign** (v2.6). The Flutter-side counterpart to #3,
-   split out as its own item rather than assumed identical scope/timeline to
-   the web redesign.
+4. **Mobile UI Redesign — scoped, built, and closed 2026-07-13.** The
+   Flutter-side counterpart to #3, split out as its own item rather than
+   assumed identical scope/timeline to the web redesign. Full rail-based
+   scaffold redesign of the tablet app (persistent nav rail, Home/Browse/
+   Series Detail/Issue Detail screens), per
+   `design_handoff_tablet_app/README.md`. Built and manually verified on
+   Tez's real Lenovo tablet against the real library/server — full detail
+   in `docs/v2.6/comicvault-changes-v2.6.md` Item 4 and
+   `docs/v2.6/progress.md`. `meta/roadmap.html`'s Now lane card removed
+   2026-07-13 (item complete).
 5. **Add: user guide** (v2.6, moved from v2.5 2026-07-05). Not yet scoped at
    all. `ADMIN_SPEC.md` §7.1.7's Password Recovery popup (v2.3 Item 10) already
    explicitly said the guide, once built, should link to that popup rather than

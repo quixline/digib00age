@@ -1935,3 +1935,150 @@ a rescan ran. Investigated read-only first, in plan mode.
   header stay completely clean — no bleed-through — and that the menu
   bar's filter dropdowns/count still render crisply above the now-full-
   span background. No console errors.
+
+## Session — 2026-07-13 — Mobile UI Redesign built (v2.6 Item 4)
+
+Built the Flutter-side counterpart to Item 1 — full rail-based scaffold
+redesign of the tablet app, per `design_handoff_tablet_app/README.md`
+(options 2a portrait / 2b landscape). Split out from Item 1 as its own item
+on 2026-07-05 (`ROADMAP.md`); this is that item, built and closed.
+
+- Read the design handoff (README, `Flutter App Redesign.dc.html` sections
+  2a/2b, `tokens/*.css`, `data.js`) plus the existing Flutter app
+  (`lib/screens/library_screen.dart`, `series_screen.dart`,
+  `services/api_service.dart`, models) and the relevant backend routes
+  (`backend/routers/library.py`, `home.py`, `progress.py`) before planning —
+  confirmed every piece of data the design needed already existed
+  server-side (`/api/nav/config`, `/api/home/strips`,
+  `/api/library?tab_id=/field=/value=/q=`, the bulk favourite/rate
+  endpoints) so this item needed **zero backend changes**.
+- Asked Tez how to source the design's "Hanken Grotesk everywhere" font
+  requirement, given the app has real offline-reading functionality
+  (unlike the web app, which already made this same call for Item 1's
+  Phase A) — confirmed `google_fonts` package over a bundled-asset or
+  system-default fallback. See `DECISIONS.md`.
+- Entered plan mode given the scope (new theme system, 4 new screens, 8 new
+  widgets, model/API extensions, 2 file deletions) — plan approved before
+  any code was written.
+- **Built:** `lib/theme/tokens.dart` (`AppColors`/`AppSpacing`/`AppText`/
+  `buildAppTheme()`, dark-only); `lib/models/custom_tab.dart`; extended
+  `Series` (`readCount`, `readingCount`, `favorites`, `personalRating`,
+  `pageCount`, `writers`, plus `readState`/`progressPercent` getters
+  mirroring `frontend/js/app.js`'s `seriesReadState()` exactly) and `Issue`
+  (`favorites`, `personalRating`); extended `ApiService` (`getNavConfig()`,
+  `getHomeStrips()`, `toggleFavorite()`, `setRating()`, `getLibrary()`
+  threaded with `tabId`/`field`/`value`/`q`). New screens:
+  `shell_screen.dart` (root — persistent rail + nested `Navigator` for
+  Home/Browse/Series/Issue, replaces `LibraryScreen` at route `/`),
+  `home_screen.dart`, `browse_screen.dart`, `series_detail_screen.dart`,
+  `issue_detail_screen.dart`. New widgets: `nav_rail.dart`, `app_top_bar.dart`,
+  `cover_card.dart` (grid + list variants), `status_button.dart`,
+  `blurred_backdrop.dart`, `comic_search_delegate.dart` and
+  `offline_library_view.dart` (both extracted from the old
+  `library_screen.dart` verbatim, reused unchanged). Deleted
+  `library_screen.dart`/`series_screen.dart` — fully superseded. Read-state
+  filters (Unread/Reading/Read) and card taps (single → Issue Detail
+  direct, series → Series Detail) mirror the web app's existing logic
+  rather than inventing new rules.
+- **Copied logo assets** (`lockup-light.png`) from `frontend/images/` into
+  `flutter_app/assets/logo/` (the real asset set already existed there from
+  Item 1's brand-rename work — the design handoff bundle only shipped one
+  of the three files).
+- **Verified via real on-device testing**, not just `flutter analyze` —
+  built a debug APK, installed and drove it via `adb` on Tez's actual
+  Lenovo tablet against the real library/server (the same device
+  `BUG-019`/`BUG-020` were originally found and fixed on). This surfaced
+  three real bugs `flutter analyze` and a simulator wouldn't have caught:
+  1. Cover cards overflowed their allotted height on Home strips and
+     Browse grid — the sizing math (strip row height, grid
+     `childAspectRatio`) was short for a 2-line title + meta. Fixed by
+     recomputing both against the actual cover-image-height + text-block
+     math instead of a guessed constant.
+  2. Series Detail eagerly built every issue row into one `Column` inside
+     a `SingleChildScrollView` — fine for a small series, but 2000 AD
+     (2,483 issues) froze on an empty spinner for ~8 seconds before
+     anything painted. Switched header + issue list to a `CustomScrollView`
+     with the issues in a lazy `SliverList.separated` — the header now
+     renders instantly regardless of series size.
+  3. The nastiest one: `_IssueRow`'s card decoration combined a
+     non-uniform `Border` (a status-coloured 3px left edge — green/blue/
+     grey depending on read state — against a plain grey elsewhere) with a
+     `borderRadius`. Flutter's `BoxDecoration` silently refuses to paint
+     that combination — no red error banner, nothing in `adb logcat`
+     unless a live Dart console is attached via `flutter run` (the
+     `FlutterError` only surfaces there, as "A borderRadius can only be
+     given on borders with uniform colors"). The practical symptom: every
+     issue row in every series rendered as a blank grey box, no text, no
+     cover — reproduced identically whether reached via a small or a huge
+     series, so it wasn't a lazy-loading artifact. Found by attaching
+     `flutter run` directly to the tablet instead of `flutter build apk` +
+     `adb install`, which is what actually surfaced the exception text.
+     Fixed by layering the coloured left edge as a separate `Positioned`
+     strip inside a `ClipRRect`/`Stack`, rather than folding it into the
+     card's own border.
+  - Also confirmed working end-to-end on the real device: grid↔list
+    toggle: Browse "All" (2,080 titles) in both views, no overflow;
+    Series→Issue drill-in and back-stack unwind; mark-as-read/favourite/
+    5-star-rating on Issue Detail, all optimistic-then-persisted (verified
+    by navigating back to Browse and seeing the same issue's favourite
+    ring/read-state reflected from a fresh `/api/library` fetch, not just
+    the optimistic local state); Unread/Reading/Read filters (2,066/…/…
+    of 2,080, matching the client-side filter mirrored from `app.js`);
+    portrait↔landscape rotation — rail correctly defaults
+    collapsed/expanded and shows Tez's real custom libraries (2000 AD,
+    Favourites, All the A's) as text when expanded.
+- **Two follow-up fixes from Tez's own manual pass, same day:** (1) Browse
+  had lost the header (logo/search/settings) — the design prototype's HTML
+  shows this exact same header block on both its Home and Browse sections,
+  and `browse_screen.dart` simply never got it built in; extracted the
+  block from `home_screen.dart` into a shared `lib/widgets/app_top_bar.dart`
+  used by both screens now. (2) The nav rail rendered vertically centered
+  in the middle of the screen instead of pinned to the top —
+  `shell_screen.dart`'s `Row(children: [NavRail(...), Expanded(...)])` had
+  no `crossAxisAlignment` (defaults to `center`), and the rail's own height
+  is just its content's intrinsic height, so it floated in the middle of
+  the full-height `Row`. Fixed with `crossAxisAlignment:
+  CrossAxisAlignment.stretch`. Both re-verified on the real tablet after
+  rebuilding.
+- **Tez confirmed the full manual pass on the real tablet** — this is the
+  close-of-session gate (`CLAUDE.md` Section 4). Asked to update docs and
+  push.
+- **Fourth bug, found during doc-writing, after Tez's confirmation —
+  nothing reached the Reader.** A final code review pass before writing
+  these docs (checking every screen for a `/reader` route) found that
+  Home, Browse, and Series Detail all route a tap through to Issue Detail,
+  and Issue Detail itself had no button, cover-tap, or any other path to
+  actually open a comic — a genuine dead end, since the design mockup's
+  Issue Detail button list (Mark as Read/Add to Favourites/rating stars)
+  never included a read-entry-point, and the old direct issue→reader tap
+  from `library_screen.dart`/`series_screen.dart` was removed along with
+  those files. Fixed by adding a `_PrimaryButton` ("Start Reading" /
+  "Continue Reading" / "Read Again", label keyed off `readStatus`) plus a
+  tap on the cover image itself, both pushing `/reader` on the *root*
+  navigator (not the shell's nested one) with the issue's own id — same
+  pattern the search delegate and offline-view already use to reach the
+  fullscreen, no-rail reader route. First attempt used a `▶`/`↻` glyph
+  prefix on the button label; Android renders `▶` as a coloured emoji
+  glyph (not the plain monochrome triangle intended), visually
+  inconsistent with the plain-text `Mark as Read`/`★ Add to Favourites`
+  buttons beside it — dropped the glyphs, plain text only. Also gave the
+  button its own `_PrimaryButton` (accent-blue fill) rather than reusing
+  `_SecondaryButton`, since it's the page's actual main action, not a
+  toggle alongside Mark as Read/Add to Favourites. Verified on-device:
+  tapped through to a series issue (w0rldtr33 #17), "Start Reading"
+  rendered as a clean solid accent button, tapped it, the Reader opened
+  and rendered page 1 correctly. **This specific fix has only been
+  verified by Claude on-device — not yet by Tez** — flagged explicitly
+  rather than folded silently into the "verified manually by Tez" note
+  above, since Tez's confirmation predates this finding.
+- **Scope decisions** (full rationale in `DECISIONS.md`): Home strip cards
+  don't show the favourite ring/unread badge (issue-level `/api/home/strips`
+  data lacks those fields — only `/api/library`'s series-level cards have
+  them); a single tapped anywhere goes straight to Issue Detail rather than
+  a "series of one" page; the old manual "sync now" button/snackbar is
+  dropped (not in the new design, background sync still runs
+  automatically); house/grid/book/layers icons use Material
+  `Icons.*_outlined` rather than adding the `lucide_icons` package; light
+  theme isn't built this pass (dark-first, matching Item 1's own approach).
+- Cleaned up all scratch screenshots/APKs from `flutter_app/build/` after
+  verification — nothing left behind, and `build/` is gitignored regardless.

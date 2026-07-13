@@ -711,6 +711,19 @@ User can also switch manually in Settings.
 
 ### Screens
 
+> **Superseded 2026-07-13.** This subsection describes the pre-redesign
+> tab-based navigation (Library screen with Series/Singles tabs, Series
+> screen). The Mobile UI Redesign (v2.6 Item 4) replaced this with a
+> persistent nav rail + Home/Browse/Series Detail/Issue Detail screens,
+> matching the web UI's own redesign (Item 1) — see
+> `docs/v2.6/comicvault-changes-v2.6.md` Item 4 and `docs/v2.6/progress.md`
+> for the current authoritative design. One real behaviour change worth
+> flagging here specifically: tapping an issue no longer opens the Reader
+> directly — it opens a new Issue Detail screen first (cover, credits,
+> rating, a "Start Reading" button), matching the web UI's existing
+> Issue Detail page. Left the text below as historical context rather than
+> deleting it, same convention as §20.9's 2000 AD section note.
+
 **Library screen**
 - Mirrors the web UI: Series / Singles tabs, cover grid, unread badges
 - Filter by publisher, genre, year

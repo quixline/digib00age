@@ -1,0 +1,58 @@
+/* digib00age — Typography tokens
+   ===============================
+   One UI sans everywhere (Hanken Grotesk). Mono (JetBrains Mono) is scoped
+   strictly to technical strings: file paths, scan logs, version numbers.
+   The display/heading register is just the same sans at heavier weights and
+   tighter tracking — quiet by design so the OO logo device carries identity. */
+
+:root {
+  /* Families */
+  --font-sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+
+  /* Weights */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+  --weight-black:    800;
+
+  /* Type scale — px, fluid where it matters (15px UI base, matches codebase) */
+  --text-2xs:  11px;   /* eyebrow labels, badges */
+  --text-xs:   12px;   /* card meta, captions */
+  --text-sm:   13px;   /* controls, secondary UI */
+  --text-base: 15px;   /* body / default UI */
+  --text-md:   17px;   /* emphasised body, modal titles */
+  --text-lg:   20px;   /* the big bare count */
+  --text-xl:   clamp(20px, 2.2vw, 26px);   /* page / series titles */
+  --text-2xl:  30px;   /* stat numbers */
+  --text-3xl:  clamp(28px, 4vw, 44px);     /* hero / marketing display */
+
+  /* Line heights */
+  --leading-tight:  1.15;
+  --leading-snug:   1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+
+  /* Letter spacing */
+  --tracking-tight:  -0.03em;   /* large display + stat numerals */
+  --tracking-snug:   -0.02em;   /* titles */
+  --tracking-normal: 0;
+  --tracking-label:  0.08em;    /* uppercase eyebrow labels */
+
+  /* Reusable role aliases */
+  --eyebrow-size: var(--text-2xs);
+  --eyebrow-weight: var(--weight-bold);
+  --eyebrow-tracking: var(--tracking-label);
+}
+
+/* Eyebrow / section-label helper — used pervasively across the product
+   ("RECENTLY ADDED", "LIBRARY STATS"). */
+.ds-eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--eyebrow-size);
+  font-weight: var(--eyebrow-weight);
+  letter-spacing: var(--eyebrow-tracking);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}

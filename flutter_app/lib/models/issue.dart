@@ -32,6 +32,8 @@ class Issue {
   final int currentPage;
   final int? nextIssueId;
   final int? prevIssueId;
+  final bool favorites;
+  final int? personalRating;
 
   const Issue({
     required this.id,
@@ -67,6 +69,8 @@ class Issue {
     required this.currentPage,
     this.nextIssueId,
     this.prevIssueId,
+    required this.favorites,
+    this.personalRating,
   });
 
   factory Issue.fromJson(Map<String, dynamic> json) {
@@ -104,6 +108,8 @@ class Issue {
       currentPage: json['current_page'] as int? ?? 0,
       nextIssueId: json['next_issue_id'] as int?,
       prevIssueId: json['prev_issue_id'] as int?,
+      favorites: json['favorites'] as bool? ?? false,
+      personalRating: json['personal_rating'] as int?,
     );
   }
 

@@ -13,6 +13,15 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-13** — Mobile UI Redesign (v2.6 Item 4): full rail-based scaffold
+  redesign of the Flutter tablet app — persistent nav rail, Home/Browse/
+  Series Detail/Issue Detail screens, dark theme matching the web
+  redesign. Built and verified on Tez's real Lenovo tablet against the real
+  library/server, including three real bugs on-device testing caught that
+  static analysis didn't. **A fourth bug — no path anywhere in the new
+  navigation actually opened the Reader — was found after Tez's manual
+  pass and is fixed but not yet Tez-verified; see below.** See
+  `v2.6/progress.md` "Mobile UI Redesign built (v2.6 Item 4)".
 - **2026-07-13** — Random cover background correction: now spans the full
   content area (was clipped to the centered `.container` column, leaving
   flat gutters on wide screens) and mutes blue-toned covers instead of

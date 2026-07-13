@@ -7,8 +7,8 @@ import 'services/download_service.dart';
 import 'services/sync_store.dart';
 import 'services/sync_service.dart';
 import 'route_observer.dart';
-import 'screens/library_screen.dart';
-import 'screens/series_screen.dart';
+import 'theme/tokens.dart';
+import 'screens/shell_screen.dart';
 import 'screens/reader_screen.dart';
 import 'screens/settings_screen.dart';
 
@@ -93,7 +93,7 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
       navigatorKey: _navigatorKey,
       navigatorObservers: [routeObserver],
       debugShowCheckedModeBanner: false,
-      theme: _buildTheme(),
+      theme: buildAppTheme(),
       initialRoute: '/',
       onGenerateRoute: _buildRoute,
     );
@@ -103,18 +103,13 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
     switch (routeSettings.name) {
       case '/':
         return MaterialPageRoute(
-          builder: (_) => LibraryScreen(
+          builder: (_) => ShellScreen(
             api: _api,
             settings: widget.settings,
             localCbz: _localCbz,
             downloads: _downloads,
             syncService: _syncService,
           ),
-        );
-      case '/series':
-        final anchorId = routeSettings.arguments as int;
-        return MaterialPageRoute(
-          builder: (_) => SeriesScreen(anchorId: anchorId, api: _api, downloads: _downloads),
         );
       case '/reader':
         final issueId = routeSettings.arguments as int;
@@ -146,26 +141,5 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
       default:
         return null;
     }
-  }
-
-  ThemeData _buildTheme() {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.deepOrange,
-        brightness: Brightness.dark,
-      ),
-      scaffoldBackgroundColor: const Color(0xFF111111),
-      cardColor: const Color(0xFF1E1E1E),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF1A1A1A),
-        elevation: 0,
-        centerTitle: false,
-      ),
-      tabBarTheme: const TabBarThemeData(
-        dividerColor: Colors.transparent,
-      ),
-    );
   }
 }

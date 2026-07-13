@@ -4,6 +4,83 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Mobile UI Redesign (v2.6 Item 4): `google_fonts` for the Flutter app's Hanken Grotesk requirement
+
+**Decided:** 2026-07-13, before any code was written for the redesign.
+
+**Why:** The design handoff specifies Hanken Grotesk everywhere, same as
+the web redesign's Item 1 Phase A. But the Flutter app, unlike the web
+app, has real offline-reading functionality (downloaded issues, local CBZ
+files) — a runtime font-download dependency is a bigger tradeoff there
+than it was for a browser tab. Asked Tez directly rather than assuming:
+options were system-default (zero dependency, wrong typeface), bundled
+`.ttf` assets (fully offline, but needs someone to supply the font files),
+or `google_fonts` (fetches once per device, cached after). Tez chose
+`google_fonts` — same call Item 1 Phase A already made for the web app,
+kept consistent rather than diverging for the mobile app alone.
+
+**Where:** `flutter_app/pubspec.yaml` (`google_fonts: ^6.2.1`),
+`lib/theme/tokens.dart` (`AppText`, `buildAppTheme()`).
+
+### Mobile UI Redesign (v2.6 Item 4): Home strip cards can't show favourite ring or unread-count badge
+
+**Decided:** 2026-07-13, during planning, before building `home_screen.dart`.
+
+**Why:** `GET /api/home/strips` returns issue-level cards
+(`backend/routers/home.py::_issue_card`) — each one representing a single
+issue (the next-unread issue of a series, the most-recently-added issue,
+etc.), not the series itself. That endpoint's card shape has no
+`favorites` or `unread_count` field at all; only `GET /api/library`'s
+series-level cards (used by Browse) carry those. Rather than adding new
+backend fields or aggregating client-side from partial data, left Home
+strip cards without the favourite-gold-ring and blue-unread-badge
+treatments the design mockup shows on every card uniformly — those
+treatments only render on Browse, where the underlying data actually
+supports them. A real, disclosed scope gap, not a silent omission.
+
+**Where:** `lib/screens/home_screen.dart` (`_StripRow._cardFor`) vs.
+`lib/screens/browse_screen.dart` (`_BrowseScreenState._cardFor`).
+
+### Mobile UI Redesign (v2.6 Item 4): dropped the manual "sync now" button
+
+**Decided:** 2026-07-13, while replacing `LibraryScreen`'s app bar with the
+new rail-based Home/Browse headers.
+
+**Why:** The old `LibraryScreen` had a manual sync icon + spinner + result
+snackbar in its app bar (`mobile-server-sync-scope.md`'s sync feature,
+built v2.5 Item 3). The new design spec's Home/Browse headers only show
+`⌕`/`⚙` — no sync control anywhere in the reference. Rather than force it
+in against the design, dropped it: background sync (`SyncService.syncNow()`)
+still fires automatically on load and on return-from-reader
+(`ShellScreen._checkAndLoad()`, same trigger `LibraryScreen.didPopNext()`
+used), so the underlying capability isn't lost, just its manual trigger and
+status feedback. Flagged to Tez as a disclosed removal rather than
+silently dropped; can be re-added (e.g. as a rail action) if it's missed.
+
+**Where:** `lib/screens/shell_screen.dart` (`_checkAndLoad`) vs. the old
+`lib/screens/library_screen.dart`'s `_syncNowManual`/`_lastSyncedLabel`
+(removed).
+
+### Mobile UI Redesign (v2.6 Item 4): a tapped single goes straight to Issue Detail, never a "series of one" page
+
+**Decided:** 2026-07-13, while wiring up card taps in
+`home_screen.dart`/`browse_screen.dart`.
+
+**Why:** The design mockup's `CoverCard.onClick` is opaque (`{{ item.open }}`
+in the prototype HTML) — it doesn't show the branching logic. Existing
+Flutter behaviour before this redesign always routed through `/series`
+regardless of format, showing a "series" page with exactly one issue row
+for a single. The new design has a genuinely distinct Issue Detail page
+(cover, credits, rating stars, prev/next) that a single format has no
+reason to sit behind an extra tap for. Used the existing
+`Series.formatGroup`/`Issue.formatGroup` field (`'Singles'` vs `'Series'`)
+already present in both API responses to branch directly: `'Singles'` →
+`/issue`, else → `/series`. Matches how the "Single"/"Series" type pill on
+Issue Detail's own header already frames the distinction.
+
+**Where:** `lib/screens/home_screen.dart` (`_StripRow._cardFor`'s `onTap`),
+`lib/screens/browse_screen.dart` (`_BrowseScreenState._cardFor`'s `onTap`).
+
 ### Tray icon base glyph: reuse `favicon.png` (digib00age mark), visual-only exception to the 2026-07-07 tray-app-stays-ComicVault scope
 
 **Decided:** 2026-07-13, from an `INBOX.md` item ("replace taskbar icon with

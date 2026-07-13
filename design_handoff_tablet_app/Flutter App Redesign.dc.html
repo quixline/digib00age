@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/digib00age-design-system-0af03d35-2c0e-4f8f-87c4-f4ff4927ecf4/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/digib00age-design-system-0af03d35-2c0e-4f8f-87c4-f4ff4927ecf4/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/digib00age-design-system-0af03d35-2c0e-4f8f-87c4-f4ff4927ecf4/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/digib00age-design-system-0af03d35-2c0e-4f8f-87c4-f4ff4927ecf4/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/digib00age-design-system-0af03d35-2c0e-4f8f-87c4-f4ff4927ecf4/tokens/elevation.css">
+  <link rel="stylesheet" href="_ds/digib00age-design-system-0af03d35-2c0e-4f8f-87c4-f4ff4927ecf4/tokens/base.css">
+  <link rel="stylesheet" href="_ds/digib00age-design-system-0af03d35-2c0e-4f8f-87c4-f4ff4927ecf4/styles.css">
+  <script src="_ds/digib00age-design-system-0af03d35-2c0e-4f8f-87c4-f4ff4927ecf4/_ds_bundle.js"></script>
+  <script src="./data.js"></script>
+  <style>
+    body{margin:0;background:#0a0a0c;font-family:system-ui,sans-serif}
+    .dv-turn{padding:40px 44px 60px}
+    .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 24px}
+    .dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#fff;color:#0a0a0c;border-radius:4px;text-decoration:none}
+    .dv-tname{font:600 14px/1.2 system-ui,sans-serif;color:#fff}
+    .dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+    .dv-opt{flex:none;display:flex;flex-direction:column;gap:12px}
+    .dv-oid{font:600 11px ui-monospace,Menlo,monospace;padding:3px 8px;background:rgba(255,255,255,.12);color:#fff;border-radius:5px;text-decoration:none}
+    .dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 12px/1.3 system-ui,sans-serif;color:rgba(255,255,255,.6)}
+    .dv-card{background:#000;border-radius:28px;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden}
+    .dv-next{margin:26px 0 0;font:12px/1.6 system-ui,sans-serif;color:rgba(255,255,255,.45);max-width:700px}
+  </style>
+</helmet>
+
+<section class="dv-turn" id="t2">
+  <div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Web-UI parity — side menu (Singles / Series / read state / Libraries), list-view summaries, issue &amp; series pages · portrait + landscape</span></div>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="2a">
+      <div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Portrait — collapsed rail, library initials as blue circles</div>
+      <div class="dv-card" style="width:826px">
+        <div data-screen-label="2a Tablet portrait" style="width:810px;height:1080px;border:8px solid #050506;border-radius:28px;overflow:hidden;box-sizing:content-box;background:var(--bg);position:relative;display:flex;flex-direction:column;font-family:var(--font-sans);color:var(--text-primary)">
+
+          <div style="height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:700;background:var(--bg)">
+            <span>08:12</span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 10.4a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2ZM4.6 7.4a5 5 0 0 1 6.8 0M2 4.6a9 9 0 0 1 12 0" stroke="var(--text-secondary)" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+              <div style="width:22px;height:11px;border:1.4px solid var(--text-secondary);border-radius:2px;position:relative">
+                <div style="position:absolute;left:1.5px;top:1.5px;bottom:1.5px;width:15px;background:var(--text-secondary);border-radius:1px"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:1;display:flex;min-height:0">
+            <nav style="width:{{ sidebarWidthP }};flex-shrink:0;display:flex;flex-direction:column;gap:2px;padding:14px 8px;background:var(--surface-card);border-right:1px solid var(--border);box-sizing:border-box;transition:width 0.18s var(--ease);overflow-y:auto;overflow-x:hidden">
+              <button onclick="{{ toggleNavP }}" style="width:100%;height:36px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-muted);cursor:pointer;margin-bottom:6px;flex-shrink:0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM9 3v18"/></svg>
+              </button>
+              <button onclick="{{ goHomeP }}" style="{{ navHomeStyleP }}">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                <sc-if value="{{ navExpandedP }}">Home</sc-if>
+              </button>
+              <button onclick="{{ goAllP }}" style="{{ navAllStyleP }}">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+                <sc-if value="{{ navExpandedP }}">All</sc-if>
+              </button>
+              <button onclick="{{ goSinglesP }}" style="{{ navSinglesStyleP }}">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <sc-if value="{{ navExpandedP }}">Singles</sc-if>
+              </button>
+              <button onclick="{{ goSeriesP }}" style="{{ navSeriesStyleP }}">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+                <sc-if value="{{ navExpandedP }}">Series</sc-if>
+              </button>
+              <div style="height:1px;background:var(--border);margin:8px 6px;flex-shrink:0"></div>
+              <button onclick="{{ goUnreadP }}" style="{{ navUnreadStyleP }}">
+                <span style="width:19px;text-align:center;font-size:15px;line-height:1;flex-shrink:0">○</span>
+                <sc-if value="{{ navExpandedP }}">Unread</sc-if>
+              </button>
+              <button onclick="{{ goReadingP }}" style="{{ navReadingStyleP }}">
+                <span style="width:19px;text-align:center;font-size:15px;line-height:1;flex-shrink:0">◐</span>
+                <sc-if value="{{ navExpandedP }}">Reading</sc-if>
+              </button>
+              <button onclick="{{ goReadP }}" style="{{ navReadStyleP }}">
+                <span style="width:19px;text-align:center;font-size:15px;line-height:1;flex-shrink:0">✓</span>
+                <sc-if value="{{ navExpandedP }}">Read</sc-if>
+              </button>
+              <div style="height:1px;background:var(--border);margin:8px 6px;flex-shrink:0"></div>
+              <sc-if value="{{ navExpandedP }}"><div class="ds-eyebrow" style="padding:8px 14px 4px">Libraries</div></sc-if>
+              <sc-for list="{{ libsP }}" as="lib" hint-placeholder-count="3">
+                <button onclick="{{ lib.open }}" style="{{ lib.rowStyle }}">
+                  <sc-if value="{{ lib.collapsed }}"><span style="{{ lib.circleStyle }}">{{ lib.letter }}</span></sc-if>
+                  <sc-if value="{{ lib.expanded }}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ lib.name }}</span></sc-if>
+                </button>
+              </sc-for>
+            </nav>
+
+            <div style="flex:1;min-width:0;overflow-y:auto;position:relative">
+              <sc-if value="{{ screenPIsHome }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)">
+                  <img src="assets/logo/lockup-light.png" alt="digib00age" style="height:24px">
+                  <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer">⌕</button>
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:17px;cursor:pointer">⚙</button>
+                  </div>
+                </div>
+                <div style="padding:8px 20px 40px">
+                  <sc-for list="{{ strips2P }}" as="strip" hint-placeholder-count="3">
+                    <div style="padding:14px 0 4px">
+                      <div class="ds-eyebrow" style="margin-bottom:14px">{{ strip.label }}</div>
+                      <div style="display:flex;gap:14px;overflow-x:auto;padding:5px 0 10px">
+                        <sc-for list="{{ strip.items }}" as="item" hint-placeholder-count="6">
+                          <div style="width:150px;flex-shrink:0">
+                            <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.CoverCard" title="{{ item.title }}" year="{{ item.year }}" meta="{{ item.metaLabel }}" cover-src="{{ item.cover }}" state="{{ item.state }}" progress="{{ item.progress }}" favourite="{{ item.favourite }}" unread-count="{{ item.unreadCount }}" on-click="{{ item.open }}" hint-size="150px,225px"></x-import>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ screenPIsBrowse }}">
+                <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)">
+                  <img src="assets/logo/lockup-light.png" alt="digib00age" style="height:24px">
+                  <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer">⌕</button>
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:17px;cursor:pointer">⚙</button>
+                  </div>
+                </div>
+                <div style="padding:16px 20px 40px">
+                  <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px">
+                    <div style="display:flex;flex-direction:column;gap:2px">
+                      <div class="ds-eyebrow">{{ browseEyebrowP }}</div>
+                      <span style="font-size:22px;font-weight:800;color:var(--accent)">{{ browseCountP }}</span>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                      <button onclick="{{ setViewGridP }}" style="{{ viewGridBtnStyleP }}">▦</button>
+                      <button onclick="{{ setViewListP }}" style="{{ viewListBtnStyleP }}">☰</button>
+                    </div>
+                  </div>
+                  <sc-if value="{{ viewPIsGrid }}">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,150px);gap:14px">
+                      <sc-for list="{{ browseItemsP }}" as="item" hint-placeholder-count="12">
+                        <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.CoverCard" view="grid" title="{{ item.title }}" year="{{ item.year }}" meta="{{ item.metaLabel }}" cover-src="{{ item.cover }}" state="{{ item.state }}" progress="{{ item.progress }}" favourite="{{ item.favourite }}" unread-count="{{ item.unreadCount }}" on-click="{{ item.open }}" hint-size="150px,225px"></x-import>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ viewPIsList }}">
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <sc-for list="{{ browseItemsP }}" as="item" hint-placeholder-count="8">
+                        <div onclick="{{ item.open }}" style="{{ item.listStyle }}" style-hover="transform:var(--lift);border-color:var(--accent)">
+                          <div style="position:relative;width:96px;flex-shrink:0;background:var(--surface-raised);overflow:hidden">
+                            <img src="{{ item.cover }}" alt="" style="width:100%;height:100%;object-fit:cover">
+                            <sc-if value="{{ item.fav }}"><span style="position:absolute;top:6px;left:6px;color:var(--favourite);font-size:15px;line-height:1;border:1px solid #000;border-radius:50%;padding:1px 2px;background:rgba(0,0,0,0.35);z-index:2">★</span></sc-if>
+                            <sc-if value="{{ item.isProgress }}">
+                              <div style="position:absolute;bottom:0;left:0;right:0;height:32px;background:linear-gradient(to bottom,transparent,#000);pointer-events:none"></div>
+                              <div style="{{ item.barStyle }}"></div>
+                            </sc-if>
+                          </div>
+                          <div style="{{ item.infoStyle }}">
+                            <span style="{{ item.titleStyle }}">{{ item.title }}</span>
+                            <span style="{{ item.metaStyle }}">{{ item.yearMeta }}</span>
+                            <span style="{{ item.sumStyle }}">{{ item.summary }}</span>
+                            <span style="{{ item.genreStyle }}">{{ item.genresLabel }}</span>
+                            <span style="{{ item.credStyle }}">{{ item.credLabel }}</span>
+                            <sc-if value="{{ item.isProgress }}"><span style="font-size:var(--text-2xs);color:#fff;font-weight:600">{{ item.progressLabel }}</span></sc-if>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ screenPIsSeries }}">
+                <div style="position:relative;min-height:100%">
+                  <div style="position:absolute;top:0;left:0;right:0;height:420px;overflow:hidden;z-index:0;pointer-events:none">
+                    <img src="{{ seriesP.cover }}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center 20%;opacity:0.28;filter:blur(4px) saturate(1.1);transform:scale(1.1)">
+                    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45)"></div>
+                    <div style="position:absolute;left:0;right:0;bottom:0;height:70%;background:linear-gradient(to bottom, transparent, var(--bg))"></div>
+                  </div>
+                  <div style="position:relative;z-index:1;padding:16px 20px 40px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+                      <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" size="sm" on-click="{{ backP }}" hint-size="auto,28px">← Back</x-import>
+                      <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" size="sm" on-click="{{ seriesP.markAll }}" hint-size="auto,28px">Mark all read</x-import>
+                    </div>
+                    <div style="font-size:30px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;margin-bottom:8px">{{ seriesP.title }}</div>
+                    <div style="font-size:14px;color:var(--text-secondary);margin-bottom:12px">{{ seriesP.metaLine }}</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+                      <sc-for list="{{ seriesP.genres }}" as="g" hint-placeholder-count="3">
+                        <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Tag" hint-size="auto,24px">{{ g }}</x-import>
+                      </sc-for>
+                    </div>
+                    <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">{{ seriesP.issuesLabel }}</div>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <sc-for list="{{ seriesP.issues }}" as="iss" hint-placeholder-count="5">
+                        <div onclick="{{ iss.open }}" style="{{ iss.rowStyle }}" style-hover="border-color:var(--accent)">
+                          <img src="{{ iss.cover }}" alt="" style="width:56px;aspect-ratio:2/3;object-fit:cover;border-radius:3px;flex-shrink:0">
+                          <span style="font-size:13px;font-weight:700;color:var(--text-secondary);width:34px;text-align:center;flex-shrink:0">{{ iss.numberLabel }}</span>
+                          <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:2px">
+                            <span style="font-size:14px;font-weight:700">{{ iss.title }}</span>
+                            <span style="font-size:12px;color:var(--text-muted)">{{ iss.metaLine }}</span>
+                            <span style="font-size:12px;color:var(--text-muted);line-height:1.45;max-height:2.9em;overflow:hidden">{{ iss.summary }}</span>
+                          </div>
+                          <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.StatusButton" state="{{ iss.state }}" size="{{ 28 }}" hint-size="28px,28px"></x-import>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ screenPIsIssue }}">
+                <div style="position:relative;min-height:100%;display:flex;flex-direction:column">
+                  <div style="position:absolute;top:0;left:0;right:0;height:420px;overflow:hidden;z-index:0;pointer-events:none">
+                    <img src="{{ issueP.cover }}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center 20%;opacity:0.28;filter:blur(4px) saturate(1.1);transform:scale(1.1)">
+                    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45)"></div>
+                    <div style="position:absolute;left:0;right:0;bottom:0;height:70%;background:linear-gradient(to bottom, transparent, var(--bg))"></div>
+                  </div>
+                  <div style="position:relative;z-index:1;padding:16px 20px 32px;display:flex;flex-direction:column;flex:1">
+                    <div style="margin-bottom:18px;align-self:flex-start">
+                      <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" size="sm" on-click="{{ backP }}" hint-size="auto,28px">← Back</x-import>
+                    </div>
+                    <div style="display:flex;gap:24px;margin-bottom:28px">
+                      <div style="width:190px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
+                        <img src="{{ issueP.cover }}" alt="" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;border:1px solid var(--border);box-shadow:var(--shadow-modal)">
+                        <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" variant="secondary" full-width="{{ true }}" on-click="{{ issueP.toggleMark }}" hint-size="100%,36px">{{ issueP.markLabel }}</x-import>
+                        <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" variant="secondary" full-width="{{ true }}" on-click="{{ issueP.toggleFav }}" hint-size="100%,36px">{{ issueP.favLabel }}</x-import>
+                        <div style="display:flex;gap:8px;justify-content:center;padding:4px 0">
+                          <sc-for list="{{ issueP.stars }}" as="st" hint-placeholder-count="5"><span onclick="{{ st.set }}" style="{{ st.style }}">★</span></sc-for>
+                        </div>
+                      </div>
+                      <div style="flex:1;min-width:0">
+                        <div style="font-size:32px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;margin-bottom:12px">{{ issueP.title }}</div>
+                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+                          <sc-if value="{{ issueP.hasNumber }}"><span style="background:var(--surface-raised);border:1px solid var(--border);color:var(--text-primary);font-size:12px;font-weight:700;padding:3px 12px;border-radius:999px">{{ issueP.numberLabel }}</span></sc-if>
+                          <span style="background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700;padding:3px 12px;border-radius:999px">{{ issueP.typeLabel }}</span>
+                        </div>
+                        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:12px">{{ issueP.metaLine }}</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                          <sc-for list="{{ issueP.genres }}" as="g" hint-placeholder-count="3">
+                            <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Tag" hint-size="auto,24px">{{ g }}</x-import>
+                          </sc-for>
+                        </div>
+                        <div style="height:1px;background:var(--border);margin:18px 0"></div>
+                        <div class="ds-eyebrow" style="margin-bottom:8px">Summary</div>
+                        <p style="margin:0;font-size:15px;line-height:1.7;color:var(--text-primary)">{{ issueP.summary }}</p>
+                        <div style="height:1px;background:var(--border);margin:18px 0"></div>
+                        <div class="ds-eyebrow" style="margin-bottom:8px">Credits</div>
+                        <div style="display:flex;gap:12px;font-size:14px;align-items:baseline">
+                          <span style="color:var(--text-muted);width:52px;flex-shrink:0">Writer</span>
+                          <span style="color:var(--accent);text-decoration:underline;text-underline-offset:3px;cursor:pointer">{{ issueP.writer }}</span>
+                        </div>
+                        <div style="font-size:13px;color:var(--text-muted);margin-top:18px">{{ issueP.ratedLine }}</div>
+                      </div>
+                    </div>
+                    <div style="margin-top:auto;display:flex;align-items:center;gap:14px">
+                      <button onclick="{{ issueP.goPrev }}" style="{{ issueP.prevStyle }}">← Previous</button>
+                      <span style="font-size:13px;color:var(--text-muted);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis">{{ issueP.navTitle }}</span>
+                      <button onclick="{{ issueP.goNext }}" style="{{ issueP.nextStyle }}">Next →</button>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="2b">
+      <div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Landscape — expanded rail, library names as text</div>
+      <div class="dv-card" style="width:1096px">
+        <div data-screen-label="2b Tablet landscape" style="width:1080px;height:810px;border:8px solid #050506;border-radius:28px;overflow:hidden;box-sizing:content-box;background:var(--bg);position:relative;display:flex;flex-direction:column;font-family:var(--font-sans);color:var(--text-primary)">
+
+          <div style="height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:700;background:var(--bg)">
+            <span>08:12</span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 10.4a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2ZM4.6 7.4a5 5 0 0 1 6.8 0M2 4.6a9 9 0 0 1 12 0" stroke="var(--text-secondary)" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+              <div style="width:22px;height:11px;border:1.4px solid var(--text-secondary);border-radius:2px;position:relative">
+                <div style="position:absolute;left:1.5px;top:1.5px;bottom:1.5px;width:15px;background:var(--text-secondary);border-radius:1px"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:1;display:flex;min-height:0">
+            <nav style="width:{{ sidebarWidthL }};flex-shrink:0;display:flex;flex-direction:column;gap:2px;padding:14px 8px;background:var(--surface-card);border-right:1px solid var(--border);box-sizing:border-box;transition:width 0.18s var(--ease);overflow-y:auto;overflow-x:hidden">
+              <button onclick="{{ toggleNavL }}" style="width:100%;height:36px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-muted);cursor:pointer;margin-bottom:6px;flex-shrink:0">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM9 3v18"/></svg>
+              </button>
+              <button onclick="{{ goHomeL }}" style="{{ navHomeStyleL }}">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                <sc-if value="{{ navExpandedL }}">Home</sc-if>
+              </button>
+              <button onclick="{{ goAllL }}" style="{{ navAllStyleL }}">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+                <sc-if value="{{ navExpandedL }}">All</sc-if>
+              </button>
+              <button onclick="{{ goSinglesL }}" style="{{ navSinglesStyleL }}">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                <sc-if value="{{ navExpandedL }}">Singles</sc-if>
+              </button>
+              <button onclick="{{ goSeriesL }}" style="{{ navSeriesStyleL }}">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+                <sc-if value="{{ navExpandedL }}">Series</sc-if>
+              </button>
+              <div style="height:1px;background:var(--border);margin:8px 6px;flex-shrink:0"></div>
+              <button onclick="{{ goUnreadL }}" style="{{ navUnreadStyleL }}">
+                <span style="width:19px;text-align:center;font-size:15px;line-height:1;flex-shrink:0">○</span>
+                <sc-if value="{{ navExpandedL }}">Unread</sc-if>
+              </button>
+              <button onclick="{{ goReadingL }}" style="{{ navReadingStyleL }}">
+                <span style="width:19px;text-align:center;font-size:15px;line-height:1;flex-shrink:0">◐</span>
+                <sc-if value="{{ navExpandedL }}">Reading</sc-if>
+              </button>
+              <button onclick="{{ goReadL }}" style="{{ navReadStyleL }}">
+                <span style="width:19px;text-align:center;font-size:15px;line-height:1;flex-shrink:0">✓</span>
+                <sc-if value="{{ navExpandedL }}">Read</sc-if>
+              </button>
+              <div style="height:1px;background:var(--border);margin:8px 6px;flex-shrink:0"></div>
+              <sc-if value="{{ navExpandedL }}"><div class="ds-eyebrow" style="padding:8px 14px 4px">Libraries</div></sc-if>
+              <sc-for list="{{ libsL }}" as="lib" hint-placeholder-count="3">
+                <button onclick="{{ lib.open }}" style="{{ lib.rowStyle }}">
+                  <sc-if value="{{ lib.collapsed }}"><span style="{{ lib.circleStyle }}">{{ lib.letter }}</span></sc-if>
+                  <sc-if value="{{ lib.expanded }}"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ lib.name }}</span></sc-if>
+                </button>
+              </sc-for>
+            </nav>
+
+            <div style="flex:1;min-width:0;overflow-y:auto;position:relative">
+              <sc-if value="{{ screenLIsHome }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid var(--border)">
+                  <img src="assets/logo/lockup-light.png" alt="digib00age" style="height:24px">
+                  <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer">⌕</button>
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:17px;cursor:pointer">⚙</button>
+                  </div>
+                </div>
+                <div style="padding:8px 24px 40px">
+                  <sc-for list="{{ strips2L }}" as="strip" hint-placeholder-count="2">
+                    <div style="padding:14px 0 4px">
+                      <div class="ds-eyebrow" style="margin-bottom:14px">{{ strip.label }}</div>
+                      <div style="display:flex;gap:14px;overflow-x:auto;padding:5px 0 10px">
+                        <sc-for list="{{ strip.items }}" as="item" hint-placeholder-count="6">
+                          <div style="width:150px;flex-shrink:0">
+                            <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.CoverCard" title="{{ item.title }}" year="{{ item.year }}" meta="{{ item.metaLabel }}" cover-src="{{ item.cover }}" state="{{ item.state }}" progress="{{ item.progress }}" favourite="{{ item.favourite }}" unread-count="{{ item.unreadCount }}" on-click="{{ item.open }}" hint-size="150px,225px"></x-import>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ screenLIsBrowse }}">
+                <div style="display:flex;align-items:center;gap:12px;padding:16px 24px;border-bottom:1px solid var(--border)">
+                  <img src="assets/logo/lockup-light.png" alt="digib00age" style="height:24px">
+                  <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer">⌕</button>
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:17px;cursor:pointer">⚙</button>
+                  </div>
+                </div>
+                <div style="padding:16px 24px 40px">
+                  <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px">
+                    <div style="display:flex;flex-direction:column;gap:2px">
+                      <div class="ds-eyebrow">{{ browseEyebrowL }}</div>
+                      <span style="font-size:22px;font-weight:800;color:var(--accent)">{{ browseCountL }}</span>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                      <button onclick="{{ setViewGridL }}" style="{{ viewGridBtnStyleL }}">▦</button>
+                      <button onclick="{{ setViewListL }}" style="{{ viewListBtnStyleL }}">☰</button>
+                    </div>
+                  </div>
+                  <sc-if value="{{ viewLIsGrid }}">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,150px);gap:14px">
+                      <sc-for list="{{ browseItemsL }}" as="item" hint-placeholder-count="12">
+                        <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.CoverCard" view="grid" title="{{ item.title }}" year="{{ item.year }}" meta="{{ item.metaLabel }}" cover-src="{{ item.cover }}" state="{{ item.state }}" progress="{{ item.progress }}" favourite="{{ item.favourite }}" unread-count="{{ item.unreadCount }}" on-click="{{ item.open }}" hint-size="150px,225px"></x-import>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ viewLIsList }}">
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <sc-for list="{{ browseItemsL }}" as="item" hint-placeholder-count="8">
+                        <div onclick="{{ item.open }}" style="{{ item.listStyle }}" style-hover="transform:var(--lift);border-color:var(--accent)">
+                          <div style="position:relative;width:96px;flex-shrink:0;background:var(--surface-raised);overflow:hidden">
+                            <img src="{{ item.cover }}" alt="" style="width:100%;height:100%;object-fit:cover">
+                            <sc-if value="{{ item.fav }}"><span style="position:absolute;top:6px;left:6px;color:var(--favourite);font-size:15px;line-height:1;border:1px solid #000;border-radius:50%;padding:1px 2px;background:rgba(0,0,0,0.35);z-index:2">★</span></sc-if>
+                            <sc-if value="{{ item.isProgress }}">
+                              <div style="position:absolute;bottom:0;left:0;right:0;height:32px;background:linear-gradient(to bottom,transparent,#000);pointer-events:none"></div>
+                              <div style="{{ item.barStyle }}"></div>
+                            </sc-if>
+                          </div>
+                          <div style="{{ item.infoStyle }}">
+                            <span style="{{ item.titleStyle }}">{{ item.title }}</span>
+                            <span style="{{ item.metaStyle }}">{{ item.yearMeta }}</span>
+                            <span style="{{ item.sumStyle }}">{{ item.summary }}</span>
+                            <span style="{{ item.genreStyle }}">{{ item.genresLabel }}</span>
+                            <span style="{{ item.credStyle }}">{{ item.credLabel }}</span>
+                            <sc-if value="{{ item.isProgress }}"><span style="font-size:var(--text-2xs);color:#fff;font-weight:600">{{ item.progressLabel }}</span></sc-if>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ screenLIsSeries }}">
+                <div style="position:relative;min-height:100%">
+                  <div style="position:absolute;top:0;left:0;right:0;height:360px;overflow:hidden;z-index:0;pointer-events:none">
+                    <img src="{{ seriesL.cover }}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center 20%;opacity:0.28;filter:blur(4px) saturate(1.1);transform:scale(1.1)">
+                    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45)"></div>
+                    <div style="position:absolute;left:0;right:0;bottom:0;height:70%;background:linear-gradient(to bottom, transparent, var(--bg))"></div>
+                  </div>
+                  <div style="position:relative;z-index:1;padding:16px 24px 40px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+                      <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" size="sm" on-click="{{ backL }}" hint-size="auto,28px">← Back</x-import>
+                      <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" size="sm" on-click="{{ seriesL.markAll }}" hint-size="auto,28px">Mark all read</x-import>
+                    </div>
+                    <div style="font-size:30px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;margin-bottom:8px">{{ seriesL.title }}</div>
+                    <div style="font-size:14px;color:var(--text-secondary);margin-bottom:12px">{{ seriesL.metaLine }}</div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+                      <sc-for list="{{ seriesL.genres }}" as="g" hint-placeholder-count="3">
+                        <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Tag" hint-size="auto,24px">{{ g }}</x-import>
+                      </sc-for>
+                    </div>
+                    <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px">{{ seriesL.issuesLabel }}</div>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <sc-for list="{{ seriesL.issues }}" as="iss" hint-placeholder-count="5">
+                        <div onclick="{{ iss.open }}" style="{{ iss.rowStyle }}" style-hover="border-color:var(--accent)">
+                          <img src="{{ iss.cover }}" alt="" style="width:56px;aspect-ratio:2/3;object-fit:cover;border-radius:3px;flex-shrink:0">
+                          <span style="font-size:13px;font-weight:700;color:var(--text-secondary);width:34px;text-align:center;flex-shrink:0">{{ iss.numberLabel }}</span>
+                          <div style="min-width:0;flex:1;display:flex;flex-direction:column;gap:2px">
+                            <span style="font-size:14px;font-weight:700">{{ iss.title }}</span>
+                            <span style="font-size:12px;color:var(--text-muted)">{{ iss.metaLine }}</span>
+                            <span style="font-size:12px;color:var(--text-muted);line-height:1.45;max-height:2.9em;overflow:hidden">{{ iss.summary }}</span>
+                          </div>
+                          <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.StatusButton" state="{{ iss.state }}" size="{{ 28 }}" hint-size="28px,28px"></x-import>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ screenLIsIssue }}">
+                <div style="position:relative;min-height:100%;display:flex;flex-direction:column">
+                  <div style="position:absolute;top:0;left:0;right:0;height:360px;overflow:hidden;z-index:0;pointer-events:none">
+                    <img src="{{ issueL.cover }}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center 20%;opacity:0.28;filter:blur(4px) saturate(1.1);transform:scale(1.1)">
+                    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45)"></div>
+                    <div style="position:absolute;left:0;right:0;bottom:0;height:70%;background:linear-gradient(to bottom, transparent, var(--bg))"></div>
+                  </div>
+                  <div style="position:relative;z-index:1;padding:16px 24px 32px;display:flex;flex-direction:column;flex:1">
+                    <div style="margin-bottom:18px;align-self:flex-start">
+                      <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" size="sm" on-click="{{ backL }}" hint-size="auto,28px">← Back</x-import>
+                    </div>
+                    <div style="display:flex;gap:28px;margin-bottom:28px">
+                      <div style="width:210px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
+                        <img src="{{ issueL.cover }}" alt="" style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;border:1px solid var(--border);box-shadow:var(--shadow-modal)">
+                        <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" variant="secondary" full-width="{{ true }}" on-click="{{ issueL.toggleMark }}" hint-size="100%,36px">{{ issueL.markLabel }}</x-import>
+                        <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" variant="secondary" full-width="{{ true }}" on-click="{{ issueL.toggleFav }}" hint-size="100%,36px">{{ issueL.favLabel }}</x-import>
+                        <div style="display:flex;gap:8px;justify-content:center;padding:4px 0">
+                          <sc-for list="{{ issueL.stars }}" as="st" hint-placeholder-count="5"><span onclick="{{ st.set }}" style="{{ st.style }}">★</span></sc-for>
+                        </div>
+                      </div>
+                      <div style="flex:1;min-width:0">
+                        <div style="font-size:32px;font-weight:800;letter-spacing:-0.02em;line-height:1.1;margin-bottom:12px">{{ issueL.title }}</div>
+                        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
+                          <sc-if value="{{ issueL.hasNumber }}"><span style="background:var(--surface-raised);border:1px solid var(--border);color:var(--text-primary);font-size:12px;font-weight:700;padding:3px 12px;border-radius:999px">{{ issueL.numberLabel }}</span></sc-if>
+                          <span style="background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700;padding:3px 12px;border-radius:999px">{{ issueL.typeLabel }}</span>
+                        </div>
+                        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:12px">{{ issueL.metaLine }}</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                          <sc-for list="{{ issueL.genres }}" as="g" hint-placeholder-count="3">
+                            <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Tag" hint-size="auto,24px">{{ g }}</x-import>
+                          </sc-for>
+                        </div>
+                        <div style="height:1px;background:var(--border);margin:18px 0"></div>
+                        <div class="ds-eyebrow" style="margin-bottom:8px">Summary</div>
+                        <p style="margin:0;font-size:15px;line-height:1.7;color:var(--text-primary)">{{ issueL.summary }}</p>
+                        <div style="height:1px;background:var(--border);margin:18px 0"></div>
+                        <div class="ds-eyebrow" style="margin-bottom:8px">Credits</div>
+                        <div style="display:flex;gap:12px;font-size:14px;align-items:baseline">
+                          <span style="color:var(--text-muted);width:52px;flex-shrink:0">Writer</span>
+                          <span style="color:var(--accent);text-decoration:underline;text-underline-offset:3px;cursor:pointer">{{ issueL.writer }}</span>
+                        </div>
+                        <div style="font-size:13px;color:var(--text-muted);margin-top:18px">{{ issueL.ratedLine }}</div>
+                      </div>
+                    </div>
+                    <div style="margin-top:auto;display:flex;align-items:center;gap:14px">
+                      <button onclick="{{ issueL.goPrev }}" style="{{ issueL.prevStyle }}">← Previous</button>
+                      <span style="font-size:13px;color:var(--text-muted);white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis">{{ issueL.navTitle }}</span>
+                      <button onclick="{{ issueL.goNext }}" style="{{ issueL.nextStyle }}">Next →</button>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Both are fully clickable — try the read-state filters, a library circle in <a class="dv-oid" href="#2a">2a</a>, list view for the summaries, and drill into a series → issue for the new detail pages (no Edit XML).</p>
+</section>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">digib00age tablet app — Home / Library / Detail, two layout directions</span></div>
+  <div class="dv-opts">
+
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Strip-forward — grid covers, curated rows</div>
+      <div class="dv-card" style="width:826px">
+        <div style="width:810px;height:1080px;border:8px solid #050506;border-radius:28px;overflow:hidden;box-sizing:content-box;background:var(--bg);position:relative;display:flex;flex-direction:column;font-family:var(--font-sans);color:var(--text-primary)">
+
+          <div style="height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:700;background:var(--bg)">
+            <span>08:12</span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 10.4a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2ZM4.6 7.4a5 5 0 0 1 6.8 0M2 4.6a9 9 0 0 1 12 0" stroke="var(--text-secondary)" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+              <div style="width:22px;height:11px;border:1.4px solid var(--text-secondary);border-radius:2px;position:relative">
+                <div style="position:absolute;left:1.5px;top:1.5px;bottom:1.5px;width:15px;background:var(--text-secondary);border-radius:1px"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:1;display:flex;min-height:0">
+            <nav style="width:{{ sidebarWidthA }};flex-shrink:0;display:flex;flex-direction:column;gap:4px;padding:14px 8px;background:var(--surface-card);border-right:1px solid var(--border);box-sizing:border-box;transition:width 0.18s var(--ease)">
+              <button onclick="{{ toggleNavA }}" style="width:100%;height:36px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-muted);cursor:pointer;margin-bottom:6px">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM9 3v18"/></svg>
+              </button>
+              <button onclick="{{ goHomeA }}" style="{{ navHomeStyleA }}">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                <sc-if value="{{ navExpandedA }}">Home</sc-if>
+              </button>
+              <button onclick="{{ goLibraryA }}" style="{{ navLibraryStyleA }}">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+                <sc-if value="{{ navExpandedA }}">Library</sc-if>
+              </button>
+            </nav>
+
+            <div style="flex:1;min-width:0;overflow-y:auto;position:relative">
+              <sc-if value="{{ screenAIsHome }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)">
+                  <img src="assets/logo/lockup-light.png" alt="digib00age" style="height:24px">
+                  <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer">⌕</button>
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:17px;cursor:pointer">⚙</button>
+                  </div>
+                </div>
+                <div style="padding:8px 20px 40px">
+                  <sc-for list="{{ stripsA }}" as="strip" hint-placeholder-count="3">
+                    <div style="padding:14px 0 4px">
+                      <div class="ds-eyebrow" style="margin-bottom:14px">{{ strip.label }}</div>
+                      <div style="display:flex;gap:14px;overflow-x:auto;padding:5px 0 10px">
+                        <sc-for list="{{ strip.items }}" as="item" hint-placeholder-count="6">
+                          <div style="width:150px;flex-shrink:0">
+                            <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.CoverCard" title="{{ item.title }}" year="{{ item.year }}" meta="{{ item.metaLabel }}" cover-src="{{ item.cover }}" state="{{ item.state }}" progress="{{ item.progress }}" favourite="{{ item.favourite }}" unread-count="{{ item.unreadCount }}" on-click="{{ item.open }}" hint-size="150px,225px"></x-import>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ screenAIsLibrary }}">
+                <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)">
+                  <img src="assets/logo/lockup-light.png" alt="digib00age" style="height:24px">
+                  <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer">⌕</button>
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:17px;cursor:pointer">⚙</button>
+                  </div>
+                </div>
+                <div style="padding:16px 20px 40px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                    <span style="font-size:20px;font-weight:800;color:var(--accent)">{{ titlesLabelA }}</span>
+                    <div style="display:flex;gap:8px">
+                      <button onclick="{{ setViewGridA }}" style="{{ viewGridBtnStyleA }}">▦</button>
+                      <button onclick="{{ setViewListA }}" style="{{ viewListBtnStyleA }}">☰</button>
+                    </div>
+                  </div>
+                  <sc-if value="{{ viewAIsGrid }}">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,150px);gap:14px">
+                      <sc-for list="{{ itemsA }}" as="item" hint-placeholder-count="12">
+                        <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.CoverCard" view="grid" title="{{ item.title }}" year="{{ item.year }}" meta="{{ item.metaLabel }}" cover-src="{{ item.cover }}" state="{{ item.state }}" progress="{{ item.progress }}" favourite="{{ item.favourite }}" unread-count="{{ item.unreadCount }}" on-click="{{ item.open }}" hint-size="150px,225px"></x-import>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ viewAIsList }}">
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <sc-for list="{{ itemsA }}" as="item" hint-placeholder-count="8">
+                        <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.CoverCard" view="list" title="{{ item.title }}" year="{{ item.year }}" meta="{{ item.metaLabel }}" cover-src="{{ item.cover }}" state="{{ item.state }}" progress="{{ item.progress }}" favourite="{{ item.favourite }}" genres="{{ item.genres }}" publisher="{{ item.publisher }}" writer="{{ item.writer }}" on-click="{{ item.open }}" hint-size="100%,110px"></x-import>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ screenAIsDetail }}">
+                <div style="position:relative;min-height:100%">
+                  <div style="position:absolute;top:0;left:0;right:0;height:480px;overflow:hidden;z-index:0;pointer-events:none">
+                    <img src="{{ detailA.cover }}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center 20%;opacity:0.32;filter:blur(6px) saturate(1.1);transform:scale(1.1)">
+                    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45)"></div>
+                    <div style="position:absolute;left:0;right:0;bottom:0;height:70%;background:linear-gradient(to bottom, transparent, var(--bg))"></div>
+                  </div>
+                  <div style="position:relative;z-index:1;padding:16px 20px 40px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                      <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" variant="ghost" size="sm" on-click="{{ backFromDetailA }}" hint-size="auto,28px">← Back</x-import>
+                      <sc-if value="{{ detailA.isSeries }}"><x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" size="sm" hint-size="auto,28px">Mark all read</x-import></sc-if>
+                    </div>
+                    <div style="display:flex;gap:20px;margin-bottom:20px">
+                      <img src="{{ detailA.cover }}" alt="" style="width:170px;aspect-ratio:2/3;object-fit:cover;border-radius:10px;box-shadow:var(--shadow-modal);flex-shrink:0">
+                      <div style="min-width:0;flex:1">
+                        <div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;line-height:1.15;margin-bottom:8px">{{ detailA.title }}</div>
+                        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:12px">{{ detailA.metaLine }}</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+                          <sc-for list="{{ detailA.genres }}" as="g" hint-placeholder-count="2">
+                            <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Tag" hint-size="auto,24px">{{ g }}</x-import>
+                          </sc-for>
+                        </div>
+                        <sc-if value="{{ detailA.isSingle }}">
+                          <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" size="lg" full-width="{{ true }}" hint-size="100%,40px">Continue reading</x-import>
+                          <p style="margin:14px 0 0;font-size:15px;color:var(--text-secondary);line-height:1.7">{{ detailA.summary }}</p>
+                        </sc-if>
+                      </div>
+                    </div>
+                    <sc-if value="{{ detailA.isSeries }}">
+                      <div style="display:flex;flex-direction:column;gap:6px">
+                        <sc-for list="{{ detailA.issues }}" as="iss" hint-placeholder-count="6">
+                          <div style="{{ iss.rowStyle }}">
+                            <img src="{{ iss.cover }}" alt="" style="width:52px;aspect-ratio:2/3;object-fit:cover;border-radius:3px;flex-shrink:0">
+                            <span style="font-size:13px;font-weight:700;color:var(--text-secondary);width:34px;text-align:center;flex-shrink:0">{{ iss.numberLabel }}</span>
+                            <div style="min-width:0;flex:1">
+                              <div style="font-size:13px">{{ detailA.title }}</div>
+                              <div style="font-size:12px;color:var(--text-muted);margin-top:2px">{{ iss.metaLine }}</div>
+                            </div>
+                            <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.StatusButton" state="{{ iss.state }}" size="{{ 26 }}" hint-size="26px,26px"></x-import>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>List-forward — continue-reading hero, dense rows</div>
+      <div class="dv-card" style="width:826px">
+        <div style="width:810px;height:1080px;border:8px solid #050506;border-radius:28px;overflow:hidden;box-sizing:content-box;background:var(--bg);position:relative;display:flex;flex-direction:column;font-family:var(--font-sans);color:var(--text-primary)">
+
+          <div style="height:32px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:700;background:var(--bg)">
+            <span>08:12</span>
+            <div style="display:flex;align-items:center;gap:10px">
+              <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 10.4a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2ZM4.6 7.4a5 5 0 0 1 6.8 0M2 4.6a9 9 0 0 1 12 0" stroke="var(--text-secondary)" stroke-width="1.3" stroke-linecap="round" fill="none"/></svg>
+              <div style="width:22px;height:11px;border:1.4px solid var(--text-secondary);border-radius:2px;position:relative">
+                <div style="position:absolute;left:1.5px;top:1.5px;bottom:1.5px;width:15px;background:var(--text-secondary);border-radius:1px"></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:1;display:flex;min-height:0">
+            <nav style="width:{{ sidebarWidthB }};flex-shrink:0;display:flex;flex-direction:column;gap:4px;padding:14px 8px;background:var(--surface-card);border-right:1px solid var(--border);box-sizing:border-box;transition:width 0.18s var(--ease)">
+              <button onclick="{{ toggleNavB }}" style="width:100%;height:36px;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-muted);cursor:pointer;margin-bottom:6px">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v18H3zM9 3v18"/></svg>
+              </button>
+              <button onclick="{{ goHomeB }}" style="{{ navHomeStyleB }}">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                <sc-if value="{{ navExpandedB }}">Home</sc-if>
+              </button>
+              <button onclick="{{ goLibraryB }}" style="{{ navLibraryStyleB }}">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+                <sc-if value="{{ navExpandedB }}">Library</sc-if>
+              </button>
+            </nav>
+
+            <div style="flex:1;min-width:0;overflow-y:auto;position:relative">
+              <sc-if value="{{ screenBIsHome }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)">
+                  <img src="assets/logo/lockup-light.png" alt="digib00age" style="height:24px">
+                  <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer">⌕</button>
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:17px;cursor:pointer">⚙</button>
+                  </div>
+                </div>
+                <div style="padding:16px 20px 40px">
+                  <div class="ds-eyebrow" style="margin-bottom:10px">Continue Reading</div>
+                  <div onclick="{{ heroB.open }}" style="display:flex;gap:16px;margin-bottom:30px;cursor:pointer;background:var(--surface-card);border:1px solid var(--border);border-radius:10px;padding:14px">
+                    <img src="{{ heroB.cover }}" alt="" style="width:110px;aspect-ratio:2/3;object-fit:cover;border-radius:8px;flex-shrink:0;box-shadow:var(--shadow-pop)">
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center">
+                      <div style="font-size:17px;font-weight:700;margin-bottom:6px">{{ heroB.title }}</div>
+                      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px">{{ heroB.progressLabel }}</div>
+                      <div style="height:4px;background:var(--surface-sunken);border-radius:2px;overflow:hidden;margin-bottom:14px;width:100%">
+                        <div style="height:100%;width:{{ heroB.progress }}%;background:var(--state-progress)"></div>
+                      </div>
+                      <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" size="sm" hint-size="auto,28px">Continue</x-import>
+                    </div>
+                  </div>
+                  <sc-for list="{{ stripsB }}" as="strip" hint-placeholder-count="2">
+                    <div style="margin-bottom:22px">
+                      <div class="ds-eyebrow" style="margin-bottom:10px">{{ strip.label }}</div>
+                      <div style="display:flex;flex-direction:column;gap:6px">
+                        <sc-for list="{{ strip.items }}" as="item" hint-placeholder-count="4">
+                          <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.CoverCard" view="list" title="{{ item.title }}" year="{{ item.year }}" meta="{{ item.metaLabel }}" cover-src="{{ item.cover }}" state="{{ item.state }}" progress="{{ item.progress }}" favourite="{{ item.favourite }}" genres="{{ item.genres }}" publisher="{{ item.publisher }}" on-click="{{ item.open }}" hint-size="100%,100px"></x-import>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ screenBIsLibrary }}">
+                <div style="display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)">
+                  <img src="assets/logo/lockup-light.png" alt="digib00age" style="height:24px">
+                  <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:18px;cursor:pointer">⌕</button>
+                    <button style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:transparent;border:none;color:var(--text-secondary);font-size:17px;cursor:pointer">⚙</button>
+                  </div>
+                </div>
+                <div style="padding:16px 20px 40px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+                    <span style="font-size:20px;font-weight:800;color:var(--accent)">{{ titlesLabelB }}</span>
+                    <div style="display:flex;gap:8px">
+                      <button onclick="{{ setViewGridB }}" style="{{ viewGridBtnStyleB }}">▦</button>
+                      <button onclick="{{ setViewListB }}" style="{{ viewListBtnStyleB }}">☰</button>
+                    </div>
+                  </div>
+                  <sc-if value="{{ viewBIsGrid }}">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,150px);gap:14px">
+                      <sc-for list="{{ itemsB }}" as="item" hint-placeholder-count="12">
+                        <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.CoverCard" view="grid" title="{{ item.title }}" year="{{ item.year }}" meta="{{ item.metaLabel }}" cover-src="{{ item.cover }}" state="{{ item.state }}" progress="{{ item.progress }}" favourite="{{ item.favourite }}" unread-count="{{ item.unreadCount }}" on-click="{{ item.open }}" hint-size="150px,225px"></x-import>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ viewBIsList }}">
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <sc-for list="{{ itemsB }}" as="item" hint-placeholder-count="8">
+                        <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.CoverCard" view="list" title="{{ item.title }}" year="{{ item.year }}" meta="{{ item.metaLabel }}" cover-src="{{ item.cover }}" state="{{ item.state }}" progress="{{ item.progress }}" favourite="{{ item.favourite }}" genres="{{ item.genres }}" publisher="{{ item.publisher }}" writer="{{ item.writer }}" on-click="{{ item.open }}" hint-size="100%,110px"></x-import>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ screenBIsDetail }}">
+                <div style="position:relative;min-height:100%">
+                  <div style="position:absolute;top:0;left:0;right:0;height:480px;overflow:hidden;z-index:0;pointer-events:none">
+                    <img src="{{ detailB.cover }}" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center 20%;opacity:0.32;filter:blur(6px) saturate(1.1);transform:scale(1.1)">
+                    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45)"></div>
+                    <div style="position:absolute;left:0;right:0;bottom:0;height:70%;background:linear-gradient(to bottom, transparent, var(--bg))"></div>
+                  </div>
+                  <div style="position:relative;z-index:1;padding:16px 20px 40px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+                      <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" variant="ghost" size="sm" on-click="{{ backFromDetailB }}" hint-size="auto,28px">← Back</x-import>
+                      <sc-if value="{{ detailB.isSeries }}"><x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" size="sm" hint-size="auto,28px">Mark all read</x-import></sc-if>
+                    </div>
+                    <div style="display:flex;gap:20px;margin-bottom:20px">
+                      <img src="{{ detailB.cover }}" alt="" style="width:170px;aspect-ratio:2/3;object-fit:cover;border-radius:10px;box-shadow:var(--shadow-modal);flex-shrink:0">
+                      <div style="min-width:0;flex:1">
+                        <div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;line-height:1.15;margin-bottom:8px">{{ detailB.title }}</div>
+                        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:12px">{{ detailB.metaLine }}</div>
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+                          <sc-for list="{{ detailB.genres }}" as="g" hint-placeholder-count="2">
+                            <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Tag" hint-size="auto,24px">{{ g }}</x-import>
+                          </sc-for>
+                        </div>
+                        <sc-if value="{{ detailB.isSingle }}">
+                          <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.Button" size="lg" full-width="{{ true }}" hint-size="100%,40px">Continue reading</x-import>
+                          <p style="margin:14px 0 0;font-size:15px;color:var(--text-secondary);line-height:1.7">{{ detailB.summary }}</p>
+                        </sc-if>
+                      </div>
+                    </div>
+                    <sc-if value="{{ detailB.isSeries }}">
+                      <div style="display:flex;flex-direction:column;gap:6px">
+                        <sc-for list="{{ detailB.issues }}" as="iss" hint-placeholder-count="6">
+                          <div style="{{ iss.rowStyle }}">
+                            <img src="{{ iss.cover }}" alt="" style="width:52px;aspect-ratio:2/3;object-fit:cover;border-radius:3px;flex-shrink:0">
+                            <span style="font-size:13px;font-weight:700;color:var(--text-secondary);width:34px;text-align:center;flex-shrink:0">{{ iss.numberLabel }}</span>
+                            <div style="min-width:0;flex:1">
+                              <div style="font-size:13px">{{ detailB.title }}</div>
+                              <div style="font-size:12px;color:var(--text-muted);margin-top:2px">{{ iss.metaLine }}</div>
+                            </div>
+                            <x-import component-from-global-scope="Digib00ageDesignSystem_0af03d.StatusButton" state="{{ iss.state }}" size="{{ 26 }}" hint-size="26px,26px"></x-import>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "make <a class="dv-oid" href="#1a">1a</a>'s sidebar collapsed by default to model the phone view" · "add a phone-width mockup of <a class="dv-oid" href="#1b">1b</a>" · "combine the hero from <a class="dv-oid" href="#1b">1b</a> with the strips from <a class="dv-oid" href="#1a">1a</a>"</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+function navRowStyle(active, collapsed) {
+  return {
+    display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+    padding: collapsed ? '10px 0' : '10px 14px', justifyContent: collapsed ? 'center' : 'flex-start',
+    borderRadius: 6, border: 'none', cursor: 'pointer', background: active ? 'color-mix(in srgb, var(--accent) 12%, transparent)' : 'transparent',
+    color: active ? 'var(--accent)' : 'var(--text-secondary)',
+    fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: active ? 800 : 600,
+  };
+}
+function viewToggleStyle(active) {
+  return {
+    width: 40, height: 40, borderRadius: 8, border: '1px solid var(--border)',
+    background: active ? 'var(--surface-raised)' : 'transparent',
+    color: active ? 'var(--text-primary)' : 'var(--text-muted)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, cursor: 'pointer',
+  };
+}
+
+const LIBS2 = [
+  { key: 'lib2000', name: '2000 AD', letter: '#', fn: (it) => it.publisher === '2000 AD' },
+  { key: 'libfav', name: 'Favourites', letter: 'F', fn: (it, eff) => eff.fav },
+  { key: 'liba', name: "All the A's", letter: 'A', ids: ['blake', 'nilson', 'die', 'scenes'] },
+];
+const FILTERS2 = {
+  all: { label: 'All', fn: () => true },
+  singles: { label: 'Singles', fn: (it) => it.type === 'single' },
+  series: { label: 'Series', fn: (it) => it.type === 'series' },
+  unread: { label: 'Unread', fn: (it, eff) => eff.state === 'unread' },
+  reading: { label: 'Reading', fn: (it, eff) => eff.state === 'progress' },
+  read: { label: 'Read', fn: (it, eff) => eff.state === 'read' },
+};
+LIBS2.forEach((lb) => {
+  FILTERS2[lb.key] = { label: lb.name, fn: lb.ids ? (it) => lb.ids.includes(it.id) : lb.fn };
+});
+function libCircleStyle(active) {
+  return {
+    width: 26, height: 26, borderRadius: '50%', background: 'var(--accent)', color: '#fff',
+    fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0, boxShadow: active ? '0 0 0 2px var(--surface-card), 0 0 0 4px var(--accent)' : 'none',
+  };
+}
+function pnStyle(enabled, grow) {
+  return {
+    flex: grow ? 1 : 'none', textAlign: grow ? 'left' : 'center', padding: '11px 18px',
+    borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface-card)',
+    color: 'var(--text-secondary)', fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600,
+    cursor: enabled ? 'pointer' : 'default', opacity: enabled ? 1 : 0.35,
+  };
+}
+
+class Component extends DCLogic {
+  state = {
+    a: { screen: 'home', detailId: null, prev: 'home', navCollapsed: false, view: 'grid' },
+    b: { screen: 'home', detailId: null, prev: 'home', navCollapsed: false, view: 'list' },
+    p: { screen: 'home', filter: 'all', detailId: null, issueN: null, backTo: 'home', navCollapsed: true, view: 'grid' },
+    l: { screen: 'home', filter: 'all', detailId: null, issueN: null, backTo: 'home', navCollapsed: false, view: 'list' },
+    marks: {},
+    favs: {},
+    ratings: {},
+  };
+
+  eff(it) {
+    const st = this.state.marks[it.id] || it.state;
+    const fv = Object.prototype.hasOwnProperty.call(this.state.favs, it.id) ? this.state.favs[it.id] : it.favourite;
+    return { state: st, fav: fv };
+  }
+  set2(key, patch) {
+    this.setState((s) => ({ ...s, [key]: { ...s[key], ...patch } }));
+  }
+  open2(key, it) {
+    const s = this.state[key];
+    const backTo = s.screen === 'browse' ? 'browse' : 'home';
+    if (it.type === 'series') this.set2(key, { screen: 'series', detailId: it.id, issueN: null, backTo });
+    else this.set2(key, { screen: 'issue', detailId: it.id, issueN: null, backTo });
+  }
+  openIssue2(key, id, n) {
+    this.set2(key, { screen: 'issue', detailId: id, issueN: n });
+  }
+  back2(key) {
+    const s = this.state[key];
+    if (s.screen === 'issue' && s.issueN != null) this.set2(key, { screen: 'series', issueN: null });
+    else this.set2(key, { screen: s.backTo || 'browse', detailId: null, issueN: null });
+  }
+  issueState(it, n) {
+    const k = `${it.id}#${n}`;
+    if (this.state.marks[k]) return this.state.marks[k];
+    return n <= 2 ? 'read' : n === 3 ? 'progress' : 'unread';
+  }
+  mapItem2(key, it) {
+    if (!it) return null;
+    const metaLabel = it.metaLabel || (it.type === 'series' ? `${it.issues} issues` : `${it.pages} pages`);
+    const e = this.eff(it);
+    const colored = e.state === 'read' || e.state === 'progress';
+    const titleColor = colored ? '#fff' : 'var(--text-primary)';
+    const metaColor = colored ? 'rgba(255,255,255,0.82)' : 'var(--text-muted)';
+    const cardBg = e.state === 'read' ? 'color-mix(in srgb, var(--state-read) 50%, var(--surface-card))' : e.state === 'progress' ? '#000' : 'var(--surface-card)';
+    const cardBorder = e.state === 'progress' ? 'color-mix(in srgb, var(--state-progress) 35%, transparent)' : 'var(--border)';
+    return {
+      ...it,
+      metaLabel,
+      state: e.state,
+      favourite: e.fav,
+      fav: e.fav,
+      progress: it.progress || 0,
+      isProgress: e.state === 'progress',
+      progressLabel: `${it.progress || 0}% Read`,
+      yearMeta: `${it.year} \u00b7 ${metaLabel}`,
+      genresLabel: (it.genres || []).join(' \u00b7 '),
+      credLabel: [it.publisher, it.writer].filter(Boolean).join(' \u00b7 '),
+      open: () => this.open2(key, it),
+      listStyle: {
+        position: 'relative', display: 'flex', borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+        cursor: 'pointer', border: `1px solid ${cardBorder}`, background: cardBg,
+        boxShadow: e.fav ? 'var(--ring-favourite)' : 'none',
+        transition: 'transform var(--dur) var(--ease), border-color var(--dur) var(--ease)',
+      },
+      infoStyle: {
+        padding: '10px 14px', flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3,
+        background: e.state === 'progress' ? 'linear-gradient(to bottom, #000 0%, rgba(63,184,119,0.30) 100%)' : 'transparent',
+      },
+      titleStyle: { fontSize: 'var(--text-sm)', fontWeight: 700, lineHeight: 1.3, color: titleColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+      metaStyle: { fontSize: 'var(--text-xs)', color: metaColor },
+      sumStyle: { fontSize: 'var(--text-xs)', color: metaColor, lineHeight: 1.45, maxHeight: '2.9em', overflow: 'hidden' },
+      genreStyle: { fontSize: 'var(--text-xs)', color: colored ? 'rgba(255,255,255,0.82)' : 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+      credStyle: { fontSize: 'var(--text-xs)', color: metaColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' },
+      barStyle: { position: 'absolute', bottom: 0, left: 0, height: 3, width: `${Math.min(100, it.progress || 0)}%`, background: 'var(--state-progress)' },
+    };
+  }
+  buildSeries2(key, it) {
+    if (!it) return { title: '', cover: '', metaLine: '', genres: [], issuesLabel: '', issues: [], markAll: () => {} };
+    const count = Math.min(it.issues || 0, 8);
+    const issues = Array.from({ length: count }, (_, i) => {
+      const n = i + 1;
+      const st = this.issueState(it, n);
+      const borderCol = st === 'read' ? 'var(--state-read)' : st === 'progress' ? 'var(--state-reading)' : 'var(--border)';
+      const bg = st === 'progress' ? 'color-mix(in srgb, var(--state-reading) 8%, var(--surface-card))' : 'var(--surface-card)';
+      const pages = 26 + ((i * 7) % 14);
+      return {
+        numberLabel: `#${n}`,
+        title: it.title,
+        state: st === 'progress' ? 'reading' : st,
+        metaLine: `${it.year} \u00b7 ${pages} pages`,
+        summary: it.summary,
+        cover: it.cover,
+        open: () => this.openIssue2(key, it.id, n),
+        rowStyle: {
+          display: 'flex', alignItems: 'center', gap: 14, padding: '10px 12px',
+          borderRadius: 8, border: '1px solid var(--border)', borderLeft: `3px solid ${borderCol}`,
+          background: bg, cursor: 'pointer', transition: 'border-color var(--dur) var(--ease)',
+        },
+      };
+    });
+    return {
+      title: it.title,
+      cover: it.cover,
+      metaLine: `${it.publisher} \u00b7 ${it.year}`,
+      genres: it.genres || [],
+      issuesLabel: `${it.issues} issues`,
+      issues,
+      markAll: () => {
+        const marks = { ...this.state.marks, [it.id]: 'read' };
+        for (let n = 1; n <= count; n++) marks[`${it.id}#${n}`] = 'read';
+        this.setState({ marks });
+      },
+    };
+  }
+  buildIssue2(key, it, issueN, list) {
+    if (!it) {
+      return { title: '', cover: '', hasNumber: false, numberLabel: '', typeLabel: '', metaLine: '', genres: [], summary: '', writer: '', ratedLine: '', markLabel: '', favLabel: '', toggleMark: () => {}, toggleFav: () => {}, stars: [], goPrev: () => {}, goNext: () => {}, prevStyle: pnStyle(false, true), nextStyle: pnStyle(false, false), navTitle: '' };
+    }
+    const isIssue = issueN != null;
+    const markKey = isIssue ? `${it.id}#${issueN}` : it.id;
+    const curState = isIssue ? this.issueState(it, issueN) : this.eff(it).state;
+    const isRead = curState === 'read';
+    const pages = isIssue ? 26 + (((issueN - 1) * 7) % 14) : it.pages;
+    const fav = this.eff(it).fav;
+    const rating = this.state.ratings[markKey] || 0;
+    let hasPrev = false, hasNext = false, goPrev = () => {}, goNext = () => {};
+    if (isIssue) {
+      const total = it.issues || 1;
+      hasPrev = issueN > 1;
+      hasNext = issueN < Math.min(total, 8);
+      if (hasPrev) goPrev = () => this.openIssue2(key, it.id, issueN - 1);
+      if (hasNext) goNext = () => this.openIssue2(key, it.id, issueN + 1);
+    } else {
+      const idx = list.findIndex((x) => x.id === it.id);
+      hasPrev = idx > 0;
+      hasNext = idx >= 0 && idx < list.length - 1;
+      if (hasPrev) goPrev = () => list[idx - 1].open();
+      if (hasNext) goNext = () => list[idx + 1].open();
+    }
+    return {
+      title: it.title,
+      cover: it.cover,
+      hasNumber: isIssue,
+      numberLabel: isIssue ? `#${issueN}` : '',
+      typeLabel: it.type === 'series' ? 'Series' : 'Single',
+      metaLine: `${it.publisher} \u00b7 ${it.year} \u00b7 English`,
+      genres: it.genres || [],
+      summary: it.summary,
+      writer: it.writer,
+      ratedLine: `Rated: Teen+ \u00b7 ${pages} pages`,
+      markLabel: isRead ? '\u2713 Read' : 'Mark as Read',
+      favLabel: fav ? '\u2605 In Favourites' : '\u2605 Add to Favourites',
+      toggleMark: () => this.setState({ marks: { ...this.state.marks, [markKey]: isRead ? 'unread' : 'read' } }),
+      toggleFav: () => this.setState({ favs: { ...this.state.favs, [it.id]: !fav } }),
+      stars: [1, 2, 3, 4, 5].map((n) => ({
+        style: { fontSize: 22, lineHeight: 1, cursor: 'pointer', color: n <= rating ? 'var(--favourite)' : 'var(--surface-sunken)' },
+        set: () => this.setState({ ratings: { ...this.state.ratings, [markKey]: n === rating ? 0 : n } }),
+      })),
+      hasPrev, hasNext, goPrev, goNext,
+      prevStyle: pnStyle(hasPrev, true),
+      nextStyle: pnStyle(hasNext, false),
+      navTitle: it.title,
+    };
+  }
+  vals2(key, K, LIB) {
+    const s = this.state[key];
+    const out = {};
+    out[`sidebarWidth${K}`] = s.navCollapsed ? '64px' : '196px';
+    out[`navExpanded${K}`] = !s.navCollapsed;
+    out[`toggleNav${K}`] = () => this.setState((st) => ({ ...st, [key]: { ...st[key], navCollapsed: !st[key].navCollapsed } }));
+    out[`goHome${K}`] = () => this.set2(key, { screen: 'home', detailId: null, issueN: null, backTo: 'home' });
+    const navActive = s.screen === 'home' ? 'home' : s.filter;
+    out[`navHomeStyle${K}`] = navRowStyle(navActive === 'home', s.navCollapsed);
+    ['all', 'singles', 'series', 'unread', 'reading', 'read'].forEach((f) => {
+      const cap = f[0].toUpperCase() + f.slice(1);
+      out[`go${cap}${K}`] = () => this.set2(key, { screen: 'browse', filter: f, detailId: null, issueN: null, backTo: 'browse' });
+      out[`nav${cap}Style${K}`] = navRowStyle(s.screen !== 'home' && navActive === f, s.navCollapsed);
+    });
+    out[`libs${K}`] = LIBS2.map((lb) => ({
+      name: lb.name,
+      letter: lb.letter,
+      collapsed: s.navCollapsed,
+      expanded: !s.navCollapsed,
+      open: () => this.set2(key, { screen: 'browse', filter: lb.key, detailId: null, issueN: null, backTo: 'browse' }),
+      rowStyle: navRowStyle(s.screen !== 'home' && navActive === lb.key, s.navCollapsed),
+      circleStyle: libCircleStyle(s.screen !== 'home' && navActive === lb.key),
+    }));
+    out[`screen${K}IsHome`] = s.screen === 'home';
+    out[`screen${K}IsBrowse`] = s.screen === 'browse';
+    out[`screen${K}IsSeries`] = s.screen === 'series';
+    out[`screen${K}IsIssue`] = s.screen === 'issue';
+    out[`back${K}`] = () => this.back2(key);
+    out[`strips2${K}`] = LIB.strips.map((st) => ({
+      label: st.label,
+      items: st.ids.map((id) => this.mapItem2(key, LIB.byId(id))),
+    }));
+    const flt = FILTERS2[s.filter] || FILTERS2.all;
+    const items = LIB.items.filter((it) => flt.fn(it, this.eff(it))).map((it) => this.mapItem2(key, it));
+    out[`browseItems${K}`] = items;
+    out[`browseEyebrow${K}`] = flt.label;
+    out[`browseCount${K}`] = `${items.length} Titles`;
+    out[`view${K}IsGrid`] = s.view === 'grid';
+    out[`view${K}IsList`] = s.view === 'list';
+    out[`setViewGrid${K}`] = () => this.set2(key, { view: 'grid' });
+    out[`setViewList${K}`] = () => this.set2(key, { view: 'list' });
+    out[`viewGridBtnStyle${K}`] = viewToggleStyle(s.view === 'grid');
+    out[`viewListBtnStyle${K}`] = viewToggleStyle(s.view === 'list');
+    const it = s.detailId ? LIB.byId(s.detailId) : null;
+    out[`series${K}`] = this.buildSeries2(key, it && it.type === 'series' && s.screen === 'series' ? it : null);
+    out[`issue${K}`] = this.buildIssue2(key, s.screen === 'issue' ? it : null, s.issueN, items);
+    return out;
+  }
+
+  navTo(key, screen) {
+    this.setState((s) => ({ ...s, [key]: { ...s[key], screen, detailId: null } }));
+  }
+  openDetail(key, id) {
+    this.setState((s) => ({
+      ...s,
+      [key]: { ...s[key], screen: 'detail', detailId: id, prev: s[key].screen === 'detail' ? s[key].prev : s[key].screen },
+    }));
+  }
+  backFromDetail(key) {
+    this.setState((s) => ({ ...s, [key]: { ...s[key], screen: s[key].prev || 'library', detailId: null } }));
+  }
+  toggleNav(key) {
+    this.setState((s) => ({ ...s, [key]: { ...s[key], navCollapsed: !s[key].navCollapsed } }));
+  }
+  setView(key, view) {
+    this.setState((s) => ({ ...s, [key]: { ...s[key], view } }));
+  }
+
+  mapItem(it, key) {
+    if (!it) return null;
+    const metaLabel = it.metaLabel || (it.type === 'series' ? `${it.issues} issues` : `${it.pages} pages`);
+    return { ...it, metaLabel, open: () => this.openDetail(key, it.id) };
+  }
+
+  buildDetail(it) {
+    if (!it) {
+      return { title: '', cover: '', metaLine: '', genres: [], summary: '', issues: [], isSeries: false, isSingle: false };
+    }
+    const isSeries = it.type === 'series';
+    let issues = [];
+    if (isSeries) {
+      const count = Math.min(it.issues || 0, 8);
+      issues = Array.from({ length: count }, (_, i) => {
+        const st = i < 2 ? 'read' : i === 2 ? 'reading' : 'unread';
+        const border = st === 'read' ? 'var(--state-read)' : st === 'reading' ? 'var(--state-reading)' : 'transparent';
+        const bg = st === 'reading' ? 'color-mix(in srgb, var(--state-reading) 8%, var(--surface-card))' : 'transparent';
+        const pages = 26 + ((i * 7) % 14);
+        return {
+          n: i + 1,
+          numberLabel: `#${i + 1}`,
+          state: st,
+          pages,
+          cover: it.cover,
+          metaLine: `${it.year} \u00b7 ${pages} pages`,
+          rowStyle: {
+            display: 'flex', alignItems: 'center', gap: 12, padding: '9px 10px',
+            borderRadius: 6, borderLeft: `3px solid ${border}`, background: bg,
+          },
+        };
+      });
+    }
+    return {
+      ...it,
+      isSeries,
+      isSingle: !isSeries,
+      metaLine: `${it.publisher} \u00b7 ${it.year} \u00b7 ${it.metaLabel}`,
+      issues,
+    };
+  }
+
+  renderVals() {
+    const LIB = window.LIB;
+    if (!LIB) return {};
+    const out = {};
+    ['a', 'b'].forEach((key) => {
+      const s = this.state[key];
+      const K = key.toUpperCase();
+      out[`screen${K}IsHome`] = s.screen === 'home';
+      out[`screen${K}IsLibrary`] = s.screen === 'library';
+      out[`screen${K}IsDetail`] = s.screen === 'detail';
+      out[`navExpanded${K}`] = !s.navCollapsed;
+      out[`sidebarWidth${K}`] = s.navCollapsed ? '64px' : '196px';
+      out[`goHome${K}`] = () => this.navTo(key, 'home');
+      out[`goLibrary${K}`] = () => this.navTo(key, 'library');
+      out[`toggleNav${K}`] = () => this.toggleNav(key);
+      out[`backFromDetail${K}`] = () => this.backFromDetail(key);
+
+      const navActive = s.screen === 'detail' ? s.prev : s.screen;
+      out[`navHomeStyle${K}`] = navRowStyle(navActive === 'home', s.navCollapsed);
+      out[`navLibraryStyle${K}`] = navRowStyle(navActive === 'library', s.navCollapsed);
+
+      const items = LIB.items.map((it) => this.mapItem(it, key));
+      out[`items${K}`] = items;
+      out[`titlesLabel${K}`] = `${items.length} Titles`;
+      out[`strips${K}`] = LIB.strips.map((st) => ({
+        label: st.label,
+        items: st.ids.map((id) => this.mapItem(LIB.byId(id), key)),
+      }));
+
+      out[`view${K}IsGrid`] = s.view === 'grid';
+      out[`view${K}IsList`] = s.view === 'list';
+      out[`setViewGrid${K}`] = () => this.setView(key, 'grid');
+      out[`setViewList${K}`] = () => this.setView(key, 'list');
+      out[`viewGridBtnStyle${K}`] = viewToggleStyle(s.view === 'grid');
+      out[`viewListBtnStyle${K}`] = viewToggleStyle(s.view === 'list');
+
+      const detailIt = s.detailId ? LIB.byId(s.detailId) : null;
+      out[`detail${K}`] = this.buildDetail(detailIt);
+    });
+    out.heroB = this.mapItem(LIB.byId('w0rld'), 'b');
+    if (out.heroB) out.heroB.progressLabel = `${out.heroB.progress}% Read`;
+    Object.assign(out, this.vals2('p', 'P', LIB));
+    Object.assign(out, this.vals2('l', 'L', LIB));
+    return out;
+  }
+}
+
+</script>
+</body>
+</html>

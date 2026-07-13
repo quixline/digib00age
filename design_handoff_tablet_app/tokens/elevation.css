@@ -1,0 +1,51 @@
+/* digib00age — Elevation, shadow, motion & effect tokens
+   =======================================================
+   Dark-first depth comes mostly from the surface tonal scale, not heavy
+   shadows. Shadows are used sparingly: a near-flat resting card, a soft pop
+   on hover/float, and a deep modal shadow. Motion is quick and restrained —
+   short fades and a 3px upward lift on cards; no bounces, no infinite loops. */
+
+:root {
+  /* Shadows */
+  --shadow-none:  none;
+  --shadow-card:  0 1px 2px rgba(0, 0, 0, 0.35);          /* resting card */
+  --shadow-pop:   0 8px 24px rgba(0, 0, 0, 0.45);          /* hover float / cover detail */
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.55);         /* dialogs */
+  --shadow-toast: 0 4px 24px rgba(0, 0, 0, 0.5);
+
+  /* Focus ring (keyboard) */
+  --ring-width: 2px;
+  --ring: 0 0 0 var(--ring-width) var(--focus-ring);
+
+  /* Favourite gold outline ring (coexists with read-state fill, brief §4) */
+  --ring-favourite: 0 0 0 1px var(--favourite);
+
+  /* Selection ring (multi-select) */
+  --ring-selected: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+
+  /* Motion */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1); /* @kind other */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */
+  --dur-fast: 0.12s; /* @kind other */
+  --dur: 0.18s; /* @kind other */
+  --dur-slow: 0.28s; /* @kind other */
+
+  --lift: translateY(-3px); /* @kind other */
+
+  /* Blur (series backdrop, scrims) */
+  --blur-backdrop: 3px;
+
+  /* Series-hero backdrop recipe (brief §6): image → blur → dark overlay →
+     bottom gradient fade. Exposed as tokens so the kit stays consistent. */
+  --backdrop-opacity: 0.28;  /* @kind other */
+  --backdrop-overlay: rgba(0, 0, 0, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0s; /* @kind other */
+    --dur: 0s; /* @kind other */
+    --dur-slow: 0s; /* @kind other */
+    --lift: none; /* @kind other */
+  }
+}

@@ -350,3 +350,112 @@ way to jump around it.
   (last page correctly 33 issues, `›` disabled on page 50); Postal (25
   issues, under one page) shows no pagination row, matching Browse's
   single-page behaviour. No console errors on either page load.
+
+---
+
+## Item 4 — Mobile UI Redesign (Flutter tablet app)
+
+**Feature.** The Flutter-side counterpart to Item 1 — full rail-based
+scaffold redesign of the tablet app (`flutter_app/`) to match the
+digib00age web UI, per `design_handoff_tablet_app/README.md` (options 2a
+portrait / 2b landscape from `Flutter App Redesign.dc.html`). Split out
+from Item 1 as its own independently-scoped item on 2026-07-05 (`ROADMAP.md`
+"Scope: Mobile UI Redesign") — not assumed to carry Item 1's phased
+build/scope 1:1, since the two apps don't share a codebase.
+
+**In scope:**
+- Persistent left nav rail (64px collapsed / 196px expanded, 180ms
+  animation), default collapsed in portrait / expanded in landscape, with a
+  manual toggle override.
+- Four screens replacing the old tab-based `LibraryScreen`/`SeriesScreen`:
+  Home (strips), Browse (grid/list, driven by the rail's filters —
+  All/Singles/Series/Unread/Reading/Read/a custom library), Series Detail,
+  Issue Detail (no "Edit XML" button — app-only omission per the design
+  spec).
+- Dark theme tokens (`lib/theme/tokens.dart`) matching the web design
+  system's colours/typography/spacing.
+- Read-state visuals (unread/progress/read), favourite ring+badge, unread
+  count badge, optimistic mark-read/favourite/rating updates — mirrored
+  from `frontend/js/app.js`'s existing logic so the app and web UI agree on
+  what counts as "unread"/"progress"/"read" for a series.
+
+**✅ built and manually verified 2026-07-13.** New: `lib/theme/tokens.dart`;
+`lib/models/custom_tab.dart`; `lib/screens/shell_screen.dart` (root scaffold
+— rail + nested `Navigator`, replaces `LibraryScreen` at route `/`),
+`home_screen.dart`, `browse_screen.dart`, `series_detail_screen.dart`,
+`issue_detail_screen.dart`; `lib/widgets/nav_rail.dart`, `app_top_bar.dart`,
+`cover_card.dart`, `status_button.dart`, `blurred_backdrop.dart`,
+`comic_search_delegate.dart`, `offline_library_view.dart` (last two
+extracted from the old `library_screen.dart`, reused unchanged). Extended
+`Series`/`Issue` models (`favorites`, `personal_rating`, `read_count`,
+`reading_count`, `writers`, `page_count`) and `ApiService`
+(`getNavConfig()`, `getHomeStrips()`, `toggleFavorite()`, `setRating()`,
+`getLibrary()` threaded with `tabId`/`field`/`value`/`q`) — no backend
+changes needed, every endpoint already existed. Removed
+`library_screen.dart`/`series_screen.dart`, fully superseded. Added
+`google_fonts` dependency (Hanken Grotesk) — see `DECISIONS.md`.
+
+**Three real bugs found and fixed via on-device testing** (Lenovo tablet,
+real library/server), not caught by `flutter analyze` or a simulator:
+1. Cover cards overflowing their allotted height on Home strips and Browse
+   grid (2-line-title sizing math was short).
+2. Series Detail eagerly built every issue row into one `Column` —
+   instant for small series, an ~8s frozen spinner for 2000 AD (2,483
+   issues). Switched to a lazy `SliverList.separated`.
+3. `_IssueRow`'s card combined a non-uniform `Border` (status-coloured left
+   edge, grey elsewhere) with a `borderRadius` — `BoxDecoration` silently
+   refuses to paint that combination (no error banner, nothing in `adb
+   logcat` unless a live Dart console is attached via `flutter run`), so
+   every issue row in every series rendered as a blank grey box. Fixed by
+   layering the coloured edge as a separate `Positioned` strip instead of
+   folding it into the border.
+
+**Two follow-up fixes from Tez's own manual pass** (same day): Browse was
+missing the logo/search/settings header the design prototype also shows
+there (only `HomeScreen` had it) — extracted into a shared `AppTopBar`
+widget, used by both. The nav rail rendered vertically centered instead of
+top-anchored — `Row(children: [NavRail, Expanded(...)])` had no
+`crossAxisAlignment`, defaulting to `center`; added
+`CrossAxisAlignment.stretch`.
+
+**Fourth bug, found via a post-approval code review — not yet manually
+tested by Tez.** After Tez confirmed the two follow-up fixes and asked for
+docs to be updated, a final code check before writing this entry found
+that **nothing in the new navigation reached the Reader at all** — the
+design mockup's Issue Detail left column lists only Mark as Read/Add to
+Favourites/rating stars, no read-entry-point, and the old
+`library_screen.dart`'s direct issue→reader tap was removed along with
+the rest of that file. Every screen (Home, Browse, Series Detail) now
+routes a tap through to Issue Detail, and Issue Detail itself had no way
+to actually open a comic — a real dead end, not a cosmetic gap. Fixed by
+adding a `_PrimaryButton` ("Start Reading" / "Continue Reading" / "Read
+Again", depending on read status) plus a tap on the cover image itself,
+both pushing `/reader` on the root navigator. Verified on-device that this
+opens the reader correctly (w0rldtr33 #17, page 1 rendered) — **but this
+specific fix has only been device-tested by Claude, not yet by Tez.**
+
+**Verified manually by Tez** on the real Lenovo tablet, real library/server:
+Home strips, rail collapse/toggle, All/Singles/Series/Unread/Reading/Read
+filters, grid↔list toggle, Series→Issue drill-in, mark-read/favourite/
+rating (confirmed persisted server-side), portrait↔landscape rail default
+with real custom libraries (2000 AD/Favourites/All the A's), offline mode
+still reaches Settings, and the two follow-up fixes above. **The
+Reader-entry-point fix above is not yet in that verified set** — worth a
+specific check next time the app is opened.
+
+**Scope decisions, not hidden in code — see `DECISIONS.md` for the full
+rationale on each:**
+- Home strip cards (issue-level, `/api/home/strips`) don't show the
+  favourite ring or unread-count badge — the endpoint doesn't return
+  `favorites`/`unread_count` for individual issues, only `/api/library`'s
+  series-level cards do (used by Browse).
+- Tapping a card: `format_group == 'Singles'` → straight to Issue Detail
+  (skips a redundant "series of one" page); otherwise → Series Detail.
+- Manual "sync now" button/snackbar (previously in `LibraryScreen`'s app
+  bar) dropped — not in the new design spec; background sync still runs
+  automatically on load and on return-from-reader.
+- Icons for house/grid/book/layers use Material `Icons.*_outlined` rather
+  than adding the `lucide_icons` package — avoids an unpinned new
+  dependency for a purely cosmetic difference.
+- Light theme not built this pass (dark-first, matching Item 1's own
+  approach) — `AppColors` ships dark-only.

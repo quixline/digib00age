@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/series.dart';
 import '../models/issue.dart';
+import '../models/custom_tab.dart';
 
 class ApiService {
   String baseUrl; // e.g. "http://192.168.1.10:9424"
@@ -29,14 +30,45 @@ class ApiService {
     }
   }
 
-  Future<List<Series>> getLibrary({String? group}) async {
-    final uri = Uri.parse('$apiBase/library').replace(
-      queryParameters: group != null ? {'group': group} : null,
-    );
+  Future<List<Series>> getLibrary({
+    String? group,
+    int? tabId,
+    String? field,
+    String? value,
+    String? q,
+  }) async {
+    final params = <String, String>{
+      'group': ?group,
+      'tab_id': ?tabId?.toString(),
+      'field': ?field,
+      'value': ?value,
+      'q': ?q,
+    };
+    final uri = Uri.parse('$apiBase/library')
+        .replace(queryParameters: params.isEmpty ? null : params);
     final res = await http.get(uri);
     _assertOk(res);
     final list = jsonDecode(res.body) as List;
     return list.map((e) => Series.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  // Visible custom tabs (CUSTOM_TABS_SPEC.md) for the nav rail's Libraries
+  // section, in creation order.
+  Future<List<CustomTabInfo>> getNavConfig() async {
+    final res = await http.get(Uri.parse('$apiBase/nav/config'));
+    _assertOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['custom_tabs'] as List)
+        .map((e) => CustomTabInfo.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  // Home page strips (HOME_STRIPS_SPEC.md) — defaults + admin-added.
+  Future<List<Map<String, dynamic>>> getHomeStrips() async {
+    final res = await http.get(Uri.parse('$apiBase/home/strips'));
+    _assertOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return (body['strips'] as List).cast<Map<String, dynamic>>();
   }
 
   Future<Map<String, dynamic>> getSeriesDetail(int anchorId) async {
@@ -91,6 +123,25 @@ class ApiService {
 
   Future<void> markUnread(int issueId) async {
     await http.post(Uri.parse('$apiBase/progress/$issueId/mark-unread'));
+  }
+
+  // No single-issue favourite/rating endpoint exists — reuse the bulk
+  // endpoints with a one-element id list.
+  Future<void> toggleFavorite(int issueId, bool favorite) async {
+    final path = favorite ? 'favorite' : 'unfavorite';
+    await http.post(
+      Uri.parse('$apiBase/progress/bulk/$path'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'issue_ids': [issueId]}),
+    );
+  }
+
+  Future<void> setRating(int issueId, int rating) async {
+    await http.post(
+      Uri.parse('$apiBase/progress/bulk/rate'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'issue_ids': [issueId], 'rating': rating}),
+    );
   }
 
   // Fetches the whole CBZ/CBR file for offline download (v2.5 Item 3).
