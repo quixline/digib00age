@@ -418,30 +418,27 @@ top-anchored — `Row(children: [NavRail, Expanded(...)])` had no
 `crossAxisAlignment`, defaulting to `center`; added
 `CrossAxisAlignment.stretch`.
 
-**Fourth bug, found via a post-approval code review — not yet manually
-tested by Tez.** After Tez confirmed the two follow-up fixes and asked for
-docs to be updated, a final code check before writing this entry found
-that **nothing in the new navigation reached the Reader at all** — the
-design mockup's Issue Detail left column lists only Mark as Read/Add to
-Favourites/rating stars, no read-entry-point, and the old
-`library_screen.dart`'s direct issue→reader tap was removed along with
-the rest of that file. Every screen (Home, Browse, Series Detail) now
-routes a tap through to Issue Detail, and Issue Detail itself had no way
-to actually open a comic — a real dead end, not a cosmetic gap. Fixed by
-adding a `_PrimaryButton` ("Start Reading" / "Continue Reading" / "Read
-Again", depending on read status) plus a tap on the cover image itself,
-both pushing `/reader` on the root navigator. Verified on-device that this
-opens the reader correctly (w0rldtr33 #17, page 1 rendered) — **but this
-specific fix has only been device-tested by Claude, not yet by Tez.**
+**Fourth bug, found via a post-approval code review.** After Tez confirmed
+the two follow-up fixes and asked for docs to be updated, a final code
+check before writing this entry found that **nothing in the new
+navigation reached the Reader at all** — the design mockup's Issue Detail
+left column lists only Mark as Read/Add to Favourites/rating stars, no
+read-entry-point, and the old `library_screen.dart`'s direct issue→reader
+tap was removed along with the rest of that file. Every screen (Home,
+Browse, Series Detail) now routes a tap through to Issue Detail, and Issue
+Detail itself had no way to actually open a comic — a real dead end, not a
+cosmetic gap. Fixed by adding a `_PrimaryButton` ("Start Reading" /
+"Continue Reading" / "Read Again", depending on read status) plus a tap on
+the cover image itself, both pushing `/reader` on the root navigator.
+**Tez confirmed both Start Reading and Continue Reading work correctly.**
 
 **Verified manually by Tez** on the real Lenovo tablet, real library/server:
 Home strips, rail collapse/toggle, All/Singles/Series/Unread/Reading/Read
 filters, grid↔list toggle, Series→Issue drill-in, mark-read/favourite/
 rating (confirmed persisted server-side), portrait↔landscape rail default
 with real custom libraries (2000 AD/Favourites/All the A's), offline mode
-still reaches Settings, and the two follow-up fixes above. **The
-Reader-entry-point fix above is not yet in that verified set** — worth a
-specific check next time the app is opened.
+still reaches Settings, the two follow-up fixes above, and Start
+Reading/Continue Reading.
 
 **Fifth bug, reported by Tez after the above:** Browse's "All" count showed
 2,080 (card count) against the web's 5,427 for the same library, and

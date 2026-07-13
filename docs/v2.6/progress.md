@@ -2067,10 +2067,9 @@ on 2026-07-05 (`ROADMAP.md`); this is that item, built and closed.
   toggle alongside Mark as Read/Add to Favourites. Verified on-device:
   tapped through to a series issue (w0rldtr33 #17), "Start Reading"
   rendered as a clean solid accent button, tapped it, the Reader opened
-  and rendered page 1 correctly. **This specific fix has only been
-  verified by Claude on-device — not yet by Tez** — flagged explicitly
-  rather than folded silently into the "verified manually by Tez" note
-  above, since Tez's confirmation predates this finding.
+  and rendered page 1 correctly. **Tez subsequently confirmed both Start
+  Reading and Continue Reading work correctly** (2026-07-13, next
+  session).
 - **Scope decisions** (full rationale in `DECISIONS.md`): Home strip cards
   don't show the favourite ring/unread badge (issue-level `/api/home/strips`
   data lacks those fields — only `/api/library`'s series-level cards have
@@ -2142,3 +2141,32 @@ Tez reported a real discrepancy after the above: mobile Browse "All" showed
   and re-confirmed on the real tablet: "All" now reads "5,427 Titles",
   "Singles" now reads "1,862 Titles". "2000 AD Sci-Fi Special" (one of the
   8 previously-fragmented titles) no longer appears twice.
+- **Tez confirmed both Start Reading and Continue Reading work correctly**
+  (see the fourth-bug entry above) and the count fix.
+
+## Session — 2026-07-13 (same day, follow-up) — App icon: favicon.png (digib00age mark)
+
+Cosmetic change, per `CLAUDE.md`'s cosmetic/structural threshold — no
+build-queue item or `DECISIONS.md` entry needed. Tez asked for the
+Flutter app's launcher icon (Android + Windows) to use `favicon.png`,
+same mark already used for the tray icon (`DECISIONS.md`, 2026-07-13) and
+the web favicon.
+
+- Added `flutter_launcher_icons` (dev dependency) rather than hand-editing
+  each Android mipmap density + the Windows `.ico` — generates every
+  required size from one source image consistently.
+- `favicon.png` is 136×127 (not square) — padded to a transparent 1024×1024
+  square (centering the existing artwork, no distortion) via a scratch
+  Pillow script, saved as `assets/logo/app_icon.png`, the actual
+  `flutter_launcher_icons` source image. Configured in `pubspec.yaml`
+  (`flutter_launcher_icons:` block — Android + Windows, `min_sdk_android:
+  21`, no adaptive-icon layers since the existing icon setup didn't use
+  them either).
+- Ran `dart run flutter_launcher_icons` — regenerated all 5
+  `android/app/src/main/res/mipmap-*/ic_launcher.png` densities and
+  `windows/runner/resources/app_icon.ico`.
+- **Verified on-device:** rebuilt the debug APK, reinstalled, pressed Home
+  and located the app's icon in the taskbar dock — cropped/zoomed the
+  screenshot to confirm it's the digib00age "oo" mark (blue rounded
+  square, Android's adaptive-icon mask applied automatically around it),
+  not a stale cached icon.

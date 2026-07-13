@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-13** — Mobile app icon (Android + Windows) now uses `favicon.png`
+  (the digib00age "oo" mark), same asset as the tray icon and web favicon.
+  Cosmetic. See `v2.6/progress.md` "App icon: favicon.png (digib00age
+  mark)".
 - **2026-07-13** — Mobile Browse title-count fix: "All" now matches the web's
   grand-total-of-individual-comics count (was showing a card count instead,
   2,080 vs the web's 5,427); "Singles"/"Series" no longer fragment a
@@ -26,10 +30,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
   Series Detail/Issue Detail screens, dark theme matching the web
   redesign. Built and verified on Tez's real Lenovo tablet against the real
   library/server, including three real bugs on-device testing caught that
-  static analysis didn't. **A fourth bug — no path anywhere in the new
+  static analysis didn't. A fourth bug — no path anywhere in the new
   navigation actually opened the Reader — was found after Tez's manual
-  pass and is fixed but not yet Tez-verified; see below.** See
-  `v2.6/progress.md` "Mobile UI Redesign built (v2.6 Item 4)".
+  pass; fixed, and Tez subsequently confirmed Start Reading/Continue
+  Reading both work. See `v2.6/progress.md` "Mobile UI Redesign built
+  (v2.6 Item 4)".
 - **2026-07-13** — Random cover background correction: now spans the full
   content area (was clipped to the centered `.container` column, leaving
   flat gutters on wide screens) and mutes blue-toned covers instead of
