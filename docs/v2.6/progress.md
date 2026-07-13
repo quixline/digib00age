@@ -2082,3 +2082,63 @@ on 2026-07-05 (`ROADMAP.md`); this is that item, built and closed.
   theme isn't built this pass (dark-first, matching Item 1's own approach).
 - Cleaned up all scratch screenshots/APKs from `flutter_app/build/` after
   verification — nothing left behind, and `build/` is gitignored regardless.
+
+## Session — 2026-07-13 (same day, follow-up) — Browse title counts didn't match the web
+
+Tez reported a real discrepancy after the above: mobile Browse "All" showed
+2,080 titles against the web's 5,427 for the same library; "Singles" showed
+1,870 against the web's 1,862.
+
+- **Root-caused against the live server directly** rather than guessed at —
+  fetched `/api/library`, `/api/library?group=Singles`, and
+  `/api/library?group=Series` from the running dev server
+  (`localhost:9424`) and diffed them in a scratch Python script. Two
+  distinct, unrelated causes, both real:
+  1. **Count semantics.** `frontend/js/app.js`'s `_renderBrowsePage()`
+     (`isFlatSurface()`) shows the *grand total of individual comics* —
+     `filtered.reduce((sum, s) => sum + (s.issue_count || 1), 0)` — for
+     All, a custom library, and the read-state shortcuts (all of which
+     operate on the same "All" pool), but a plain *card count*
+     (`filtered.length`) for Series/Singles. `SPEC.md` §20.1/§20.3 already
+     documented this distinction for the web; `browse_screen.dart` just
+     hadn't implemented it, using `_items.length` uniformly everywhere.
+  2. **Singles/Series fragmentation, the more interesting bug.**
+     `browse_screen.dart` was filtering via the backend's
+     `GET /api/library?group=` query param
+     (`backend/routers/library.py::get_library`), which filters at the
+     *individual issue* level (`query.filter(Issue.format_group == group)`)
+     **before** grouping issues into series-name cards. Found 8 real series
+     where this matters — e.g. "Nowhere Men" (12 issues, `format_group`
+     `Series` for the series as a whole) has exactly one issue individually
+     tagged `format_group=Singles` (a special/annual sharing the series
+     name). `group=Singles` picks up just that one stray issue and builds a
+     *phantom extra 1-issue "Singles" card* for it, on top of the real
+     12-issue "Series" card the same series already has — the "Singles"
+     browse tab was showing genuine multi-issue series as if they were also
+     separate one-shots. The web app never hits this because it fetches the
+     full ungrouped library exactly once (`allLibrary`, no `group` param)
+     and filters *client-side* by each series-group's own single
+     representative `format_group` (the cover issue's, chosen by lowest
+     issue number) — a mixed-tag series always resolves to exactly one
+     card that way, whichever format its cover issue happens to carry.
+     Confirmed the other direction has no gap (nothing in `group=Singles`
+     is missing from the full library, and nothing in the full library's
+     Singles-tagged entries is missing from `group=Singles` — the bug is
+     purely extra phantom entries, not lost ones).
+- **Fix:** `browse_screen.dart`'s `_load()` now fetches `getLibrary()`
+  unfiltered for every kind except a custom Library tab (which stays a
+  genuine server-scoped fetch — folder/favourites-scoped, not a subset of
+  the "All" pool, so the backend `tab_id` param is correct and unaffected
+  by this bug), then filters client-side by `s.formatGroup` for
+  Series/Singles — mirroring `frontend/js/app.js`'s `getFilteredLibrary()`
+  exactly instead of leaning on the backend's issue-level `group=` filter.
+  Added `_isFlatCount` (mirrors `isFlatSurface()`'s exact surface list:
+  All/Library/Unread/Reading/Read are flat, Series/Singles are card-count)
+  and updated `_countLabel()` to sum `issueCount` when flat.
+- **Verified the fix against the live server's actual data before
+  rebuilding** — computed what the new logic would produce from the same
+  three JSON fetches used to diagnose the bug: All = 5,427, Singles =
+  1,862, Series = 218, all matching the web exactly. Rebuilt, reinstalled,
+  and re-confirmed on the real tablet: "All" now reads "5,427 Titles",
+  "Singles" now reads "1,862 Titles". "2000 AD Sci-Fi Special" (one of the
+  8 previously-fragmented titles) no longer appears twice.

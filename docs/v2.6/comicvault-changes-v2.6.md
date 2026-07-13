@@ -443,6 +443,39 @@ still reaches Settings, and the two follow-up fixes above. **The
 Reader-entry-point fix above is not yet in that verified set** — worth a
 specific check next time the app is opened.
 
+**Fifth bug, reported by Tez after the above:** Browse's "All" count showed
+2,080 (card count) against the web's 5,427 for the same library, and
+"Singles" showed 1,870 against the web's 1,862. Root-caused directly
+against the live server (`/api/library` vs `/api/library?group=Singles`)
+rather than guessed at — two distinct causes, both fixed together:
+1. **Count semantics.** `frontend/js/app.js`'s `isFlatSurface()` shows the
+   grand total of *individual comics* (sum of each card's `issue_count`)
+   for All/a custom library/the read-state shortcuts, but a plain *card*
+   count for Series/Singles (`SPEC.md` §20.1/20.3 — Browse's own doc
+   already specified this, the mobile build just hadn't implemented the
+   distinction). `browse_screen.dart` was using card count uniformly.
+   Added `_isFlatCount`, mirroring `isFlatSurface()`'s exact surface list.
+2. **Singles/Series fragmentation.** `browse_screen.dart` filtered via the
+   backend's `GET /api/library?group=` param, which filters at the
+   *issue* level before grouping into series — so any series with mixed
+   `format_group` values across its issues (found 8 real cases: e.g.
+   "Nowhere Men", a 12-issue series, has one issue individually tagged
+   `Singles`) produces a phantom extra 1-issue "singles" card for that
+   stray issue, on top of the real series card. The web never hits this:
+   it fetches the full ungrouped library once and filters client-side by
+   each series-group's own single representative `format_group` (the
+   cover issue's), so a mixed series always resolves to exactly one
+   card, under whichever format its cover issue carries. Changed
+   `browse_screen.dart` to do the same — fetch `getLibrary()` unfiltered,
+   filter by `s.formatGroup` client-side — matching
+   `frontend/js/app.js`'s `getFilteredLibrary()`. Custom-tab (Libraries)
+   fetches are unaffected — those are genuinely server-scoped
+   (folder/favourites), not a subset of the same "All" pool.
+   Verified against the live server's actual JSON (not just re-running the
+   app) before rebuilding: new logic produces exactly 5,427 / 1,862 / 218
+   for All/Singles/Series, matching the web precisely. Confirmed again
+   on-device after rebuilding.
+
 **Scope decisions, not hidden in code — see `DECISIONS.md` for the full
 rationale on each:**
 - Home strip cards (issue-level, `/api/home/strips`) don't show the

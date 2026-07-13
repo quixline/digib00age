@@ -51,28 +51,30 @@ class _BrowseScreenState extends State<BrowseScreen> {
     setState(() { _loading = true; _error = null; });
     try {
       final f = widget.filter;
-      List<Series> list;
+      // Custom tabs are the only case that needs its own server-scoped fetch
+      // (folder/favourites-scoped, not a subset of the same "All" pool).
+      // Everything else fetches the full unfiltered library once and
+      // filters client-side by each series' own format_group — mirroring
+      // frontend/js/app.js's getFilteredLibrary() exactly. The backend's
+      // `group=` query param filters at the ISSUE level before grouping by
+      // series name, which fragments any series with mixed format_group
+      // values across its issues (e.g. a Series-format run containing one
+      // stray Singles-tagged special) into a phantom extra "singles" entry
+      // that doesn't exist from the web's (correct) per-series-group point
+      // of view — client-side filtering avoids that entirely.
+      List<Series> list = f.kind == NavKind.library
+          ? await widget.api.getLibrary(tabId: f.tabId)
+          : await widget.api.getLibrary();
       switch (f.kind) {
         case NavKind.singles:
-          list = await widget.api.getLibrary(group: 'Singles');
+          list = list.where((s) => s.formatGroup == 'Singles').toList();
           break;
         case NavKind.series:
-          list = await widget.api.getLibrary(group: 'Series');
+          list = list.where((s) => s.formatGroup == 'Series').toList();
           break;
-        case NavKind.library:
-          list = await widget.api.getLibrary(tabId: f.tabId);
-          break;
-        case NavKind.unread:
-        case NavKind.reading:
-        case NavKind.read:
-        case NavKind.all:
-        case NavKind.home:
-          list = await widget.api.getLibrary();
-      }
-      // Read-state filters mirror frontend/js/app.js:1073-1075 — applied
-      // over the full "All" list, same principle as the web sidebar's
-      // Unread/Reading/Read shortcuts.
-      switch (f.kind) {
+        // Read-state filters mirror frontend/js/app.js:1073-1075 — applied
+        // over the full "All" list, same principle as the web sidebar's
+        // Unread/Reading/Read shortcuts.
         case NavKind.unread:
           list = list.where((s) => s.unreadCount == s.issueCount).toList();
           break;
@@ -82,13 +84,35 @@ class _BrowseScreenState extends State<BrowseScreen> {
         case NavKind.read:
           list = list.where((s) => s.issueCount > 0 && s.readCount == s.issueCount).toList();
           break;
-        default:
+        case NavKind.all:
+        case NavKind.library:
+        case NavKind.home:
           break;
       }
       if (!mounted) return;
       setState(() { _items = list; _loading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  // Mirrors frontend/js/app.js's isFlatSurface(): All, a custom library,
+  // and the read-state shortcuts (which all operate on the All pool, just
+  // pre-filtered) show the grand total of *individual comics* — series
+  // count toward that total by their full issue_count, not as one card
+  // each. Series/Singles show a plain card count instead.
+  bool get _isFlatCount {
+    switch (widget.filter.kind) {
+      case NavKind.all:
+      case NavKind.library:
+      case NavKind.unread:
+      case NavKind.reading:
+      case NavKind.read:
+        return true;
+      case NavKind.series:
+      case NavKind.singles:
+      case NavKind.home:
+        return false;
     }
   }
 
@@ -133,7 +157,9 @@ class _BrowseScreenState extends State<BrowseScreen> {
   }
 
   String _countLabel() {
-    final n = _items.length;
+    final n = _isFlatCount
+        ? _items.fold<int>(0, (sum, s) => sum + (s.issueCount > 0 ? s.issueCount : 1))
+        : _items.length;
     final str = n.toString().replaceAllMapped(
       RegExp(r'\B(?=(\d{3})+(?!\d))'),
       (m) => ',',

@@ -13,6 +13,14 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-13** — Mobile Browse title-count fix: "All" now matches the web's
+  grand-total-of-individual-comics count (was showing a card count instead,
+  2,080 vs the web's 5,427); "Singles"/"Series" no longer fragment a
+  multi-issue series into a phantom extra "singles" card when one of its
+  issues is individually mistagged (found 8 real cases, e.g. "Nowhere
+  Men") — mobile now filters client-side like the web does, instead of via
+  the backend's issue-level `group=` param. See `v2.6/progress.md` "Browse
+  title counts didn't match the web".
 - **2026-07-13** — Mobile UI Redesign (v2.6 Item 4): full rail-based scaffold
   redesign of the Flutter tablet app — persistent nav rail, Home/Browse/
   Series Detail/Issue Detail screens, dark theme matching the web

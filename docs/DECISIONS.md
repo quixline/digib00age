@@ -4,6 +4,38 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Mobile Browse: filter Series/Singles client-side, never via `GET /api/library?group=`
+
+**Decided:** 2026-07-13, root-causing a count mismatch Tez reported (mobile
+Browse showed different totals than the web for the same library).
+
+**Why:** `GET /api/library?group=` (`backend/routers/library.py::get_library`)
+filters at the *individual issue* level before grouping into series-name
+cards — `query.filter(Issue.format_group == group)` runs before the
+per-series groupby. For a series where issues don't all share the same
+`format_group` (found 8 real cases — e.g. "Nowhere Men", a 12-issue run
+with one issue individually tagged `Singles`, likely a special/annual
+sharing the series name), `group=Singles` picks up just that one stray
+issue and builds a *phantom extra 1-issue card* for it — on top of the
+real multi-issue "Series" card the same series already has under
+`group=Series` or no group at all. The web app (`frontend/js/app.js`)
+never hits this: it fetches the full ungrouped library exactly once and
+filters *client-side* by each series-group's own single representative
+`format_group` (the cover issue's, chosen by lowest issue number) — a
+mixed-tag series always resolves to exactly one card that way. Fixed
+`flutter_app/lib/screens/browse_screen.dart` to do the same — fetch
+unfiltered, filter by `Series.formatGroup` client-side — rather than
+"fixing" the backend's grouping order, since the backend's per-issue
+`group=` filter is also used correctly elsewhere (Folder View field/value
+scoping, `BUG-010`'s search scoping) where issue-level filtering before
+grouping is exactly the intended behaviour. The bug was mobile using the
+wrong tool for a series-level distinction, not the backend being wrong.
+
+**Where:** `flutter_app/lib/screens/browse_screen.dart` (`_load()`). Custom
+Library tabs still use the backend's `tab_id` param — genuinely
+server-scoped (folder/favourites), not a subset of the "All" pool, so
+unaffected by this issue.
+
 ### Mobile UI Redesign (v2.6 Item 4): `google_fonts` for the Flutter app's Hanken Grotesk requirement
 
 **Decided:** 2026-07-13, before any code was written for the redesign.
