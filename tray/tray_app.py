@@ -75,6 +75,15 @@ def port_is_open(port, timeout=1.0):
 
 READER_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reader_stdout.log")
 
+# digib00age brand mark (frontend/images/favicon.png) — reused here as the
+# tray icon's base glyph. Square with a transparent background, unlike
+# icon-oo.png/logo1.png (166x100 horizontal logotype), which don't fit a
+# square tray icon. Visual only: the tray app's process/menu name stays
+# "ComicVault" (SPEC.md Section 1's 2026-07-07 scope note still holds for
+# everything except this glyph).
+FAVICON_PATH = os.path.join(PROJECT_ROOT, "frontend", "images", "favicon.png")
+_base_icon_cache = None
+
 
 def start_reader():
     global reader_process
@@ -128,7 +137,19 @@ def health_check_loop():
                 reader_status = "running" if port_is_open(READER_PORT) else "stopped"
 
 
+def _load_base_icon(size):
+    """digib00age favicon, letterboxed onto a transparent size x size canvas."""
+    base = Image.open(FAVICON_PATH).convert("RGBA")
+    base.thumbnail((size, size), Image.LANCZOS)
+    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    offset = ((size - base.width) // 2, (size - base.height) // 2)
+    canvas.paste(base, offset, base)
+    return canvas
+
+
 def make_icon_image(status):
+    global _base_icon_cache
+
     color_map = {
         "running": (66, 200, 110),
         "starting": (230, 180, 50),
@@ -137,17 +158,13 @@ def make_icon_image(status):
     dot_color = color_map.get(status, (150, 150, 150))
 
     size = 64
-    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    if _base_icon_cache is None:
+        _base_icon_cache = _load_base_icon(size)
+    image = _base_icon_cache.copy()
     draw = ImageDraw.Draw(image)
 
-    # Simple book/comic glyph in the accent colour
-    accent = (139, 110, 245)
-    draw.rounded_rectangle([8, 6, 56, 58], radius=8, fill=accent)
-    draw.rectangle([14, 14, 50, 18], fill=(255, 255, 255, 200))
-    draw.rectangle([14, 24, 42, 28], fill=(255, 255, 255, 160))
-    draw.rectangle([14, 34, 46, 38], fill=(255, 255, 255, 160))
-
-    # Status dot, bottom-right
+    # Status dot, bottom-right (unchanged position/colours from the previous
+    # book-glyph icon)
     draw.ellipse([40, 40, 60, 60], fill=dot_color, outline=(20, 20, 20, 255))
 
     return image

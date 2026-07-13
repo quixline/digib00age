@@ -4,6 +4,34 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Tray icon base glyph: reuse `favicon.png` (digib00age mark), visual-only exception to the 2026-07-07 tray-app-stays-ComicVault scope
+
+**Decided:** 2026-07-13, from an `INBOX.md` item ("replace taskbar icon with
+icon-oo.png - keep current green dot for server running, red for stopped").
+
+**Why:** `icon-oo.png` (and the identical `logo1.png`) turned out to be a
+166×100 horizontal logo lockup, not a square icon — pulled into
+`frontend/images/` generically during the v2.6 Design redesign (commit
+`77a0dc0`, 2026-07-12) with no tray-specific intent, and unusable as a small
+square tray glyph without cropping. `favicon.png` (136×127, RGBA, transparent
+background around a solid blue rounded-square "oo" mark) is square-shaped and
+already used as the web favicon, making it the only existing asset that
+actually fits. Tez confirmed reuse after being flagged that this cuts against
+`SPEC.md` Section 1's 2026-07-07 note that the tray app stays outside the
+v2.6 digib00age rebrand — resolved as a **narrow, visual-only exception**:
+the tray app's process name, window/menu text, and log strings all stay
+"ComicVault" (unchanged); only the icon's base artwork now reuses the
+digib00age mark. The existing status-dot mechanism (`tray/tray_app.py`
+`make_icon_image()` — 3 states, green/amber/red, bottom-right corner,
+code-drawn via Pillow) was kept exactly as-is; only the base glyph
+underneath it changed, from a purple book-shape to the favicon image
+(loaded once via `_load_base_icon()`, cached in `_base_icon_cache`, composited
+fresh per call — same per-call cost profile as the previous fully
+programmatic draw).
+
+**Where:** `tray/tray_app.py` (`FAVICON_PATH`, `_load_base_icon()`,
+`make_icon_image()`).
+
 ### Full Editor page-preview: fix the page-list N+1, leave full-res/base64 encoding alone
 
 **Decided:** 2026-07-13, during v2.6 Item 2 Phase 5 (Performance fixes).

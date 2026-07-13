@@ -101,6 +101,10 @@ The reader rescans that single file and updates the DB immediately.
 - Status (starting/running/stopped) is shown only via the tray icon's coloured dot
   (yellow/green/red) — not via menu text, to avoid corrupting the native menu's
   command-ID → callback mapping (see 2026-06-17 change log entry)
+- **Icon base glyph (updated 2026-07-13):** the coloured dot sits over the
+  digib00age favicon mark (`frontend/images/favicon.png`), not the original
+  purple book glyph — see `DECISIONS.md` "Tray icon base glyph". Visual only;
+  the tray app's process/menu/log name stays "ComicVault" per Section 1.
 - Context menu follows Windows' own "Apps use dark mode" setting (2026-06-19) — it
   cannot force dark independent of that OS setting
 - Health check every 30 seconds — restarts the reader if it has died, unless it was

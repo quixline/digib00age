@@ -1805,3 +1805,38 @@ a rescan ran. Investigated read-only first, in plan mode.
   No console errors on either page load.
 - **Docs:** `SPEC.md` §20.6 and §20.13 updated to note the Series Detail
   issue list is now paginated. `INBOX.md` line struck through and annotated.
+
+## Session — 2026-07-13 (same day, follow-up) — Tray icon base glyph now reuses favicon.png
+
+- From `INBOX.md`: "replace taskbar icon with icon-oo.png - keep current
+  green dot for server running, red for stopped". Investigated first
+  (Explore agent) rather than doing a literal swap: `icon-oo.png` (and the
+  byte-identical `logo1.png`) is a 166×100 horizontal logo lockup pulled
+  into `frontend/images/` generically during the v2.6 redesign (commit
+  `77a0dc0`) — not square, not built as a tray asset, and would look wrong
+  as-is at tray size.
+- Checked `favicon.png` instead: 136×127, RGBA, transparent background
+  around a solid blue rounded-square "oo" mark — square-shaped and already
+  proven at small size (it's the live web favicon). Confirmed with Tez this
+  was worth using despite cutting against the 2026-07-07 decision that the
+  tray app stays outside the v2.6 digib00age rebrand — resolved as a
+  narrow, visual-only exception (see `DECISIONS.md` "Tray icon base
+  glyph"): the tray app's process/menu/log name stays "ComicVault"
+  unchanged, only the icon's base artwork changed.
+- **Built:** `tray/tray_app.py` — `make_icon_image()` now composites the
+  existing 3-state coloured dot (green/amber/red, bottom-right corner,
+  unchanged position/colours) over `favicon.png` instead of the old
+  programmatically-drawn purple book glyph. New `_load_base_icon()` loads
+  and letterboxes the favicon onto a transparent 64×64 canvas once, cached
+  in `_base_icon_cache` (same per-call cost as before — the previous
+  version also drew the full glyph fresh on every call).
+- **Verified:** syntax-checked (`py_compile`), then imported the actual
+  edited module (not a copy) and called `make_icon_image()` for all three
+  states directly, rendering each to a scratch PNG and visually confirming
+  the dot overlay reads cleanly against the favicon's blue glyph in all
+  three colours. Did **not** launch a second live tray app instance to
+  check it in the real system tray — the real one already owns port 9424
+  and manages the actual reader subprocess; restarting it to see the new
+  icon live is Tez's to do, not something to interrupt mid-session for.
+- **Docs:** `SPEC.md` §3 updated (icon base glyph note). `DECISIONS.md` new
+  entry. `INBOX.md` line struck through and annotated.

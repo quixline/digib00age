@@ -13,6 +13,12 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-13** — Tray icon base glyph now reuses `favicon.png` (the
+  digib00age mark) instead of the old programmatic purple book glyph; the
+  existing 3-state coloured dot (green/amber/red) is unchanged. Visual-only
+  exception to the 2026-07-07 "tray app stays ComicVault-branded" scope
+  decision — see `DECISIONS.md`. See `v2.6/progress.md` "Tray icon base
+  glyph now reuses favicon.png".
 - **2026-07-13** — Series Detail page pagination (v2.6 Item 3): the
   `/series/{id}` issue list is now paginated, same page-size setting and
   page-number control as Browse — a large series (2000 AD, 2,483 issues) no
