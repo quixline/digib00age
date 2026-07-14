@@ -1,16 +1,23 @@
 // ComicVault — editor_full.js
 // Full Editor toolbox: pre-library batch metadata editing. EDITOR_SPEC.md Section 5.
 // Self-contained — no dependency on app.js.
+// v2.6 Item 7 — 4-column redesign: Col 1 folder→series→issue tree, Col 2 editor
+// with genre chips + apply-to-all column, Col 3 viewer (Fit/Fullscreen/lazy thumb
+// strip), Col 4 queue cards, plus a footer status bar. Backend endpoints unchanged.
 
 const AGE_RATING_OPTIONS = [
   'Everyone', 'Early Childhood', 'Everyone 10+', 'PG', 'Adult', 'Teen', 'Teen+', 'Mature',
 ];
 
 // ── State ────────────────────────────────────────────────────────────────────
-let loadedFiles = [];        // [{id, filename, path, xml_files}] — display order (drag-drop reorder)
+let loadedFiles = [];        // [{id, filename, path, xml_files, needs_review}]
 let queueFiles = [];         // [{id, filename, path, xml_files, queued_fields}]
 let focusedFileId = null;
-let dragSourceId = null;
+
+let genreOptions = [];       // full genre list (editable, from /api/editor/genres)
+let selectedGenres = [];     // chips currently on the form
+
+let treeCollapsed = new Set(); // tree nodes the user has collapsed (default: expanded)
 
 let pickerPath = null;
 let pickerSelected = new Map(); // path -> 'file' | 'folder'
@@ -19,6 +26,7 @@ let viewerFileId = null;
 let viewerImageList = [];
 let viewerPageNum = 0;
 let viewerZoom = 1;
+let thumbCache = new Map();   // `${fileId}:${n}` -> data URI (lazy strip)
 
 let multiXmlFileId = null;
 
@@ -63,32 +71,77 @@ async function loadFormatOptions() {
   document.getElementById('fe-format').innerHTML = html;
 }
 
+// ── Genre chips (Col 2) ──────────────────────────────────────────────────────
+// Replaces the old checkbox grid (EDITOR_SPEC.md §5.2). The full editable genre
+// list still comes from /api/editor/genres; chips hold the current selection and
+// the "＋ Add genre" dropdown offers only genres not yet chosen.
 async function loadGenreOptions() {
-  const genres = await fetch('/api/editor/genres').then((r) => r.json());
-  const grid = document.getElementById('fe-genre-grid');
-  grid.innerHTML = '';
-  for (const name of genres) {
-    const label = document.createElement('label');
-    label.className = 'editor-genre-item';
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.value = name;
-    label.appendChild(checkbox);
-    label.appendChild(document.createTextNode(' ' + name));
-    grid.appendChild(label);
+  genreOptions = await fetch('/api/editor/genres').then((r) => r.json());
+  renderGenreChips();
+}
+
+function renderGenreAddDropdown() {
+  const sel = document.getElementById('fe-genre-add');
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+  const available = genreOptions.filter((g) => !selectedGenres.includes(g));
+  let html = '<option value="">＋ Add genre</option>';
+  for (const g of available) html += `<option value="${esc(g)}">${esc(g)}</option>`;
+  sel.innerHTML = html;
+  sel.value = '';
+}
+
+function renderGenreChips() {
+  const wrap = document.getElementById('fe-genre-chips');
+  wrap.innerHTML = '';
+  for (const g of selectedGenres) {
+    const chip = document.createElement('span');
+    chip.className = 'fe-genre-chip';
+    chip.appendChild(document.createTextNode(g));
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'fe-genre-chip-x';
+    x.textContent = '✕';
+    x.setAttribute('aria-label', `Remove ${g}`);
+    x.onclick = () => removeGenre(g);
+    chip.appendChild(x);
+    wrap.appendChild(chip);
+  }
+  renderGenreAddDropdown();
+}
+
+function addGenre(name) {
+  if (!name) return;
+  if (!selectedGenres.includes(name)) {
+    selectedGenres.push(name);
+    renderGenreChips();
   }
 }
 
+function removeGenre(name) {
+  selectedGenres = selectedGenres.filter((g) => g !== name);
+  renderGenreChips();
+}
+
+function setGenres(list) {
+  selectedGenres = (list || []).slice();
+  renderGenreChips();
+}
+
+// ── Natural (alphanumeric) compare for issue ordering (001 < 002 < 010) ──────
+function naturalCompare(a, b) {
+  return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: 'base' });
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
-//  FILE MANAGEMENT (Column 1, upper)
+//  FILE MANAGEMENT (Column 1) — folder → series → issue tree
 // ══════════════════════════════════════════════════════════════════════════════
 
 function wireFileManagement() {
-  document.getElementById('feExplorerBtn').onclick = openPicker;
+  document.getElementById('feSelectFolderBtn').onclick = openPicker;
   document.getElementById('feClearListBtn').onclick = clearFileList;
 
-  const list = document.getElementById('feFileList');
-  list.addEventListener('keydown', (e) => {
+  const tree = document.getElementById('feFileTree');
+  tree.addEventListener('keydown', (e) => {
     if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
     e.preventDefault();
     if (!loadedFiles.length) return;
@@ -103,87 +156,205 @@ function wireFileManagement() {
 async function refreshFileList() {
   const res = await fetch('/api/editor/full/files');
   const data = await res.json();
-  // Preserve current display order where possible (drag-drop), append new entries
+  // Preserve current display order where possible, append new entries
   const known = new Map(loadedFiles.map((f) => [f.id, f]));
   const incoming = new Map(data.files.map((f) => [f.id, f]));
   const ordered = loadedFiles.filter((f) => incoming.has(f.id)).map((f) => incoming.get(f.id));
   for (const f of data.files) {
     if (!known.has(f.id)) ordered.push(f);
   }
+  // carry forward lazily-set needs_review flags across the reorder
+  for (const f of ordered) {
+    if (known.has(f.id) && known.get(f.id).needs_review) f.needs_review = true;
+  }
   loadedFiles = ordered;
-  renderFileList();
+  renderFileTree();
   updateMismatchIndicator();
   updateActionButtonStates();
 }
 
-function xmlStatusLine(entry) {
-  if (!entry.xml_files || entry.xml_files.length === 0) return 'No XML — will use filename';
-  if (entry.xml_files.length > 1) return `⚠ ${entry.xml_files.length} XML files found`;
-  return entry.xml_files[0];
+// Split a Windows/POSIX path into directory segments (excluding the filename).
+function pathDirParts(p) {
+  const parts = String(p).replace(/\//g, '\\').split('\\').filter(Boolean);
+  parts.pop(); // drop filename
+  return parts;
 }
 
-function renderFileList() {
-  const list = document.getElementById('feFileList');
-  list.innerHTML = '';
+// Group loaded files by the two directory levels nearest the file:
+// grandparent = folder, parent = series. Shallow paths degrade gracefully.
+function buildFileTree(files) {
+  const folders = new Map(); // folderName -> {name, series:Map, direct:[]}
+  const getFolder = (name) => {
+    if (!folders.has(name)) folders.set(name, { name, series: new Map(), direct: [] });
+    return folders.get(name);
+  };
 
-  for (const entry of loadedFiles) {
-    const row = document.createElement('div');
-    row.className = 'fe-file-row'
-      + (entry.id === focusedFileId ? ' focused' : '')
-      + (entry.needs_review ? ' needs-review' : '');
-    row.draggable = true;
-    row.dataset.id = entry.id;
+  for (const f of files) {
+    const dirs = pathDirParts(f.path);
+    let folderName, seriesName;
+    if (dirs.length >= 2) {
+      folderName = dirs[dirs.length - 2];
+      seriesName = dirs[dirs.length - 1];
+    } else if (dirs.length === 1) {
+      folderName = dirs[0];
+      seriesName = null;
+    } else {
+      folderName = 'Files';
+      seriesName = null;
+    }
+    const folder = getFolder(folderName);
+    if (seriesName) {
+      if (!folder.series.has(seriesName)) folder.series.set(seriesName, []);
+      folder.series.get(seriesName).push(f);
+    } else {
+      folder.direct.push(f);
+    }
+  }
+  return folders;
+}
 
-    const info = document.createElement('div');
-    info.className = 'fe-file-row-info';
-    const name = document.createElement('div');
-    name.className = 'fe-file-row-name';
-    name.textContent = entry.filename;
-    const status = document.createElement('div');
-    status.className = 'fe-file-row-status' + (entry.xml_files && entry.xml_files.length > 1 ? ' warning' : '');
-    status.textContent = xmlStatusLine(entry);
-    info.appendChild(name);
-    info.appendChild(status);
+// Longest common directory prefix across all loaded files (for the path row).
+function commonRootPath(files) {
+  if (!files.length) return '';
+  let common = pathDirParts(files[0].path);
+  for (let i = 1; i < files.length; i++) {
+    const parts = pathDirParts(files[i].path);
+    let n = 0;
+    while (n < common.length && n < parts.length && common[n].toLowerCase() === parts[n].toLowerCase()) n++;
+    common = common.slice(0, n);
+    if (!common.length) break;
+  }
+  return common.join('\\');
+}
 
-    const removeBtn = document.createElement('button');
-    removeBtn.type = 'button';
-    removeBtn.className = 'folder-remove-btn';
-    removeBtn.textContent = 'Remove';
-    removeBtn.onclick = (e) => { e.stopPropagation(); removeFile(entry.id); };
+function makeIssueRow(entry, depthPad) {
+  const row = document.createElement('div');
+  row.className = 'fe-tree-issue' + (entry.id === focusedFileId ? ' selected' : '');
+  row.style.paddingLeft = depthPad + 'px';
+  row.dataset.id = entry.id;
 
-    row.appendChild(info);
-    row.appendChild(removeBtn);
+  const icon = document.createElement('span');
+  icon.className = 'fe-tree-ico';
+  icon.textContent = '📄';
 
-    row.addEventListener('click', () => focusFile(entry.id));
-    row.addEventListener('dragstart', () => { dragSourceId = entry.id; row.classList.add('dragging'); });
-    row.addEventListener('dragend', () => row.classList.remove('dragging'));
-    row.addEventListener('dragover', (e) => e.preventDefault());
-    row.addEventListener('drop', (e) => {
-      e.preventDefault();
-      if (!dragSourceId || dragSourceId === entry.id) return;
-      const fromIdx = loadedFiles.findIndex((f) => f.id === dragSourceId);
-      const toIdx = loadedFiles.findIndex((f) => f.id === entry.id);
-      const [moved] = loadedFiles.splice(fromIdx, 1);
-      loadedFiles.splice(toIdx, 0, moved);
-      renderFileList();
-    });
+  const name = document.createElement('span');
+  name.className = 'fe-tree-issue-name';
+  name.textContent = entry.filename;
 
-    list.appendChild(row);
+  row.appendChild(icon);
+  row.appendChild(name);
+
+  if (entry.needs_review) {
+    const dot = document.createElement('span');
+    dot.className = 'fe-tree-lowconf';
+    dot.title = 'Low confidence';
+    row.appendChild(dot);
+  }
+  if (entry.xml_files && entry.xml_files.length) {
+    const badge = document.createElement('span');
+    badge.className = 'fe-tree-xml' + (entry.xml_files.length > 1 ? ' warning' : '');
+    badge.textContent = 'XML';
+    if (entry.xml_files.length > 1) badge.title = `${entry.xml_files.length} XML files found`;
+    row.appendChild(badge);
   }
 
-  document.getElementById('feLoadedCount').textContent = `${loadedFiles.length} File(s) Loaded`;
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'fe-tree-remove';
+  remove.textContent = '✕';
+  remove.title = 'Remove';
+  remove.onclick = (e) => { e.stopPropagation(); removeFile(entry.id); };
+  row.appendChild(remove);
 
-  // §9.3 — counted off the Loaded list only, not the Queue. Read live off
-  // in-memory state (entry.needs_review, set lazily on focus below, or
-  // cleared immediately by confirmSoIssue()) — not a save round-trip.
-  const lowConfCount = loadedFiles.filter((f) => f.needs_review).length;
-  document.getElementById('feLowConfidenceCount').textContent = `${lowConfCount} Low Confidence`;
+  row.addEventListener('click', () => focusFile(entry.id));
+  return row;
+}
+
+function makeChevron(collapsed) {
+  const c = document.createElement('span');
+  c.className = 'fe-tree-chev';
+  c.textContent = collapsed ? '▸' : '▾';
+  return c;
+}
+
+function renderFileTree() {
+  const tree = document.getElementById('feFileTree');
+  tree.innerHTML = '';
+
+  // Library-path row
+  const root = commonRootPath(loadedFiles);
+  const pathText = document.getElementById('feLibPathText');
+  pathText.textContent = root || (loadedFiles.length ? '' : 'No folder loaded');
+  document.getElementById('feLibPath').title = root;
+
+  if (!loadedFiles.length) {
+    const empty = document.createElement('div');
+    empty.className = 'fe-tree-empty';
+    empty.innerHTML = 'No files loaded.<br>Press <b>Select Folder</b> to add comics.';
+    tree.appendChild(empty);
+  } else {
+    const folders = buildFileTree(loadedFiles);
+    for (const folder of folders.values()) {
+      const fKey = 'f:' + folder.name;
+      const fCollapsed = treeCollapsed.has(fKey);
+      const total = folder.direct.length + Array.from(folder.series.values()).reduce((a, s) => a + s.length, 0);
+
+      const fRow = document.createElement('div');
+      fRow.className = 'fe-tree-folder';
+      fRow.appendChild(makeChevron(fCollapsed));
+      const fIco = document.createElement('span'); fIco.className = 'fe-tree-ico'; fIco.textContent = '🗀';
+      const fName = document.createElement('span'); fName.className = 'fe-tree-folder-name'; fName.textContent = folder.name;
+      const fCount = document.createElement('span'); fCount.className = 'fe-tree-count'; fCount.textContent = total;
+      fRow.appendChild(fIco); fRow.appendChild(fName); fRow.appendChild(fCount);
+      fRow.onclick = () => toggleTreeNode(fKey);
+      tree.appendChild(fRow);
+
+      if (fCollapsed) continue;
+
+      // series groups (natural-sorted by name)
+      const seriesNames = Array.from(folder.series.keys()).sort(naturalCompare);
+      for (const sName of seriesNames) {
+        const sKey = fKey + '|s:' + sName;
+        const sCollapsed = treeCollapsed.has(sKey);
+        const sRow = document.createElement('div');
+        sRow.className = 'fe-tree-series';
+        sRow.appendChild(makeChevron(sCollapsed));
+        const sIco = document.createElement('span'); sIco.className = 'fe-tree-ico'; sIco.textContent = '🗀';
+        const sNameEl = document.createElement('span'); sNameEl.className = 'fe-tree-series-name'; sNameEl.textContent = sName;
+        sRow.appendChild(sIco); sRow.appendChild(sNameEl);
+        sRow.onclick = () => toggleTreeNode(sKey);
+        tree.appendChild(sRow);
+        if (sCollapsed) continue;
+        const issues = folder.series.get(sName).slice().sort((a, b) => naturalCompare(a.filename, b.filename));
+        for (const iss of issues) tree.appendChild(makeIssueRow(iss, 40));
+      }
+
+      // folder-direct issues (no series subfolder)
+      const direct = folder.direct.slice().sort((a, b) => naturalCompare(a.filename, b.filename));
+      for (const iss of direct) tree.appendChild(makeIssueRow(iss, 24));
+    }
+  }
+
+  // Stats bar
+  const total = loadedFiles.length;
+  const withXml = loadedFiles.filter((f) => f.xml_files && f.xml_files.length).length;
+  document.getElementById('feFilesFound').textContent = total;
+  document.getElementById('feWithXml').textContent = withXml;
+  document.getElementById('feWithoutXml').textContent = total - withXml;
+
+  updateStatusBar();
+}
+
+function toggleTreeNode(key) {
+  if (treeCollapsed.has(key)) treeCollapsed.delete(key);
+  else treeCollapsed.add(key);
+  renderFileTree();
 }
 
 async function focusFile(fileId) {
   if (searchOnlineOpen) return;  // Search Online modal traps focus (§9.6)
   focusedFileId = fileId;
-  renderFileList();
+  renderFileTree();
   await loadFileIntoEditor(fileId);
   await loadFileIntoViewer(fileId);
 }
@@ -196,7 +367,7 @@ async function removeFile(fileId) {
     resetForm();
     resetViewer();
   }
-  renderFileList();
+  renderFileTree();
   updateMismatchIndicator();
   updateActionButtonStates();
 }
@@ -207,13 +378,13 @@ async function clearFileList() {
   focusedFileId = null;
   resetForm();
   resetViewer();
-  renderFileList();
+  renderFileTree();
   updateMismatchIndicator();
   updateActionButtonStates();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  QUEUE (Column 1, lower)
+//  QUEUE (Column 4)
 // ══════════════════════════════════════════════════════════════════════════════
 
 function wireQueue() {
@@ -236,33 +407,48 @@ function renderQueueList() {
   const list = document.getElementById('feQueueList');
   list.innerHTML = '';
 
+  if (!queueFiles.length) {
+    const empty = document.createElement('div');
+    empty.className = 'fe-queue-empty';
+    empty.innerHTML = 'Queue is empty.<br>Edit a file and press <b>＋ Queue</b>.';
+    list.appendChild(empty);
+  }
+
   for (const entry of queueFiles) {
-    const row = document.createElement('div');
-    row.className = 'fe-file-row';
+    const card = document.createElement('div');
+    card.className = 'fe-queue-card';
+
+    const check = document.createElement('span');
+    check.className = 'fe-queue-check';
+    check.textContent = '✓';
 
     const info = document.createElement('div');
-    info.className = 'fe-file-row-info';
+    info.className = 'fe-queue-info';
     const name = document.createElement('div');
-    name.className = 'fe-file-row-name';
+    name.className = 'fe-queue-name';
     name.textContent = entry.filename;
     const status = document.createElement('div');
-    status.className = 'fe-file-row-status';
-    status.textContent = xmlStatusLine(entry);
+    status.className = 'fe-queue-status';
+    status.textContent = 'Edited';
     info.appendChild(name);
     info.appendChild(status);
 
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
-    removeBtn.className = 'folder-remove-btn';
-    removeBtn.textContent = 'Remove';
+    removeBtn.className = 'fe-queue-remove';
+    removeBtn.textContent = '✕';
+    removeBtn.title = 'Remove';
     removeBtn.onclick = () => removeFromQueue(entry.id);
 
-    row.appendChild(info);
-    row.appendChild(removeBtn);
-    list.appendChild(row);
+    card.appendChild(check);
+    card.appendChild(info);
+    card.appendChild(removeBtn);
+    list.appendChild(card);
   }
 
-  document.getElementById('feQueueCount').textContent = `${queueFiles.length} File(s) Loaded`;
+  document.getElementById('feQueueCount').textContent =
+    `${queueFiles.length} file${queueFiles.length === 1 ? '' : 's'} in queue`;
+  updateStatusBar();
 }
 
 function updateMismatchIndicator() {
@@ -343,7 +529,7 @@ async function addCurrentToQueue() {
 
 function setProcessingState(active) {
   const indicator = document.getElementById('feStatusIndicator');
-  indicator.textContent = active ? 'Processing…' : 'Ready to process';
+  indicator.textContent = active ? 'Processing…' : 'Files will be updated with edited ComicInfo.xml.';
   indicator.classList.toggle('processing', active);
 }
 
@@ -398,6 +584,12 @@ function wireXmlEditor() {
       }
     });
   }
+  document.getElementById('feQueueBtn').onclick = addCurrentToQueue;
+  document.getElementById('feClearFormBtn').onclick = resetForm;
+  document.getElementById('fe-genre-add').addEventListener('change', (e) => {
+    addGenre(e.target.value);
+    e.target.value = '';
+  });
 }
 
 function setField(id, value) {
@@ -418,13 +610,11 @@ async function loadFileIntoEditor(fileId) {
   }
 
   // Lazy-on-focus (confirmed with Tez, 2026-07-03): this XML parse already
-  // happens on every focus, so reading NeedsReview off it costs nothing
-  // extra — the tradeoff is the count/border build up as files are visited
-  // rather than being accurate immediately after a batch load.
+  // happens on every focus, so reading NeedsReview off it costs nothing extra.
   const entry = loadedFiles.find((f) => f.id === fileId);
   if (entry) {
     entry.needs_review = !!data.fields.NeedsReview;
-    renderFileList();
+    renderFileTree();
   }
 
   populateForm(data.fields);
@@ -455,29 +645,26 @@ function populateForm(fields) {
   ratingSelect.value = AGE_RATING_OPTIONS.includes(fields.AgeRating) ? fields.AgeRating : '';
 
   const existingGenres = (fields.Genre || '').split(',').map((g) => g.trim()).filter(Boolean);
-  for (const checkbox of document.querySelectorAll('#fe-genre-grid input')) {
-    checkbox.checked = existingGenres.includes(checkbox.value);
-  }
+  setGenres(existingGenres);
 
   updateActionButtonStates();
 }
 
 function resetForm() {
   document.getElementById('feForm').reset();
-  for (const checkbox of document.querySelectorAll('#fe-genre-grid input')) checkbox.checked = false;
+  setGenres([]);
   document.getElementById('fe-format').value = '';
   document.getElementById('fe-agerating').value = '';
   updateActionButtonStates();
 }
 
 function collectFormFields() {
-  const genreNames = Array.from(document.querySelectorAll('#fe-genre-grid input:checked')).map((c) => c.value);
   return {
     Series: document.getElementById('fe-series').value,
     Title: document.getElementById('fe-title').value,
     Number: document.getElementById('fe-number').value,
     Year: document.getElementById('fe-year').value,
-    Genre: genreNames.join(', '),
+    Genre: selectedGenres.join(', '),
     Format: document.getElementById('fe-format').value,
     BlackAndWhite: document.getElementById('fe-bw').checked ? 'on' : '',
     AgeRating: document.getElementById('fe-agerating').value,
@@ -493,12 +680,10 @@ function collectFormFields() {
   };
 }
 
-// EDITOR_SPEC.md §5.2 amended note — Process All only bulk-applies fields
-// whose "Apply to: All" checkbox is checked; everything else is omitted so
-// build_xml_from_fields() (backend) leaves each file's existing value
-// untouched, the same way it already preserves any tag the editor doesn't
-// expose at all. Issue Number has no checkbox — it's governed entirely by
-// the separate increment_enabled/start_issue_no mechanism, never by this set.
+// EDITOR_SPEC.md §5.2 — Process All only bulk-applies fields whose "Apply to
+// All" checkbox is checked; everything else is omitted so build_xml_from_fields()
+// leaves each file's existing value untouched. Issue Number has no checkbox —
+// it's governed entirely by the increment_enabled/start_issue_no mechanism.
 function collectFieldsForProcessAll() {
   const all = collectFormFields();
   const checked = new Set(
@@ -512,11 +697,6 @@ function collectFieldsForProcessAll() {
 }
 
 function updateActionButtonStates() {
-  // Section 4.4's hard validation gate (block until Genre/Format/AgeRating are
-  // valid) is explicitly scoped to the Basic Editor only — Full Editor relies
-  // on the server-side check at process time instead (per-file errors are
-  // reported without aborting the batch), so Queue/Process All are only
-  // gated on whether there's anything to act on.
   document.getElementById('feQueueBtn').disabled = !focusedFileId;
   document.getElementById('feProcessAllBtn').disabled = loadedFiles.length === 0;
   document.getElementById('feProcessQueueBtn').disabled = queueFiles.length === 0;
@@ -534,28 +714,65 @@ function clearError() {
   box.textContent = '';
 }
 
+// ── Footer status bar ────────────────────────────────────────────────────────
+function updateStatusBar() {
+  const sel = loadedFiles.find((f) => f.id === focusedFileId);
+  document.getElementById('feStatusSelected').textContent = sel ? sel.filename : '—';
+
+  const xmlEl = document.getElementById('feStatusXml');
+  if (!sel) {
+    xmlEl.textContent = '—';
+    xmlEl.className = 'fe-sb-strong';
+  } else if (!sel.xml_files || sel.xml_files.length === 0) {
+    xmlEl.textContent = 'No XML';
+    xmlEl.className = 'fe-sb-strong fe-sb-warn';
+  } else if (sel.xml_files.length > 1) {
+    xmlEl.textContent = `${sel.xml_files.length} XML`;
+    xmlEl.className = 'fe-sb-strong fe-sb-warn';
+  } else {
+    xmlEl.textContent = 'Valid ✓';
+    xmlEl.className = 'fe-sb-strong fe-sb-ok';
+  }
+
+  const low = loadedFiles.filter((f) => f.needs_review).length;
+  const lowEl = document.getElementById('feStatusLowConf');
+  lowEl.textContent = low;
+  lowEl.className = 'fe-sb-strong' + (low ? ' fe-sb-warn' : '');
+
+  document.getElementById('feStatusQueued').textContent = queueFiles.length;
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
-//  IMAGE VIEWER (Column 3)
+//  COMIC VIEWER (Column 3) — zoom / fit / fullscreen / lazy thumbnail strip
 // ══════════════════════════════════════════════════════════════════════════════
 
 function wireImageViewer() {
   document.getElementById('fePrevBtn').onclick = () => changeViewerPage(-1);
   document.getElementById('feNextBtn').onclick = () => changeViewerPage(1);
+  document.getElementById('feThumbPrev').onclick = () => changeViewerPage(-1);
+  document.getElementById('feThumbNext').onclick = () => changeViewerPage(1);
   document.getElementById('feZoomInBtn').onclick = () => setZoom(viewerZoom + 0.25);
   document.getElementById('feZoomOutBtn').onclick = () => setZoom(viewerZoom - 0.25);
+  document.getElementById('feFitBtn').onclick = fitViewer;
+  document.getElementById('feFullscreenBtn').onclick = toggleFullscreen;
 }
+
+const VIEWER_BTNS = ['fePrevBtn', 'feNextBtn', 'feThumbPrev', 'feThumbNext',
+  'feZoomInBtn', 'feZoomOutBtn', 'feFitBtn', 'feFullscreenBtn'];
 
 function resetViewer() {
   viewerFileId = null;
   viewerImageList = [];
   viewerPageNum = 0;
   viewerZoom = 1;
-  document.getElementById('feViewerImg').hidden = true;
+  thumbCache = new Map();
+  const img = document.getElementById('feViewerImg');
+  img.hidden = true;
+  img.style.width = '';
   document.getElementById('feViewerEmpty').hidden = false;
   document.getElementById('fePageInfo').textContent = '—';
-  for (const id of ['fePrevBtn', 'feNextBtn', 'feZoomInBtn', 'feZoomOutBtn']) {
-    document.getElementById(id).disabled = true;
-  }
+  document.getElementById('feThumbStrip').innerHTML = '';
+  for (const id of VIEWER_BTNS) document.getElementById(id).disabled = true;
 }
 
 async function loadFileIntoViewer(fileId) {
@@ -567,13 +784,20 @@ async function loadFileIntoViewer(fileId) {
   viewerImageList = data.image_list;
   viewerPageNum = 0;
   viewerZoom = 1;
+  thumbCache = new Map();
 
   const hasPages = viewerImageList.length > 0;
   document.getElementById('feViewerEmpty').hidden = hasPages;
   document.getElementById('feViewerImg').hidden = !hasPages;
-  for (const id of ['feZoomInBtn', 'feZoomOutBtn']) document.getElementById(id).disabled = !hasPages;
+  for (const id of ['feZoomInBtn', 'feZoomOutBtn', 'feFitBtn', 'feFullscreenBtn']) {
+    document.getElementById(id).disabled = !hasPages;
+  }
 
-  if (hasPages) await showViewerPage();
+  if (hasPages) {
+    await showViewerPage();
+  } else {
+    document.getElementById('feThumbStrip').innerHTML = '';
+  }
 }
 
 async function showViewerPage() {
@@ -583,11 +807,15 @@ async function showViewerPage() {
 
   const img = document.getElementById('feViewerImg');
   img.src = data.data;
-  img.style.width = `${100 * viewerZoom}%`;
+  applyViewerZoom();
 
-  document.getElementById('fePageInfo').textContent = `Page ${viewerPageNum + 1} of ${viewerImageList.length}`;
+  document.getElementById('fePageInfo').textContent = `${viewerPageNum + 1} / ${viewerImageList.length}`;
   document.getElementById('fePrevBtn').disabled = viewerPageNum === 0;
   document.getElementById('feNextBtn').disabled = viewerPageNum >= viewerImageList.length - 1;
+  document.getElementById('feThumbPrev').disabled = viewerPageNum === 0;
+  document.getElementById('feThumbNext').disabled = viewerPageNum >= viewerImageList.length - 1;
+
+  renderThumbStrip();
 }
 
 function changeViewerPage(delta) {
@@ -597,10 +825,88 @@ function changeViewerPage(delta) {
   showViewerPage();
 }
 
+function goToViewerPage(n) {
+  if (n < 0 || n >= viewerImageList.length || n === viewerPageNum) return;
+  viewerPageNum = n;
+  showViewerPage();
+}
+
 function setZoom(value) {
   viewerZoom = Math.max(0.5, Math.min(3, value));
+  applyViewerZoom();
+}
+
+function fitViewer() {
+  viewerZoom = 1;
+  applyViewerZoom();
+}
+
+function applyViewerZoom() {
   const img = document.getElementById('feViewerImg');
-  if (!img.hidden) img.style.width = `${100 * viewerZoom}%`;
+  if (img.hidden) return;
+  // zoom === 1 → let the CSS max-width/height fit the frame; otherwise scale up.
+  img.style.width = viewerZoom === 1 ? '' : `${100 * viewerZoom}%`;
+}
+
+function toggleFullscreen() {
+  const frame = document.getElementById('feViewerFrame');
+  if (!document.fullscreenElement) {
+    if (frame.requestFullscreen) frame.requestFullscreen();
+  } else if (document.exitFullscreen) {
+    document.exitFullscreen();
+  }
+}
+
+// Lazy thumbnail strip — renders a 7-cell window around the current page and
+// fetches each cell's image on demand (downscaled via ?w=120), cached so page
+// navigation on a large archive never re-decodes the whole book.
+function renderThumbStrip() {
+  const strip = document.getElementById('feThumbStrip');
+  strip.innerHTML = '';
+  const total = viewerImageList.length;
+  if (!total) return;
+
+  let start = Math.max(0, viewerPageNum - 3);
+  let end = Math.min(total - 1, start + 6);
+  start = Math.max(0, end - 6);
+
+  for (let n = start; n <= end; n++) {
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'fe-thumb' + (n === viewerPageNum ? ' active' : '');
+    cell.title = `Page ${n + 1}`;
+
+    const imgBox = document.createElement('div');
+    imgBox.className = 'fe-thumb-img';
+    const num = document.createElement('span');
+    num.className = 'fe-thumb-num';
+    num.textContent = n + 1;
+
+    cell.appendChild(imgBox);
+    cell.appendChild(num);
+    cell.onclick = () => goToViewerPage(n);
+    strip.appendChild(cell);
+
+    loadThumbImage(n, imgBox);
+  }
+}
+
+function loadThumbImage(n, el) {
+  const fileId = viewerFileId;
+  const key = `${fileId}:${n}`;
+  if (thumbCache.has(key)) {
+    el.style.backgroundImage = `url("${thumbCache.get(key)}")`;
+    return;
+  }
+  fetch(`/api/editor/full/files/${fileId}/page/${n}?w=120`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => {
+      if (!d || !d.data) return;
+      thumbCache.set(key, d.data);
+      // Only paint if we're still on the same file (async guard).
+      if (viewerFileId === fileId) el.style.backgroundImage = `url("${d.data}")`;
+    })
+    .catch(() => {});
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -783,11 +1089,6 @@ function wireMultiXmlModal() {
 }
 
 // ── Process All error modal (2.3-fixes.md Fix 3) ────────────────────────────
-// #feError / showError() / clearError() are unchanged — still used for short
-// single-line cases (network errors, "select a file first", etc). This modal
-// is only for Process All's per-file validation errors, which can be long and
-// repetitive across many files.
-
 function wireProcessErrorModal() {
   const close = () => { document.getElementById('feProcessErrorOverlay').hidden = true; };
   document.getElementById('feProcessErrorCloseBtn').onclick = close;
@@ -864,13 +1165,13 @@ async function resolveMultiXml(keepFilename) {
   // Refresh the file row's xml_files so the warning clears
   const entry = loadedFiles.find((f) => f.id === multiXmlFileId);
   if (entry) entry.xml_files = ['ComicInfo.xml'];
-  renderFileList();
+  renderFileTree();
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  SEARCH ONLINE — Select Series / Select Issue (EDITOR_SPEC.md §9)
-//  One modal, two internal steps (not two stacked windows) — a "← Back to
-//  Series" control returns to the cached soSeriesResults, no re-fetch.
+//  One modal, two internal steps — a "← Back to Series" control returns to the
+//  cached soSeriesResults, no re-fetch.
 // ══════════════════════════════════════════════════════════════════════════════
 
 function wireSearchOnlineModal() {
@@ -890,7 +1191,6 @@ async function openSearchOnline() {
   }
   const fields = collectFormFields();
   if (!fields.Series || !fields.Series.trim()) {
-    // Matches CT's own taggerwindow.py::query_online() guard wording.
     showError('Need to enter a series name to search.');
     return;
   }
@@ -1005,18 +1305,16 @@ async function confirmSoIssue(issueId) {
   }
   const data = await res.json();
   // §9.7 — fully overwrites only the mapped fields; Genre/Format/AgeRating/
-  // BlackAndWhite/PageCount (never in the mapped set) are left untouched
-  // since they're preserved from the current form state underneath.
+  // BlackAndWhite/PageCount (never in the mapped set) are left untouched.
   populateForm({ ...collectFormFields(), ...data.fields });
   closeSearchOnlineModal();
   clearNeedsReviewIndicatorFor(focusedFileId);
 }
 
-// §9.7 — clears the border/count immediately in frontend in-memory state;
-// the NeedsReview XML tag itself only actually clears on the file's next
-// real save (Process Queue/Process All already send NeedsReview: "").
+// §9.7 — clears the border/count immediately in frontend in-memory state; the
+// NeedsReview XML tag itself only actually clears on the file's next real save.
 function clearNeedsReviewIndicatorFor(fileId) {
   const entry = loadedFiles.find((f) => f.id === fileId);
   if (entry) entry.needs_review = false;
-  renderFileList();
+  renderFileTree();
 }

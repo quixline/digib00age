@@ -39,7 +39,15 @@ Example:
 
 ---
 
+~~[change] the Full Editor has been redesigned using Claude Design - exported to D:\workshop\Claude Design\full editor. Also screenshot of old and new design D:\workshop\comicvault_v2\images~~ → built as v2.6 Item 7 (Full Editor 4-column redesign), 2026-07-14 — see `v2.6/comicvault-changes-v2.6.md` Item 7 / `EDITOR_SPEC.md` §5.4
+
+[feature] are there any performace improvements that can be made to speed up the time between clicking Edit XML in /issue/id to when the editor opens?
+
+[code] scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base
+
 [change] build release apk for a permanent install
+
+[feature] plan & build windows install package
 
 
 
@@ -49,9 +57,9 @@ Example:
 
 14-7-2026
 
-- ~~[feature] open reader from web library~~ → built as v2.6 Item 6 "Open Issue Detail cover in the Windows desktop reader" — see `comicvault-changes-v2.6.md`/`progress.md`
+- ~~[feature] open reader from web library~~
 
-- ~~[bug] since bg change dd menus are displayed behind the cards ~~
+- ~~[bug] since bg change dd menus are displayed behind the cards~~
 
 - ~~[change] rebuild desktop reader with new design~~
 

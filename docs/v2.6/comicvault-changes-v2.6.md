@@ -645,3 +645,88 @@ straight into the issue) and warm-start (reader already open, clicked a
 different issue's cover, existing window came to front and navigated
 there rather than a second process appearing), and confirmed Browse/Series
 grid cover clicks are unaffected.
+
+---
+
+## Item 7 — Full Editor 4-column redesign
+
+**Change.** From `INBOX.md`: "the Full Editor has been redesigned using Claude
+Design." The Full Editor (`/editor`) moves from its original **three-column**
+layout (File Management + Queue / XML Editor / Image Viewer) to a **four-column
+workspace + a footer status bar**, matching the same Claude Design pass that
+produced Item 1's web redesign. Structural change → full workflow, `EDITOR_SPEC.md`
+§5 updated (new §5.4 supersedes the §5.2 layout), three `DECISIONS.md` entries.
+
+The Claude Design export (`D:\workshop\Claude Design\full editor`,
+`4-Column Full Editor.dc.html`) is an `x-dc` **prototype** (mock data, design-system
+runtime). Only its *visual design* was reproduced, using the app's existing CSS
+token system (already a near-exact match to the design-system tokens) + vanilla JS.
+**No prototype runtime was ported; every `/api/editor/full/*` endpoint is reused
+unchanged** except one small optional viewer enhancement. This is a layout +
+interaction reskin — save/write/validation/increment/ComicVine-search data paths are
+untouched.
+
+**Rebuilt locally, not from the cloud build.** This was first built by a cloud
+Ultraplan session, but that container had no git remote and a GitHub-blocking egress
+policy, so it could never push and the delivered patches never reached the PC (full
+context: `temp/build-not-deployed.md`). Rebuilt from scratch on the local `main` per
+Tez's call (2026-07-14) — see `DECISIONS.md`.
+
+**Four columns (from the export):**
+1. **Load / Select Files** — `Select Folder` (opens the existing modal picker) loads
+   the in-memory working set, now rendered as an inline **folder → series → issue
+   tree** (grandparent/parent directory grouping, natural-sorted issues, XML badges,
+   low-confidence dots) instead of a flat list. Bottom stats bar: Files Found / With
+   XML / Without XML.
+2. **Edit ComicInfo.xml** — Main/More tabs, an `Apply to All` column header, each
+   field paired with its apply-to-all checkbox in a right-hand column. **Genre is now
+   removable chips + a "＋ Add genre" dropdown** (replaces the checkbox grid). Format /
+   Age Rating stay native selects. Action row: `＋ Queue` / `Clear` (Clear now resets
+   the form).
+3. **Comic Viewer** — toolbar with zoom / **Fit** / page nav / **Fullscreen**, plus a
+   **lazy page-thumbnail strip** (windowed, click-to-jump, active page highlighted).
+   **No Rotate** (explicitly dropped by Tez).
+4. **Edited Files Queue** — moved to its own column: `Clear Queue`, "N files in
+   queue" + counts-differ warning, per-file cards (✓ / name / "Edited" / ✕),
+   `Process Queue` / `Process All`.
+
+Plus a **footer status bar**: Selected / XML Status (Valid ✓ for a single parsed
+XML; warning for 0 or >1) / Low Confidence / Queued.
+
+**Built:**
+- `frontend/editor_full.html`: 4-column `<main>` grid + `<footer>` status bar; Search
+  ComicVine / GoodReads moved into the header. All four modals (picker, multi-XML,
+  process-error, Search Online) and both `<script>`s preserved verbatim. All 16
+  `Apply to All` `data-field`s kept intact (Process All behaviour unchanged).
+- `frontend/js/editor_full.js`: `renderFileTree()` (+ `buildFileTree`,
+  `commonRootPath`, `naturalCompare`) replaces the flat list and its drag-reorder;
+  genre chips (`renderGenreChips`/`addGenre`/`removeGenre`); queue cards;
+  viewer `fitViewer()`/`toggleFullscreen()` + lazy thumbnail strip
+  (`renderThumbStrip`/`loadThumbImage`, `?w=` downscale, cached); `updateStatusBar()`.
+  All file-load / queue / process / picker / multi-XML / Search-Online code reused.
+- `frontend/css/style.css`: 4-column grid + footer, `--control-md` token, and the
+  tree / genre-chips / apply-to-all-column / viewer-toolbar / thumbnail-strip /
+  queue-card / status-bar styles; responsive collapse at 1500/900px. Post-build
+  density pass (tighter field spacing so Main fits without scrolling) + three UI
+  fixes (genre single-border control, Summary checkbox centred, Increment # label in
+  front of its checkbox and aligned in the apply column).
+- `backend/routers/editor_full.py`: optional `?w=` downscale param on
+  `GET /editor/full/files/{id}/page/{n}` (JPEG q70) for the thumbnail strip;
+  full-resolution page bytes returned unchanged when absent.
+
+**Out of scope / dropped:** drag-and-drop reorder of the loaded list (no meaning in a
+grouped tree — `DECISIONS.md`); the mock's "Help" header button (nothing to point it
+at). No backend behaviour change beyond the additive `?w=` param.
+
+**Verified:** driven end-to-end in a browser against the real library (loaded
+*Before the Incal* / *Benjamin* from `L:\Comic Archives\B\Series`, read-only — no
+archive writes, working set + queue cleared afterward): tree grouping + natural sort
++ XML badges + stats, issue-click loads editor + viewer, genre chips seed from XML
+and add/remove, all 16 apply-to-all `data-field`s confirmed present, viewer page +
+real lazy thumbnail strip + Fit/zoom/fullscreen, queue card + counts-differ + footer
+status bar; console clean. Tez manually ran a single file all the way through to
+adding it to the library. **Series/multi-file path and the tightened layout are
+Tez's own follow-up hand-test.** Note: static assets are served without
+`cache-control`, so `/editor` needs a hard-refresh (Ctrl+F5) after deploy to pick up
+the new HTML/CSS/JS; the `?w=` param needs a tray-server restart (strip works without
+it, heavier).

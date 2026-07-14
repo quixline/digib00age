@@ -462,6 +462,65 @@ three-column design assumed). Columns may use the available width more generousl
 Code has discretion here within the card-style language above; exact pixel proportions are
 not being dictated by this spec.
 
+### 5.4 Layout — 4-column redesign *(v2.6 Item 7, built + verified 2026-07-14 — supersedes §5.2/§5.3)*
+
+The Full Editor was redesigned in Claude Design and rebuilt to a **four-column
+workspace + a footer status bar** (`comicvault-changes-v2.6.md` Item 7). This section
+governs the current layout; §5.2's three-column description is historical. **No
+backend endpoint or data-path changed** — this is a layout + interaction reskin.
+Grid: `340px 540px 470px minmax(280px,1fr)`, collapsing responsively (2-up ≤1500px,
+1-up ≤900px). The whole workspace pins to the viewport height; each column scrolls
+internally.
+
+**Column 1 — Load / Select Files.** `Select Folder` opens the same modal
+browser/picker as §5.1 (`/browse` + `/files/add` + `/folders/add`) — file intake is
+unchanged. The loaded working set is rendered as an inline, expandable **folder →
+series → issue tree** (grouped by each file's two nearest directory levels —
+grandparent = folder, parent = series; shallower paths degrade gracefully), replacing
+the old flat list. Issue rows carry an `XML` badge (when a ComicInfo.xml is present)
+and a low-confidence dot (`needs_review`, lazy-on-focus per §9.2/§9.3), natural-sorted
+(`001 < 002 < 010`). Clicking an issue is the unified focus/load mechanic (loads its
+XML into Column 2 and its cover into Column 3). A `Clear` button clears the working
+set. Bottom stats bar: **Files Found / With XML / Without XML**. **Drag-and-drop
+reorder is dropped** — it has no meaning in a grouped tree (`DECISIONS.md`);
+up/down-arrow keyboard focus movement is kept.
+
+**Column 2 — Edit ComicInfo.xml.** Main/More tabs (§4) unchanged in field set. The
+per-field "Apply to: All" checkboxes (§5.2 / Process All amendment) move into a
+right-hand column under an `Apply to All` header — **all 16 `data-field`s are
+retained, so Process All behaviour is identical**. **Genre is now removable chips +
+a "＋ Add genre" dropdown** (replaces the checkbox grid; still backed by
+`/api/editor/genres` per §4.1). Format / Age Rating stay native selects. Action row:
+`＋ Queue` and `Clear` — **Clear now resets the current form**, not the Queue (the
+Queue's own clear lives in Column 4). Issue Number keeps the separate `Increment #`
+checkbox (no apply-to-all), its label placed in front of the checkbox which aligns in
+the apply column.
+
+**Column 3 — Comic Viewer.** Toolbar: zoom in/out, **Fit** (reset to fit), page
+prev/next with an `X / Y` counter, and **Fullscreen** (Fullscreen API on the viewer
+frame). **No Rotate** (dropped by Tez, `DECISIONS.md`). Cover auto-loads on focus;
+pages load on demand via `GET /editor/full/files/{id}/page/{n}` as before. New: a
+**lazy page-thumbnail strip** below the canvas — a windowed set of thumbnails around
+the current page, each fetched on demand at reduced size via the endpoint's new
+optional `?w=` downscale param (JPEG q70; full-res bytes returned when absent),
+cached, active page highlighted, click-to-jump.
+
+**Column 4 — Edited Files Queue.** The Queue moves out of Column 1 into its own
+column: `Clear Queue`, an "N files in queue" count with the **loaded-vs-queued
+counts-differ warning** (§5.2's completion-check requirement, preserved), per-file
+cards (✓ / filename / "Edited" / ✕ remove), and a Queue Actions footer with
+`Process Queue` / `Process All` (the primary save actions, unchanged). The
+processing-status text ("Processing…") shows in this footer.
+
+**Footer status bar** (new): `Selected: <file>` · `XML Status` (**Valid ✓** for a
+single parsed ComicInfo.xml; a warning label for none or multiple — a lightweight
+presence/parse indicator, not schema validation) · `Low Confidence <n>` ·
+`Queued <n>`.
+
+**Deploy note:** static assets are served without `cache-control`, so `/editor`
+needs a hard-refresh (Ctrl+F5) to pick up a new build; the `?w=` param needs a
+tray-server restart (the strip works without it, just heavier).
+
 ---
 
 ## 6. Basic Editor — Popup

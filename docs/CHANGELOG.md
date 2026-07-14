@@ -13,6 +13,14 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-14** — Full Editor 4-column redesign (v2.6 Item 7): `/editor` goes
+  from 3 columns to a 4-column workspace (folder→series→issue tree · editor with
+  genre chips + apply-to-all column · viewer with Fit/Fullscreen/lazy thumbnail
+  strip · queue) + a footer status bar. Visual reskin of the Claude Design export;
+  all `/api/editor/full/*` endpoints reused (one additive `?w=` thumbnail param).
+  Rebuilt locally after the cloud build couldn't push. See `v2.6/progress.md`
+  "Full Editor 4-column redesign".
+
 - **2026-07-14** — Open Issue Detail cover in the Windows desktop reader
   (v2.6 Item 6): clicking a comic's cover on `/issue/{id}` now launches the
   Windows reader (registered via Settings) directly into that issue,

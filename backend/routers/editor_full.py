@@ -37,7 +37,7 @@ import dataclasses
 import io
 import os
 
-from fastapi import APIRouter, Body, HTTPException
+from fastapi import APIRouter, Body, HTTPException, Query
 
 from backend import archive_formats, config, ct_bridge
 from backend.editor.archive_io import (
@@ -304,7 +304,11 @@ def get_file_preview(file_id: str):
 
 
 @router.get("/editor/full/files/{file_id}/page/{page_num}")
-def get_file_page(file_id: str, page_num: int):
+def get_file_page(
+    file_id: str,
+    page_num: int,
+    w: int | None = Query(default=None, ge=16, le=2000),
+):
     entry = _get_working_file_or_404(file_id)
     try:
         image_files = _cached_image_list(entry["path"])
@@ -318,6 +322,25 @@ def get_file_page(file_id: str, page_num: int):
 
         img = Image.open(io.BytesIO(img_bytes))
         width, height = img.size
+
+        # Optional server-side downscale for the viewer's lazy thumbnail strip
+        # (v2.6 Item 7). Absent/oversized w → original page bytes returned
+        # untouched, so the main viewer keeps full resolution.
+        if w is not None and width > w:
+            new_h = max(1, round(height * w / width))
+            thumb = img.convert("RGB").resize((w, new_h), Image.LANCZOS)
+            buf = io.BytesIO()
+            thumb.save(buf, format="JPEG", quality=70)
+            out_bytes = buf.getvalue()
+            data_uri = f"data:image/jpeg;base64,{base64.b64encode(out_bytes).decode('utf-8')}"
+            return {
+                "filename": img_file,
+                "data": data_uri,
+                "width": w,
+                "height": new_h,
+                "page_num": page_num,
+            }
+
         mime_ext = img_file.split(".")[-1].lower()
         data_uri = f"data:image/{mime_ext};base64,{base64.b64encode(img_bytes).decode('utf-8')}"
 

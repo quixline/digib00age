@@ -4,6 +4,44 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Full Editor 4-column redesign rebuilt locally, not recovered from the cloud build
+
+**Decided:** 2026-07-14. The Full Editor redesign (v2.6 Item 7) was first built by a
+cloud Ultraplan session, but that container had **no git remote** and an **egress
+policy that 403-blocks GitHub**, so it could never push or open a PR; the delivered
+patch files never reached the PC and their claude.ai URLs are auth-gated (full
+context: `temp/build-not-deployed.md`).
+
+**Why rebuild instead of chasing the patches:** the cloud artifacts were stranded in
+an ephemeral container, the download path was fragile (auth, a stale base — the cloud
+cloned from `origin/main`, which is behind local `main` by the unpushed v2.6 Items
+5/6 + a bugfix), and the cloud build was only *mock*-verified anyway. A local rebuild
+from the approved plan is guaranteed, durable, builds on the correct current base,
+and commits/pushes normally. Tez chose this over the patch route.
+
+### Full Editor Column 1: group the loaded working set as a tree, not a live library browser
+
+**Decided:** 2026-07-14, scoping v2.6 Item 7's Column 1 with Tez.
+
+**Why:** the redesign's Column 1 shows a folder → series → issue tree. Two readings
+were possible — (a) keep today's "load files into an in-memory working set" workflow
+but *render* that set as a tree, or (b) replace it with a live, on-demand library
+browser. Chose (a): it reuses the entire existing intake path (`/browse` +
+`/files/add` + `/folders/add`, still behind the `Select Folder` modal picker) and all
+downstream state, so the change is a pure presentation reskin with no new backend or
+working-set-model risk. Grouping is derived from each file's two nearest directory
+levels (grandparent = folder, parent = series), which matches typical
+`Publisher|Letter/Series/issue.cbz` layouts without tracking how each file was added.
+Drag-reorder of the loaded list was dropped as part of this — ordering has no meaning
+in a grouped tree.
+
+### Full Editor viewer: no Rotate control
+
+**Decided:** 2026-07-14. The Claude Design export's viewer toolbar included a rotate
+button; Tez dropped it while confirming Item 7 scope ("I missed that and it's not
+needed"). Fit + Fullscreen + the lazy thumbnail strip were kept. Recorded so a later
+pass doesn't "restore" it from the mock as if it were an oversight.
+
 ### Mobile Browse: filter Series/Singles client-side, never via `GET /api/library?group=`
 
 **Decided:** 2026-07-13, root-causing a count mismatch Tez reported (mobile

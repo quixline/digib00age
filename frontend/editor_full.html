@@ -16,182 +16,185 @@
         <img src="/static/images/lockup-light.png" alt="digib00age" class="site-logo-img site-logo-img--dark">
         <img src="/static/images/lockup-dark.png" alt="digib00age" class="site-logo-img site-logo-img--light">
       </a>
-      <span class="admin-page-label">Full Editor</span>
-      <a href="/admin" class="settings-btn" title="Admin / Settings" aria-label="Settings">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-        </svg>
-      </a>
-      <button type="button" class="btn-admin-action" id="logoutBtn" hidden>Logout</button>
+      <span class="fe-header-brand"><span class="fe-header-glyph">&lt;/&gt;</span> XML Editor</span>
+      <div class="fe-header-actions">
+        <button type="button" class="btn-admin-action" id="feSearchOnlineBtn">Search ComicVine</button>
+        <a href="https://www.goodreads.com" target="_blank" rel="noopener noreferrer" class="btn-admin-action btn-admin-action--ghost">Search GoodReads</a>
+        <a href="/admin" class="settings-btn" title="Admin / Settings" aria-label="Settings">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </a>
+        <button type="button" class="btn-admin-action" id="logoutBtn" hidden>Logout</button>
+      </div>
     </div>
   </header>
 
-  <main class="container admin-main">
-    <div class="fe-toolbar-row">
-      <div class="fe-toolbar-group">
-        <button type="button" class="btn-admin-action" id="feSearchOnlineBtn">Search ComicVine</button>
-        <a href="https://www.goodreads.com" target="_blank" rel="noopener noreferrer" class="btn-admin-action">Search GoodReads</a>
-      </div>
-    </div>
+  <main class="fe-shell">
     <div class="fe-layout">
 
-      <!-- ── Column 1 — File Management + Queue ──────────────────────────── -->
-      <div class="fe-col fe-col-1">
-        <div class="admin-card">
-          <div class="fe-card-header-row">
-            <div class="admin-card-label">File Management</div>
-            <span class="fe-count" id="feLoadedCount">0 File(s) Loaded</span>
+      <!-- ── Column 1 — Load / Select Files ──────────────────────────────── -->
+      <section class="fe-panel fe-col-1">
+        <div class="fe-panel-head">
+          <span class="fe-panel-num">1</span>
+          <span class="fe-panel-title">Load / Select Files</span>
+        </div>
+        <div class="fe-panel-toolbar">
+          <button type="button" class="btn-admin-action fe-btn-block" id="feSelectFolderBtn">📁 Select Folder</button>
+          <button type="button" class="btn-admin-action btn-admin-action--ghost" id="feClearListBtn">Clear</button>
+        </div>
+        <div class="fe-lib-path" id="feLibPath" title="">🗀 <span id="feLibPathText">No folder loaded</span></div>
+
+        <div class="fe-tree" id="feFileTree" tabindex="0"></div>
+
+        <div class="fe-stats">
+          <div class="fe-stat">
+            <div class="fe-stat-num fe-stat-num--accent" id="feFilesFound">0</div>
+            <div class="fe-stat-label">Files Found</div>
           </div>
-          <div class="fe-action-row">
-            <button type="button" class="btn-admin-action" id="feExplorerBtn">Explorer</button>
-            <button type="button" class="btn-admin-action" id="feClearListBtn">Clear List</button>
-            <span class="fe-count" id="feLowConfidenceCount">0 Low Confidence</span>
+          <div class="fe-stat">
+            <div class="fe-stat-num" id="feWithXml">0</div>
+            <div class="fe-stat-label">With XML</div>
           </div>
-          <div class="fe-file-list" id="feFileList" tabindex="0"></div>
+          <div class="fe-stat">
+            <div class="fe-stat-num" id="feWithoutXml">0</div>
+            <div class="fe-stat-label">Without XML</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Column 2 — Edit ComicInfo.xml ───────────────────────────────── -->
+      <section class="fe-panel fe-col-2">
+        <div class="fe-panel-head">
+          <span class="fe-panel-num">2</span>
+          <span class="fe-panel-title">Edit ComicInfo.xml</span>
         </div>
 
-        <div class="admin-card admin-card--spaced">
-          <div class="fe-card-header-row">
-            <div class="admin-card-label">Queue</div>
-            <span class="fe-count" id="feQueueCount">0 File(s) Loaded</span>
-          </div>
-          <div class="fe-mismatch-indicator" id="feMismatchIndicator" hidden>
-            ⚠ Loaded/Queued counts don't match
-          </div>
-          <div class="fe-file-list fe-queue-list" id="feQueueList"></div>
-          <div class="fe-status-indicator" id="feStatusIndicator">Ready to process</div>
-        </div>
-      </div>
-
-      <!-- ── Column 2 — XML Editor ────────────────────────────────────────── -->
-      <div class="fe-col fe-col-2">
-        <div class="admin-card">
-          <div class="admin-card-label">XML Editor</div>
-
+        <div class="fe-tabs-row">
           <div class="editor-tabs">
             <button type="button" class="editor-tab-btn active" data-tab="main">Main</button>
             <button type="button" class="editor-tab-btn" data-tab="more">More</button>
           </div>
+          <span class="fe-apply-head">Apply to All</span>
+        </div>
 
-          <form id="feForm">
-            <div class="editor-tab-panel" data-panel="main">
-              <div class="editor-field">
-                <div class="editor-field-head">
-                  <label for="fe-series">Series Title</label>
-                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Series"> Apply to: All</label>
-                </div>
+        <form id="feForm" class="fe-form-body">
+          <div class="editor-tab-panel" data-panel="main">
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-series">Series Title</label>
                 <input type="text" id="fe-series" name="Series">
               </div>
-              <div class="editor-field">
-                <div class="editor-field-head">
-                  <label for="fe-title">Issue Title</label>
-                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Title"> Apply to: All</label>
-                </div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Series" title="Apply to all"></div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-title">Issue Title</label>
                 <input type="text" id="fe-title" name="Title">
               </div>
-              <div class="editor-field-row fe-number-row">
-                <div class="editor-field">
-                  <label for="fe-number">Issue Number</label>
-                  <input type="text" id="fe-number" name="Number">
-                </div>
-                <div class="editor-field editor-field-checkbox">
-                  <label><input type="checkbox" id="fe-increment"> Increment #</label>
-                </div>
-                <div class="editor-field">
-                  <div class="editor-field-head">
-                    <label for="fe-year">Year</label>
-                    <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Year"> Apply to: All</label>
-                  </div>
-                  <input type="text" id="fe-year" name="Year" inputmode="numeric">
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Title" title="Apply to all"></div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-number">Issue Number</label>
+                <input type="text" id="fe-number" name="Number">
+              </div>
+              <label class="fe-increment-label" for="fe-increment">Increment #</label>
+              <div class="fe-apply-cell"><input type="checkbox" id="fe-increment"></div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-year">Year</label>
+                <input type="text" id="fe-year" name="Year" inputmode="numeric">
+              </div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Year" title="Apply to all"></div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label>Genre <span class="editor-required">*</span></label>
+                <div class="fe-genre-wrap">
+                  <div class="fe-genre-chips" id="fe-genre-chips"></div>
+                  <select class="fe-genre-add" id="fe-genre-add"></select>
                 </div>
               </div>
-              <div class="editor-field">
-                <div class="editor-field-head">
-                  <label>Genre <span class="editor-required">*</span></label>
-                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Genre"> Apply to: All</label>
-                </div>
-                <div class="editor-genre-grid" id="fe-genre-grid"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Genre" title="Apply to all"></div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-format">Format <span class="editor-required">*</span></label>
+                <select id="fe-format" name="Format"></select>
               </div>
-              <div class="editor-field-row">
-                <div class="editor-field">
-                  <div class="editor-field-head">
-                    <label for="fe-format">Format <span class="editor-required">*</span></label>
-                    <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Format"> Apply to: All</label>
-                  </div>
-                  <select id="fe-format" name="Format"></select>
-                </div>
-                <div class="editor-field">
-                  <div class="editor-field-head">
-                    <label for="fe-agerating">Age Rating <span class="editor-required">*</span></label>
-                    <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="AgeRating"> Apply to: All</label>
-                  </div>
-                  <select id="fe-agerating" name="AgeRating"></select>
-                </div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Format" title="Apply to all"></div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-agerating">Age Rating <span class="editor-required">*</span></label>
+                <select id="fe-agerating" name="AgeRating"></select>
               </div>
-              <div class="editor-field editor-field-checkbox editor-field-head">
-                <label><input type="checkbox" id="fe-bw" name="BlackAndWhite"> Black &amp; White</label>
-                <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="BlackAndWhite"> Apply to: All</label>
-              </div>
-              <div class="editor-field">
-                <div class="editor-field-head">
-                  <label for="fe-summary">Summary</label>
-                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Summary"> Apply to: All</label>
-                </div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="AgeRating" title="Apply to all"></div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-summary">Summary</label>
                 <textarea id="fe-summary" name="Summary" rows="4"></textarea>
               </div>
+              <div class="fe-apply-cell fe-apply-cell--top"><input type="checkbox" class="fe-apply-all" data-field="Summary" title="Apply to all"></div>
             </div>
+            <div class="fe-field-row">
+              <label class="fe-inline-check fe-inline-check--wide"><input type="checkbox" id="fe-bw" name="BlackAndWhite"> Black &amp; White</label>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="BlackAndWhite" title="Apply to all"></div>
+            </div>
+          </div>
 
-            <div class="editor-tab-panel" data-panel="more" hidden>
-              <div class="editor-field-row">
-                <div class="editor-field">
-                  <div class="editor-field-head">
-                    <label for="fe-count">Count</label>
-                    <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Count"> Apply to: All</label>
-                  </div>
+          <div class="editor-tab-panel" data-panel="more" hidden>
+            <div class="fe-field-row">
+              <div class="fe-field fe-field--two">
+                <div>
+                  <label for="fe-count">Count</label>
                   <input type="text" id="fe-count" name="Count">
                 </div>
-                <div class="editor-field">
-                  <div class="editor-field-head">
-                    <label for="fe-pagecount">Page Count</label>
-                    <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="PageCount"> Apply to: All</label>
-                  </div>
+                <div>
+                  <label for="fe-pagecount">Page Count</label>
                   <input type="text" id="fe-pagecount" name="PageCount">
                 </div>
               </div>
-              <div class="editor-field">
-                <div class="editor-field-head">
-                  <label for="fe-writer">Writer</label>
-                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Writer"> Apply to: All</label>
-                </div>
+              <div class="fe-apply-cell fe-apply-cell--dual">
+                <input type="checkbox" class="fe-apply-all" data-field="Count" title="Apply Count to all">
+                <input type="checkbox" class="fe-apply-all" data-field="PageCount" title="Apply Page Count to all">
+              </div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-writer">Writer</label>
                 <input type="text" id="fe-writer" name="Writer">
               </div>
-              <div class="editor-field">
-                <div class="editor-field-head">
-                  <label for="fe-penciller">Penciller</label>
-                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Penciller"> Apply to: All</label>
-                </div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Writer" title="Apply to all"></div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-penciller">Penciller</label>
                 <input type="text" id="fe-penciller" name="Penciller">
               </div>
-              <div class="editor-field">
-                <div class="editor-field-head">
-                  <label for="fe-publisher">Publisher</label>
-                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Publisher"> Apply to: All</label>
-                </div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Penciller" title="Apply to all"></div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-publisher">Publisher</label>
                 <input type="text" id="fe-publisher" name="Publisher">
               </div>
-              <div class="editor-field">
-                <div class="editor-field-head">
-                  <label for="fe-storyarc">Story Arc</label>
-                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="StoryArc"> Apply to: All</label>
-                </div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Publisher" title="Apply to all"></div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-storyarc">Story Arc</label>
                 <input type="text" id="fe-storyarc" name="StoryArc">
               </div>
-              <div class="editor-field">
-                <div class="editor-field-head">
-                  <label for="fe-language">Language</label>
-                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Language"> Apply to: All</label>
-                </div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="StoryArc" title="Apply to all"></div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-language">Language</label>
                 <input type="text" id="fe-language" name="Language" list="fe-language-options">
                 <datalist id="fe-language-options">
                   <option value="English">
@@ -201,48 +204,93 @@
                   <option value="Dutch">
                 </datalist>
               </div>
-              <div class="editor-field">
-                <div class="editor-field-head">
-                  <label for="fe-notes">Notes</label>
-                  <label class="fe-apply-all-label"><input type="checkbox" class="fe-apply-all" data-field="Notes"> Apply to: All</label>
-                </div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Language" title="Apply to all"></div>
+            </div>
+            <div class="fe-field-row">
+              <div class="fe-field">
+                <label for="fe-notes">Notes</label>
                 <input type="text" id="fe-notes" name="Notes">
               </div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Notes" title="Apply to all"></div>
             </div>
+          </div>
 
-            <div class="editor-error" id="feError" hidden></div>
+          <div class="editor-error" id="feError" hidden></div>
+        </form>
 
-            <div class="fe-form-actions">
-              <button type="button" class="btn-admin-action" id="feQueueBtn">Queue</button>
-              <button type="button" class="btn-admin-action" id="feClearQueueBtn">Clear</button>
-              <button type="button" class="btn-primary" id="feProcessQueueBtn" disabled>Process Queue</button>
-              <button type="button" class="btn-primary" id="feProcessAllBtn" disabled>Process All</button>
-            </div>
-          </form>
+        <div class="fe-panel-foot">
+          <button type="button" class="btn-admin-action" id="feQueueBtn">＋ Queue</button>
+          <button type="button" class="btn-admin-action btn-admin-action--ghost" id="feClearFormBtn">Clear</button>
         </div>
-      </div>
+      </section>
 
-      <!-- ── Column 3 — Image Viewer ──────────────────────────────────────── -->
-      <div class="fe-col fe-col-3">
-        <div class="admin-card fe-viewer-card">
-          <div class="admin-card-label">Image Viewer</div>
-          <div class="fe-viewer-frame">
-            <img id="feViewerImg" class="fe-viewer-img" alt="">
-            <div class="fe-viewer-empty" id="feViewerEmpty">No file selected</div>
-          </div>
-          <div class="fe-viewer-controls">
-            <button type="button" class="btn-admin-action" id="fePrevBtn" disabled>◀ Prev</button>
-            <span class="fe-page-info" id="fePageInfo">—</span>
-            <button type="button" class="btn-admin-action" id="feNextBtn" disabled>Next ▶</button>
-          </div>
-          <div class="fe-viewer-controls">
-            <button type="button" class="btn-admin-action" id="feZoomOutBtn" disabled>🔍-</button>
-            <button type="button" class="btn-admin-action" id="feZoomInBtn" disabled>🔍+</button>
-          </div>
+      <!-- ── Column 3 — Comic Viewer ─────────────────────────────────────── -->
+      <section class="fe-panel fe-col-3">
+        <div class="fe-panel-head">
+          <span class="fe-panel-num">3</span>
+          <span class="fe-panel-title">Comic Viewer</span>
         </div>
-      </div>
+        <div class="fe-viewer-toolbar">
+          <button type="button" class="fe-vbtn" id="feZoomInBtn" title="Zoom in" disabled>🔍+</button>
+          <button type="button" class="fe-vbtn" id="feZoomOutBtn" title="Zoom out" disabled>🔍−</button>
+          <button type="button" class="fe-vbtn fe-vbtn--wide" id="feFitBtn" title="Fit to view" disabled>Fit</button>
+          <div class="fe-vbtn-spacer"></div>
+          <button type="button" class="fe-vbtn" id="fePrevBtn" title="Previous page" disabled>‹</button>
+          <span class="fe-page-info" id="fePageInfo">—</span>
+          <button type="button" class="fe-vbtn" id="feNextBtn" title="Next page" disabled>›</button>
+          <button type="button" class="fe-vbtn" id="feFullscreenBtn" title="Fullscreen" disabled>⛶</button>
+        </div>
+        <div class="fe-viewer-frame" id="feViewerFrame">
+          <img id="feViewerImg" class="fe-viewer-img" alt="" hidden>
+          <div class="fe-viewer-empty" id="feViewerEmpty">No file selected</div>
+        </div>
+        <div class="fe-thumb-row">
+          <button type="button" class="fe-vbtn fe-vbtn--tall" id="feThumbPrev" title="Previous page" disabled>‹</button>
+          <div class="fe-thumb-strip" id="feThumbStrip"></div>
+          <button type="button" class="fe-vbtn fe-vbtn--tall" id="feThumbNext" title="Next page" disabled>›</button>
+        </div>
+      </section>
+
+      <!-- ── Column 4 — Edited Files Queue ───────────────────────────────── -->
+      <section class="fe-panel fe-col-4">
+        <div class="fe-panel-head">
+          <span class="fe-panel-num">4</span>
+          <span class="fe-panel-title">Edited Files Queue</span>
+        </div>
+        <div class="fe-panel-toolbar">
+          <button type="button" class="btn-admin-action btn-admin-action--ghost" id="feClearQueueBtn">🗑 Clear Queue</button>
+        </div>
+        <div class="fe-queue-meta">
+          <span class="fe-count" id="feQueueCount">0 files in queue</span>
+          <span class="fe-mismatch-inline" id="feMismatchIndicator" hidden>⚠ counts differ</span>
+        </div>
+        <div class="fe-queue-list" id="feQueueList"></div>
+        <div class="fe-panel-foot fe-panel-foot--col">
+          <div class="fe-queue-actions-label">Queue Actions</div>
+          <div class="fe-queue-actions">
+            <button type="button" class="btn-primary" id="feProcessQueueBtn" disabled>Process Queue</button>
+            <button type="button" class="btn-primary" id="feProcessAllBtn" disabled>Process All</button>
+          </div>
+          <div class="fe-status-indicator" id="feStatusIndicator">Files will be updated with edited ComicInfo.xml.</div>
+        </div>
+      </section>
 
     </div>
+
+    <!-- ── Status bar ──────────────────────────────────────────────────────── -->
+    <footer class="fe-statusbar">
+      <span class="fe-sb-muted">Selected:</span>
+      <span class="fe-sb-strong" id="feStatusSelected">—</span>
+      <span class="fe-sb-sep"></span>
+      <span class="fe-sb-muted">XML Status:</span>
+      <span class="fe-sb-strong" id="feStatusXml">—</span>
+      <span class="fe-sb-sep"></span>
+      <span class="fe-sb-muted">Low Confidence</span>
+      <span class="fe-sb-strong" id="feStatusLowConf">0</span>
+      <div class="fe-sb-spacer"></div>
+      <span class="fe-sb-muted">Queued</span>
+      <span class="fe-sb-strong" id="feStatusQueued">0</span>
+    </footer>
   </main>
 
   <!-- ── File picker modal (ported from file_mgmnt.html, Section 5.1) ──────── -->

@@ -2356,3 +2356,67 @@ every launch — a registry write should be a visible, deliberate action.
   open, clicked a different issue's cover, existing window came to front
   and navigated there rather than spawning a second process); confirmed
   Browse/Series grid cover clicks are unaffected. All passed.
+
+## Session — 2026-07-14 — Full Editor 4-column redesign (v2.6 Item 7)
+
+- **Inbox `[change]`:** the Full Editor was redesigned in Claude Design
+  (`D:\workshop\Claude Design\full editor`, `4-Column Full Editor.dc.html`
+  + old/new screenshots in `images/`). Took `/editor` from its 3-column
+  layout to a **4-column workspace + footer status bar**, same
+  Design→Code pattern as Item 1.
+- **Approach:** reproduced the export's *visual design* only, using the
+  app's existing CSS token system (already a near-exact match to the
+  design-system tokens) + vanilla JS. **No `x-dc` prototype runtime
+  ported; every `/api/editor/full/*` endpoint reused** — a layout +
+  interaction reskin, not a backend change.
+- **Why a rebuild:** first built by a cloud Ultraplan session, but its
+  container had no git remote and a GitHub-blocking egress policy, so it
+  could never push; the patches never reached the PC and their URLs are
+  auth-gated (`temp/build-not-deployed.md`). Tez chose to rebuild locally
+  on the current `main` rather than chase the stranded artifacts
+  (`DECISIONS.md`).
+- **Scope decisions locked with Tez:** Column 1 = render the loaded
+  working set as a folder→series→issue tree (keep the existing modal
+  intake), not a live library browser; viewer gains Fit + Fullscreen +
+  lazy thumbnail strip but **no Rotate**; one-pass build. All three in
+  `DECISIONS.md`.
+- **Built (4 files):** `frontend/editor_full.html` (4-col grid + footer,
+  Search moved to header, all 4 modals + scripts preserved, all 16
+  apply-to-all `data-field`s intact); `frontend/js/editor_full.js`
+  (`renderFileTree`/`buildFileTree`/`naturalCompare`, genre chips, queue
+  cards, viewer `fitViewer`/`toggleFullscreen` + lazy `renderThumbStrip`,
+  `updateStatusBar`); `frontend/css/style.css` (4-col layout + footer,
+  `--control-md`, tree/chips/apply-column/viewer/thumb/queue/status-bar
+  styles); `backend/routers/editor_full.py` (additive `?w=` thumbnail
+  downscale on the page endpoint). `EDITOR_SPEC.md` §5.4 added (supersedes
+  §5.2 layout).
+- **Data-path parity confirmed:** all 16 `Apply to All` `data-field`s
+  present and unique → Process All unchanged; genre chips read/write the
+  same comma-joined `Genre` value the checkbox grid did; every JS
+  `getElementById` cross-checks to an HTML id; Python parses.
+- **Verified live** (Claude-in-Chrome against Tez's running tray server,
+  read-only): loaded *Before the Incal* + *Benjamin* from
+  `L:\Comic Archives\B\Series` — tree grouped folder→series→issue with
+  count/XML badges + correct stats (9/9/0) + natural sort; issue-click
+  loaded editor + viewer; genre chips seeded from XML and add/remove
+  (removed genre returns to the dropdown); footer read the selected file +
+  "Valid ✓"; viewer showed the real cover (page 1/51) with a working lazy
+  thumbnail strip; queue card + "counts differ" + Queued=1. Console clean;
+  no archive files written; working set + queue cleared afterward.
+- **Post-build tweaks (Tez, cosmetic):** density pass so the Main tab fits
+  without scrolling (input height 34→30px, tighter row/label gaps, form
+  padding, textarea min-height); then three fixes — genre rendered as a
+  single bordered control (removed the inner double-border via
+  `select.fe-genre-add` specificity), Summary's apply checkbox centred on
+  the textarea, and `Increment #`'s label moved in front of its checkbox
+  with the checkbox aligned in the apply column.
+- **Manual test:** Tez ran a single file end-to-end through to adding it to
+  the library (core write path). Series/multi-file path + the tightened
+  layout left as Tez's own follow-up hand-test.
+- **Deploy gotcha noted in specs:** static assets have no `cache-control`,
+  so `/editor` needs Ctrl+F5 after a deploy to pick up new HTML/CSS/JS (hit
+  this repeatedly during verification — a normal refresh served the stale
+  old editor). The `?w=` param needs a tray-server restart; the strip works
+  without it (full-size images, heavier). Flagged asset-versioning as a
+  possible small follow-up.
+- Committed on branch `full-editor-4col-redesign` and pushed to origin.
