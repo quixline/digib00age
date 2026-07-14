@@ -2276,3 +2276,83 @@ deleted immediately without being examined further; no further automated
 desktop-screenshot attempts were made. Visual/reflow confirmation was left
 to Tez's manual pass instead, which is where this repo's verification
 standard (`CLAUDE.md` §6) puts it anyway.
+
+## Session — 2026-07-14 (same day, follow-up) — Open Issue Detail cover in the Windows desktop reader (v2.6 Item 6)
+
+From `INBOX.md`: "open reader from web library — open the selected
+issue/id from the web library in the desktop reader" — the natural next
+step right after Item 5 made the Windows reader actually work. Closes out
+`ROADMAP.md`'s long-parked "Reader-launch feature" entry.
+
+Researched via an Explore agent reading the `app_links-6.4.1` package
+source directly (not just its docs) before planning anything: the Flutter
+app's own `comicvault://read/{id}` deep-link parsing (`main.dart`) already
+worked correctly and always had — the "Read" button removed 2026-07-09
+(`DECISIONS.md`) failed because nothing on Windows had ever registered a
+handler for the scheme, not because the Dart-side handling was broken. Two
+real gaps: (1) no Windows Registry entry for the protocol — `app_links`
+ships the cold-start argv-parsing and a `WM_COPYDATA` live-forwarding
+listener, but registry registration itself only exists in the package's
+`example/` folder, not its public API; (2) no single-instance
+forwarding — a second `comicvault://` click while the reader was already
+open would spawn a second exe process, since nothing detected the existing
+window or forwarded the link into it.
+
+Two decisions confirmed with Tez before building (`AskUserQuestion`):
+scope is the Issue Detail page's cover only (Browse/Series grid cards keep
+their normal navigation); protocol registration is an explicit "Register
+as this PC's comic reader" button in Settings, not silent/automatic on
+every launch — a registry write should be a visible, deliberate action.
+
+**Built:**
+- Added `win32`/`ffi` to `flutter_app/pubspec.yaml`.
+- New `flutter_app/lib/services/protocol_handler_service.dart` —
+  register/unregister/read-back against
+  `HKEY_CURRENT_USER\Software\Classes\comicvault`, adapted from
+  `app_links`'s own example (`windows_protocol.dart`), using
+  `Platform.resolvedExecutable` to self-discover the exe path rather than
+  relying on Admin's inert "Reader Location" field (`ADMIN_SPEC.md` §7.6).
+  Fixed a couple of API mismatches while adapting the example's pattern
+  (`WIN32_ERROR.ERROR_SUCCESS` isn't a real symbol in this win32 package
+  version — it's a plain top-level `ERROR_SUCCESS` int constant; `nullptr`
+  needed an explicit `dart:ffi` import alongside `package:ffi/ffi.dart`) —
+  caught immediately by `flutter analyze`, not left for runtime.
+- New "Windows Reader" section in `flutter_app/lib/screens/
+  settings_screen.dart` (Windows-only), register/unregister toggle.
+- `flutter_app/windows/runner/main.cpp`: added `SendAppLinkToInstance()`
+  (adapted from `app_links`'s example) — finds an existing
+  `"digib00age"`-titled window before creating a new one, forwards the
+  link via `SendAppLink()` (already linked via
+  `generated_plugin_registrant.cc`, just needed the header include),
+  restores/foregrounds it, exits without a second window. Fixed a real bug
+  found in the reference example while adapting it — its
+  `SetWindowPos(0, HWND_TOP, ...)` call passed a null window handle
+  instead of `hwnd`.
+- `frontend/js/app.js`'s `buildIssueDetail()`: wrapped `.issue-cover-img`
+  in `<a href="comicvault://read/{id}">`; `frontend/css/style.css` added
+  `.issue-cover-link { display: block; }` so the wrap doesn't disturb
+  layout — no changes needed to the existing `:hover` effect, which
+  targets the `<img>` itself.
+
+**Verified:**
+- Registry read/write logic confirmed correct via a standalone `dart run`
+  script run from inside `flutter_app/` (temporary, deleted after) —
+  `register()` → `isRegistered()` true → `unregister()` → `isRegistered()`
+  false, confirmed against the real Windows registry
+  (`reg query HKEY_CURRENT_USER\Software\Classes\comicvault` empty
+  afterward — left unregistered, since that test run's own
+  `Platform.resolvedExecutable` was `dart.exe`, not the real app).
+- Cover-link markup confirmed live via Claude-in-Chrome's DOM inspection
+  (`href="comicvault://read/1"` on Issue #1's page) and a hover screenshot
+  confirming the existing zoom/white-border effect still fires through the
+  new `<a>` wrap — deliberately did **not** click the link myself, since
+  doing so triggers a real browser "Open ComicVault?" dialog and launches
+  a native app, which is Tez's action to take, not something to automate.
+- `flutter analyze` clean throughout; native rebuild/launch cycles clean,
+  no exceptions.
+- Tez completed the full manual loop: registered via Settings; cold-start
+  (reader fully closed, clicked a cover, accepted the browser prompt,
+  landed straight in that issue's reader); warm-start (reader already
+  open, clicked a different issue's cover, existing window came to front
+  and navigated there rather than spawning a second process); confirmed
+  Browse/Series grid cover clicks are unaffected. All passed.

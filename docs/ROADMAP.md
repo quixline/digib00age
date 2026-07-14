@@ -114,14 +114,13 @@ see `ADMIN_SPEC.md` §11.4.5). Neither blocks anything before v2.6 starts.
 
 ## Paused indefinitely
 
-- **Reader-launch feature** (`ADMIN_SPEC.md` §7.6 — Reader Location field in
-  Advanced Settings + `/issue/{id}` "Read" button wiring). Scoping revealed this
-  requires Flutter app changes — the Windows reader EXE doesn't currently accept a
-  launch-into-file argument, so the "Read" button can't directly open a specific
-  issue in the reader without Flutter work. Also has a same-machine-only limitation
-  (browser and server on different machines on the LAN won't work as expected). Parked
-  pending further thought on practical usage vs. building out all the edge cases —
-  may be dropped rather than built.
+(none currently — the one long-standing entry here, "Reader-launch
+feature," was built 2026-07-14 as v2.6 Item 6 "Open Issue Detail cover in
+the Windows desktop reader," once the Windows reader itself existed to
+launch into. See `docs/v2.6/comicvault-changes-v2.6.md` Item 6 and
+`docs/DECISIONS.md`. The same-machine-only limitation flagged when this was
+parked is real and unavoidable for a custom URI-scheme handler — documented
+there, not solved away.)
 
 ---
 

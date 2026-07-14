@@ -2069,3 +2069,35 @@ the no-password dialog, applied alongside `.editor-modal`) so the Basic/Full
 Editor modals are completely unaffected.
 **Where:** `frontend/css/style.css` (`.login-modal`), `frontend/login_popup.html`
 (`#loginCancelBtn`), `frontend/js/auth.js` (`hideLoginPopup()`), `ADMIN_SPEC.md` §7.1.2.
+
+### Issue Detail cover restored as a comicvault:// link, protocol registration is manual not automatic
+**Decided:** 2026-07-14, v2.6 Item 6 build session.
+**Why:** The "Read" button removed 2026-07-09 (see the earlier "'Read'
+button removed from Issue detail" entry) was removed because clicking it
+did nothing — no Windows registry entry existed for the `comicvault://`
+scheme, so the browser had no handler to hand the link to. That's now
+fixed (the Windows Flutter reader, built as v2.6 Item 5, can register
+itself), so the same underlying trigger is worth restoring — but as the
+cover image itself rather than a separate button, since the cover is the
+natural click target and a dedicated "Read" button reads as redundant next
+to it.
+
+Two things Tez confirmed explicitly before building, both real judgment
+calls rather than obvious defaults: (1) scope is the Issue Detail page's
+cover only — Browse/Series grid cards keep navigating to their detail
+pages, not straight into the reader, since jumping past the detail page
+from a grid would be a bigger behaviour change than just wiring up a page
+that already had no other purpose for its cover click; (2) protocol
+registration (a Windows registry write) happens via an explicit "Register
+as this PC's comic reader" button in Settings, not automatically on every
+app launch — modifying the registry, even a per-user key needing no admin
+rights, should be a visible, deliberate action rather than something the
+app does silently in the background.
+
+The same-machine-only limitation flagged when this feature was originally
+scoped and parked (`ROADMAP.md`) is real and inherent to a custom URI
+scheme — not something this build could solve, only document.
+**Where:** `frontend/js/app.js` (`buildIssueDetail()`), `frontend/css/style.css`
+(`.issue-cover-link`), `flutter_app/lib/services/protocol_handler_service.dart`,
+`flutter_app/lib/screens/settings_screen.dart`, `flutter_app/windows/runner/main.cpp`,
+`SPEC.md` §11/§19, `ADMIN_SPEC.md` §7.6, `ROADMAP.md`.

@@ -13,6 +13,12 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-14** — Open Issue Detail cover in the Windows desktop reader
+  (v2.6 Item 6): clicking a comic's cover on `/issue/{id}` now launches the
+  Windows reader (registered via Settings) directly into that issue,
+  cold-start and warm-start both handled. Closes the long-parked
+  `ROADMAP.md` "Reader-launch feature". See `v2.6/progress.md` "Open Issue
+  Detail cover in the Windows desktop reader (v2.6 Item 6)".
 - **2026-07-14** — Fixed filter dropdowns (Genre/Format/Decade/Year)
   rendering behind cover cards — a stacking-context regression from the
   2026-07-13 random cover background change. See `v2.6/progress.md` "Filter

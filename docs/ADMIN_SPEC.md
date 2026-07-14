@@ -495,8 +495,12 @@ mechanism and local-only gate as §7.4.
 ### 7.6 Reader Location *(built — V1)*
 
 Text field pre-populated from `config.json`. Browse/Change button to update. Saves to
-`config.json`. Has no functional effect in V1 (present for a future configurable
-reader). Deferred — see `ROADMAP.md` (reader-launch entry).
+`config.json`. Has no functional effect — the field this note originally deferred
+to (`ROADMAP.md`'s reader-launch entry) was built 2026-07-14 (v2.6 Item 6) via a
+different mechanism: the Windows Flutter reader self-discovers its own exe path
+(`Platform.resolvedExecutable`) when registering itself as the `comicvault://`
+protocol handler, rather than reading this server-side config field. This field
+remains present but still has no functional effect and isn't read by anything.
 
 ---
 

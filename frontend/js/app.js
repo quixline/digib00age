@@ -2097,11 +2097,20 @@ function buildIssueDetail(data) {
   // Left: cover + actions
   const coverCol = el('div', 'issue-cover-col');
 
+  // Cover links to the Windows desktop reader via its registered
+  // comicvault:// protocol handler (Settings > Windows Reader in the
+  // Flutter app) — same-machine-only by nature of a custom URI scheme; if
+  // nothing has registered the handler on this PC, the browser's own
+  // "can't open this link" affordance is all that happens, no error we
+  // could catch or report on from here.
+  const coverLink = el('a', 'issue-cover-link');
+  coverLink.href = `comicvault://read/${data.id}`;
   const img = el('img', 'issue-cover-img');
   img.src     = data.cover_path || '';
   img.alt     = data.series;
   img.onerror = () => { img.style.display = 'none'; };
-  coverCol.appendChild(img);
+  coverLink.appendChild(img);
+  coverCol.appendChild(coverLink);
 
   const actions = el('div', 'issue-actions');
   actions.appendChild(buildStatusToggle(data));

@@ -18,6 +18,8 @@ dependencies:
   cached_network_image: ^3.3.0
   path: ^1.8.0
   google_fonts: ^6.2.1
+  win32: ^5.1.0
+  ffi: ^2.1.0
 
 dev_dependencies:
   flutter_test:

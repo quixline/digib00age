@@ -1504,6 +1504,7 @@ select.filter-select:focus,
   align-items: start;
 }
 .issue-cover-col { display: flex; flex-direction: column; gap: 14px; }
+.issue-cover-link { display: block; }
 .issue-cover-img {
   width: 100%;
   aspect-ratio: 2 / 3;

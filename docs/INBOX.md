@@ -39,8 +39,6 @@ Example:
 
 ---
 
-[feature] open reader from web library
-
 [change] build release apk for a permanent install
 
 
@@ -50,6 +48,8 @@ Example:
 ## Processed
 
 14-7-2026
+
+- ~~[feature] open reader from web library~~ → built as v2.6 Item 6 "Open Issue Detail cover in the Windows desktop reader" — see `comicvault-changes-v2.6.md`/`progress.md`
 
 - ~~[bug] since bg change dd menus are displayed behind the cards ~~
 

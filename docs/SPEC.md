@@ -438,10 +438,12 @@ These ComicInfo.xml fields are intentionally not stored:
 **Note:** The web UI covers browsing and issue detail. The reader is the Flutter app (Phase 5).
 `reader.html` is NOT built. `issue.html` originally had a "Read" button deep-linking
 into the Flutter app via `comicvault://read/{id}`; **removed 2026-07-09** (v2.6
-UI tweak pass — see `DECISIONS.md`) since the custom URL scheme has no handler on a
+UI tweak pass — see `DECISIONS.md`) since the custom URL scheme had no handler on a
 plain desktop browser, so the button did nothing useful outside the Flutter app
-itself. There is now no reader trigger anywhere in the web UI — ties into `BUGS.md`
-BUG-021.
+itself. **Restored 2026-07-14 in a different form (v2.6 Item 6)** — the actual
+gap (no Windows registration for the scheme) is now closed, so the Issue
+Detail cover image itself links to `comicvault://read/{id}`; see §19 "Deep
+link integration with web UI" for the full mechanism.
 
 ### Library home (`/`)
 - Top strip: "Continue reading" — issues with status="reading"
@@ -467,7 +469,9 @@ BUG-021.
 - Characters list, teams, story arc
 - Age rating
 - ~~**"Read" button** → deep-links to Flutter app via custom URL scheme: `comicvault://read/{id}`~~
-  **Removed 2026-07-09** — see §11's note above and `DECISIONS.md`.
+  **Removed 2026-07-09.** **Restored 2026-07-14 as the cover image itself**
+  (not a separate button) — see §11's note above, §19 "Deep link
+  integration with web UI", and `DECISIONS.md`.
 - Mark read / unread toggle
 
 #### Admin page (/admin)
@@ -776,16 +780,33 @@ User can also switch manually in Settings.
 - Recently opened local files listed on Library screen when in local mode
 
 ### Deep link integration with web UI
-**Web-UI side removed 2026-07-09** — `issue.html`'s "Read" button (the only web
-trigger for this) was removed since the scheme has no handler on a plain desktop
-browser (see `DECISIONS.md`, `BUGS.md` BUG-021). The scheme itself is unaffected —
-this section documents the Flutter app's own registration, which nothing in this
-build session touched:
+**Web-UI trigger restored 2026-07-14 (v2.6 Item 6), Windows only.** The
+"Read" button removed 2026-07-09 (`DECISIONS.md`, `BUGS.md` BUG-021 at the
+time, since closed) is back in a different form — `issue.html`'s cover image itself is
+now a link to `comicvault://read/{issue_id}` — because the actual gap
+(nothing on Windows had ever registered a handler for the scheme) is now
+closed, not because the Flutter app's own parsing of the scheme ever
+needed fixing:
 ```
 comicvault://read/{issue_id}
 ```
-The Flutter app registers this custom URL scheme on both Android and Windows.
-If the app is not running, the link launches it and opens directly to the correct issue.
+The Flutter app registers this custom URL scheme on both Android and
+Windows, and always correctly handles it once registered/received.
+Android's registration is via `AndroidManifest.xml`'s intent-filter,
+present since V1. **Windows registration is now a deliberate, explicit
+step** — not automatic — via a "Register as this PC's comic reader" button
+in the Flutter app's Settings screen
+(`flutter_app/lib/services/protocol_handler_service.dart`, writing
+`HKEY_CURRENT_USER\Software\Classes\comicvault`). If the reader isn't
+already running, clicking the cover launches it straight into that issue
+(cold start). If it's already running, the existing window is brought to
+the front and navigated there instead of a second process spawning
+(`flutter_app/windows/runner/main.cpp`'s `SendAppLinkToInstance()`).
+
+**Inherent limitation, not solved:** a custom URI scheme only works when
+the browser and the registered reader are on the same Windows PC — this
+was the same same-machine-only caveat flagged when the feature was first
+scoped and parked (`ROADMAP.md`).
 
 ### Progress sync
 - Server mode: all progress written back to ComicVault DB via REST API in real time
