@@ -2197,3 +2197,82 @@ Claude-in-Chrome — reproduced the exact bug screenshot's page (Browse →
 All, "101 Other Uses For A Condom" visible), opened the Genre dropdown,
 confirmed it now renders over the cover grid correctly.
 
+## Session — 2026-07-14 — Windows Desktop Reader built (v2.6 Item 5)
+
+From `INBOX.md`: "rebuild desktop reader with new design" (`BUGS.md`
+BUG-021, now closed — moved to `archive/bugs-fixed-archive.md`). Tez's
+framing going in was that the V1 Windows reader had been "dropped" and
+needed recreating from scratch; research (two parallel Explore agents, one
+each on `D:\workshop\cBook_Server\flutter_app` and the current
+`comicvault_v2\flutter_app`) found a narrower story — `flutter_app/` already
+shares one Dart codebase across Android and Windows (the `windows/` platform
+folder has been present since the V1 initial commit), it just had never
+been rebuilt, tested, or polished for desktop since then; all live
+development including Item 4's rail redesign was Android-tablet-only.
+Confirmed with Tez to extend the existing shared codebase rather than port
+from the old V1 app — same rail nav/reader/browse/home/series/issue screens
+as mobile, by construction, not a second implementation to keep in sync.
+
+Also confirmed separately: third-party/OPDS reader integration (the
+"external readers" Tez recalled being explored and dropped) was a distinct,
+already-closed decision (`DECISIONS.md`, 2026-07-04) — unrelated to this
+task, not competing with it.
+
+**Scope decisions confirmed with Tez before building** (see plan file):
+server-mode only on Windows (no Windows-native local-file picker — desktop
+is expected to be on the same LAN as the server); `comicvault://` URI-scheme
+registry registration deferred entirely to a future web
+`/issue/{id}` → "open in reader" integration task; verification via
+`flutter run -d windows` only, no installer/`flutter build windows` release.
+
+**Built:**
+- `local_cbz_service.dart`: `pickFile()`/`resolveSharedUri()` no-op on
+  non-Android platforms instead of invoking the Android-only
+  `MethodChannel('comicvault/local_file_picker')`, which has no Windows-side
+  implementation and would otherwise throw.
+- `offline_library_view.dart`: hid the "Open local CBZ file" button and
+  "Recent files" list on Windows (gated on `Platform.isAndroid`) — the
+  server-unreachable retry banner and the "Downloaded" section (reads via
+  `DownloadService`, not the picker) are unaffected.
+- `comic_page_view.dart`: `nextPage()`/`prevPage()` in both
+  `ComicPageViewState` and `LocalComicPageViewState` were no-ops in Scroll
+  mode (the `PageController` they drove was never attached to the
+  `ListView` in that mode) — fixed to animate the scroll position by one
+  viewport instead, needed so keyboard paging (below) means something in
+  Scroll mode too. `LocalComicPageViewState` had no `ScrollController` at
+  all before this; added one, matching `ComicPageViewState`'s existing one.
+- `toolbar_overlay.dart` / `reader_screen.dart`: added keyboard support —
+  Left/Up = prev, Right/Down = next, Escape = back — via a `Focus` wrapping
+  the existing tap-zone `Stack`. Purely additive: existing tap/mouse
+  behaviour untouched.
+- `windows/runner/main.cpp` (window title) and `Runner.rc`
+  (`FileDescription`/`ProductName`): rebranded from the stock "comicvault"
+  to "digib00age", matching the brand used elsewhere. Confirmed live via
+  `Get-Process | Select MainWindowTitle` → "digib00age". The Windows
+  launcher icon was already current (`app_icon.ico` regenerated 17:07,
+  after the 17:05 logo update — see the App icon session above) — no change
+  needed.
+- Confirmed the Android-only immersive-mode `SystemChrome` call in
+  `reader_screen.dart` is a harmless no-op on Windows (two clean
+  rebuild/launch cycles, no exceptions).
+- Reviewed `CoverCard`, `BrowseScreen`'s grid delegate
+  (`SliverGridDelegateWithMaxCrossAxisExtent`, width-adaptive column count),
+  and `ShellScreen`'s `Row`/`Expanded` rail+content layout for desktop
+  reflow — all adaptive by construction, no fixed-width assumptions found.
+
+**Verified:** `flutter analyze` clean throughout. Baseline `flutter run -d
+windows` on the unmodified app confirmed a clean launch with no startup
+exceptions; two further rebuild/launch cycles after the code changes and
+after the native (`main.cpp`/`Runner.rc`) changes were equally clean.
+Tez manually ran `flutter run -d windows` and confirmed navigation (rail →
+Home/Browse/Series/custom libraries) and reading (both Scroll and Page
+mode) work.
+
+**Note on process:** an early attempt to screenshot the running desktop
+window via a hand-rolled PowerShell/Win32 script went wrong twice — once
+capturing an unrelated window on Tez's screen (a stale window handle/rect),
+once failing on a `GetWindowTextW` marshaling bug. Both screenshots were
+deleted immediately without being examined further; no further automated
+desktop-screenshot attempts were made. Visual/reflow confirmation was left
+to Tez's manual pass instead, which is where this repo's verification
+standard (`CLAUDE.md` §6) puts it anyway.

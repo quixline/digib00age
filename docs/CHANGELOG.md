@@ -17,6 +17,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
   rendering behind cover cards — a stacking-context regression from the
   2026-07-13 random cover background change. See `v2.6/progress.md` "Filter
   dropdowns rendering behind cover cards (bug fix)".
+- **2026-07-14** — Windows Desktop Reader (v2.6 Item 5): the existing shared
+  Flutter app now works properly as a Windows desktop reader — Android-only
+  code paths guarded, keyboard paging added, native window rebranded to
+  digib00age. Closes BUG-021. See `v2.6/progress.md` "Windows Desktop Reader
+  built (v2.6 Item 5)".
 - **2026-07-13** — Mobile app icon (Android + Windows) now uses `favicon.png`
   (the digib00age "oo" mark), same asset as the tray icon and web favicon.
   Cosmetic. See `v2.6/progress.md` "App icon: favicon.png (digib00age

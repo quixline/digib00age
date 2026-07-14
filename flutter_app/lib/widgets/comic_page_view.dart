@@ -55,7 +55,14 @@ class ComicPageViewState extends State<ComicPageView> {
 
   // ── Public API (called via GlobalKey from ReaderScreen) ───────────────────
 
+  // In scroll mode _pageController isn't attached to anything (the ListView
+  // uses _scrollController instead) — these double as the keyboard/desktop
+  // "page" gesture for continuous-scroll mode, animating by one viewport.
   void nextPage() {
+    if (widget.mode == ReadingMode.scroll) {
+      _scrollByViewport(1);
+      return;
+    }
     _pageController.nextPage(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
@@ -63,7 +70,23 @@ class ComicPageViewState extends State<ComicPageView> {
   }
 
   void prevPage() {
+    if (widget.mode == ReadingMode.scroll) {
+      _scrollByViewport(-1);
+      return;
+    }
     _pageController.previousPage(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _scrollByViewport(int direction) {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final target = (position.pixels + direction * position.viewportDimension * 0.9)
+        .clamp(position.minScrollExtent, position.maxScrollExtent);
+    _scrollController.animateTo(
+      target,
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
     );
@@ -195,6 +218,7 @@ class LocalComicPageView extends StatefulWidget {
 
 class LocalComicPageViewState extends State<LocalComicPageView> {
   late PageController _pageController;
+  late ScrollController _scrollController;
   late TransformationController _transformController;
 
   bool _zoomedToWidth = false;
@@ -204,19 +228,26 @@ class LocalComicPageViewState extends State<LocalComicPageView> {
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: widget.initialPage);
+    _scrollController = ScrollController();
     _transformController = TransformationController();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
+    _scrollController.dispose();
     _transformController.dispose();
     super.dispose();
   }
 
   // ── Public API ────────────────────────────────────────────────────────────
 
+  // See ComicPageViewState.nextPage()/prevPage() — same scroll-mode handling.
   void nextPage() {
+    if (widget.mode == ReadingMode.scroll) {
+      _scrollByViewport(1);
+      return;
+    }
     _pageController.nextPage(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
@@ -224,7 +255,23 @@ class LocalComicPageViewState extends State<LocalComicPageView> {
   }
 
   void prevPage() {
+    if (widget.mode == ReadingMode.scroll) {
+      _scrollByViewport(-1);
+      return;
+    }
     _pageController.previousPage(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  void _scrollByViewport(int direction) {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final target = (position.pixels + direction * position.viewportDimension * 0.9)
+        .clamp(position.minScrollExtent, position.maxScrollExtent);
+    _scrollController.animateTo(
+      target,
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
     );
@@ -282,6 +329,7 @@ class LocalComicPageViewState extends State<LocalComicPageView> {
 
     if (widget.mode == ReadingMode.scroll) {
       return ListView.builder(
+        controller: _scrollController,
         itemCount: widget.pageCount,
         itemBuilder: (context, i) {
           final index = widget.reversePages ? widget.pageCount - 1 - i : i;

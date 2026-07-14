@@ -1,6 +1,7 @@
 // Shown by ShellScreen in place of the rail UI when the server is
 // unreachable — rail navigation depends on live nav-config/library data that
 // isn't available offline. Extracted from the old LibraryScreen unchanged.
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/settings_service.dart';
 import '../services/local_cbz_service.dart';
@@ -24,6 +25,14 @@ class OfflineLibraryView extends StatelessWidget {
     required this.onRetry,
   });
 
+  // Local-file picking (pickFile()) only has a native implementation on
+  // Android — see LocalCbzService. Windows desktop is expected to be on the
+  // same LAN as the server, so the picker button and its "Recent files" list
+  // (which only ever gets entries via that picker) are hidden there rather
+  // than left as dead/crashing affordances; the "Downloaded" section below
+  // is unaffected since it reads paths from DownloadService, not the picker.
+  bool get _localFilePickingSupported => Platform.isAndroid;
+
   @override
   Widget build(BuildContext context) {
     final recentFiles = settings.recentLocalFiles;
@@ -46,14 +55,15 @@ class OfflineLibraryView extends StatelessWidget {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: ElevatedButton.icon(
-            onPressed: () => _openLocalFile(context),
-            icon: const Icon(Icons.folder_open),
-            label: const Text('Open local CBZ file'),
+        if (_localFilePickingSupported)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton.icon(
+              onPressed: () => _openLocalFile(context),
+              icon: const Icon(Icons.folder_open),
+              label: const Text('Open local CBZ file'),
+            ),
           ),
-        ),
         Expanded(
           child: ListView(
             children: [
@@ -91,7 +101,7 @@ class OfflineLibraryView extends StatelessWidget {
                   );
                 }),
               ],
-              if (recentFiles.isNotEmpty) ...[
+              if (_localFilePickingSupported && recentFiles.isNotEmpty) ...[
                 const Padding(
                   padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: Align(

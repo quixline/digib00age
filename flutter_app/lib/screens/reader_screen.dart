@@ -140,6 +140,7 @@ class _ReaderScreenState extends State<ReaderScreen> {
         onPrevPage: _onPrevPage,
         onNextPage: _onNextPage,
         onDoubleTapMiddle: _onDoubleTapMiddle,
+        onBack: () => Navigator.of(context).pop(),
         topBar: _TopBar(
           title: label,
           currentPage: _currentPage,
@@ -302,6 +303,7 @@ class _LocalReaderScreenState extends State<LocalReaderScreen> {
         onPrevPage: _onPrevPage,
         onNextPage: _onNextPage,
         onDoubleTapMiddle: _onDoubleTapMiddle,
+        onBack: () => Navigator.of(context).pop(),
         topBar: _TopBar(
           title: title,
           currentPage: _currentPage,

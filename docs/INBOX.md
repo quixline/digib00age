@@ -39,12 +39,21 @@ Example:
 
 ---
 
+[feature] open reader from web library
+
+[change] build release apk for a permanent install
 
 
 
 ---
 
 ## Processed
+
+14-7-2026
+
+- ~~[bug] since bg change dd menus are displayed behind the cards ~~
+
+- ~~[change] rebuild desktop reader with new design~~
 
 13-7-2026
 

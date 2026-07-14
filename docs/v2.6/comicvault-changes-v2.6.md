@@ -489,3 +489,63 @@ rationale on each:**
   dependency for a purely cosmetic difference.
 - Light theme not built this pass (dark-first, matching Item 1's own
   approach) — `AppColors` ships dark-only.
+
+---
+
+## Item 5 — Windows Desktop Reader
+
+**Feature.** From `INBOX.md`: "rebuild desktop reader with new design"
+(tracked as `BUGS.md` BUG-021, now closed — see
+`archive/bugs-fixed-archive.md`). Added retroactively to this build queue,
+not pre-scoped here before building.
+
+`flutter_app/` was already one shared Dart codebase targeting both Android
+and Windows (`windows/` platform folder present since the V1 initial
+commit), but the Windows target had never been rebuilt, tested, or polished
+— all live development, including Item 4's rail redesign, had been Android
+tablet-only. Rather than porting/rewriting from the old standalone V1
+Windows app (`D:\workshop\cBook_Server\flutter_app`), this extends the
+existing shared codebase for Windows — same rail nav, reader, and
+browse/home/series/issue screens as mobile, by construction.
+
+**In scope, built and manually verified 2026-07-14:**
+- Guarded the Android-only local-file-picker `MethodChannel`
+  (`local_cbz_service.dart`) to no-op on non-Android platforms; hid the
+  "Open local CBZ file" button + "Recent files" list in
+  `offline_library_view.dart` on Windows. Desktop is expected to be on the
+  same LAN as the server, so local-file reading was descoped there rather
+  than given a Windows-native picker — the "Downloaded" offline section is
+  unaffected (reads via `DownloadService`, not the picker).
+- Confirmed the Android-only immersive-mode `SystemChrome` call in
+  `reader_screen.dart` is a harmless no-op on Windows.
+- Added keyboard support to the reader: Left/Up = prev, Right/Down = next,
+  Escape = back (`toolbar_overlay.dart`, wired from `reader_screen.dart`).
+  Fixed `nextPage()`/`prevPage()` in `comic_page_view.dart` to actually
+  animate in Scroll mode too (previously a no-op there — the
+  `PageController` those methods drove was never attached to the
+  `ListView`); added a matching `ScrollController` to
+  `LocalComicPageViewState`, which had none at all before.
+- Rebranded the native Windows shell — `windows/runner/main.cpp` (window
+  title) and `Runner.rc` (`FileDescription`/`ProductName`) — from the stock
+  "comicvault" to "digib00age", matching the brand used elsewhere (favicon,
+  mobile home screen). The Windows launcher icon
+  (`flutter_launcher_icons`'s `windows:` block) was already current.
+- Reviewed `CoverCard`/`BrowseScreen`'s grid and `ShellScreen`'s rail+content
+  layout for desktop reflow — confirmed width-adaptive by construction
+  (`AspectRatio` + ellipsis text, `SliverGridDelegateWithMaxCrossAxisExtent`,
+  `Row`/`Expanded`), no fixed-width assumptions found.
+
+**Out of scope (explicitly deferred):**
+- The web `/issue/{id}` cover-image → "open in reader" integration — a
+  separate future task.
+- Registering the `comicvault://` URI scheme in the Windows registry —
+  deferred to that same future integration task.
+- Any installer/distributable packaging (`flutter build windows` release,
+  shortcuts, pystray tray-launcher integration) — separate from the
+  already-parked `ROADMAP.md` "cross-platform installer" item. Verified via
+  `flutter run -d windows` only, not a built release.
+
+**Verified:** `flutter analyze` clean; two clean rebuild/launch cycles with
+no startup or reader-entry exceptions. Tez manually confirmed navigation
+(rail → Home/Browse/Series/custom libraries) and reading (both modes) work
+via `flutter run -d windows`.

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'comic_page_view.dart';
 
 class ToolbarOverlay extends StatefulWidget {
@@ -10,6 +11,7 @@ class ToolbarOverlay extends StatefulWidget {
   final VoidCallback? onPrevPage;
   final VoidCallback? onNextPage;
   final VoidCallback? onDoubleTapMiddle;
+  final VoidCallback? onBack;
   final bool startVisible;
 
   const ToolbarOverlay({
@@ -21,6 +23,7 @@ class ToolbarOverlay extends StatefulWidget {
     this.onPrevPage,
     this.onNextPage,
     this.onDoubleTapMiddle,
+    this.onBack,
     this.startVisible = true,
   });
 
@@ -113,11 +116,35 @@ class _ToolbarOverlayState extends State<ToolbarOverlay>
     _flashArrows();
   }
 
+  // Desktop/keyboard parity for the touch-only tap zones below — mouse users
+  // get the existing tap zones, keyboard-only users get arrow keys + Escape.
+  KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.arrowLeft:
+      case LogicalKeyboardKey.arrowUp:
+        widget.onPrevPage?.call();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.arrowRight:
+      case LogicalKeyboardKey.arrowDown:
+        widget.onNextPage?.call();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.escape:
+        widget.onBack?.call();
+        return KeyEventResult.handled;
+      default:
+        return KeyEventResult.ignored;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isPage = widget.mode == ReadingMode.page;
 
-    return Stack(
+    return Focus(
+      autofocus: true,
+      onKeyEvent: _onKeyEvent,
+      child: Stack(
       children: [
         widget.child,
 
@@ -245,6 +272,7 @@ class _ToolbarOverlayState extends State<ToolbarOverlay>
           ),
         ),
       ],
+      ),
     );
   }
 }

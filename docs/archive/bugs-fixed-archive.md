@@ -940,3 +940,70 @@ scoped storage rejects a hand-built `file://` URI with `EACCES`, and
 MediaStore's raw path querying is itself locked down — was confirmed by
 Tez's own manual test: tapped a `.cbz` in the file manager, ComicVault
 appeared under Open With, selected it, opened correctly into the reader.
+
+---
+
+### BUG-021 — No working reader outside the Flutter app (web UI has none by design; V1's Windows reader was never carried into V2)
+
+**Found:** 2026-07-05, during v2.5 Item 3's (Mobile ↔ Server Reading-State
+Sync) manual verification pass — needed a second way to view/change a
+comic's reading progress to confirm the sync conflict rule's `server_kept`
+case didn't get visibly clobbered, and neither option worked.
+
+**Where:** Two separate causes, not one bug:
+- The web UI has no reader page at all — `SPEC.md` §11 already documents
+  this as by-design ("`reader.html` is NOT built — the Read button in
+  `issue.html` deep-links into the Flutter app"), not a regression. Still
+  true, still by-design — unaffected by this fix, and not what this bug was
+  actually tracking (see Impact below).
+- The standalone Windows reader EXE built during V1 was never rebuilt or
+  moved across into this V2 checkout — it isn't present/functional here.
+
+**Update 2026-07-09:** the "Read" button referenced above has been removed
+from `issue.html` entirely (Tez's UI tweak-pass call) — the
+`comicvault://read/{id}` link had no handler on a plain desktop browser, so
+it did nothing useful outside the Flutter app anyway. This doesn't fix or
+worsen this bug (there was never a working web reader either way) — it just
+means there's now no reader-related control anywhere in the web UI at all.
+See `SPEC.md` §11 and `DECISIONS.md`.
+
+**Impact:** No way to exercise or verify reading-progress behavior from a
+desktop/browser context without the Flutter app. Blocked one verification
+step for v2.5 Item 3 (confirming `server_kept` visually, beyond the
+backend's own scratch tests, which already cover that exact code path).
+Not a defect in anything shipped in Item 3 itself.
+
+**Fixed, v2.6 Item 5 (Windows Desktop Reader).** `flutter_app/` was already
+one shared Dart codebase targeting both Android and Windows — the `windows/`
+platform folder existed but had never been rebuilt/polished/tested since the
+V1 initial commit (all live development had been Android-tablet-only). Got
+it working properly as a Windows desktop reader rather than porting the old
+V1 app separately:
+- Guarded the Android-only local-file-picker `MethodChannel`
+  (`local_cbz_service.dart`'s `pickFile()`/`resolveSharedUri()`) to no-op on
+  non-Android platforms, and hid the "Open local CBZ file"
+  button/"Recent files" list in `OfflineLibraryView` on Windows — desktop is
+  expected to be on the same LAN as the server, so local file picking was
+  descoped there rather than given a Windows-native implementation.
+  Confirmed the Android-only immersive-mode `SystemChrome` call in
+  `reader_screen.dart` is a harmless no-op on Windows.
+- Added keyboard support to the reader (`toolbar_overlay.dart`): arrow keys
+  page/scroll, Escape goes back — the reader was touch/mouse-only before.
+  Fixed `nextPage()`/`prevPage()` in `comic_page_view.dart` to actually do
+  something in Scroll mode too (previously a no-op there, since the
+  `PageController` those methods drove wasn't attached to the `ListView`).
+- Rebranded the native Windows shell (`windows/runner/main.cpp`,
+  `Runner.rc`) from the stock "comicvault" title/metadata to "digib00age",
+  matching the app's actual brand elsewhere (favicon, mobile home screen).
+  The Windows launcher icon was already current — no change needed there.
+- Reviewed `CoverCard`/`BrowseScreen`'s grid/`ShellScreen`'s rail+content
+  layout for desktop reflow — all width-adaptive by construction
+  (`AspectRatio` + ellipsis text, `SliverGridDelegateWithMaxCrossAxisExtent`,
+  `Row`/`Expanded`), no fixed-width assumptions found.
+- The web-UI-has-no-reader-page cause above is unaffected — still true,
+  still by-design, and tracked separately as the scope of a possible future
+  `/issue/{id}` → "open in reader" integration, not reopened here.
+
+**Verified:** Tez ran `flutter run -d windows` and confirmed navigation
+(rail → Home/Browse/Series/custom libraries) and reading (Scroll + Page
+mode) both work.

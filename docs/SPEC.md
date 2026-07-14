@@ -760,6 +760,16 @@ User can also switch manually in Settings.
 - App version
 
 ### Local file support (travel / offline)
+
+> **Android-only, confirmed 2026-07-14 (v2.6 Item 5 — Windows Desktop
+> Reader).** The file picker described below uses a native Android
+> `MethodChannel` with no Windows-side implementation. Windows desktop is
+> expected to be on the same LAN as the server, so local-file picking is
+> hidden there rather than given a Windows-native picker — server mode only
+> on that platform. The "Downloaded" offline section (separate from this —
+> issues downloaded in-app via server mode, see Mobile ↔ Server Sync) is
+> unaffected on Windows, since it doesn't go through this picker.
+
 - File picker to open a CBZ from device storage
 - Same reader experience as server mode
 - Progress saved locally on device (SQLite), not synced to server

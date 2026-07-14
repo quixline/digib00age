@@ -8,23 +8,32 @@ const _imageExts = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'};
 const _localFilePickerChannel = MethodChannel('comicvault/local_file_picker');
 
 class LocalCbzService {
-  // Pick a CBZ from device storage. Returns null if cancelled.
+  // Pick a CBZ from device storage. Returns null if cancelled or unsupported
+  // on this platform.
   //
-  // Uses a native MethodChannel (MainActivity.kt) instead of file_selector —
-  // see BUG-020 (docs/BUGS.md / archive/bugs-fixed-archive.md) for why:
-  // file_selector loads the whole picked file into memory before returning
-  // it, which crashes on comic archives over ~250MB, and its MIME-type
-  // filtering silently hides valid .cbz files whose OS-assigned MIME type
-  // doesn't match. The native side streams to a cache file and accepts any
-  // file type, leaving validation to this class's own archive read below.
+  // Android uses a native MethodChannel (MainActivity.kt) instead of
+  // file_selector — see BUG-020 (docs/BUGS.md / archive/bugs-fixed-archive.md)
+  // for why: file_selector loads the whole picked file into memory before
+  // returning it, which crashes on comic archives over ~250MB, and its
+  // MIME-type filtering silently hides valid .cbz files whose OS-assigned
+  // MIME type doesn't match. The native side streams to a cache file and
+  // accepts any file type, leaving validation to this class's own archive
+  // read below. That channel has no Windows-side implementation — desktop
+  // is expected to be on the same LAN as the server (server mode), so local
+  // file picking is out of scope there rather than ported; callers
+  // (OfflineLibraryView) hide the affordance on Windows instead of calling
+  // this.
   Future<String?> pickFile() async {
+    if (!Platform.isAndroid) return null;
     return _localFilePickerChannel.invokeMethod<String>('pickCbz');
   }
 
   // Resolves a content://|file:// URI (from a .cbz opened externally via
   // "Open With" — see BUG-017) to a local cache path, using the same native
-  // copy-to-cache logic pickFile()'s picker result goes through.
+  // copy-to-cache logic pickFile()'s picker result goes through. Android-only,
+  // same reasoning as pickFile() above.
   Future<String?> resolveSharedUri(String uriString) async {
+    if (!Platform.isAndroid) return null;
     return _localFilePickerChannel.invokeMethod<String>('resolveSharedUri', uriString);
   }
 
