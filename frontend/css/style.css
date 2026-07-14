@@ -205,7 +205,13 @@ ul { list-style: none; }
    fade recipe as .series-backdrop/.issue-backdrop, anchored to the top-right
    corner instead of a top-to-bottom wash — cover choice and visibility
    toggling are app.js's setPageBackground(). */
-#homeView, #browseView, #folderView, .menu-bar { position: relative; z-index: 1; }
+/* .menu-bar needs a higher stacking-context z-index than the surfaces below
+   it — its own children (.fd-panel dropdowns) create a stacking context here,
+   and with equal z-index siblings paint in DOM order, so #browseView/
+   #folderView (later in index.html) would otherwise paint over the menu bar
+   regardless of .fd-panel's own z-index. */
+#homeView, #browseView, #folderView { position: relative; z-index: 1; }
+.menu-bar { position: relative; z-index: 2; }
 
 .page-bg {
   position: fixed;

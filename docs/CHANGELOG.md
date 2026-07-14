@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-14** — Fixed filter dropdowns (Genre/Format/Decade/Year)
+  rendering behind cover cards — a stacking-context regression from the
+  2026-07-13 random cover background change. See `v2.6/progress.md` "Filter
+  dropdowns rendering behind cover cards (bug fix)".
 - **2026-07-13** — Mobile app icon (Android + Windows) now uses `favicon.png`
   (the digib00age "oo" mark), same asset as the tray icon and web favicon.
   Cosmetic. See `v2.6/progress.md` "App icon: favicon.png (digib00age

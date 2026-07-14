@@ -2170,3 +2170,30 @@ the web favicon.
   screenshot to confirm it's the digib00age "oo" mark (blue rounded
   square, Android's adaptive-icon mask applied automatically around it),
   not a stale cached icon.
+
+## Session — 2026-07-14 — Filter dropdowns rendering behind cover cards (bug fix)
+
+From `INBOX.md`: "since bg change dd menus are displayed behind the cards"
+(screenshot showed the Genre/Format/Decade/Year `.fd-panel` dropdown
+rendering under the cover grid instead of over it).
+
+**Root cause:** the random library-page cover background feature
+(2026-07-13) added `#homeView, #browseView, #folderView, .menu-bar {
+position: relative; z-index: 1; }` to `frontend/css/style.css`. `.menu-bar`
+and `#browseView` are sibling elements (both direct/indirect children of
+`.app-content`) — giving them equal `z-index: 1` makes each its own
+stacking context, and sibling stacking contexts of equal z-index paint in
+DOM order. `#browseView` comes after `.menu-bar` in `index.html`, so it
+painted fully on top regardless of the dropdown's own `z-index: 40`
+(`.fd-panel`) — that z-index only ranks within `.menu-bar`'s own stacking
+context, and never gets to compete with `#browseView`'s.
+
+**Fixed:** split the rule so `.menu-bar` gets its own `z-index: 2`, higher
+than the content views' `z-index: 1` — its stacking context (and the
+dropdown inside it) now always paints on top regardless of DOM order.
+
+**Verified:** live against the running dev server (`localhost:9424`) via
+Claude-in-Chrome — reproduced the exact bug screenshot's page (Browse →
+All, "101 Other Uses For A Condom" visible), opened the Genre dropdown,
+confirmed it now renders over the cover grid correctly.
+
