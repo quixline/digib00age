@@ -1203,6 +1203,85 @@ per-series aggregate (untouched, out of scope for this item).
 
 ---
 
+### 20.20 Card Redesign — Grid, Home Strips, Folder View (2026-07-15, built 2026-07-15)
+
+Scoped in Claude Design (`D:\workshop\Claude Design\new card design`), then heavily
+fine-tuned live with Tez across many rounds. Supersedes the read-state/favourite/
+badge visual detail in §20.5, §20.17, and §20.18 for the three surfaces below — those
+sections stay for history rather than being rewritten in place, same convention as
+§20.9/§20.18's own superseding notes.
+
+**Applies to:** the main library grid (`buildCoverCard()` — Browse/Series/Singles/
+All/Custom-Tabs-flat/search/fieldview), Home Page Strips (`buildStripCard()` — every
+strip type, since they share one builder), and Folder View's flat file cards
+(`buildFolderFileCard()`). Issue Detail's cover (`buildIssueDetail()`) got the same
+border/progress treatment, not the rest of the card layout (title/genre/rating stay
+in that page's own existing layout).
+
+**Explicitly NOT applied:** Folder View's subfolder tiles (`buildFolderCard()` — an
+aggregate across many issues, no single genre/rating/progress concept), Series
+Detail's issue-list rows (`buildIssueRow()` — a horizontal row, not a portrait
+tile), and list view (separate design pass, not yet scheduled).
+
+**Card frame:** one uniform border on every card — `box-shadow: 0 0 5px 1px
+rgba(255,255,255,0.45)` (45% white, 1px, soft blur) plus a drop shadow. No
+read-state or favourite colour on the border anymore (a departure from §20.5's
+read-state gradient and §20.17's gold favourite border) — those signals moved
+elsewhere, see below. Multi-select's "selected" state still turns the border gold;
+that's a distinct, temporary UI state, unrelated to favourite. The cover sits inset
+from the border in a small matte gap, with its own rounded corners.
+
+**Info block:** title (wraps up to 2 lines), then two meta rows — year + genre
+ribbon, and issue/page count + rating stars — anchored to the bottom of the card
+(not directly under the title) so they align across a grid row regardless of how
+many lines the title takes.
+
+**Genre ribbon (new):** first genre (`genres[0]`), off-white text on a neutral dark
+fill, with the read-state colour carried only in a 2px bottom border — blue for
+unread, green for reading or fully read. This is now the sole place read-state
+colour shows on these cards.
+
+**Favourite badge:** heart icon (unchanged glyph/position) on a `rgba(255,255,255,
+0.6)` circle, no border — supersedes §20.17/§20.18's black-border/gold-ring
+favourite treatment for these three surfaces. No separate card-level ring.
+
+**Flag-for-review badge:** a real inline SVG flag icon (same stroke style as the
+sidebar nav — `stroke="currentColor"`, stroke-width 2, rounded caps/joins),
+replacing the old emoji tag. Circle background matches the favourite badge. No red
+border on flagged cards.
+
+**Progress bar:** an inset floating pill (`.card-progress-track`/`.card-progress-
+fill`), not flush with the cover edge. Singles/individual-issue cards use the
+issue's own real `current_page/page_count`; Series-aggregate cards still use
+`read_count/issue_count`. (`current_page` was added to `/api/library`'s response,
+and `genres`/`personal_rating`/`favorites`/`flagged_for_review` were added to
+`/api/home/strips`' `_issue_card()` serializer — both pure additive fields, no new
+queries.)
+
+**Rating stars:** a horizontal row in the info block (moved off the cover image,
+where §20.18's rating pill used to sit).
+
+**Spacing:** main grid and Folder View grids both use a 19px gap between cards (was
+14px). Home Strip cards are widened to `max(var(--card-min), 160px)` — a deliberate
+choice over shrinking the badge sizing to fit the old narrower strip width, since
+Tez wanted the same full-size treatment there, not a scaled-down variant — with a
+matching 19px gap. Home Strip cards deliberately did **not** gain multi-select
+(no select-dot) — strips have never supported selection, and adding it would be a
+functional change beyond this item's visual scope.
+
+**Theme:** dark-only, fixed regardless of the site's light/dark theme setting — the
+card looks the same either way, unlike the rest of the UI.
+
+**Where:** `frontend/js/app.js` (`buildCoverCard()`, `buildStripCard()`,
+`buildFolderFileCard()`, `buildIssueDetail()`, plus new helpers `buildRatingRow()`
+and `buildFlagBadge()`), `frontend/css/style.css` (`.cover-card--redesign` and
+everything scoped under it — deliberately never the bare `.cover-card`/
+`.cover-img-wrap`/`.cover-info` selectors, so Series Detail rows and list view stay
+untouched), `backend/routers/library.py` (`current_page` addition), `backend/
+routers/home.py` (`_issue_card()` field additions).
+
+---
+
 ## 21. Change Log
 
 > Record any deviations from this spec here with date and reason.
@@ -1250,3 +1329,4 @@ per-series aggregate (untouched, out of scope for this item).
 | 2026-06-30 | **CBR support added (v2.4 Item 5), reversing V1's "all files confirmed CBZ" assumption.** Scanner (§6/§6.1) now matches `.cbr` alongside `.cbz`, opening via `rarfile` instead of `zipfile`. New `issues.container_format` column (§7) distinguishes container type from the unrelated ComicInfo `format` field. `rarfile` added to dependencies (§13), extraction-only — CBR is never written by any part of ComicVault; RAR creation needs a paid WinRAR install, so editing a CBR's metadata rebuilds it as `.cbz` instead (see `EDITOR_SPEC.md` §3.1/3.2/§2/§9 for the corresponding reversal there). Driven by a shift toward a possible public release — forcing users with large mixed CBZ/CBR collections (some >100,000 issues) to bulk-convert before their library is browsable was judged unviable. PDF and EPUB, originally scoped alongside CBR in the same v2.4 item, were dropped — PDF is handled by CAPT's existing convert-to-CBZ tool instead (v2.4 Item 6) rather than native scanner support; EPUB was dropped entirely as structurally incompatible with the page-indexed reading model and not a confirmed need. Full rationale in `DECISIONS.md`, build item in `v2.4/comicvault-changes-v2.4.md` Item 5/11. | v2.4 Item 5, eng-reviewed and scoped 2026-06-30. |
 | 2026-07-02 | **§6 corrected — scanner finds `ComicInfo.xml` at any folder depth, not just the archive root (BUG-018 fix).** `_parse_cbz()` now reuses `find_xml_in_archive()`/`extract_xml_from_archive()` (`backend/editor/archive_io.py`), the same helpers the Basic/Full Editors already used — previously only the scanner's initial read was folder-blind; editors and the flatten-on-save rebuild path were already correct. No rebuild-at-scan-time added (would risk real delay across ~5,500 archives); flattening still only happens naturally on first edit-save, unchanged. | `BUGS.md`/`archive/bugs-fixed-archive.md` BUG-018 — found 2026-06-30 scoping v2.4 Item 8, fixed off-cycle 2026-07-02 after v2.4's close (never tied to a numbered version item). |
 | 2026-07-15 | **§7 `issues` table — 4 of 6 legacy raw-CSV credit columns dropped:** `inker`/`colorist`/`letterer`/`cover_artist` (confirmed dead, no reader anywhere in backend/frontend) removed via a new idempotent `_drop_legacy_credit_columns()` migration in `database.py`. `writer`/`penciller` deliberately kept — traced every usage first and found they still power live search, "Group by Writer", and the series-card meta line, not yet migrated onto `people`/`issue_credits`. **§20.14 also trimmed** — Advanced Search page and Multiple scan locations/series-overview-field entries removed, both ruled out by Tez (see `ROADMAP.md` "Resolved" section for rationale). | `ROADMAP.md` "Resolved" · `DECISIONS.md` — verified against a scratch DB copy before touching the real one; Tez manually confirmed the real app afterward. |
+| 2026-07-15 | **Section 20.20 added — card redesign (grid, Home Strips, Folder View).** New card border/genre-ribbon/favourite-badge/flag-badge/progress-pill treatment, scoped via a new `.cover-card--redesign` CSS modifier class so Series Detail rows and list view are untouched. Home Strip cards widened to fit the same full-size badges rather than a scaled-down variant. Supersedes the read-state/favourite/badge visual detail in §20.5, §20.17, §20.18 for the three affected surfaces. | Ad-hoc request, applying a Claude Design mockup then heavily fine-tuned live with Tez — see `v2.6/progress.md` and `DECISIONS.md`. |

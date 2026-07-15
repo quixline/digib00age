@@ -57,6 +57,10 @@ def _issue_card(issue: Issue, progress_map: dict[int, str], *,
         "series_anchor_id": series_anchor_id or issue.id,
         "page_count": issue.page_count,
         "current_page": prog.current_page if prog else 0,
+        "genres": [g.genre_name for g in issue.genres],
+        "personal_rating": issue.personal_rating,
+        "favorites": issue.favorites,
+        "flagged_for_review": issue.flagged_for_review,
     }
 
 

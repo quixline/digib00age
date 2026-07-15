@@ -32,6 +32,25 @@ function buildRatingPill(rating) {
   return pill;
 }
 
+// Horizontal rating row (redesigned CoverCard only) — sits in the info block
+// rather than overlaid on the cover. Separate from buildRatingPill() so
+// Folder View's cover overlay is unaffected by the redesign.
+function buildRatingRow(rating) {
+  const row = el('div', 'card-rating-row');
+  for (let i = 0; i < rating; i++) row.appendChild(el('span', 'rating-star', '★'));
+  return row;
+}
+
+// Flag-for-review badge (redesigned CoverCard only) — real SVG flag icon,
+// same stroke-icon style as the sidebar nav (index.html's .app-sidebar-icon
+// SVGs), replacing the emoji-tag pseudo-element the base .cover-card rule
+// still uses for Folder View/Series rows.
+function buildFlagBadge() {
+  const badge = el('span', 'card-flag-badge');
+  badge.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>';
+  return badge;
+}
+
 function debounce(fn, ms) {
   let timer;
   return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
@@ -530,8 +549,14 @@ let seriesPageData    = null; // full /series/{id} response, cached for client-s
 const CARD_SIZE_PX = { '10': '90px', '25': '120px', '50': '160px', '75': '190px', '100': '220px' };
 let cardSize = localStorage.getItem('cv_card_size') || '25';
 
+// Card sizes below this get the simplified (compact) redesigned-card bezel —
+// the full ornate frame doesn't read at the smaller presets. See style.css
+// [data-card-tier="compact"].
+const COMPACT_CARD_SIZES = new Set(['10', '25']);
+
 function applyCardSize(size) {
   document.documentElement.style.setProperty('--card-min', CARD_SIZE_PX[size] || CARD_SIZE_PX['25']);
+  document.documentElement.setAttribute('data-card-tier', COMPACT_CARD_SIZES.has(size) ? 'compact' : 'detailed');
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -979,9 +1004,12 @@ function buildStripCard(item) {
               : item.read_status === 'reading'  ? 'state-part-read'
               : 'state-unread';
 
-  const card = el('a', `cover-card strip-card ${state}`);
+  const card = el('a', `cover-card cover-card--redesign strip-card ${state}${item.favorites ? ' is-favorite' : ''}${item.flagged_for_review ? ' is-flagged-review' : ''}`);
   card.href  = href;
   card.title = item.series;
+  // No makeSelectable()/select-dot here, deliberately — Home Strips have
+  // never had multi-select, and this round only extends the visual design,
+  // not selection behaviour.
 
   const wrap = el('div', 'cover-img-wrap');
   const img  = el('img');
@@ -990,24 +1018,37 @@ function buildStripCard(item) {
   img.loading = 'lazy';
   img.onerror = () => { wrap.innerHTML = '<div class="cover-placeholder">📖</div>'; };
   wrap.appendChild(img);
+  if (item.flagged_for_review) wrap.appendChild(buildFlagBadge());
 
-  // Part-read progress bar
-  if (state === 'state-part-read' && item.page_count > 0) {
+  // Part-read/read progress pill — same math as before, new track/fill visual.
+  if ((state === 'state-part-read' || state === 'state-read') && item.page_count > 0) {
     const pct = Math.min(100, Math.round((item.current_page / item.page_count) * 100));
-    const bar = el('div', 'card-progress-bar');
-    bar.style.width = `${pct}%`;
-    wrap.appendChild(bar);
+    const track = el('div', 'card-progress-track');
+    const fill  = el('div', 'card-progress-fill');
+    fill.style.width = `${pct}%`;
+    track.appendChild(fill);
+    wrap.appendChild(track);
   }
 
   const info = el('div', 'cover-info');
   info.appendChild(el('div', 'cover-title', item.series));
 
-  if (item.year) info.appendChild(el('div', 'cover-year', String(item.year)));
+  const genreRibbon = (item.genres && item.genres.length) ? el('span', 'card-genre-ribbon', item.genres[0]) : null;
+  const ratingRow    = item.personal_rating > 0 ? buildRatingRow(item.personal_rating) : null;
+
+  const yearRow = el('div', 'cover-meta-row');
+  if (item.year) yearRow.appendChild(el('div', 'cover-year', String(item.year)));
+  if (genreRibbon) yearRow.appendChild(genreRibbon);
+  if (yearRow.children.length) info.appendChild(yearRow);
+
+  const countRow = el('div', 'cover-meta-row');
   if (isSingle) {
-    if (item.page_count) info.appendChild(el('div', 'cover-count', `${item.page_count} pages`));
+    if (item.page_count) countRow.appendChild(el('div', 'cover-count', `${item.page_count} pages`));
   } else {
-    if (item.number) info.appendChild(el('div', 'cover-count', `#${item.number}`));
+    if (item.number) countRow.appendChild(el('div', 'cover-count', `#${item.number}`));
   }
+  if (ratingRow) countRow.appendChild(ratingRow);
+  if (countRow.children.length) info.appendChild(countRow);
 
   card.append(wrap, info);
   return card;
@@ -1450,7 +1491,7 @@ function buildCoverCard(s) {
     : `/series/${s.series_anchor_id}${suffix}`;
   const state    = seriesReadState(s);
 
-  const card = el('a', `cover-card ${state}${s.favorites ? ' is-favorite' : ''}${s.flagged_for_review ? ' is-flagged-review' : ''}`);
+  const card = el('a', `cover-card cover-card--redesign ${state}${s.favorites ? ' is-favorite' : ''}${s.flagged_for_review ? ' is-flagged-review' : ''}`);
   card.href  = href;
 
   // Multi-select: Singles cards select their one underlying issue directly;
@@ -1467,34 +1508,55 @@ function buildCoverCard(s) {
   img.onerror = () => { wrap.innerHTML = '<div class="cover-placeholder">📖</div>'; };
   wrap.appendChild(img);
   wrap.appendChild(buildSelectDot(s.series_anchor_id, selectKind));
+  if (s.flagged_for_review) wrap.appendChild(buildFlagBadge());
 
-  if (s.unread_count > 0 && s.unread_count < s.issue_count) {
-    wrap.appendChild(el('span', 'unread-badge', s.unread_count));
-  }
+  // Unread-count pill dropped — redesign has no top-right cover badge.
 
-  if (s.personal_rating > 0) wrap.appendChild(buildRatingPill(s.personal_rating));
-
-  // Part-read progress bar (grid view)
-  if (state === 'state-part-read') {
-    const pct  = Math.round((s.read_count / s.issue_count) * 100);
-    const bar  = el('div', 'card-progress-bar');
-    bar.style.width = `${pct}%`;
-    wrap.appendChild(bar);
+  // Part-read/read progress bar — a floating pill overlay inset from the
+  // cover edges (clear of the select-dot/flag-badge corners below), not a
+  // flush full-width line. Singles cards use real page-level progress
+  // (current_page/page_count) — read_count/issue_count can only ever be 0%
+  // or 100% for a single issue. Series cards keep the issue-count aggregate.
+  if (state === 'state-part-read' || state === 'state-read') {
+    let pct;
+    if (isSingle && s.page_count > 0) {
+      pct = Math.min(100, Math.round((s.current_page / s.page_count) * 100));
+    } else {
+      pct = Math.round((s.read_count / s.issue_count) * 100);
+    }
+    const track = el('div', 'card-progress-track');
+    const fill  = el('div', 'card-progress-fill');
+    fill.style.width = `${pct}%`;
+    track.appendChild(fill);
+    wrap.appendChild(track);
   }
 
   const info = el('div', 'cover-info');
   info.appendChild(el('div', 'cover-title', s.series));
 
+  // Genre ribbon + rating stars, moved off the cover image into the info
+  // block — each paired onto its own row (year/ribbon, count/stars) rather
+  // than a single side column, so the ribbon's row doesn't shift depending
+  // on whether a rating row exists below it (2026-07-15 fine-tune).
+  const genreRibbon = (s.genres && s.genres.length) ? el('span', 'card-genre-ribbon', s.genres[0]) : null;
+  const ratingRow   = s.personal_rating > 0 ? buildRatingRow(s.personal_rating) : null;
+
   // Grid info — spec 20.5: Title, Year, # issues (series) / page count (singles)
+  const yearRow = el('div', 'cover-meta-row');
+  if (s.year) yearRow.appendChild(el('div', 'cover-year', String(s.year)));
+  if (genreRibbon) yearRow.appendChild(genreRibbon);
+  if (yearRow.children.length) info.appendChild(yearRow);
+
+  const countRow = el('div', 'cover-meta-row');
   if (isSingle) {
-    if (s.year)       info.appendChild(el('div', 'cover-year',  String(s.year)));
-    if (s.page_count) info.appendChild(el('div', 'cover-count', `${s.page_count} pages`));
+    if (s.page_count) countRow.appendChild(el('div', 'cover-count', `${s.page_count} pages`));
   } else {
-    if (s.year) info.appendChild(el('div', 'cover-year', String(s.year)));
-    info.appendChild(el('div', 'cover-count',
+    countRow.appendChild(el('div', 'cover-count',
       `${s.issue_count} issue${s.issue_count !== 1 ? 's' : ''}`
     ));
   }
+  if (ratingRow) countRow.appendChild(ratingRow);
+  info.appendChild(countRow);
 
   // List-view extras — hidden in grid mode via CSS (spec 20.5)
   const listMeta = el('div', 'list-meta');
@@ -1813,7 +1875,7 @@ function buildFolderFileCard(issue) {
               : issue.read_status === 'reading'  ? 'state-part-read'
               : 'state-unread';
 
-  const card = el('a', `cover-card ${state}${issue.missing ? ' missing' : ''}${issue.favorites ? ' is-favorite' : ''}${issue.flagged_for_review ? ' is-flagged-review' : ''}`);
+  const card = el('a', `cover-card cover-card--redesign ${state}${issue.missing ? ' missing' : ''}${issue.favorites ? ' is-favorite' : ''}${issue.flagged_for_review ? ' is-flagged-review' : ''}`);
   card.href  = `/issue/${issue.id}`;
   makeSelectable(card, issue.id);
 
@@ -1825,20 +1887,33 @@ function buildFolderFileCard(issue) {
   img.onerror = () => { wrap.innerHTML = '<div class="cover-placeholder">📖</div>'; };
   wrap.appendChild(img);
   wrap.appendChild(buildSelectDot(issue.id));
+  if (issue.flagged_for_review) wrap.appendChild(buildFlagBadge());
 
-  if (issue.personal_rating > 0) wrap.appendChild(buildRatingPill(issue.personal_rating));
-
-  if (state === 'state-part-read' && issue.page_count > 0) {
+  if ((state === 'state-part-read' || state === 'state-read') && issue.page_count > 0) {
     const pct = Math.min(100, Math.round((issue.current_page / issue.page_count) * 100));
-    const bar = el('div', 'card-progress-bar');
-    bar.style.width = `${pct}%`;
-    wrap.appendChild(bar);
+    const track = el('div', 'card-progress-track');
+    const fill  = el('div', 'card-progress-fill');
+    fill.style.width = `${pct}%`;
+    track.appendChild(fill);
+    wrap.appendChild(track);
   }
 
   const info = el('div', 'cover-info');
   info.appendChild(el('div', 'cover-title', issue.title || issue.series || `#${issue.number}`));
-  if (issue.number)     info.appendChild(el('div', 'cover-count', `#${issue.number}`));
-  if (issue.page_count) info.appendChild(el('div', 'cover-count', `${issue.page_count} pages`));
+
+  const genreRibbon = (issue.genres && issue.genres.length) ? el('span', 'card-genre-ribbon', issue.genres[0]) : null;
+  const ratingRow    = issue.personal_rating > 0 ? buildRatingRow(issue.personal_rating) : null;
+
+  const numberRow = el('div', 'cover-meta-row');
+  if (issue.number) numberRow.appendChild(el('div', 'cover-count', `#${issue.number}`));
+  if (genreRibbon) numberRow.appendChild(genreRibbon);
+  if (numberRow.children.length) info.appendChild(numberRow);
+
+  const pagesRow = el('div', 'cover-meta-row');
+  if (issue.page_count) pagesRow.appendChild(el('div', 'cover-count', `${issue.page_count} pages`));
+  if (ratingRow) pagesRow.appendChild(ratingRow);
+  if (pagesRow.children.length) info.appendChild(pagesRow);
+
   if (issue.relative_folder) info.appendChild(el('div', 'folder-result-path', issue.relative_folder));
 
   card.append(wrap, info);
@@ -2229,7 +2304,11 @@ function buildIssueDetail(data) {
   // nothing has registered the handler on this PC, the browser's own
   // "can't open this link" affordance is all that happens, no error we
   // could catch or report on from here.
-  const coverLink = el('a', 'issue-cover-link');
+  const coverState = data.read_status === 'read'    ? 'state-read'
+                    : data.read_status === 'reading' ? 'state-part-read'
+                    : 'state-unread';
+
+  const coverLink = el('a', `issue-cover-link issue-cover-link--redesign ${coverState}`);
   coverLink.href = `comicvault://read/${data.id}`;
   const img = el('img', 'issue-cover-img');
   img.src     = data.cover_path || '';
@@ -2237,6 +2316,20 @@ function buildIssueDetail(data) {
   img.onerror = () => { img.style.display = 'none'; };
   coverLink.appendChild(img);
   coverCol.appendChild(coverLink);
+
+  // Progress bar under the cover (not overlaid, unlike the grid card) —
+  // real page-level progress, same current_page/page_count this page
+  // already uses for Mark as Read.
+  if (coverState === 'state-part-read' || coverState === 'state-read') {
+    const pct = data.page_count > 0
+      ? Math.min(100, Math.round((data.current_page / data.page_count) * 100))
+      : 0;
+    const track = el('div', 'issue-progress-track');
+    const fill  = el('div', 'issue-progress-fill');
+    fill.style.width = `${pct}%`;
+    track.appendChild(fill);
+    coverCol.appendChild(track);
+  }
 
   const actions = el('div', 'issue-actions');
   actions.appendChild(buildStatusToggle(data));

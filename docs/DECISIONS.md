@@ -2241,3 +2241,33 @@ scheme — not something this build could solve, only document.
 (`.issue-cover-link`), `flutter_app/lib/services/protocol_handler_service.dart`,
 `flutter_app/lib/screens/settings_screen.dart`, `flutter_app/windows/runner/main.cpp`,
 `SPEC.md` §11/§19, `ADMIN_SPEC.md` §7.6, `ROADMAP.md`.
+
+### Card redesign: border carries no colour at all — read-state and favourite signals moved off it entirely
+**Decided:** 2026-07-15, card redesign session (v2.6 Item 9), after several earlier
+rounds had the border carrying colour.
+**Why:** The build went through real iteration here, not a single call: first the
+border was blue/green by read state; then favourite added a second stacked gold
+ring outside it ("looked off," per Tez); then favourite was changed to replace the
+read-state colour outright instead of stacking. Once Tez compared the accumulated
+result at 100% card size against the original design reference, he asked to strip
+it back further — one uniform border, no colour signal on it at all. Read-state
+colour now lives only on the new genre ribbon (a 2px bottom border); favourite is
+heart-badge-only; flagged-for-review is icon-only (the old red border removed too).
+Multi-select's "selected" state is the one exception left — a temporary, unrelated
+UI state, not a persistent card attribute, so it still turns the border gold.
+**Where:** `frontend/css/style.css` (`.cover-card--redesign` box-shadow rules,
+`.card-genre-ribbon`), `SPEC.md` §20.20.
+
+### Card redesign: Home Strip cards widened rather than shrinking the design to fit
+**Decided:** 2026-07-15, card redesign session, Round 2 (Home Strips extension).
+**Why:** Home Strip cards were flex-pinned to `width: var(--card-min)` (~90-120px),
+meaningfully narrower than the main grid's cards, which grow via `minmax(...,1fr)`.
+The redesign's badges/ribbon/progress-pill are fixed-size, sized for the wider grid
+card, and would crowd or overlap at the old strip width. Asked Tez directly: scale
+the badges down to fit, or widen the cards to fit the badges? He chose to widen
+(`max(var(--card-min), 160px)`) — a deliberate Home-page layout change (fewer cards
+visible per strip before scrolling), not a cosmetic-only fix, so worth recording as
+a real functional/layout tradeoff rather than assuming it was implied by "apply the
+card design."
+**Where:** `frontend/css/style.css` (`.continue-strip .cover-card.strip-card.cover-card--redesign`),
+`SPEC.md` §20.20.

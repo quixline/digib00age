@@ -2700,3 +2700,102 @@ flag issues wherever noticed, then batch-pull them into the editor.
   auto-refresh addition. All passed.
 - Full detail in `EDITOR_SPEC.md` §13, `MENU_BAR_SPEC.md` §2.8,
   `docs/v2.6/comicvault-changes-v2.6.md` Item 8, and `DECISIONS.md`.
+
+## Session — 2026-07-15 (same day, follow-up) — Card redesign: grid, Home Strips, Folder View (v2.6 Item 9)
+
+Ad-hoc feature request: a new card design (`D:\workshop\Claude Design\new card
+design`, `CollectorCard.dc.html` — a mockup/design-tool export, not portable
+code) needed translating into the real app and fine-tuning live. Two rounds,
+both driven directly against the running app with Tez rather than by
+description alone.
+
+**Round 1 — main library grid + Issue Detail cover.** Built the initial
+translation (ornate bezel look from the mockup), then went through many live
+fine-tune passes as Tez compared the running app against the mockup
+screenshot and against his own evolving intent:
+- Simplified away the mockup's multi-layer metal bezel/foil/noise-texture
+  chrome entirely — "over-ambitious", too many competing borders.
+- Moved the card's colour ring from wrapping just the cover image to wrapping
+  the whole card (cover + info block), after a cover-only ring only showed as
+  a thin line at the image/text boundary.
+- The progress bar went through two real bug fixes before it worked: a
+  legacy `.cover-info` gradient rule and a legacy cover-bottom "feather"
+  pseudo-element were both still painting over the new dark card face/the
+  new bar respectively, silently inherited from pre-redesign CSS that didn't
+  have enough selector specificity to be overridden by the new rules. Also
+  found that the Singles-card progress math (`read_count/issue_count`) could
+  only ever show 0% or 100% — never a real mid-point — because
+  `current_page` wasn't in the `/library` response at all; added it.
+- Redesigned the progress bar's shape entirely, twice: first as a flush
+  full-width line (matching the mockup), then — once Tez saw it working — as
+  an inset floating pill with its own tinted track, since he'd been
+  picturing a distinct overlay element, not a border-adjacent stripe.
+- Favourite went from a stacked dual-ring (state colour + gold) back to a
+  single ring that just turns gold outright — the two-ring version "looked
+  off". Border colour then got removed entirely in a later rewind (below).
+- Genre ribbon: added as a new element (data was already in the API, just
+  unread by the frontend for Series cards), then reworked from a solid
+  colour fill to off-white text (matching the sidebar nav's text colour) with
+  the read-state colour narrowed down to just a 2px bottom border, after the
+  solid fill visually clashed with the new white card border.
+- **Border rewind:** after seeing the accumulated result at 100% card size
+  against the original mockup, Tez asked to strip it back to one simple
+  border — removed all read-state/favourite colour from the border, moved
+  read-state colour to the genre ribbon only, favourite to the heart badge
+  only. Several more rounds tuned the exact border weight/opacity/blur
+  (60%→45% white, 2px→1px, blur 3px→5px) and the cover's inset "matte gap"
+  from the border (10px→5px).
+- Flag-for-review went from an emoji tag to a real inline SVG flag icon
+  matching the sidebar nav's stroke-icon style, per Tez's specific ask; the
+  legacy rule giving flagged cards a red border also got removed the same
+  way favourite's did.
+- Repeated caching friction throughout: static assets have no
+  `Cache-Control`, so a normal reload — even in a fresh automated browser
+  tab — sometimes still served stale JS/CSS. Worked around per-round via a
+  cache-busted `<link>`/`<script>` swap; confirmed each fix against real
+  `getComputedStyle()`/DOM inspection, not just screenshots, after one round
+  where a genuine fix looked identical to the broken state in a screenshot
+  purely from a stale render.
+- **Tez confirmed each round live** before moving to the next; final state
+  is what's documented in `SPEC.md` §20.20.
+
+**Round 2 — extended to Home Strips + Folder View**, after Tez noticed the
+new look hadn't reached the Home page and asked whether one uniform
+treatment across every grid-format card was feasible. Two research passes
+(backend field completeness, frontend structural comparison) found:
+- Folder View's flat file cards already had every field needed
+  (`genres`/`personal_rating`/`favorites`/`flagged_for_review`) — zero
+  backend work, same `.cover-grid`-based sizing as the main grid.
+- Home Strips were missing all four fields in `_issue_card()`
+  (`backend/routers/home.py`) — added, pure serializer change, no new
+  queries (the `Issue` objects were already loaded).
+- Home Strip cards were flex-pinned to ~90-120px wide, meaningfully
+  narrower than the main grid's cards — the redesign's fixed-size badges
+  would crowd/overlap there. Asked Tez: scale the badges down, or widen the
+  cards? He chose to widen (`max(var(--card-min), 160px)`), a deliberate
+  Home-page layout change (fewer cards per strip before scrolling), not a
+  scaled-down variant.
+- Folder View's subfolder tiles (`buildFolderCard()`) and Series Detail's
+  issue rows (`buildIssueRow()`) confirmed explicitly out of scope — neither
+  is a single-issue portrait card structurally.
+- Built both: `buildStripCard()` and `buildFolderFileCard()` gained the
+  `.cover-card--redesign` class, the bottom-anchored meta-row layout, the
+  new SVG flag badge, and the inset progress pill — reusing the exact same
+  CSS already written for the main grid (nothing new needed there beyond
+  the strip-width/grid-gap rules), confirming the modifier-class approach
+  from Round 1 was the right call for exactly this reason. Home Strips also
+  had a real bug: `.continue-strip` had no left/right padding, so the new
+  border's box-shadow bleed was clipped at the scroll container's left
+  edge — fixed with padding + a matching negative margin to keep the first
+  card's visual position unchanged. Card gap bumped to 19px on the main
+  grid, Folder View's grid (`#folderGrid`, needed its own rule — different
+  ID from the main grid's `#coverGrid`), and Home Strips, for consistency
+  across all three.
+- **Verified:** Home Strips confirmed live across all strip types at the
+  new width, correct spacing, border no longer clipped. Folder View's code
+  changes mirror the exact same proven pattern and needed no backend work,
+  but couldn't be live-verified this session — no Custom Tabs existed to
+  open in Folder View mode, and creating one needs the admin password.
+  Flagged for Tez to spot-check once a folder-based tab exists.
+- Full detail in `SPEC.md` §20.20, `docs/v2.6/comicvault-changes-v2.6.md`
+  Item 9, and `DECISIONS.md`.

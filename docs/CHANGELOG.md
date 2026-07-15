@@ -13,6 +13,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-15** — Card redesign (v2.6 Item 9): new border/genre-ribbon/
+  favourite-badge/flag-badge/progress-pill look applied to the main library
+  grid, Home Page Strips, and Folder View's flat file cards, via a new
+  `.cover-card--redesign` CSS modifier class (Series Detail rows and list
+  view untouched). Home Strip cards widened to fit the same full-size
+  badges. See `SPEC.md` §20.20 and `v2.6/progress.md` "Card redesign"
+  sessions.
 - **2026-07-15** — Added Review Queue (v2.6 Item 8): flag any issue for
   review (Issue Detail button or bulk multi-select), filter the library to
   flagged-only, and batch-send a selection straight into the Full Editor's

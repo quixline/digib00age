@@ -798,3 +798,81 @@ saved, confirmed the flag cleared and the DB updated, confirmed a normal
 pre-library Full Editor session is unaffected, confirmed the Basic Editor's
 save path clears the flag too, and confirmed the toast + auto-refresh UX
 addition. All passed.
+
+---
+
+## Item 9 — Card redesign: grid, Home Strips, Folder View
+
+**Change.** Ad-hoc feature request, not from `INBOX.md`. A new card design was
+scoped visually in Claude Design (`D:\workshop\Claude Design\new card design`,
+`CollectorCard.dc.html` + reference screenshots — a mockup/design-tool export, not
+portable code) and handed to Code to translate and build, then fine-tuned live
+against the real app across many rounds directly with Tez. Structural change (new
+CSS modifier class, new badge markup) → full workflow, `SPEC.md` §20.20 added.
+
+**Scope, confirmed with Tez across two rounds:**
+- **Round 1 — main library grid** (`buildCoverCard()`) and Issue Detail's cover.
+- **Round 2 — extended to Home Page Strips** (`buildStripCard()`) and **Folder
+  View's flat file cards** (`buildFolderFileCard()`), after Tez noticed the new
+  look wasn't reaching the Home page and asked whether a uniform treatment across
+  every grid-format card was feasible. Two research passes confirmed it was for
+  these two surfaces (same underlying data, same `.cover-card`/`.cover-img-wrap`/
+  `.cover-info` classes to scope a modifier onto) but explicitly **not** for Folder
+  View's subfolder tiles (`buildFolderCard()` — an aggregate across many issues,
+  no single genre/rating/progress concept) or Series Detail's issue-list rows
+  (`buildIssueRow()` — a horizontal row, not a portrait tile) — both confirmed
+  out of scope and left untouched, same as list view.
+
+**Built — final shipped state** (see `SPEC.md` §20.20 for full detail):
+- One uniform card border (45% white, 1px, soft blur) on every card — no
+  read-state or favourite colour on the border. Read-state colour lives only on a
+  new genre ribbon (2px bottom border, blue unread / green reading+read).
+  Favourite is a heart badge (60% white circle, no border) with no separate card
+  ring. Flag-for-review is a real inline SVG flag icon (matching the sidebar nav's
+  icon style), also no red border.
+- Info block restructured into two bottom-anchored meta rows (year+ribbon,
+  count+rating-stars) so they align across a grid row regardless of title length.
+- Progress bar became an inset floating pill, accurate percentage for both
+  single-issue and series-aggregate cards.
+- Main grid + Folder View grids: 19px card gap (was 14px). Home Strips: cards
+  widened to `max(var(--card-min), 160px)` to fit the full-size badges (a
+  deliberate layout change, not a scaled-down variant — Tez's call after a real
+  width-conflict was found: strip cards were flex-pinned to ~90-120px, narrower
+  than the redesign's fixed-size badges needed), matching 19px gap, no
+  select-dot added (strips have never had multi-select).
+- Backend: `current_page` added to `/api/library`'s response (`backend/routers/
+  library.py`) so Singles-card progress reflects real reading position instead of
+  the old always-0-or-100% `read_count/issue_count` math; `genres`/
+  `personal_rating`/`favorites`/`flagged_for_review` added to `/api/home/strips`'
+  `_issue_card()` serializer (`backend/routers/home.py`) — both additive, no new
+  queries, reusing already-loaded `Issue` relationships.
+- Everything scoped under a new `.cover-card--redesign` CSS modifier class, never
+  the bare `.cover-card`/`.cover-img-wrap`/`.cover-info` selectors — Series Detail
+  rows and list view read no new rules and are unaffected by construction, not
+  just by intent.
+
+**Two real bugs found and fixed during live fine-tuning** (not caught by
+code-level review, only by looking at the running app): (1) a legacy
+`.cover-card.state-part-read .cover-info` gradient rule and a legacy
+cover-bottom "feather" pseudo-element were still bleeding through/painting over
+the new dark card face and the new progress pill respectively — both silently
+inherited from the pre-redesign CSS since the new rules didn't have enough
+specificity to override them; fixed with explicit higher-specificity overrides.
+(2) The Home Strip and main-grid progress bar for a barely-started single issue
+(9 of 417 pages) was genuinely correct but visually imperceptible at a few
+percent — not a bug, but confirms the underlying math via a real data check
+rather than trusting it visually.
+
+**Verified:** each round of fine-tuning confirmed live by Tez directly against
+the running app (repeated hard-refresh/cache-bust cycles needed throughout, since
+static assets are served without `Cache-Control` — same known gap Items 7/8
+already flagged). Round 2 (Home Strips/Folder View): Home Strips confirmed live
+across all strip types (Continue Reading, Recently Added, Random Unread, Random
+Genre) at the new wider size, correct spacing, and border no longer clipped at
+the strip's scroll edge (a real bug found and fixed — the scroll container had no
+left/right padding to accommodate the border's box-shadow bleed). Folder View's
+code changes mirror the exact same pattern already proven live in the other two
+surfaces and needed zero backend changes (all fields were already present), but
+could not be live-verified in this session — no Custom Tabs existed in the
+environment to open in Folder View mode, and creating one requires the admin
+password. Flagged for Tez to spot-check once a folder-based tab is available.

@@ -419,9 +419,10 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
 .section-label--link:hover { color: var(--accent); text-decoration: underline; }
 .continue-strip {
   display: flex;
-  gap: 10px;
+  gap: 19px;
   overflow-x: auto;
-  padding-bottom: 10px;
+  padding: 0 8px 10px;
+  margin: 0 -8px;
   scrollbar-width: thin;
   scrollbar-color: var(--surface-3) transparent;
 }
@@ -1124,6 +1125,261 @@ select.filter-select:focus,
   color: var(--text-3);
 }
 
+/* ── Redesigned CoverCard (main library grid only — Browse/Series/Singles/
+   All/Custom Tabs flat/search/fieldview, all via buildCoverCard()). Scoped
+   entirely under .cover-card--redesign so Folder View (buildFolderFileCard),
+   Home Strips (buildStripCard), Series Detail rows (buildIssueRow), and grid
+   list-view — all of which share the bare .cover-card/.cover-img-wrap/
+   .cover-info classes — are completely unaffected.
+
+   Fixed dark palette (not theme tokens) — this card looks the same in light
+   or dark site theme, like a physical card. Read-state is a colour signal:
+   blue border+ribbon = unread, green border+ribbon = reading or fully read
+   (exact hex TBC live, starting from the site's existing blue/green tokens).
+
+   The bezel/frame uses concentric box-shadow rings on a single element
+   rather than the original mockup's nested gradient divs + SVG noise-
+   turbulence filters — visually equivalent "premium card" read at a
+   fraction of the paint cost across a grid of hundreds of cards. ── */
+/* Specificity note: read-state rules above (.cover-card.state-read etc.,
+   ~line 949) are 2-3 classes deep. Every override below that needs to beat
+   them repeats .cover-card alongside .cover-card--redesign (both are always
+   present together on this element) rather than reaching for !important. */
+.cover-card.cover-card--redesign {
+  --rc-title: #f3ece0;
+  --rc-meta: #c9b79f;
+  --rc-unread: #0A5FFF;
+  --rc-progress: #3FB877;
+  background: linear-gradient(160deg, #1b2028 0%, #12161d 100%);
+  border: none;
+  /* Matte gap between the cover and the card's outer ring, matching the
+     design reference — the cover no longer sits flush against the border
+     (2026-07-15 fine-tune). Info block's own padding is reset below so
+     text aligns with the cover's inset edges rather than double-indenting. */
+  padding: 5px 5px 7px;
+}
+.cover-card.cover-card--redesign .cover-title { color: var(--rc-title); }
+.cover-card.cover-card--redesign .cover-count,
+.cover-card.cover-card--redesign .cover-year { color: var(--rc-meta); }
+.cover-card--redesign .cover-img-wrap {
+  border-radius: var(--radius);
+}
+
+/* Kill two legacy read-state layers that bleed through the fixed dark
+   redesign background: (1) the old black→green .cover-info gradient (this
+   was the visible bug — a green wash showing under the title/meta text),
+   and (2) the black cover-bottom "feather" pseudo-element, which sits at
+   the same bottom edge as .card-progress-bar and was painting over it. */
+.cover-card.cover-card--redesign.state-part-read .cover-info,
+.cover-card.cover-card--redesign.state-read      .cover-info {
+  background: none;
+}
+.cover-card.cover-card--redesign.state-part-read .cover-img-wrap::after {
+  content: none;
+}
+
+/* Card frame — simplified again (2026-07-15, "rewind" fine-tune): one
+   uniform border for every card, no read-state colour on the border at all
+   (that signal now lives only on the genre ribbon — see below) and no
+   separate favourite ring (the heart badge alone covers that). 45% white,
+   1px, soft-edged via a small blur radius. Wraps the WHOLE card.
+   Specificity: repeats .cover-card (see note ~line 1143) because the old
+   .cover-card.selected rule (2 classes) would otherwise beat a bare
+   .cover-card--redesign (1 class) on a selected redesigned card. */
+.cover-card.cover-card--redesign {
+  box-shadow:
+    0 0 5px 1px rgba(255, 255, 255, 0.45),
+    0 6px 16px rgba(0, 0, 0, 0.5);
+}
+/* No red border for flagged-for-review cards either — same uniform border
+   as every other card, explicit override so it beats the base rule
+   (style.css ~930) and its even-more-specific .is-favorite combo (~934)
+   regardless of source order. The flag SVG badge is the only signal now. */
+.cover-card.cover-card--redesign.is-flagged-review {
+  box-shadow:
+    0 0 5px 1px rgba(255, 255, 255, 0.45),
+    0 6px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* Progress bar — a floating pill overlay on the cover (2026-07-15
+   fine-tune), not a flush full-width line: inset from the edges and from
+   the select-dot (bottom-left) / flag-badge (bottom-right) corners, with
+   its own tinted track so it reads as a distinct element rather than a
+   border-adjacent stripe. */
+.card-progress-track {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 9px;
+  height: 5px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+.card-progress-fill {
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--rc-progress);
+}
+
+/* Flag-for-review badge — real SVG flag icon (2026-07-15 fine-tune),
+   matching the nav bar's icon style (stroke="currentColor", stroke-width 2,
+   rounded caps/joins — see index.html's .app-sidebar-icon SVGs), replacing
+   the emoji-tag pseudo-element the base rule uses (style.css ~910,
+   suppressed below for redesigned cards). Bottom-right of the cover —
+   rating stars have moved off the cover into the info block, freeing that
+   corner. Soft circle background (no border), matching the favourite heart
+   badge's current treatment for visual consistency between the two. */
+.cover-card--redesign.is-flagged-review .cover-img-wrap::after {
+  content: none;
+}
+.card-flag-badge {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6);
+  color: rgba(0, 0, 0, 0.75);
+  z-index: 1;
+}
+.card-flag-badge svg { display: block; }
+
+/* Favourite: no separate border treatment (2026-07-15 "rewind" fine-tune)
+   — the heart badge on the cover is the only favourite signal now, same
+   uniform border as every other card. */
+
+/* Heart badge circle — 60% white, no border (was solid #fff + 1px black
+   border), heart glyph 18px → 24px across two fine-tune rounds. Scoped to
+   the redesigned card only; Folder View/Series rows keep the original
+   badge (style.css ~877) untouched. Circle itself stays 20px — heart now
+   slightly exceeds it (no overflow:hidden set), which reads fine for an
+   icon glyph; flag if it needs the circle enlarged to match. */
+.cover-card--redesign.is-favorite .cover-img-wrap::before {
+  background: rgba(255, 255, 255, 0.6);
+  border: none;
+  font-size: 24px;
+}
+
+/* Info block — genre ribbon + rating stars, moved off the cover image and
+   paired onto their own rows (year+ribbon, count+stars) rather than a
+   separate side column, so the ribbon always sits on the year's row
+   regardless of whether a rating row exists below it (2026-07-15
+   fine-tune — a side-column layout let the ribbon drift up/down). */
+.cover-card--redesign .cover-info {
+  gap: 5px;
+  padding: 10px 0 0;
+}
+/* Anchor both meta rows to the bottom of the info block instead of letting
+   them trail directly under the title — a 2-line-wrapping title otherwise
+   pushes them further down than a 1-line title's, so cards in the same grid
+   row (stretched to equal height) show the ribbon/count at different
+   heights (2026-07-15 fine-tune). Title keeps whatever height it needs. */
+.cover-card--redesign .cover-title + .cover-meta-row {
+  margin-top: auto;
+}
+.cover-card--redesign .cover-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+/* Off-white text (same --text token the nav bar uses), neutral dark fill —
+   the solid blue/green fill used to clash with the card's white border.
+   Read-state colour now lives only in the 2px bottom border. */
+.card-genre-ribbon {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  border-bottom: 2px solid var(--rc-unread);
+}
+.cover-card--redesign.state-part-read .card-genre-ribbon,
+.cover-card--redesign.state-read      .card-genre-ribbon {
+  border-bottom-color: var(--rc-progress);
+}
+.card-rating-row {
+  display: flex;
+  gap: 2px;
+}
+.card-rating-row .rating-star {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--favourite);
+}
+
+/* Compact tier — smaller ribbon so it doesn't crowd the year at 90-120px
+   card width (the row-pairing above already keeps year+ribbon on one line
+   at every size; this just trims padding/font so that line stays tidy). */
+:root[data-card-tier="compact"] .card-genre-ribbon {
+  padding: 2px 6px;
+  font-size: 8px;
+}
+
+/* Hover / selected — glow + lift, since the ring already owns the border,
+   a simple border-color swap wouldn't read. Hover intensifies the same
+   uniform white border; selected still turns gold (a distinct, temporary
+   multi-select state, unrelated to favourite). */
+.cover-card--redesign {
+  transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.cover-card--redesign:hover {
+  transform: translateY(-4px);
+  border-color: transparent;
+}
+.cover-card.cover-card--redesign:hover {
+  box-shadow:
+    0 0 4px 2px rgba(255, 255, 255, 0.85),
+    0 10px 26px rgba(0, 0, 0, 0.6);
+}
+.cover-card.cover-card--redesign.selected {
+  box-shadow:
+    0 0 0 2px var(--favourite),
+    0 0 18px 4px color-mix(in srgb, var(--favourite) 55%, transparent),
+    0 10px 26px rgba(0, 0, 0, 0.6);
+}
+
+/* List view is a separate, not-yet-redesigned pass — hide the ribbon/stars
+   entirely so list rows keep their plain pre-redesign look (year/count text
+   only), regardless of specificity. */
+.cover-grid.list-view .card-genre-ribbon,
+.cover-grid.list-view .card-rating-row { display: none; }
+.cover-grid.list-view .cover-title + .cover-meta-row { margin-top: 0; }
+.cover-grid.list-view .cover-card.cover-card--redesign { padding: 0; }
+.cover-grid.list-view .cover-card--redesign .cover-info { padding: 9px 12px; }
+.cover-grid.list-view .cover-card--redesign .cover-img-wrap { border-radius: var(--radius) 0 0 var(--radius); }
+
+/* Extra breathing room between cards, requested alongside the border
+   simplification above — scoped to the main library grid (#coverGrid) only.
+   :not(.list-view) guards list-view's own tighter 6px row gap
+   (.cover-grid.list-view, style.css ~769) from being overridden — an ID
+   selector would otherwise beat it regardless of source order. */
+#coverGrid:not(.list-view) { gap: 19px; }
+/* Folder View extension (2026-07-15) — #folderGrid shares the .cover-grid
+   class but has its own ID, so it didn't inherit the rule above; same
+   treatment now that Folder View cards carry .cover-card--redesign too. */
+#folderGrid:not(.list-view) { gap: 19px; }
+
+/* Home Strip extension (2026-07-15) — strip cards are flex-pinned to
+   var(--card-min) (90-120px), narrower than the main grid's cards, which
+   grow via minmax(...,1fr). The redesign's fixed-size badges/ribbon/
+   progress-pill are sized for the wider grid card, so widen strip cards to
+   fit rather than shrinking the redesign to match (Tez's call) — still
+   grows further if the admin's card-size setting is already wider. */
+.continue-strip .cover-card.strip-card.cover-card--redesign {
+  width: max(var(--card-min), 160px);
+}
+
 
 /* ── Folder View (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9) ── */
 .folder-view-nav { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: var(--space-3); }
@@ -1174,6 +1430,13 @@ select.filter-select:focus,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* Redesigned card: fixed dark face, so use the same off-white/cream meta
+   colour as the rest of the info block rather than the theme-dependent
+   --text-3 grey, plus a little top margin since it trails the meta rows. */
+.cover-card.cover-card--redesign .folder-result-path {
+  color: var(--rc-meta);
+  margin-top: 2px;
 }
 
 /* ── Search results ──────────────────────────────────────────────────────── */
@@ -1586,6 +1849,48 @@ select.filter-select:focus,
 .issue-cover-img:hover {
   transform: scale(1.04);
   border-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Redesigned cover frame (matches the grid card's bezel) — fixed dark
+   palette regardless of site theme, state-coloured ring: blue = unread,
+   green = reading/read. Wraps the existing hover-zoom .issue-cover-img
+   rather than replacing it. */
+.issue-cover-link--redesign {
+  --rc-bezel: #7d838c;
+  --rc-unread: #0A5FFF;
+  --rc-progress: #3FB877;
+  display: block;
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 0 0 2px var(--rc-unread),
+    0 0 0 4px #1b1e24,
+    0 0 0 6px var(--rc-bezel),
+    0 0 0 8px #2a2e34,
+    0 10px 32px rgba(0, 0, 0, 0.6);
+}
+.issue-cover-link--redesign.state-part-read,
+.issue-cover-link--redesign.state-read {
+  box-shadow:
+    0 0 0 2px var(--rc-progress),
+    0 0 0 4px #1b1e24,
+    0 0 0 6px var(--rc-bezel),
+    0 0 0 8px #2a2e34,
+    0 10px 32px rgba(0, 0, 0, 0.6);
+}
+.issue-cover-link--redesign .issue-cover-img { box-shadow: none; }
+
+/* Progress bar — under the cover, not overlaid, with a visible track so a
+   partial fill still reads clearly at a glance. */
+.issue-progress-track {
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: #1b1e24;
+  overflow: hidden;
+}
+.issue-progress-fill {
+  height: 100%;
+  background: #3FB877;
+  border-radius: var(--radius-pill);
 }
 .issue-actions {
   display: flex;

@@ -187,6 +187,7 @@ def get_library(
         .all()
     )
     read_map = {p.issue_id: p.status for p in all_progress}
+    page_map = {p.issue_id: p.current_page for p in all_progress}
 
     result = []
     for series_name, issues in sorted(series_map.items(), key=lambda x: x[0].lstrip("'\"").lower()):
@@ -221,6 +222,10 @@ def get_library(
             "year": cover_issue.year,
             "format_group": cover_issue.format_group,
             "page_count": cover_issue.page_count,
+            # Cover issue's own page-level progress — only meaningful for a
+            # Singles card (issue_count == 1), where read_count/issue_count
+            # can only ever be 0% or 100%. Harmless/unused for Series cards.
+            "current_page": page_map.get(cover_issue.id, 0),
             "summary": cover_issue.summary,
             "genres": genres,
             "writers": writers,
