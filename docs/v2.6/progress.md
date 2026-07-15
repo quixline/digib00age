@@ -2419,6 +2419,7 @@ every launch — a registry write should be a visible, deliberate action.
   old editor). The `?w=` param needs a tray-server restart; the strip works
   without it (full-size images, heavier). Flagged asset-versioning as a
   possible small follow-up.
+- Committed on branch `full-editor-4col-redesign` and pushed to origin.
 
 ## Session — 2026-07-15 — Site-wide layout width, multi-cover background, scrollbars
 
@@ -2507,4 +2508,74 @@ threshold, all three qualify as cosmetic (visual only, no nav/IA change).
     a real dark background like the other two. Verified live: Genre popup now
     matches Format/Age Rating; closed control still shows no visible inner
     box.
-- Committed on branch `full-editor-4col-redesign` and pushed to origin.
+
+## Session — 2026-07-15 — Legacy credit-column cleanup + roadmap triage
+
+Executed `ROADMAP.md`'s deferred "Drop the old raw CSV credit columns on
+`Issue`" item, then closed out the roadmap's `Later` lane triage that
+followed from it.
+
+- **Investigated before touching anything, found the docs were wrong.**
+  `ROADMAP.md`/`SPEC.md` described all 6 columns (`writer`/`penciller`/
+  `inker`/`colorist`/`letterer`/`cover_artist`) as "written by the scanner
+  but no longer read" — safe to drop outright. Traced every usage in
+  `backend/` and `frontend/js/app.js` and found that's only true for 4 of
+  the 6. `writer`/`penciller` are still genuinely read server-side, powering
+  three live things: the library search box (`path_utils.matches_search()`),
+  "Group by Writer" (confirmed still present in `#groupBySelect`), and the
+  series-card meta line (`library.py`'s per-series `writers`/`artists`
+  aggregate). Only `_issue_to_dict()`'s dead JSON serialization and the
+  already-migrated Issue Detail credit links matched the "no longer read"
+  claim.
+- **Talked through the finding with Tez** — the full fix (migrate those 3
+  live consumers onto `people`/`issue_credits`, then drop all 6) is real,
+  working-code territory he couldn't easily verify himself. His call: only
+  remove what's genuinely dead, leave anything live completely untouched.
+  `writer`/`penciller` folded into his own already-queued `INBOX.md`
+  "scan code base - clean, removal of dead code" item as the right home for
+  that follow-up, rather than deciding it in a rush here.
+- **Built (reduced scope — 4 columns only):** `backend/scanner.py` — removed
+  the 4 dead write assignments, `writer`/`penciller` untouched.
+  `backend/routers/library.py` — removed the 4 dead keys from
+  `_issue_to_dict()`'s JSON response. `backend/models.py` — removed the 4
+  dead `Column` defs from `Issue`. `backend/database.py` — new
+  `_drop_legacy_credit_columns()`, an idempotent `DROP COLUMN` migration
+  (mirrors `_add_missing_issue_columns()`'s guarded-`ALTER TABLE` pattern),
+  wired into `init_db()`.
+- **Verified against scratch copies of the real DB only** (per `CLAUDE.md`
+  §6 — real DB never touched): confirmed SQLite 3.49.1 (well above the 3.35
+  minimum for `DROP COLUMN`); ran the actual shipped
+  `_drop_legacy_credit_columns()` function (not a re-implementation) against
+  a scratch copy — exactly the 4 target columns dropped, `writer`/
+  `penciller` byte-identical before/after, idempotent on a second call;
+  confirmed the `Issue` ORM class and the real `_issue_to_dict()` function
+  both work cleanly against the migrated schema (no `AttributeError`, no
+  dead keys in the response); grepped the whole backend/frontend for any
+  other reference to the 4 dropped fields — none found, aside from
+  `scanner.py`'s XML-parsing `meta` dict still reading the tags into local
+  variables that are simply never persisted now (harmless, dict keys not
+  attribute access, flagged as minor residue for the future cleanup
+  session rather than touched here). Confirmed the real DB file was
+  untouched throughout, before and after.
+- **Tez manually tested the real app** after a restart — library loads,
+  search, Group by Writer, and the series-card writer/artist display all
+  confirmed working.
+- **Roadmap triage, same session:** Tez confirmed the other two `Later`-lane
+  items were separately ruled out — Advanced Search page (existing inline
+  filter+search already cover the need) and multiple scan locations across
+  drives + the bundled series-level overview field idea (single-location
+  app/workflow, judged not worth the complexity; per-issue descriptions
+  already cover the overview-field need). With all three `Later` items now
+  resolved, removed the `Later` lane from `docs/meta/roadmap.html` entirely
+  (3-column grid: Now/Next/Launch) — see `ROADMAP.md`'s "Resolved" section
+  and `DECISIONS.md` for full rationale on each.
+- **Found and fixed a doc bug while appending this entry:** the previous
+  session's append (2026-07-15, "Site-wide layout width, multi-cover
+  background, scrollbars") had accidentally displaced a pre-existing
+  "Committed on branch `full-editor-4col-redesign` and pushed to origin."
+  line — it belonged to the earlier Full Editor Item 7 session but had been
+  pushed down to the end of the file by that edit's insertion point,
+  making it misleadingly read as if it described the layout/background/
+  scrollbar session (which was committed to `main`, not that branch, and
+  explicitly not pushed per Tez's instruction). Moved back to its correct
+  position.

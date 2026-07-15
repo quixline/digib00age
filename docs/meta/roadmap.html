@@ -42,7 +42,7 @@
     border-radius: 10px; padding: 8px 14px; margin-bottom: 1.75rem; }
   .bugs-strip .count { font-weight: 600; color: var(--text); }
 
-  .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; align-items: start; }
+  .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: start; }
   @media (max-width: 900px) { .board { grid-template-columns: 1fr; } }
 
   .lane { background: var(--bg2); border: 0.5px solid var(--border);
@@ -105,24 +105,7 @@
     <div class="lane-head">
       <div>
         <div class="lane-title">Now</div>
-        <div class="lane-sub">Web UI Redesign (v2.6 Item 1) and Mobile UI Redesign (v2.6 Item 4) both built and fully verified — nothing currently queued</div>
-      </div>
-      <div class="lane-count">0</div>
-    </div>
-    <div class="cards">
-      <div class="launch-empty">
-        Deliberately empty — both scoped-and-queued items closed. Next
-        Now-lane item comes from a triage session, not assumed here.
-      </div>
-    </div>
-  </div>
-
-  <!-- NEXT -->
-  <div class="lane next">
-    <div class="lane-head">
-      <div>
-        <div class="lane-title">Next</div>
-        <div class="lane-sub">v2.6 — moved from v2.5 2026-07-05 to sit alongside the UI redesign work</div>
+        <div class="lane-sub">Promoted from Next 2026-07-15 — Web UI Redesign (v2.6 Item 1) and Mobile UI Redesign (v2.6 Item 4) both shipped, freeing this lane</div>
       </div>
       <div class="lane-count">3</div>
     </div>
@@ -130,7 +113,22 @@
 
       <div class="card" onclick="this.classList.toggle('open')">
         <div class="card-top">
-          <div class="order-badge ob-next">1</div>
+          <div class="order-badge ob-now">1</div>
+          <div>
+            <div class="c-title">Scope: installer — Windows, Mac, and Linux</div>
+            <div class="c-sub">Expanded scope — cross-platform is meaningfully bigger than Windows-only</div>
+          </div>
+        </div>
+        <div class="c-detail">
+          Current setup assumes Windows-specific paths and the pystray tray
+          launcher — likely its own dedicated scoping session, not a quick pass.
+          <div class="ref">ROADMAP.md — "v2.5 — holding list"</div>
+        </div>
+      </div>
+
+      <div class="card" onclick="this.classList.toggle('open')">
+        <div class="card-top">
+          <div class="order-badge ob-now">2</div>
           <div>
             <div class="c-title">Add: user guide</div>
             <div class="c-sub">First mention — not scoped at all yet</div>
@@ -146,7 +144,7 @@
 
       <div class="card" onclick="this.classList.toggle('open')">
         <div class="card-top">
-          <div class="order-badge ob-next">2</div>
+          <div class="order-badge ob-now">3</div>
           <div>
             <div class="c-title">Add: tooltips (mouseover) site-wide</div>
             <div class="c-sub">Low priority, fits naturally alongside the UI redesign work</div>
@@ -157,79 +155,29 @@
         </div>
       </div>
 
-      <div class="card" onclick="this.classList.toggle('open')">
-        <div class="card-top">
-          <div class="order-badge ob-next">3</div>
-          <div>
-            <div class="c-title">Scope: installer — Windows, Mac, and Linux</div>
-            <div class="c-sub">Expanded scope — cross-platform is meaningfully bigger than Windows-only</div>
-          </div>
-        </div>
-        <div class="c-detail">
-          Current setup assumes Windows-specific paths and the pystray tray
-          launcher — likely its own dedicated scoping session, not a quick pass.
-          <div class="ref">ROADMAP.md — "v2.5 — holding list"</div>
-        </div>
-      </div>
-
     </div>
   </div>
 
-  <!-- LATER -->
-  <div class="lane later">
+  <!-- NEXT -->
+  <div class="lane next">
     <div class="lane-head">
       <div>
-        <div class="lane-title">Later</div>
-        <div class="lane-sub">No version assigned, no committed order</div>
+        <div class="lane-title">Next</div>
+        <div class="lane-sub">Emptied 2026-07-15 — its 3 items promoted to Now</div>
       </div>
-      <div class="lane-count">3</div>
+      <div class="lane-count">0</div>
     </div>
     <div class="cards">
-
-      <div class="card" onclick="this.classList.toggle('open')">
-        <div class="card-top">
-          <div>
-            <div class="c-title">Drop old raw CSV credit columns</div>
-            <div class="c-sub">Cleanup, once people/credits proven stable</div>
-          </div>
-        </div>
-        <div class="c-detail">
-          Kept as an inert rollback safety net since the Writer/Artist dedup
-          shipped. Drop in a dedicated session once the new system has run for
-          real with no issues over a release cycle.
-          <div class="ref">ROADMAP.md</div>
-        </div>
+      <div class="launch-empty">
+        Deliberately empty — promoted to Now. Next Next-lane item comes from a
+        triage session, not assumed here.
       </div>
-
-      <div class="card" onclick="this.classList.toggle('open')">
-        <div class="card-top">
-          <div>
-            <div class="c-title">Advanced Search page</div>
-            <div class="c-sub">Only if inline filter+search proves insufficient</div>
-          </div>
-        </div>
-        <div class="c-detail">No urgency — current inline filtering is working.
-          <div class="ref">SPEC.md §20.14</div>
-        </div>
-      </div>
-
-      <div class="card" onclick="this.classList.toggle('open')">
-        <div class="card-top">
-          <div>
-            <div class="c-title">Multiple scan locations / series overview field</div>
-            <div class="c-sub">Two small SPEC.md ideas, not yet needed</div>
-          </div>
-        </div>
-        <div class="c-detail">
-          Multi-drive scanning with per-folder exclude (would help folder-scoped
-          tabs). Series-level overview text field — per-issue descriptions
-          cover the need for now.
-          <div class="ref">SPEC.md §20.14</div>
-        </div>
-      </div>
-
     </div>
   </div>
+
+  <!-- LATER lane removed 2026-07-15 — all 3 items resolved (2 dropped/ruled
+       out, 1 partially done + folded into INBOX.md's code-scan item). See
+       ROADMAP.md "Resolved" section for the full rationale on each. -->
 
   <!-- LAUNCH -->
   <div class="lane launch">

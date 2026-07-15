@@ -290,12 +290,8 @@ elif "Series" in file_path:
 | `summary` | TEXT | Plot description |
 | `story_arc` | TEXT | Nullable |
 | `story_arc_number` | INTEGER | Nullable — position within arc for reading order |
-| `writer` | TEXT | Raw CSV e.g. "Dan Abnett, Ian Edginton" |
-| `penciller` | TEXT | Raw CSV |
-| `inker` | TEXT | |
-| `colorist` | TEXT | |
-| `letterer` | TEXT | |
-| `cover_artist` | TEXT | |
+| `writer` | TEXT | Raw CSV e.g. "Dan Abnett, Ian Edginton". Kept 2026-07-15 (see §21 change log) — still powers search/Group-by-Writer/series-card display, not yet migrated to `people`/`issue_credits` |
+| `penciller` | TEXT | Raw CSV. Same status as `writer` above ("Artist" in the UI) |
 | `characters` | TEXT | Raw CSV |
 | `teams` | TEXT | Raw CSV |
 | `locations` | TEXT | Raw CSV |
@@ -1013,9 +1009,10 @@ Recorded so they aren't mistaken for code changes:
 > See `CHANGELOG.md` / `progress.md` for build logs, `ROADMAP.md` for what's still
 > actually deferred.
 
-- Multiple scan locations across drives, with per-folder exclude (would have made the 2000 AD split clean).
-- Series-level overview field (needs XML + DB + editor changes).
-- Advanced Search page (if inline filter+search proves insufficient).
+> **Corrected 2026-07-15:** the three remaining items below (multiple scan
+> locations, series-level overview field, Advanced Search page) were all
+> ruled out, not built — see `ROADMAP.md`'s "Resolved" section for the
+> rationale on each. Nothing currently deferred under this heading.
 
 ### 20.15 Multi-select Scope Boundary (Tier 4 Item 2, 2026-06-21; expanded 2026-06-23)
 
@@ -1252,3 +1249,4 @@ per-series aggregate (untouched, out of scope for this item).
 | 2026-06-22 | **Section 20.9's hardcoded 2000 AD section removed (v2.2)**, exactly as anticipated by that section's own "removable later if the app ever goes public" note. Its behaviour is generalised into Folder View, a new `view_mode` on Custom Tabs — see `CUSTOM_TABS_SPEC.md` §9 (current authoritative design) and `comicvault-changes-v2.2.md` (build record). Section 20.15's multi-select scope bullet updated: `buildAdProgCard()` → `buildFolderFileCard()`. | `comicvault-changes-v2.2.md` Part A — 2000 AD's bespoke view was always meant to come out before the app went public; this was the planned removal, not a regression. |
 | 2026-06-30 | **CBR support added (v2.4 Item 5), reversing V1's "all files confirmed CBZ" assumption.** Scanner (§6/§6.1) now matches `.cbr` alongside `.cbz`, opening via `rarfile` instead of `zipfile`. New `issues.container_format` column (§7) distinguishes container type from the unrelated ComicInfo `format` field. `rarfile` added to dependencies (§13), extraction-only — CBR is never written by any part of ComicVault; RAR creation needs a paid WinRAR install, so editing a CBR's metadata rebuilds it as `.cbz` instead (see `EDITOR_SPEC.md` §3.1/3.2/§2/§9 for the corresponding reversal there). Driven by a shift toward a possible public release — forcing users with large mixed CBZ/CBR collections (some >100,000 issues) to bulk-convert before their library is browsable was judged unviable. PDF and EPUB, originally scoped alongside CBR in the same v2.4 item, were dropped — PDF is handled by CAPT's existing convert-to-CBZ tool instead (v2.4 Item 6) rather than native scanner support; EPUB was dropped entirely as structurally incompatible with the page-indexed reading model and not a confirmed need. Full rationale in `DECISIONS.md`, build item in `v2.4/comicvault-changes-v2.4.md` Item 5/11. | v2.4 Item 5, eng-reviewed and scoped 2026-06-30. |
 | 2026-07-02 | **§6 corrected — scanner finds `ComicInfo.xml` at any folder depth, not just the archive root (BUG-018 fix).** `_parse_cbz()` now reuses `find_xml_in_archive()`/`extract_xml_from_archive()` (`backend/editor/archive_io.py`), the same helpers the Basic/Full Editors already used — previously only the scanner's initial read was folder-blind; editors and the flatten-on-save rebuild path were already correct. No rebuild-at-scan-time added (would risk real delay across ~5,500 archives); flattening still only happens naturally on first edit-save, unchanged. | `BUGS.md`/`archive/bugs-fixed-archive.md` BUG-018 — found 2026-06-30 scoping v2.4 Item 8, fixed off-cycle 2026-07-02 after v2.4's close (never tied to a numbered version item). |
+| 2026-07-15 | **§7 `issues` table — 4 of 6 legacy raw-CSV credit columns dropped:** `inker`/`colorist`/`letterer`/`cover_artist` (confirmed dead, no reader anywhere in backend/frontend) removed via a new idempotent `_drop_legacy_credit_columns()` migration in `database.py`. `writer`/`penciller` deliberately kept — traced every usage first and found they still power live search, "Group by Writer", and the series-card meta line, not yet migrated onto `people`/`issue_credits`. **§20.14 also trimmed** — Advanced Search page and Multiple scan locations/series-overview-field entries removed, both ruled out by Tez (see `ROADMAP.md` "Resolved" section for rationale). | `ROADMAP.md` "Resolved" · `DECISIONS.md` — verified against a scratch DB copy before touching the real one; Tez manually confirmed the real app afterward. |

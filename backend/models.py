@@ -37,13 +37,12 @@ class Issue(Base):
     story_arc       = Column(Text, nullable=True)
     story_arc_number = Column(Integer, nullable=True)       # position within arc
 
-    # Credits — raw CSV strings, never split (except genres)
+    # Credits — raw CSV strings, never split (except genres). inker/colorist/
+    # letterer/cover_artist dropped 2026-07-15 (confirmed dead — no reader
+    # anywhere in backend/frontend); writer/penciller kept, still power
+    # search/Group-by-Writer/series-card display — see DECISIONS.md.
     writer          = Column(Text, nullable=True)
     penciller       = Column(Text, nullable=True)
-    inker           = Column(Text, nullable=True)
-    colorist        = Column(Text, nullable=True)
-    letterer        = Column(Text, nullable=True)
-    cover_artist    = Column(Text, nullable=True)
 
     # Extra metadata — raw CSV
     characters      = Column(Text, nullable=True)

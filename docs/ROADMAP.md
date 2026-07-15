@@ -308,18 +308,36 @@ Tez 2026-07-05:
 
 ---
 
-## Deferred to a future version (not started, no committed timeline, no version assigned)
-
-- **Drop the old raw CSV credit columns on `Issue`.** Tier 4 Item 3 (Writer/Artist
-  dedup, shipped 2026-06-21) kept `writer`/`penciller`/`inker`/`colorist`/`letterer`/
-  `cover_artist` as an inert rollback safety net rather than dropping them
-  immediately. Drop them in a dedicated later session once the `people`/
-  `issue_credits` system has run for real with no issues found over a release cycle.
-
----
-
 ## Resolved (kept for context, not actionable)
 
+- **Drop the old raw CSV credit columns on `Issue` — partially resolved
+  2026-07-15.** Tier 4 Item 3 (Writer/Artist dedup, shipped 2026-06-21) kept
+  `writer`/`penciller`/`inker`/`colorist`/`letterer`/`cover_artist` as an inert
+  rollback safety net rather than dropping them immediately, pending the
+  `people`/`issue_credits` system running for real with no issues over a
+  release cycle — confirmed 2026-07-15. Traced every usage before dropping
+  anything and found the "no longer read" assumption was wrong for 2 of the
+  6: `writer`/`penciller` still power live search, "Group by Writer", and the
+  series-card meta line (see `DECISIONS.md`). Dropped the 4 genuinely-dead
+  columns (`inker`/`colorist`/`letterer`/`cover_artist`) this session, verified
+  against a scratch DB copy, Tez confirmed the real app afterward. Migrating
+  `writer`/`penciller`'s 3 live consumers onto `people`/`issue_credits` (so
+  those 2 columns can also drop) is real, non-trivial work — folded into the
+  existing `INBOX.md` "scan code base - clean, removal of dead code" item as
+  its natural home, not decided in a rush here.
+- **Advanced Search page — ruled out 2026-07-15.** Per Tez: covered by
+  existing inline filtering + search — both already work, so a dedicated
+  page would add code/complexity for little to no real benefit over what's
+  there. `SPEC.md` §20.14 entry removed.
+- **Multiple scan locations across drives + series-level overview field —
+  ruled out 2026-07-15.** Two small `SPEC.md` §20.14 ideas bundled on one
+  roadmap card. Multi-location scanning: Tez only has one library location,
+  and the app (and his own file-organizing process) is built around that
+  assumption — considered generalizing for other users' setups but judged it
+  too complex a lift for the benefit; if this goes live for others, they
+  adapt to a single-location model rather than the app supporting multiple.
+  Series-level overview field: also ruled out — per-issue descriptions
+  already cover the need. Both `SPEC.md` §20.14 entries removed.
 - **Port 8000 / Windows port-exclusion conflict.** A user-configurable server port
   (`ADMIN_SPEC.md` §7.3) was added 2026-06-27 as a workaround — Tez confirmed this
   resolves it in practice. **Resolved at the source 2026-06-29 (v2.4 Item 2):**

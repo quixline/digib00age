@@ -90,6 +90,23 @@ def _add_missing_issue_columns():
         conn.commit()
 
 
+def _drop_legacy_credit_columns():
+    """
+    2026-07-15: inker/colorist/letterer/cover_artist confirmed dead (no
+    reader anywhere in backend/frontend — see DECISIONS.md) and dropped.
+    writer/penciller are NOT included here — still power search/Group-by-
+    Writer/series-card display, deliberately left in place. Idempotent, same
+    guarded-ALTER-TABLE pattern as _add_missing_issue_columns(). Requires
+    SQLite 3.35+ (2021) for DROP COLUMN support.
+    """
+    with engine.connect() as conn:
+        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(issues)"))}
+        for col in ("inker", "colorist", "letterer", "cover_artist"):
+            if col in cols:
+                conn.execute(text(f"ALTER TABLE issues DROP COLUMN {col}"))
+        conn.commit()
+
+
 def _add_missing_custom_tab_columns():
     """
     create_all() only creates missing *tables* — it never adds columns to a
@@ -110,6 +127,7 @@ def init_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     Base.metadata.create_all(bind=engine)
     _add_missing_issue_columns()
+    _drop_legacy_credit_columns()
     _add_missing_custom_tab_columns()
     with engine.connect() as conn:
         for ddl in _PERF_INDEXES:

@@ -43,7 +43,7 @@ Example:
 
 [feature] are there any performace improvements that can be made to speed up the time between clicking Edit XML in /issue/id to when the editor opens?
 
-[feature] scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base
+[feature] scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base (includes: migrate writer/penciller off the raw-CSV `Issue` columns onto `people`/`issue_credits` — search, Group by Writer, and the series-card meta line still read the old columns — then drop them; see `DECISIONS.md` 2026-07-15 "Legacy raw-CSV credit columns")
 
 [feature] plan & build windows install package
 

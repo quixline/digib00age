@@ -13,6 +13,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-15** — Dropped 4 of 6 legacy raw-CSV credit columns (`inker`/
+  `colorist`/`letterer`/`cover_artist`, confirmed dead) from `issues`;
+  `writer`/`penciller` deliberately kept (still power search/Group-by-Writer/
+  series-card display). Roadmap triage same session: Advanced Search page and
+  multiple scan locations/series-overview-field ruled out; `Later` lane
+  removed from `roadmap.html`. See `v2.6/progress.md` "Legacy credit-column
+  cleanup + roadmap triage".
 - **2026-07-15** — Site-wide scrollbar restyle (matching the filter-dropdown
   look) across the main app and the XML Editor; fixed a same-session
   regression where it caused the Editor's Genre dropdown popup to render

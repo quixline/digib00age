@@ -4,6 +4,55 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Legacy raw-CSV credit columns: dropped only the 4 confirmed-dead ones, not all 6
+
+**Decided:** 2026-07-15, executing `ROADMAP.md`'s deferred "Drop the old raw CSV
+credit columns" item.
+
+**The existing docs were wrong.** `ROADMAP.md`/`SPEC.md` described all 6 columns
+(`writer`/`penciller`/`inker`/`colorist`/`letterer`/`cover_artist`) as "written by
+the scanner but no longer read" since the June 2026 Writer/Artist dedup — implying
+a safe, mechanical drop. Traced every usage in `backend/` and
+`frontend/js/app.js` before touching anything and found that's only true for 4 of
+the 6. `writer`/`penciller` are still genuinely read server-side, powering three
+things live in the UI today: the library search box (`path_utils.matches_search()`),
+"Group by Writer" (`#groupBySelect`, confirmed still present), and the series-card
+meta line (`library.py`'s per-series `writers`/`artists` aggregate). Only
+`_issue_to_dict()`'s dead JSON serialization and the already-migrated Issue Detail
+credit links (on `people`/`issue_credits`) matched the "no longer read" claim.
+
+**Why scope down instead of migrating writer/penciller too:** the full fix (rewrite
+those 3 live consumers to query `people`/`issue_credits` instead of the raw
+columns, add eager-loading to avoid reintroducing the N+1 class of bug
+`v2.6 Item 2` just fixed, then drop) is real, working code Tez uses daily —
+search, grouping, and what he sees under every series card. Tez's explicit call,
+given he can't easily verify a backend data-model migration himself: don't touch
+anything currently working. Dropped only the 4 confirmed-dead columns this
+session (verified against a scratch DB copy, then Tez manually confirmed the real
+app). The `writer`/`penciller` migration is real, non-trivial work — folded into
+Tez's own already-queued `INBOX.md` "scan code base - clean, removal of dead
+code" item as its natural home, a session with room for the testing that
+behavior-changing work deserves, rather than being decided in a rush here.
+
+### Advanced Search page and multi-location scanning — ruled out
+
+**Decided:** 2026-07-15, closing out `SPEC.md` §20.14's remaining "deferred"
+entries and `ROADMAP.md`'s roadmap.html `Later` lane.
+
+**Advanced Search page:** existing inline filter+search already cover the same
+ground a dedicated page would — Tez's call was that building one would add real
+code/maintenance for little to no benefit over what's already there.
+
+**Multiple scan locations across drives (+ the bundled series-level overview
+field idea):** Tez's own library lives in one location, and both the app and his
+own file-organizing workflow are built around that assumption. Considered
+generalizing for other users' setups (multi-drive scanning, per-folder excludes)
+but judged the complexity not worth it for a single-user tool — if this ever goes
+live for others, the expectation is they adapt to a single-location model rather
+than the app supporting multiple. The series-level overview field (a free-text
+description at the series level) was ruled out separately in the same pass —
+per-issue descriptions already cover the need.
+
 ### Page background: multiple real covers, not a code-generated gradient
 
 **Decided:** 2026-07-15, reworking `SPEC.md` §20.19 (multi-cover cloud field).
