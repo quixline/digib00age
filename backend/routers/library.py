@@ -84,6 +84,7 @@ def _issue_to_dict(issue: Issue, progress: ReadingProgress | None) -> dict:
         "black_and_white": issue.black_and_white,
         "manga": issue.manga,
         "favorites": issue.favorites,
+        "flagged_for_review": issue.flagged_for_review,
         "personal_rating": issue.personal_rating,
         "page_count": issue.page_count,
         "count": issue.count,
@@ -232,6 +233,7 @@ def get_library(
             # above), not just the cover issue — favouriting issue #14 of a
             # 20-issue series must still surface the series under Favourites.
             "favorites": any(i.favorites for i in issues),
+            "flagged_for_review": any(i.flagged_for_review for i in issues),
             "personal_rating": cover_issue.personal_rating,
         })
 
@@ -287,6 +289,7 @@ def get_tab_folder_contents(
     subfolder_counts: dict[str, int] = {}
     subfolder_issue_ids: dict[str, list[int]] = {}
     subfolder_has_favorite: dict[str, bool] = {}
+    subfolder_has_flagged_review: dict[str, bool] = {}
     for issue in under_target:
         issue_dir = normalize_path(os.path.dirname(issue.file_path))
         if issue_dir == target_dir:
@@ -298,6 +301,8 @@ def get_tab_folder_contents(
         subfolder_issue_ids.setdefault(immediate_child, []).append(issue.id)
         if issue.favorites:
             subfolder_has_favorite[immediate_child] = True
+        if issue.flagged_for_review:
+            subfolder_has_flagged_review[immediate_child] = True
 
     progress_map = {
         p.issue_id: p
@@ -314,6 +319,7 @@ def get_tab_folder_contents(
                 f"/api/cover/{random.choice(subfolder_issue_ids[name])}" if count else None
             ),
             "has_favorite": subfolder_has_favorite.get(name, False),
+            "has_flagged_review": subfolder_has_flagged_review.get(name, False),
         }
         for name, count in sorted(subfolder_counts.items(), key=lambda kv: kv[0].lower())
     ]
@@ -475,6 +481,7 @@ def get_series(
             "page_count": iss.page_count,
             "summary": iss.summary,
             "favorites": iss.favorites,
+            "flagged_for_review": iss.flagged_for_review,
             "personal_rating": iss.personal_rating,
         })
 

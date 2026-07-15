@@ -2619,3 +2619,84 @@ Tez asked whether anything could be done about the delay between clicking
 - Full before/after numbers and root-cause writeup added to
   `docs/PERFORMANCE.md` as a new finding (#11) with its own re-baseline
   entry, rather than duplicating the detail here.
+
+## Session — 2026-07-15 (same day, follow-up) — Review Queue: flag issues + batch-send to Full Editor (v2.6 Item 8)
+
+Ad-hoc feature request: various issues scattered across different series/
+folders turn out to have incorrect metadata; fixing them meant manually
+re-locating each one through the Full Editor's file picker. Wanted a way to
+flag issues wherever noticed, then batch-pull them into the editor.
+
+- **Investigated first** — confirmed `NeedsReview` (`EDITOR_SPEC.md` §9) is
+  an unrelated flag (ComicTagger low-confidence, XML-only, Full-Editor-only
+  visual, never persisted/queryable). No existing "flag for later batch
+  action" mechanism. Closest precedent: `Issue.favorites` — a boolean DB
+  column + bulk multi-select toolbar action + menu-bar filter toggle. This
+  feature mirrors that pattern closely.
+- **Confirmed with Tez before building:** flag auto-clears on save in either
+  editor (matches `NeedsReview`'s existing behaviour); viewing flagged
+  issues is a filter toggle within the current view, not a dedicated nav
+  tab (avoids spending one of the 4 visible-tab slots `CUSTOM_TABS_SPEC.md`
+  caps); a single-issue toggle belongs on `/issue/{id}` too, not just bulk
+  multi-select; and — the one real architectural fork — saving a
+  review-queue issue inside the Full Editor should trigger the same DB
+  rescan the Basic Editor already does, a scoped, confirmed exception to
+  Full Editor's deliberate "never touches the DB" rule (`EDITOR_SPEC.md`
+  §5), since it's now handling already-catalogued files too. Files with no
+  matching `Issue` row (the original pre-library use case) stay completely
+  untouched.
+- **Built:** new `Issue.flagged_for_review` column (mirrors `favorites`,
+  guarded `ALTER TABLE` migration); single-issue + bulk flag/unflag
+  endpoints (`backend/routers/progress.py`, mirroring the existing
+  mark-read/favorite patterns); `flagged_for_review` added everywhere
+  `favorites` is already serialized in `library.py` (no new query
+  architecture — filtering is client-side, same as Favourites); new
+  `POST /editor/full/files/add-by-issues` (resolves `Issue.id` →
+  `file_path`, reuses `add_files()`'s validation via a new shared
+  `_add_path_to_working_set()` helper); the confirmed DB-sync exception in
+  `process_batch()`; the Basic Editor's save path clearing the flag
+  synchronously; and the full frontend surface — Issue Detail toggle button
+  (mirrors `buildStatusToggle`'s single-issue-endpoint style), a bulk
+  toolbar button (mirrors `★ Favorite`), a "→ Send to Full Editor" bulk
+  action, the `#flagReviewFilterBtn` menu-bar toggle (mirrors
+  `#favFilterBtn` exactly, including Folder View parity), and card
+  badge/ring styling (bottom-left corner — the one free corner among
+  favourite/unread/rating/progress-bar).
+- **Verified:** backend logic (flag set/clear, path resolution, both
+  `process_batch` DB-sync branches) exercised in-process against scratch
+  copies of the real DB and a real CBZ, never the originals — confirmed the
+  matched-issue case rescans + auto-clears, and the unmatched/pre-library
+  case makes zero DB writes.
+- **Bug found during Tez's manual verification, fixed same session:** after
+  using a Genre filter to find mismatches, sending several issues to the
+  Full Editor, saving, and refreshing the library page, Tez hit "Failed to
+  initialise. Cannot read properties of null (reading 'addEventListener')."
+  Root cause: `bindFilterEvents()`'s new `flagReviewFilterBtn` lookup had no
+  null-guard, and Tez's browser had served a stale cached `index.html` (from
+  before this button existed) alongside already-fresh `app.js` — a classic
+  deploy-time cache mismatch, not a logic bug (clicking "Home" in the nav,
+  which forced a genuinely fresh fetch, self-resolved it). Fixed by
+  null-guarding the new lookup specifically. Five pre-existing unguarded
+  lookups in the same function (`favFilterBtn`, `sortSelect`, `sortDirBtn`,
+  `starRatingFilter`, `groupBySelect`, `viewToggle`) have the identical
+  fragility and were flagged, not fixed — out of this item's scope. Same
+  underlying class of gap Item 7's own verification notes already flagged
+  (static assets served with no `Cache-Control`, needing a hard-refresh
+  after any frontend deploy) — not a new problem this item introduced.
+- **UX addition, same session, after initial verification passed:** "Send to
+  Full Editor" now opens the `/editor` tab immediately (must happen
+  synchronously with the click for the popup blocker) with a "Sending files
+  in the background…" toast, since resolving+adding a large selection can
+  take a moment; that same tab auto-reloads once the background add
+  completes, so it shows the populated working set instead of an empty one.
+  Reuses `editor_basic.js`'s `.admin-toast` styling under a new
+  `libraryToast` element id.
+- **Tez manually verified the full loop live, twice** (once before the
+  cache-bug fix, once after): filtered by Genre to find mismatches,
+  multi-selected across series, sent to Full Editor, edited and saved,
+  confirmed the flag cleared and the DB updated, confirmed a normal
+  pre-library Full Editor session is unaffected, confirmed the Basic
+  Editor's save path clears the flag too, and confirmed the toast +
+  auto-refresh addition. All passed.
+- Full detail in `EDITOR_SPEC.md` §13, `MENU_BAR_SPEC.md` §2.8,
+  `docs/v2.6/comicvault-changes-v2.6.md` Item 8, and `DECISIONS.md`.

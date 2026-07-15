@@ -730,3 +730,71 @@ Tez's own follow-up hand-test.** Note: static assets are served without
 `cache-control`, so `/editor` needs a hard-refresh (Ctrl+F5) after deploy to pick up
 the new HTML/CSS/JS; the `?w=` param needs a tray-server restart (strip works without
 it, heavier).
+
+---
+
+## Item 8 — Review Queue: flag issues, batch-send to Full Editor
+
+**Change.** Ad-hoc feature request, not from `INBOX.md`. Tez's workflow: issues
+scattered across different series/folders sometimes turn out to have incorrect
+metadata; fixing them meant manually re-locating each one through the Full
+Editor's file picker. This item lets Tez flag any issue "for review" wherever
+he notices it (Issue Detail page, or bulk via the existing multi-select
+mechanism), filter the library down to just the flagged set, and batch-send
+that selection straight into the Full Editor's working set — skipping the
+picker entirely. Structural change (new nav control, new data flow) → full
+workflow, `EDITOR_SPEC.md` §13 added, `MENU_BAR_SPEC.md` §2.8 added,
+`DECISIONS.md` entry for the one confirmed exception to Full Editor's
+"never touches the DB" rule.
+
+**Built:**
+- `backend/models.py` / `backend/database.py`: new `Issue.flagged_for_review`
+  boolean column (mirrors `favorites`), guarded `ALTER TABLE` migration.
+- `backend/routers/progress.py`: single-issue (`/progress/{id}/flag-review`,
+  `/unflag-review`) and bulk (`/progress/bulk/flag-review`, `/unflag-review`)
+  endpoints, mirroring the existing mark-read/favorite patterns exactly.
+- `backend/routers/library.py`: `flagged_for_review` added everywhere
+  `favorites` is already serialized (issue dict, series-card aggregate,
+  Folder View's per-subfolder `has_favorite`-style aggregate) — no new query
+  architecture, filtering is client-side same as Favourites.
+- `backend/routers/editor_full.py`: new `POST /editor/full/files/add-by-issues`
+  (resolves `Issue.id` → `Issue.file_path`, reuses `add_files()`'s validation
+  via a new shared `_add_path_to_working_set()` helper). `process_batch()`
+  gained the one DB-sync exception — see `EDITOR_SPEC.md` §13.5.
+- `backend/routers/editor_basic.py`: `save_editor_fields` clears the flag
+  synchronously at validation time.
+- `frontend/js/app.js`: `buildFlagReviewToggle()` (Issue Detail button,
+  mirrors `buildStatusToggle`'s single-issue-endpoint style), a bulk toolbar
+  button (mirrors `★ Favorite`), a "→ Send to Full Editor" bulk action
+  (opens `/editor` immediately with a "Sending files in the background…"
+  toast, reloads that tab once the background add completes), the
+  `#flagReviewFilterBtn` menu-bar toggle (mirrors `#favFilterBtn` exactly,
+  including Folder View parity), and `is-flagged-review` card-class wiring
+  in all four card-building functions.
+- `frontend/css/style.css`: `.btn-flag-review-toggle`, `.is-flagged-review`
+  card badge/ring (bottom-left corner — the one free corner; combines with
+  `.is-favorite`'s ring via a dual box-shadow when both apply).
+- `frontend/index.html`: `#flagReviewFilterBtn` added next to `#favFilterBtn`.
+
+**Post-verification fix (same session):** the new `flagReviewFilterBtn` wiring
+in `bindFilterEvents()` had no null-guard (matching the pre-existing pattern
+five other controls in that function already use, unguarded) — a stale
+browser-cached `index.html` from before this button existed, combined with
+already-fresh `app.js`, crashed `initLibrary()` entirely
+("Failed to initialise. Cannot read properties of null"). Fixed by
+null-guarding the new lookup specifically; the five pre-existing unguarded
+lookups are flagged, not fixed, as out of this item's scope. Same underlying
+class of issue Item 7's own verification notes already flagged (static
+assets served without `Cache-Control`, needing a hard-refresh after deploy) —
+not a new gap this item introduced.
+
+**Verified:** backend logic (flag set/clear, `add-by-issues` path resolution,
+both `process_batch` DB-sync branches — matched issue rescans + auto-clears,
+unmatched/pre-library issue gets zero DB writes) exercised in-process against
+scratch copies of the real DB and a real CBZ, never the originals. **Tez
+manually verified live**, full loop: filtered by Genre to find mismatches,
+multi-selected several issues across series, sent to Full Editor, edited and
+saved, confirmed the flag cleared and the DB updated, confirmed a normal
+pre-library Full Editor session is unaffected, confirmed the Basic Editor's
+save path clears the flag too, and confirmed the toast + auto-refresh UX
+addition. All passed.

@@ -243,6 +243,11 @@ def save_editor_fields(
     original_xml = _read_original_xml(issue)
     xml_content = build_xml_from_fields(field_values, original_xml)
 
+    # Clear the review flag synchronously — validation already passed at
+    # this point, no need to wait for the background archive rebuild.
+    issue.flagged_for_review = False
+    db.commit()
+
     # Set running=True synchronously, before queuing — closes the race
     # window between two fast back-to-back POSTs for the same issue.
     _save_progress[issue_id] = EditorSaveProgress(running=True)

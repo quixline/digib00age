@@ -192,6 +192,41 @@ function ensureSelectionToolbar() {
     const path = allFavorited ? '/progress/bulk/unfavorite' : '/progress/bulk/favorite';
     runBulkAction(path, {}, idsApplied => applyFavoriteToDom(idsApplied, !allFavorited));
   });
+  mkBtn('selFlagReview', '🏷 Flag for Review', () => {
+    const ids = Array.from(selectedIds.keys());
+    const allFlagged = ids.length > 0 && ids.every(id => {
+      const node = document.querySelector(`[data-issue-id="${id}"]`);
+      return node && node.classList.contains('is-flagged-review');
+    });
+    const path = allFlagged ? '/progress/bulk/unflag-review' : '/progress/bulk/flag-review';
+    runBulkAction(path, {}, idsApplied => applyFlagReviewToDom(idsApplied, !allFlagged));
+  });
+  mkBtn('selSendToFullEditor', '→ Send to Full Editor', async () => {
+    const originalIds = Array.from(selectedIds.keys());
+    if (!originalIds.length) return;
+
+    // Open the tab immediately (must happen synchronously with the click to
+    // avoid popup-blocker issues) and let the user know the actual file-add
+    // is still running — find_xml_in_archive per file can take a moment for
+    // a large selection. Reload that same tab once the add completes so it
+    // picks up the working set instead of loading it empty/stale.
+    showLibraryToast('Sending files in the background…');
+    const editorWindow = window.open('/editor', '_blank');
+
+    try {
+      const issueIds = await resolveBulkIssueIds();
+      await fetch(`${API}/editor/full/files/add-by-issues`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ issue_ids: issueIds }),
+      });
+      if (editorWindow && !editorWindow.closed) editorWindow.location.reload();
+      showLibraryToast('Sent to Full Editor');
+    } catch (_) {
+      showLibraryToast('Failed to send files to Full Editor', true);
+    }
+    exitSelectionMode();
+  });
 
   const rateWrap = el('div', 'selection-rate');
   const clearStar = el('button', 'rating-star rating-clear', '✕');
@@ -258,6 +293,23 @@ async function resolveBulkIssueIds() {
     }
   }));
   return Array.from(ids);
+}
+
+// Mirrors editor_basic.js's showEditorToast() — same .admin-toast/
+// .admin-toast--show/.admin-toast--error CSS (style.css is loaded globally),
+// own element id since this page doesn't load editor_basic.js.
+function showLibraryToast(msg, isError = false) {
+  let toast = document.getElementById('libraryToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'libraryToast';
+    toast.className = 'admin-toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.classList.toggle('admin-toast--error', isError);
+  toast.classList.add('admin-toast--show');
+  setTimeout(() => toast.classList.remove('admin-toast--show'), 3500);
 }
 
 async function runBulkAction(path, extraBody, applyFn) {
@@ -340,6 +392,28 @@ function _patchFavoritesInCaches(id, value) {
   }
 }
 
+// Review-queue flag — mirrors applyFavoriteToDom/_patchFavoritesInCaches.
+// No dedicated-tab basis type for this flag (unlike favorites' §10.3 case,
+// Tez's call was a filter toggle only), so just re-render when the current
+// view is filtered to flagged-only and an item stops matching.
+function applyFlagReviewToDom(ids, value) {
+  for (const id of ids) {
+    const node = document.querySelector(`[data-issue-id="${id}"]`);
+    if (node) node.classList.toggle('is-flagged-review', value);
+    _patchFlagReviewInCaches(id, value);
+  }
+  if (!value && activeFlaggedReview) renderBrowse();
+}
+
+function _patchFlagReviewInCaches(id, value) {
+  const pools = [allLibrary, ...Object.values(tabLibraryCache),
+    ...Object.values(viewLibraryCache), ...Object.values(searchLibraryCache)];
+  for (const pool of pools) {
+    const lib = (pool || []).find(s => s.series_anchor_id === id);
+    if (lib) lib.flagged_for_review = value;
+  }
+}
+
 // Bulk star rating — mirrors applyFavoriteToDom/_patchFavoritesInCaches.
 // Swaps the .card-rating-pill in place so the selection toolbar's rating
 // widget reflects immediately, without depending on a full reload.
@@ -400,6 +474,7 @@ let activeSort       = 'alpha'; // alpha | newest | recent | issues | pages
 let activeSortDir    = 'asc';   // asc | desc — MENU_BAR_SPEC.md §2.1
 let activeStars      = '';      // '' | 1-5 — personal star rating, MENU_BAR_SPEC.md §2.2
 let activeFavorites  = false;   // MENU_BAR_SPEC.md §2.3
+let activeFlaggedReview = false; // review-queue filter, mirrors §2.3's favourites filter
 let activeGroupBy   = '';       // '' | year | genre | publisher | writer | format
 let activeSearch    = '';
 
@@ -1086,6 +1161,7 @@ function getFilteredLibrary() {
   // Menu bar — star rating + favourites (MENU_BAR_SPEC.md §2.2, §2.3)
   if (activeStars)     pool = pool.filter(s => String(s.personal_rating || '') === activeStars);
   if (activeFavorites) pool = pool.filter(s => !!s.favorites);
+  if (activeFlaggedReview) pool = pool.filter(s => !!s.flagged_for_review);
 
   pool = [...pool].sort(sortComparator);
   return pool;
@@ -1114,7 +1190,7 @@ function sortComparator(a, b) {
 function hasActiveFilters() {
   return activeSearch || activeStatus || activeGenre ||
     activeFormat || activeDecade ||
-    activeYear || activeRating || activeBW || activeStars || activeFavorites;
+    activeYear || activeRating || activeBW || activeStars || activeFavorites || activeFlaggedReview;
 }
 
 function clearAllFilters() {
@@ -1130,6 +1206,7 @@ function clearAllFilters() {
   activeStatus = activeGenre =
     activeFormat = activeDecade = activeYear = activeRating = activeBW = activeSearch = activeStars = '';
   activeFavorites = false;
+  activeFlaggedReview = false;
 
   ['genreFilter',
    'formatFilter','decadeFilter','yearFilter','ratingFilter','bwFilter','starRatingFilter'].forEach(id => {
@@ -1139,6 +1216,9 @@ function clearAllFilters() {
 
   const favBtn = document.getElementById('favFilterBtn');
   if (favBtn) favBtn.classList.remove('active');
+
+  const flagReviewBtn = document.getElementById('flagReviewFilterBtn');
+  if (flagReviewBtn) flagReviewBtn.classList.remove('active');
 
   document.querySelectorAll('[data-quick-status]').forEach(b => b.classList.remove('active'));
 
@@ -1370,7 +1450,7 @@ function buildCoverCard(s) {
     : `/series/${s.series_anchor_id}${suffix}`;
   const state    = seriesReadState(s);
 
-  const card = el('a', `cover-card ${state}${s.favorites ? ' is-favorite' : ''}`);
+  const card = el('a', `cover-card ${state}${s.favorites ? ' is-favorite' : ''}${s.flagged_for_review ? ' is-flagged-review' : ''}`);
   card.href  = href;
 
   // Multi-select: Singles cards select their one underlying issue directly;
@@ -1544,6 +1624,19 @@ function bindFilterEvents() {
     renderActiveSurface();
   });
 
+  // Menu bar — flagged-for-review filter toggle, mirrors §2.3's favourites filter.
+  // Null-guarded (unlike favFilterBtn/sortSelect/etc. above, which aren't) —
+  // a stale cached index.html from before this button existed would otherwise
+  // throw here and crash the rest of initLibrary() (2026-07-15 incident).
+  const flagReviewBtnEl = document.getElementById('flagReviewFilterBtn');
+  if (flagReviewBtnEl) {
+    flagReviewBtnEl.addEventListener('click', () => {
+      activeFlaggedReview = !activeFlaggedReview;
+      flagReviewBtnEl.classList.toggle('active', activeFlaggedReview);
+      renderActiveSurface();
+    });
+  }
+
   // Group by
   document.getElementById('groupBySelect').addEventListener('change', e => {
     activeGroupBy = e.target.value;
@@ -1639,6 +1732,10 @@ async function renderFolderView(tabId, path) {
     folders = folders.filter(f => f.has_favorite);
     files   = files.filter(f => !!f.favorites);
   }
+  if (activeFlaggedReview) {
+    folders = folders.filter(f => f.has_flagged_review);
+    files   = files.filter(f => !!f.flagged_for_review);
+  }
   if (activeStars) {
     files = files.filter(f => String(f.personal_rating || '') === activeStars);
   }
@@ -1716,7 +1813,7 @@ function buildFolderFileCard(issue) {
               : issue.read_status === 'reading'  ? 'state-part-read'
               : 'state-unread';
 
-  const card = el('a', `cover-card ${state}${issue.missing ? ' missing' : ''}${issue.favorites ? ' is-favorite' : ''}`);
+  const card = el('a', `cover-card ${state}${issue.missing ? ' missing' : ''}${issue.favorites ? ' is-favorite' : ''}${issue.flagged_for_review ? ' is-flagged-review' : ''}`);
   card.href  = `/issue/${issue.id}`;
   makeSelectable(card, issue.id);
 
@@ -1958,7 +2055,8 @@ function renderSeriesIssuePage() {
 function buildIssueRow(issue) {
   const readState = issue.read_status === 'read'    ? 'state-read'
                   : issue.read_status === 'reading' ? 'state-reading' : '';
-  const cls = ['issue-row', issue.missing ? 'missing' : '', readState, issue.favorites ? 'is-favorite' : '']
+  const cls = ['issue-row', issue.missing ? 'missing' : '', readState, issue.favorites ? 'is-favorite' : '',
+    issue.flagged_for_review ? 'is-flagged-review' : '']
     .filter(Boolean).join(' ');
   const row = el('a', cls);
   row.href  = `/issue/${issue.id}`;
@@ -2148,6 +2246,7 @@ function buildIssueDetail(data) {
   editXmlBtn.type = 'button';
   editXmlBtn.onclick = () => openEditorModal(data.id, () => initIssue());
   actions.appendChild(editXmlBtn);
+  actions.appendChild(buildFlagReviewToggle(data));
   coverCol.appendChild(actions);
 
   // Right: metadata
@@ -2311,6 +2410,33 @@ function buildFavoriteToggle(data) {
         body: JSON.stringify({ issue_ids: [data.id] }),
       });
       data.favorites = !data.favorites;
+      sync();
+    } catch (_) {}
+  });
+
+  return btn;
+}
+
+// Single-issue toggle for /issue/{id} — mirrors buildStatusToggle's style
+// (dedicated single-issue endpoints), not buildFavoriteToggle's
+// bulk-with-one-id style; both patterns already coexist on this page.
+function buildFlagReviewToggle(data) {
+  const btn = el('button', 'btn-flag-review-toggle');
+
+  function sync() {
+    btn.textContent = data.flagged_for_review ? '🏷 Flagged for Review' : '🏷 Flag for Review';
+    btn.classList.toggle('is-flagged-review', !!data.flagged_for_review);
+  }
+  sync();
+
+  btn.addEventListener('click', async () => {
+    const next     = !data.flagged_for_review;
+    const endpoint = next
+      ? `/api/progress/${data.id}/flag-review`
+      : `/api/progress/${data.id}/unflag-review`;
+    try {
+      await fetch(endpoint, { method: 'POST' });
+      data.flagged_for_review = next;
       sync();
     } catch (_) {}
   });

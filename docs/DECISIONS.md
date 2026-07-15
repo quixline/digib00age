@@ -4,6 +4,33 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Full Editor's "never touches the DB" rule gets one confirmed exception, for review-queue saves only
+
+**Decided:** 2026-07-15, review-queue feature build session (v2.6 Item 8).
+
+**Why:** `EDITOR_SPEC.md` §5 deliberately built the Full Editor to never touch
+the DB or trigger a rescan on save — a considered call, not an oversight,
+since it's designed around pre-library files that have no `Issue` row yet.
+The new "Send to Full Editor" action (part of the review-queue feature)
+breaks that assumption for the first time: it sends *already-catalogued*
+issues into the same working set. Without a rescan, saving one there would
+leave the DB showing stale field values against the rewritten archive —
+exactly the staleness problem the Basic Editor's "read live XML, not DB"
+design already exists to avoid, just reintroduced through a new door.
+
+Rather than leave this gap, `process_batch()` now looks up
+`Issue.file_path` against the pre-rewrite path after every successful save;
+a match triggers the same `scan_single_file` rescan the Basic Editor's save
+path already uses, plus clears the review flag. **Scoped narrowly:** this
+only fires when the path is already a known Issue — a file added via the
+Full Editor's normal pre-library folder-browse picker has no matching row
+and is completely untouched, so the original, still-primary Full Editor
+workflow keeps its original "never touches the DB" guarantee unchanged.
+
+**Where:** `backend/routers/editor_full.py` (`process_batch()`'s DB-sync
+block, module docstring updated to note the exception), `EDITOR_SPEC.md`
+§13.5.
+
 ### Legacy raw-CSV credit columns: dropped only the 4 confirmed-dead ones, not all 6
 
 **Decided:** 2026-07-15, executing `ROADMAP.md`'s deferred "Drop the old raw CSV

@@ -87,6 +87,8 @@ def _add_missing_issue_columns():
                 "UPDATE issues SET container_format = "
                 "CASE WHEN lower(file_path) LIKE '%.cbr' THEN 'cbr' ELSE 'cbz' END"
             ))
+        if "flagged_for_review" not in cols:
+            conn.execute(text("ALTER TABLE issues ADD COLUMN flagged_for_review BOOLEAN NOT NULL DEFAULT 0"))
         conn.commit()
 
 

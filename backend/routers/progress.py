@@ -182,6 +182,24 @@ def bulk_remove_favorite(body: BulkIssueIds, db: Session = Depends(get_db)):
     return {"updated": [i.id for i in issues]}
 
 
+@router.post("/progress/bulk/flag-review")
+def bulk_flag_review(body: BulkIssueIds, db: Session = Depends(get_db)):
+    issues = db.query(Issue).filter(Issue.id.in_(body.issue_ids)).all()
+    for issue in issues:
+        issue.flagged_for_review = True
+    db.commit()
+    return {"updated": [i.id for i in issues]}
+
+
+@router.post("/progress/bulk/unflag-review")
+def bulk_unflag_review(body: BulkIssueIds, db: Session = Depends(get_db)):
+    issues = db.query(Issue).filter(Issue.id.in_(body.issue_ids)).all()
+    for issue in issues:
+        issue.flagged_for_review = False
+    db.commit()
+    return {"updated": [i.id for i in issues]}
+
+
 @router.post("/progress/bulk/rate")
 def bulk_set_rating(body: BulkRating, db: Session = Depends(get_db)):
     issues = db.query(Issue).filter(Issue.id.in_(body.issue_ids)).all()
@@ -210,4 +228,26 @@ def mark_unread(issue_id: int, db: Session = Depends(get_db)):
         ProgressUpdate(status="unread", current_page=0),
         db,
     )
+
+
+@router.post("/progress/{issue_id}/flag-review")
+def flag_review(issue_id: int, db: Session = Depends(get_db)):
+    """Flag a single issue for review. Convenience endpoint for the Issue Detail toggle."""
+    issue = db.query(Issue).filter(Issue.id == issue_id).first()
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+    issue.flagged_for_review = True
+    db.commit()
+    return {"id": issue.id, "flagged_for_review": True}
+
+
+@router.post("/progress/{issue_id}/unflag-review")
+def unflag_review(issue_id: int, db: Session = Depends(get_db)):
+    """Clear the review flag on a single issue. Convenience endpoint for the Issue Detail toggle."""
+    issue = db.query(Issue).filter(Issue.id == issue_id).first()
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+    issue.flagged_for_review = False
+    db.commit()
+    return {"id": issue.id, "flagged_for_review": False}
 

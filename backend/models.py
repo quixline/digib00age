@@ -58,6 +58,7 @@ class Issue(Base):
     # Personal engagement — user-set, independent of file metadata
     favorites       = Column(Boolean, default=False, nullable=False)
     personal_rating = Column(Integer, nullable=True)        # 1-5, NULL = not rated
+    flagged_for_review = Column(Boolean, default=False, nullable=False)  # EDITOR_SPEC.md — review queue
 
     # Counts
     page_count      = Column(Integer, nullable=True)        # from XML; verified vs actual image count

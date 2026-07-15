@@ -804,7 +804,100 @@ they aren't lost:
 
 ---
 
-## 13. Change Log
+## 13. Review Queue (Flag for Review)
+
+**Built and manually verified 2026-07-15** (ad-hoc request, not part of a
+numbered build queue at scoping time — added as v2.6 Item 8 at build time,
+see `v2.6/comicvault-changes-v2.6.md`).
+
+**Problem:** issues scattered across different series/folders sometimes turn
+out to have incorrect metadata. Fixing them meant manually re-locating each
+one through the Full Editor's file picker (Section 5.1) — tedious across
+many issues. This section lets Tez mark any issue "flagged for review"
+wherever he notices it, then batch-send every flagged issue straight into
+the Full Editor's working set, skipping the file picker entirely.
+
+### 13.1 Not the same thing as `NeedsReview` (Section 9.2)
+
+**These are two unrelated flags — do not conflate them:**
+
+| | `NeedsReview` (§9.2) | Review-queue flag (this section) |
+|---|---|---|
+| Storage | XML tag inside ComicInfo.xml | `Issue.flagged_for_review` DB column |
+| Set by | ComicTagger Auto-Tag, on a low-confidence match | Tez, manually, any time |
+| Visible | Full Editor only (red card border + count) | Library-wide (card badge/ring, a menu-bar filter, `/issue/{id}` button) |
+| Cleared by | Confirming a Search-Online match; written on save | Saving the issue in either editor |
+
+### 13.2 Data model
+
+`Issue.flagged_for_review` (`backend/models.py`) — boolean, default false.
+Mirrors the existing `favorites` column exactly (same "personal engagement,
+independent of file metadata" category). Migration: guarded `ALTER TABLE`
+in `_add_missing_issue_columns()` (`backend/database.py`).
+
+### 13.3 Setting/clearing the flag
+
+- **Single-issue** — `POST /api/progress/{issue_id}/flag-review` /
+  `/unflag-review`, a toggle button on `/issue/{id}` next to Edit XML.
+  Mirrors the existing `mark-read`/`mark-unread` convenience-shortcut
+  pattern (not the bulk-with-one-id pattern the Favorite button on the same
+  page uses — both styles already coexisted on that page beforehand).
+- **Bulk** — `POST /api/progress/bulk/flag-review` / `/unflag-review`,
+  reachable via the existing long-press/select-dot multi-select mechanism's
+  toolbar (mirrors the `★ Favorite` bulk button exactly). Selecting a
+  series-aggregate card expands to every issue in that series server-side,
+  same as the other bulk actions.
+- **Auto-clear on save** — both editors clear the flag when the issue is
+  saved (Tez's call, matches how `NeedsReview` already auto-clears). Basic
+  Editor clears it synchronously at validation time (`editor_basic.py`,
+  before the background archive rebuild is queued). Full Editor clears it
+  in `process_batch()` — see 13.5 below.
+
+### 13.4 Viewing flagged issues
+
+A menu-bar filter toggle (`#flagReviewFilterBtn`), mirroring the existing
+Favourites filter (`MENU_BAR_SPEC.md` §2.3) exactly — narrows whatever
+surface you're already viewing (All/Singles/Series/Folder View) down to
+flagged-only, rather than being a dedicated tab (Tez's call — a dedicated
+tab would cost one of the 4 visible-tab slots `CUSTOM_TABS_SPEC.md` caps,
+for something that doesn't need its own permanent nav presence). Folder View
+parity follows the same rule as Favourites: a folder card stays visible if
+any descendant issue is flagged.
+
+### 13.5 "Send to Full Editor" and the one DB-sync exception
+
+`POST /api/editor/full/files/add-by-issues` (`backend/routers/editor_full.py`)
+takes `{issue_ids: [...]}`, resolves each to its known `Issue.file_path`, and
+adds it to the Full Editor's working set via the same validation
+`add_files()` (the normal path-based picker's endpoint) already uses —
+factored into a shared `_add_path_to_working_set()` helper so neither path
+duplicates the other's logic.
+
+**Full Editor was deliberately built to never touch the DB or trigger a
+rescan on save** (Section 5's opening note) — a considered decision, since
+it normally only handles pre-library files with no DB row yet. Sending
+*already-catalogued* issues into it breaks that assumption: without a
+rescan, the DB goes stale relative to the rewritten archive. **Confirmed
+exception (Tez's explicit call, 2026-07-15):** `process_batch()` now looks
+up `Issue.file_path == <the saved file's pre-rewrite path>` after a
+successful write; if a row matches, it rescans (`scan_single_file`, same
+function the Basic Editor's save path already calls) and clears
+`flagged_for_review`. A `.cbr`→`.cbz` rename updates the matched row's
+`file_path`/`container_format` and flushes before rescanning, mirroring the
+Basic Editor's own `_finish_save` pattern for the same rename case. **Files
+with no matching row — the Full Editor's original, still-primary use
+case — are completely untouched,** exactly as before this change.
+
+The selection toolbar's "→ Send to Full Editor" button opens `/editor` in a
+new tab immediately (must happen synchronously with the click to satisfy
+popup blockers) with a "Sending files in the background…" toast, since
+`add-by-issues` can take a moment across a large selection (`find_xml_in_archive`
+per file); once the background add completes, that same tab is reloaded so
+it reflects the populated working set instead of an empty one.
+
+---
+
+## 14. Change Log
 
 > Record any deviations from this spec here with date and reason, same convention as
 > `SPEC.md` Section 21.
@@ -828,3 +921,4 @@ they aren't lost:
 | 2026-07-04 | **Section 9 built and manually verified** (v2.5 Item 1) — see `docs/v2.5/progress.md` for the full build narrative. Confirms the section as scoped, plus one build-time addition not previously specified: the `GenericMetadata` → ComicVault field-dict mapping (`backend/ct_bridge.py`) captures every field CT/ComicVine supplies that maps to a standard ComicInfo.xml tag (mirroring `comicapi/tags/comicrack.py`'s own write mapping field-for-field — Month, Day, Notes, Inker, Colorist, Letterer, CoverArtist, Editor, Web, Volume, AlternateSeries/Number/Count, SeriesGroup, Characters, Teams, Locations), not just the fields this section's Main/More tabs expose. This was a live-testing correction, not a spec decision made in advance — an initial build-time judgment call to map only editor-exposed fields turned out to not match Tez's actual intent (capture everything, even fields the UI never displays). Genre/Format/AgeRating/BlackAndWhite remain excluded from this mapping — confirmed as a different, correctness-driven exclusion (enforced-dropdown validation integrity; a literal `"on"`/`"Yes"` semantic mismatch for BlackAndWhite), not a "not shown so not captured" one. | v2.5 Item 1 build + Tez's live-testing pass, 2026-07-03/04; see `DECISIONS.md` for the fuller rationale. |
 | 2026-07-09 | §9.4 — "Search Online" renamed **"Search ComicVine"** and relocated out of the header into its own row directly above the three-column layout, sharing `.fe-layout`'s exact grid columns so it sits centred over the XML Editor column. New **"Search GoodReads"** external link added alongside it in the same row — plain `target="_blank"` link to goodreads.com, no field wiring. | Tez's post-redesign UI tweak pass — see `docs/v2.6/progress.md`. |
 | 2026-07-11 | **§6.1 — Basic Editor save made async ("fire and forget").** `POST /api/editor/{issue_id}` used to run the whole field-merge + archive-rebuild + rescan chain synchronously, blocking the popup open for the full round trip (dominated by the archive rebuild, which scales with page count). Now only validates + merges the XML synchronously (still 422s immediately on bad input) and queues the rebuild + rescan as a background task, returning `{success, pending: true, issue_id}` right away; new `GET .../save-status` polling endpoint; new `saving` flag on `GET /api/editor/{issue_id}` plus a `409` guard against a second concurrent save on the same issue. Accepted trade-off, confirmed with Tez: if a background save fails after the user has already navigated away, it's silent (discoverable only by reopening the editor) — no new cross-page notification system. Safe either way since `os.replace()` only swaps in the rebuilt archive after it's fully staged, so a failure never corrupts the original file. Full rationale in `DECISIONS.md`; build narrative in `docs/v2.6/progress.md`. | Inbox 2026-07-11 — "quick save hits a bottleneck," scoped and built same day. |
+| 2026-07-15 | **Added Section 13, Review Queue (Flag for Review) — v2.6 Item 8, built and manually verified same day.** New `Issue.flagged_for_review` DB column (mirrors `favorites`), single-issue + bulk set/clear endpoints, a menu-bar filter toggle (mirrors the Favourites filter, §2.3 in `MENU_BAR_SPEC.md`), and a "Send to Full Editor" bulk action that resolves selected issues to their known file paths and adds them straight to the Full Editor's working set via a new `add-by-issues` endpoint — skipping the manual folder-browse picker. One confirmed, scoped exception to Section 5's "Full Editor never touches the DB" rule: `process_batch()` now rescans + clears the flag when the saved path matches an existing `Issue.file_path`; files with no match (the original pre-library use case) are completely untouched. Section 14 (old §13, Change Log) renumbered to make room — no other content changed. | Ad-hoc feature request 2026-07-15, scoped and built same session; see `v2.6/progress.md` "Basic Editor popup-open perf fix" session's follow-ups and the dedicated review-queue session entry for the full build narrative. |

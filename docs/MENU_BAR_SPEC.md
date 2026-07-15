@@ -129,6 +129,18 @@ ascend/descend, view toggle, Rated, Favourites, Group by, and each of the six
 secondary filters), not just the one divider that previously sat between
 Favourites and Group by.
 
+### 2.8 Flagged-for-Review Filter Button (2026-07-15)
+
+A toggle button (`#flagReviewFilterBtn`), sitting right next to the Favourites
+button (§2.3) and sharing its exact mechanics: when active, the current surface
+shows only issues where `flagged_for_review = true`; when inactive, all items
+show. Same Folder View parity rule as §2.3 — a folder card stays visible if any
+descendant issue is flagged. Not a dedicated tab, unlike Favourites' optional
+`basis_type = 'favorites'` Custom Tab (`CUSTOM_TABS_SPEC.md` §10) — a deliberate
+choice (Tez's call) since a permanent nav tab would cost one of the 4
+visible-tab slots for something that doesn't need permanent nav presence. See
+`EDITOR_SPEC.md` §13 for the full review-queue feature this button surfaces.
+
 ---
 
 ## 3. Flat View vs. Folder View parity
@@ -139,6 +151,7 @@ Favourites and Group by.
 | Ascend/Descend toggle | ✅ | ✅ |
 | Rated filter | ✅ | ✅ (flat file cards only; folder cards unaffected) |
 | Favourites filter | ✅ | ✅ (folder shown if any descendant issue is favourited) |
+| Flagged-for-review filter (§2.8) | ✅ | ✅ (folder shown if any descendant issue is flagged) |
 | Search | ✅ | ✅ (existing Folder View search behaviour — depth-agnostic, `CUSTOM_TABS_SPEC.md` §9.3) |
 | Grid/List toggle | ✅ | ✅ |
 | Status pills (§2.6) | ✅ | ❌ (no read-status concept for folder cards) |
@@ -167,3 +180,4 @@ The menu bar also does not appear on the Admin page or the Full Editor.
 | 2026-06-26 | Status pills moved from a separate `.browse-controls` row into the site header (§2.6); secondary filters + item count merged into the single menu-bar row, with `#groupBySelect` kept Flat-View-only (§2.7); secondary filters extended to Folder View's flat file cards, closing this spec's original Folder-View-parity gap. | Post-test fix pass (`docs/2.3-fixes.md` Fix 1) plus an additional step raised mid-session — see `docs/progress.md`. |
 | 2026-07-07 | §2.6 Status Pills removed entirely — no per-surface status-pill row anywhere, on any surface. Read-status filtering (`activeStatus`) now only exists as the left sidebar's Unread/Reading/Read shortcut, which always navigates to the All surface first. Clicking it from Series/Singles/a custom tab no longer filters that surface in place. | v2.6 Item 1 Phase B (left sidebar nav) — matches the approved Claude Design reference exactly, not a gap being filled; see `docs/v2.6/progress.md`. |
 | 2026-07-09 | Publisher filter dropdown removed from §2.7 (stays as a Group by option only); Grid/List toggle (§2.5) relocated from the trailing count group to sit with sort ascend/descend + Rated; vertical divider separators extended between every control in the row; Clear button (§2.7) relocated from `#browseFilters` into the trailing group next to the title count and unified visually with the fieldview banner's own Clear link. | Tez's post-redesign UI tweak pass — see `docs/v2.6/progress.md` and `DECISIONS.md`. |
+| 2026-07-15 | Added §2.8, Flagged-for-Review Filter Button — a new toggle mirroring §2.3's Favourites filter exactly (same mechanics, same Folder View parity rule), part of the new review-queue feature (`EDITOR_SPEC.md` §13, v2.6 Item 8). §3's parity table gained a matching row. | Ad-hoc feature request 2026-07-15, scoped and built same session; see `v2.6/progress.md`. |

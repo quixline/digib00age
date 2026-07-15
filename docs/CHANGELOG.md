@@ -13,6 +13,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-15** — Added Review Queue (v2.6 Item 8): flag any issue for
+  review (Issue Detail button or bulk multi-select), filter the library to
+  flagged-only, and batch-send a selection straight into the Full Editor's
+  working set. Full Editor now rescans + auto-clears the flag when saving an
+  already-catalogued issue (a scoped exception to its normal DB-agnostic
+  rule). See `EDITOR_SPEC.md` §13, `MENU_BAR_SPEC.md` §2.8, and
+  `v2.6/progress.md` "Review Queue" session.
 - **2026-07-15** — Basic Editor popup-open perf fix: `GET`/`POST
   /api/editor/{issue_id}` consolidated 3 redundant archive opens into 1;
   parallelized the popup's formats/genres fetches. See

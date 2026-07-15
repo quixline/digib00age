@@ -1,7 +1,11 @@
 """
 ComicVault — Editor (Full) Router — pre-library staging toolbox.
-EDITOR_SPEC.md Section 5. Operates entirely on files not yet in the
-database — no rescan-trigger logic anywhere in this file (Section 5).
+EDITOR_SPEC.md Section 5. Normally operates entirely on files not yet in the
+database — no rescan-trigger logic for the ordinary pre-library path
+(Section 5). **One deliberate exception**, added for the review-queue
+"Send to Full Editor" action: process_batch() rescans + clears the review
+flag for any saved file whose path matches an existing Issue.file_path —
+see process_batch's own docstring and EDITOR_SPEC.md's review-queue section.
 
 File picker (server-side, path-based — Section 5.1, ported from CAPT):
   GET    /api/editor/full/browse                Directory listing
@@ -37,9 +41,11 @@ import dataclasses
 import io
 import os
 
-from fastapi import APIRouter, Body, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
 
 from backend import archive_formats, config, ct_bridge
+from backend.database import get_db
 from backend.editor.archive_io import (
     IMAGE_EXTENSIONS,
     extract_xml_from_archive,
@@ -52,6 +58,8 @@ from backend.editor.batch import apply_increment
 from backend.editor.field_merge import build_xml_from_fields
 from backend.editor.validation import validate_enforced_fields
 from backend.editor.xml_parser import COMICINFO_TAGS, parse_comicinfo_xml
+from backend.models import Issue
+from backend.scanner import scan_single_file
 
 router = APIRouter(tags=["editor-full"])
 
@@ -165,6 +173,28 @@ def browse_directory(path: str = None):
     return {"path": target, "items": items}
 
 
+def _add_path_to_working_set(file_path: str) -> dict | None:
+    """Validates and adds one file path to the working set, returning the
+    added {id, filename, path, xml_files} entry, or None if it fails
+    validation (outside library_root, not a file, not a comic archive).
+    Shared by add_files (path-based, from the folder-browse picker) and
+    add_files_by_issues (DB-based, from the review-queue "Send to Full
+    Editor" action) so the validation logic isn't duplicated."""
+    if not _is_within_library(file_path):
+        return None
+    if not os.path.isfile(file_path) or not _is_comic_file(file_path):
+        return None
+
+    file_id = _new_id()
+    entry = {
+        "filename": os.path.basename(file_path),
+        "path": file_path,
+        "xml_files": find_xml_in_archive(file_path),
+    }
+    _working_files[file_id] = entry
+    return {"id": file_id, **entry}
+
+
 @router.post("/editor/full/files/add")
 def add_files(payload: dict = Body(...)):
     """Add specific files to the working set by path."""
@@ -174,19 +204,32 @@ def add_files(payload: dict = Body(...)):
 
     added = []
     for file_path in file_paths:
-        if not _is_within_library(file_path):
-            continue
-        if not os.path.isfile(file_path) or not _is_comic_file(file_path):
-            continue
+        entry = _add_path_to_working_set(file_path)
+        if entry:
+            added.append(entry)
 
-        file_id = _new_id()
-        entry = {
-            "filename": os.path.basename(file_path),
-            "path": file_path,
-            "xml_files": find_xml_in_archive(file_path),
-        }
-        _working_files[file_id] = entry
-        added.append({"id": file_id, **entry})
+    return {"success": True, "files": added}
+
+
+@router.post("/editor/full/files/add-by-issues")
+def add_files_by_issues(payload: dict = Body(...), db: Session = Depends(get_db)):
+    """
+    Add already-catalogued issues to the working set by Issue.id, resolving
+    each to its known file_path — the review-queue "Send to Full Editor"
+    action, skipping the manual folder-browse picker for files already in
+    ComicVault's database. Unknown ids are silently skipped (same soft-fail
+    convention as progress.py's bulk endpoints).
+    """
+    issue_ids = payload.get("issue_ids", [])
+    if not issue_ids:
+        raise HTTPException(status_code=400, detail="No issue ids provided")
+
+    issues = db.query(Issue).filter(Issue.id.in_(issue_ids)).all()
+    added = []
+    for issue in issues:
+        entry = _add_path_to_working_set(issue.file_path)
+        if entry:
+            added.append(entry)
 
     return {"success": True, "files": added}
 
@@ -397,7 +440,7 @@ def remove_from_queue(file_id: str):
 # ---------------------------------------------------------------------------
 
 @router.post("/editor/full/process")
-def process_batch(payload: dict = Body(...)):
+def process_batch(payload: dict = Body(...), db: Session = Depends(get_db)):
     """
     mode="queue": process every file currently in the Queue, using each
         file's own captured field values. Successfully-processed files are
@@ -408,6 +451,15 @@ def process_batch(payload: dict = Body(...)):
 
     Both support increment_enabled/start_issue_no (Section 3.4) — Number is
     recomputed sequentially in list order when enabled, no collision check.
+
+    One exception to this file's normal "never touches the DB" rule
+    (module docstring): if the saved path matches an existing
+    Issue.file_path — i.e. it arrived here via the review-queue "Send to
+    Full Editor" action rather than the normal pre-library folder-browse
+    picker — the DB row is rescanned and its review flag cleared after a
+    successful write, same as the Basic Editor's save path. Files with no
+    matching Issue row (the original, still-primary use case) are
+    completely untouched.
     """
     mode = payload.get("mode")
     increment_enabled = payload.get("increment_enabled", False)
@@ -484,6 +536,23 @@ def process_batch(payload: dict = Body(...)):
                 if file_id in target_dict:
                     target_dict[file_id]["path"] = new_path
                     target_dict[file_id]["filename"] = os.path.basename(new_path)
+
+            # Review-queue exception (see process_batch's docstring): only
+            # touches the DB if this path was already a known Issue — the
+            # normal pre-library folder-browse case has no matching row and
+            # is left exactly as before. Mirrors editor_basic.py's
+            # _finish_save: file_path must be updated + flushed before
+            # scan_single_file, which looks up the row by (new) file_path.
+            existing_issue = db.query(Issue).filter(Issue.file_path == path).first()
+            if existing_issue:
+                if new_path != existing_issue.file_path:
+                    existing_issue.file_path = new_path
+                    existing_issue.container_format = "cbz"
+                    db.flush()
+                scan_single_file(new_path, db)
+                existing_issue.flagged_for_review = False
+                db.commit()
+
             processed += 1
             succeeded_ids.append(file_id)
         except Exception as exc:
