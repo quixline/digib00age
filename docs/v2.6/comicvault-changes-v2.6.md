@@ -872,7 +872,9 @@ Genre) at the new wider size, correct spacing, and border no longer clipped at
 the strip's scroll edge (a real bug found and fixed — the scroll container had no
 left/right padding to accommodate the border's box-shadow bleed). Folder View's
 code changes mirror the exact same pattern already proven live in the other two
-surfaces and needed zero backend changes (all fields were already present), but
-could not be live-verified in this session — no Custom Tabs existed in the
-environment to open in Folder View mode, and creating one requires the admin
-password. Flagged for Tez to spot-check once a folder-based tab is available.
+surfaces and needed zero backend changes (all fields were already present) — could
+not be live-verified same-session (no Custom Tabs existed in the environment), but
+**Tez confirmed live afterward**, re-adding custom folders and checking both
+Folder and Flat view plus the Favourites tab: all consistent with the rest of the
+redesign. Folder View's subfolder tiles correctly fall outside the redesign, as
+scoped — they're a different kind of card entirely (§20.20/`DECISIONS.md`).

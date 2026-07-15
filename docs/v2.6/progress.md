@@ -2794,8 +2794,11 @@ treatment across every grid-format card was feasible. Two research passes
 - **Verified:** Home Strips confirmed live across all strip types at the
   new width, correct spacing, border no longer clipped. Folder View's code
   changes mirror the exact same proven pattern and needed no backend work,
-  but couldn't be live-verified this session — no Custom Tabs existed to
-  open in Folder View mode, and creating one needs the admin password.
-  Flagged for Tez to spot-check once a folder-based tab exists.
+  and couldn't be live-verified same-session (no Custom Tabs existed in the
+  environment) — **Tez confirmed live in a same-day follow-up**, re-adding
+  custom folders and checking Folder View, Flat view, and the Favourites
+  tab: all consistent with the rest of the redesign. Folder View's
+  subfolder tiles correctly render outside the new card format, as scoped
+  (they're a different kind of card entirely, not a bug).
 - Full detail in `SPEC.md` §20.20, `docs/v2.6/comicvault-changes-v2.6.md`
   Item 9, and `DECISIONS.md`.
