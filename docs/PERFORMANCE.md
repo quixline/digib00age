@@ -45,6 +45,7 @@ no wall adapter).
 | 8 | USB raw sequential throughput | 77-95MB/s median across two independent samples (Phase A1, Phase D1) | n/a | Healthy, consistent USB 3.0 HDD performance — no evidence of a systemic problem | n/a — not a code issue | Low — the drive itself is not the bottleneck for typical reads |
 | 9 | Post-idle drive throughput (cold-idle probe) | 1 of 2 valid samples showed ~39MB/s (vs ~84-88MB/s expected for that file size); the other showed 65MB/s (normal range) | n/a | Inconclusive — see §3. Possibly a link-power-state effect, possibly just that specific file's disk location; single differently-sized samples can't separate the two | n/a | Unresolved — see follow-up note in §3 |
 | 10 | `localhost` vs `127.0.0.1` on this host | ~2000-2700ms added to **every** request via `localhost`; eliminated entirely via `127.0.0.1` | n/a | Windows resolves `localhost` to IPv6 (`::1`) first; the server binds IPv4 only; the refused IPv6 attempt takes ~2000ms before falling back to IPv4 (confirmed via raw socket test) | No — not a ComicVault issue, a Windows network-stack artifact on this host | None for real browser users (Chrome/Edge/Firefox use Happy Eyeballs and race IPv4/IPv6, so they're not affected) — but any script, curl command, or non-browser tool that hits literal `localhost:9424` on this machine eats a consistent ~2s tax per request. **Use `127.0.0.1` for any future diagnostic scripts on this host.** |
+| 11 | Basic Editor popup load (`GET /api/editor/{issue_id}`, `/issue/{id}`'s "Edit XML" button) opened the same archive **3 separate times** per request | ~~3 opens; e.g. 954MB compendium 14.2-15.0ms warm~~ **Fixed 2026-07-15** | n/a | Same redundant-reopen pattern as findings #4/#5/#6 (`find_xml_in_archive` + `extract_xml_from_archive` + a separate `get_archive_page_count`, each re-parsing the ZIP central directory) — just never applied to `backend/editor/archive_io.py`, the one archive-read path those earlier fixes missed | **Done** — see re-baseline below | Low-medium — the *dominant* real-world cost is actually the first cold disk touch on a rarely-opened archive (211-313ms observed — USB HDD seek latency, not fixable in code, matches #8/#9), which this fix doesn't touch. The guaranteed win is the smaller residual overhead once warm: ~1ms on a typical issue, ~9-10ms on a large compendium |
 
 ### Re-baselines (fixes applied against this baseline)
 
@@ -105,6 +106,34 @@ no wall adapter).
   `v2.6/comicvault-changes-v2.6.md` Item 2 Phase 5 and `v2.6/progress.md`.
   **v2.6 Item 2 (Performance fixes) is now complete** — all 5 phases from
   this baseline built and verified.
+- **Finding #11, fix — 2026-07-15.** Investigated separately from the
+  original 2026-07-09 baseline pass, in response to a question about Edit
+  XML popup-open latency — the Basic Editor's `GET /api/editor/{issue_id}`
+  was never measured before. Found `_read_original_xml()`
+  (`find_xml_in_archive` + `extract_xml_from_archive`) plus a separate
+  `get_archive_page_count()` call opened the same archive 3 times per
+  request. Added `read_xml_and_page_count()`
+  (`backend/editor/archive_io.py`) consolidating all 3 into a single
+  archive open; `GET`/`POST /api/editor/{issue_id}`
+  (`backend/routers/editor_basic.py`) both updated to use it. Also
+  parallelized the popup's one-time-per-page-load `GET /api/editor/formats`
+  + `GET /api/editor/genres` fetches (`frontend/js/editor_basic.js`) via
+  `Promise.all` instead of sequential awaits.
+  In-process timing (warm-cache, isolating the redundant-open overhead from
+  disk-seek cost): 2000 AD #1 (22MB, 32 pages) 0.9-1.0ms (3 opens) → 0.4ms
+  (1 open); Black Science Compendium (954MB, 1024 pages) 14.2-15.0ms
+  (3 opens) → 5.2-5.9ms (1 open). **Caveat:** the dominant real-world cost
+  is the first cold disk touch on a rarely-opened archive (211-313ms
+  observed) — inherent USB HDD seek latency, not fixable in code, consistent
+  with findings #8/#9. This fix doesn't address that; it only removes the
+  redundant 2nd/3rd opens, already cheap once the OS cache warmed from the
+  first open. Verified: in-process timing above; a scratch-copy save-path
+  round-trip (never the real file) confirmed unchanged save behaviour; the
+  real comparison file confirmed untouched. Manually verified live after a
+  server restart: Tez confirmed the popup opens and saves correctly, and
+  that the felt experience matches the diagnosis — the first archive opened
+  in a session has a noticeable, audible lag (drive spin-up), subsequent
+  archives open the editor immediately.
 
 ### What's *not* a problem
 
@@ -206,6 +235,14 @@ shape for a future comparison:
   prior cold-start slowness was noticed once (for `/api/home/strips`) — true
   first-request-after-boot timing for the endpoints in this baseline is still
   unmeasured.
+- **Full Editor's `GET /editor/full/files/{file_id}/xml`
+  (`backend/routers/editor_full.py`) has the same redundant-3-archive-opens
+  pattern finding #11 just fixed in the Basic Editor** —
+  `find_xml_in_archive` + `extract_xml_from_archive` + `get_archive_page_count`
+  called separately, same as the pre-fix Basic Editor. Spotted while fixing
+  #11 but out of scope for that session (Tez's ask was specifically about
+  the Basic Editor's Edit XML button) — flagged here as a straightforward
+  follow-up using the same `read_xml_and_page_count()` helper already built.
 
 ---
 

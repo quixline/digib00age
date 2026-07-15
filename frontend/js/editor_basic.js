@@ -59,11 +59,15 @@ async function populateStaticSelects() {
   const formatSelect = document.getElementById('ed-format');
   const ratingSelect = document.getElementById('ed-agerating');
 
-  const formatOptions = await fetch('/api/editor/formats').then((r) => r.json());
+  const [formatOptions, genreOptions] = await Promise.all([
+    fetch('/api/editor/formats').then((r) => r.json()),
+    fetch('/api/editor/genres').then((r) => r.json()),
+  ]);
+
   formatSelect.innerHTML = optionsHtml(formatOptions, '-- Select Format --');
   ratingSelect.innerHTML = optionsHtml(AGE_RATING_OPTIONS, '-- Select Rating --');
 
-  genreOptionsCache = await fetch('/api/editor/genres').then((r) => r.json());
+  genreOptionsCache = genreOptions;
   const grid = document.getElementById('ed-genre-grid');
   grid.innerHTML = '';
   for (const name of genreOptionsCache) {

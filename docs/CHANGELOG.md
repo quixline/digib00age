@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-15** — Basic Editor popup-open perf fix: `GET`/`POST
+  /api/editor/{issue_id}` consolidated 3 redundant archive opens into 1;
+  parallelized the popup's formats/genres fetches. See
+  `PERFORMANCE.md` finding #11 and `v2.6/progress.md` "Basic Editor
+  popup-open perf fix".
 - **2026-07-15** — Dropped 4 of 6 legacy raw-CSV credit columns (`inker`/
   `colorist`/`letterer`/`cover_artist`, confirmed dead) from `issues`;
   `writer`/`penciller` deliberately kept (still power search/Group-by-Writer/

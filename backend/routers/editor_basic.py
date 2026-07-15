@@ -22,12 +22,7 @@ from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database import SessionLocal, get_db
-from backend.editor.archive_io import (
-    extract_xml_from_archive,
-    find_xml_in_archive,
-    get_archive_page_count,
-    write_comicinfo_to_cbz,
-)
+from backend.editor.archive_io import read_xml_and_page_count, write_comicinfo_to_cbz
 from backend.editor.field_merge import build_xml_from_fields
 from backend.editor.formats import add_format, load_formats, remove_format
 from backend.editor.genres import add_genre, load_genres, remove_genre
@@ -103,10 +98,8 @@ def _load_issue_or_404(issue_id: int, db: Session) -> Issue:
 
 
 def _read_original_xml(issue: Issue) -> str | None:
-    xml_files = find_xml_in_archive(issue.file_path)
-    if not xml_files:
-        return None
-    return extract_xml_from_archive(issue.file_path, xml_files[0])
+    xml_content, _page_count = read_xml_and_page_count(issue.file_path)
+    return xml_content
 
 
 # ---------------------------------------------------------------------------
@@ -137,7 +130,9 @@ def get_editor_fields(issue_id: int, db: Session = Depends(get_db)):
     """
     issue = _load_issue_or_404(issue_id, db)
 
-    original_xml = _read_original_xml(issue)
+    # Single archive open for both the XML and the page count (was 3 separate
+    # opens/central-directory parses — see read_xml_and_page_count).
+    original_xml, page_count = read_xml_and_page_count(issue.file_path)
     fields = (
         parse_comicinfo_xml(original_xml)
         if original_xml
@@ -146,7 +141,7 @@ def get_editor_fields(issue_id: int, db: Session = Depends(get_db)):
 
     # PageCount is auto-counted from the archive, not trusted from a
     # possibly-stale XML value (Section 4, More tab).
-    fields["PageCount"] = str(get_archive_page_count(issue.file_path))
+    fields["PageCount"] = str(page_count)
 
     progress = _save_progress.get(issue_id)
     return {

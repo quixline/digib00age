@@ -2579,3 +2579,43 @@ followed from it.
   scrollbar session (which was committed to `main`, not that branch, and
   explicitly not pushed per Tez's instruction). Moved back to its correct
   position.
+
+## Session — 2026-07-15 (same day, follow-up) — Basic Editor popup-open perf fix
+
+Tez asked whether anything could be done about the delay between clicking
+"Edit XML" on `/issue/{id}` and the Basic Editor popup opening.
+
+- **Traced the full click-to-open path** (frontend `editor_basic.js` +
+  backend `editor_basic.py`/`archive_io.py`) and found `GET
+  /api/editor/{issue_id}` opened the same archive file **3 separate times**
+  per request — `find_xml_in_archive()`, `extract_xml_from_archive()`, and a
+  separate `get_archive_page_count()` call, each independently re-parsing the
+  ZIP central directory. Same redundant-reopen anti-pattern as
+  `PERFORMANCE.md` findings #4/#5 (`reader.py`) and #6 (`editor_full.py`),
+  just never applied to the Basic Editor's `archive_io.py` path.
+- **Measured before fixing** (in-process, `PERFORMANCE.md` §2 methodology):
+  the dominant cost is actually the *first* cold disk touch on a
+  rarely-opened archive (211-313ms observed) — inherent USB HDD seek
+  latency, not fixable in code, consistent with existing findings #8/#9. The
+  redundant 2nd/3rd opens were already cheap once the OS file cache warmed
+  from the first open, so the fix's guaranteed win is smaller than initially
+  expected: ~1ms on a typical single issue, ~9-10ms on a large compendium
+  (954MB, 1024 pages: 14.2-15.0ms for 3 opens → 5.2-5.9ms for 1).
+- **Built:** `backend/editor/archive_io.py` — new
+  `read_xml_and_page_count()`, one archive open instead of three.
+  `backend/routers/editor_basic.py` — both the `GET` (popup load) and `POST`
+  (save) handlers now use it via `_read_original_xml()`. `frontend/js/
+  editor_basic.js` — `populateStaticSelects()`'s one-time-per-page-load
+  `GET /api/editor/formats` + `GET /api/editor/genres` fetches now run
+  concurrently (`Promise.all`) instead of sequentially.
+- **Verified:** in-process timing before/after (above); a scratch-copy
+  save-path round-trip (never the real file) confirmed the refactored read
+  path doesn't change save behaviour; confirmed the real library file used
+  for comparison was untouched throughout. **Tez manually tested live**
+  after a server restart: popup opens and saves correctly, no console
+  errors, and confirmed the diagnosis matches the felt experience — the
+  first archive opened in a session has a noticeable lag (audible drive
+  spin-up), subsequent archives open the editor immediately.
+- Full before/after numbers and root-cause writeup added to
+  `docs/PERFORMANCE.md` as a new finding (#11) with its own re-baseline
+  entry, rather than duplicating the detail here.

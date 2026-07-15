@@ -57,6 +57,23 @@ def get_archive_page_count(archive_path: str) -> int:
         return 0
 
 
+def read_xml_and_page_count(archive_path: str) -> tuple[Optional[str], int]:
+    """Combines find_xml_in_archive + extract_xml_from_archive + get_archive_page_count
+    into a single archive open (was 3 separate opens/central-directory parses for one
+    Basic Editor popup load — same redundant-reopen pattern PERFORMANCE.md findings
+    #4/#5/#6 already fixed elsewhere, applied here)."""
+    try:
+        with archive_formats._opener(archive_path) as z:
+            names = z.namelist()
+            xml_files = [f for f in names if f.lower().endswith(".xml")]
+            xml_content = z.read(xml_files[0]).decode("utf-8") if xml_files else None
+            page_count = sum(1 for f in names if f.lower().endswith(IMAGE_EXTENSIONS))
+            return xml_content, page_count
+    except Exception as exc:
+        logger.error("Error reading archive %s: %s", archive_path, exc)
+        return None, 0
+
+
 def flatten_and_zip(extract_dir: str, target_dir: str) -> str:
     """
     Flatten extract_dir (archive members may be nested; the rebuilt zip
