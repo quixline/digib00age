@@ -2419,4 +2419,92 @@ every launch — a registry write should be a visible, deliberate action.
   old editor). The `?w=` param needs a tray-server restart; the strip works
   without it (full-size images, heavier). Flagged asset-versioning as a
   possible small follow-up.
+
+## Session — 2026-07-15 — Site-wide layout width, multi-cover background, scrollbars
+
+Three `INBOX.md` cosmetic `[change]` items, worked through together in one
+session since each touched the same shared, non-version-scoped surface
+(`style.css`'s global rules) — see `CLAUDE.md` §5's cosmetic/structural
+threshold, all three qualify as cosmetic (visual only, no nav/IA change).
+
+- **Full-width header + content, site-wide.** `.container` (`style.css`) was
+  capped at `max-width: 1440px; margin: 0 auto`, boxing the header
+  (logo/search/settings) and every page's main content into a centred column
+  with dead space beyond it on wide viewports — root cause of two separate
+  inbox lines at once ("stretch/span header to full width" and "remove/adjust
+  container holding cards… fill the width available"), since both trace back
+  to the same `.container` rule. Dropped the cap entirely; `.container`
+  now sets only the L/R gutter + 5px top. `.site-header .inner` (which also
+  used `.container`) gets its own `padding: 0 <gutter>` override since the
+  header is a fixed-height, vertically-centred bar, not a top-padded content
+  block. **Gutter iterated live with Tez:** first cut used 10px L/R (matching
+  his stated spec), tried live, then widened to **30px L/R** per his
+  follow-up ("that's better") — mobile (`@media max-width:640px`) kept
+  separately at 10px so small screens don't lose 60px to margins. Verified:
+  `.container` is used in exactly three places (header inner, menu-bar inner,
+  main content wrapper) — no modal/popup uses it, so the change is safe
+  site-wide. `guide.html`'s narrow prose column is unaffected — it pins its
+  own inline `max-width: 720px` on `<main>`, only its *header* went
+  full-width. Verified live across Home/All/Series/Issue/Admin/XML Editor,
+  Ctrl+F5, both themes.
+- **Multi-cover "cloud field" page background** — rebuilds the 2026-07-13
+  random-cover background (`SPEC.md` §20.19). Tez likes the effect
+  ("colourful blurred clouds… gives the site an alien feel") but the single
+  top-right-corner radial mask "doesn't cover enough" (`INBOX.md`, also the
+  open "fade from across the top not just the corner" line — superseded by
+  this, full coverage being a superset of that ask). Discussed whether a
+  code-generated gradient would be lighter on memory instead of real cover
+  art — confirmed it isn't a real factor (the background already reuses the
+  same cached 300px `/api/cover/{id}` thumbnail the card grid fetches, no
+  extra load either way) — see `DECISIONS.md`. Chosen direction: keep real
+  cover art, composite several at once. `setPageBackground()` (`app.js`) now
+  picks up to 4 *distinct* random covers from the active surface's pool
+  (never padded with repeats on a small surface) and renders each as a
+  `.page-bg-blob` `<img>` — soft circular mask (radial-gradient, transparent
+  past 68%) so it reads as a cloud not a rectangle, positioned via inline
+  `--x`/`--y`/`--s` custom props seeded from one of four shuffled quadrant
+  anchors + random jitter/scale, so coverage spreads across the whole area by
+  construction rather than clustering. Two new `:root` tokens for live tuning
+  — `--pagebg-blur` (30px) and `--pagebg-blob-opacity` (0.32) — dropped the
+  old `saturate(0.6) sepia(0.15)` grey-mute in favour of `saturate(0.9)` so
+  real colour comes through. `#pageBg` itself and its fixed
+  content-area-pinned positioning (sidebar-width tracking etc.) are
+  untouched — only its contents changed from one `<img>` to N. Verified live:
+  full coverage on Home/Browse/Folder View, re-randomises per surface entry,
+  a single-publisher tab still only shows its own covers, small surfaces
+  degrade gracefully, no console errors, "loads quick" (Tez) — same cached
+  thumbnails, no new endpoint.
+- **Site-wide scrollbars, matching the filter-dropdown look, including the
+  XML Editor.** `INBOX.md`: "apply site wide style change to scroll bars -
+  match the filter scrolls." The filter-dropdown panel (`.fd-panel`) already
+  had a custom scrollbar treatment (`scrollbar-width: thin`, 8px WebKit bar,
+  transparent track, `--surface-3` thumb → `--text-3` on hover) that nothing
+  else on the site matched. Promoted it to a global rule (bare
+  `::-webkit-scrollbar*` + `:root`'s `scrollbar-width`/`scrollbar-color`, both
+  inheritable/global by construction) placed right after the base resets, so
+  it reaches every scroll container in one page — main library, Admin, and
+  the XML Editor (`editor_full.html`, which links `style.css` — confirmed).
+  The Basic Editor modal (`editor_basic.html`) is a fragment injected into
+  pages that already link `style.css`, so it inherits it too, no separate
+  link needed. More-specific existing rules (the 4px `.continue-strip` home
+  strip bar, the hidden strip-track scrollbar) stay more specific and were
+  unaffected — confirmed by CSS specificity, not just assumption.
+  - **Regression found and fixed same session, reported by Tez:** the XML
+    Editor's Genre "Add genre" dropdown (`select.fe-genre-add`) started
+    rendering its open popup light/washed-out while Format and Age Rating
+    (plain `.fe-field select`s) stayed correctly dark. Root cause: once a
+    page defines custom `::-webkit-scrollbar` rules, Chromium renders any
+    native `<select>` popup that's long enough to need a scrollbar in **CSS
+    mode** instead of native OS-chrome mode — and CSS-mode popups paint using
+    the select's own `background-color`. Genre's list is long/scrollable
+    (forced into CSS mode) and had `background: transparent` (deliberate, so
+    the closed control reads seamless inside its `.fe-genre-wrap` box, no
+    inner rectangle) — transparent-on-CSS-mode painted light. Format/Age
+    Rating have short, non-scrolling lists, so they stayed in native mode
+    and were never affected. Fix: `select.fe-genre-add`'s background changed
+    from `transparent` to `var(--surface-2)` — same colour as the wrap it
+    sits in, so the closed look stays seamless while the open popup now gets
+    a real dark background like the other two. Verified live: Genre popup now
+    matches Format/Age Rating; closed control still shows no visible inner
+    box.
 - Committed on branch `full-editor-4col-redesign` and pushed to origin.

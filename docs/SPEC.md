@@ -1117,44 +1117,62 @@ also gone, so it now matches the rest at rest. The functional status borders
 entries — §8) are unchanged and still show, since they only override
 `border-color`, not `border-style`.
 
-### 20.19 Random Library-Page Cover Background (2026-07-13, built 2026-07-13; corrected same day — full content-area width + reduced blue cast)
+### 20.19 Multi-Cover Cloud-Field Library-Page Background (2026-07-13, built 2026-07-13; corrected same day — full content-area width + reduced blue cast; reworked 2026-07-15 — multi-cover cloud field replacing the single top-right-masked cover)
 
 `INBOX.md` triage. Home, Browse (All/Singles/Series), and every custom
 tab (flat or Folder View) render inside `.app-content`, so one shared
-background layer (`#pageBg`/`#pageBgImg`, `frontend/index.html`) covers
-every one of these surfaces.
+background layer (`#pageBg`, `frontend/index.html`) covers every one of
+these surfaces.
 
-- **Cover source:** picked at random from whatever's actually shown on the
-  active surface, never the whole library — Home draws from the union of
-  all currently-loaded strip items, Browse/flat custom tabs draw from
-  `getFilteredLibrary()`'s current surface pool, Folder View draws from the
-  current directory's own folders+files. A custom tab like 2000 AD only
-  ever shows a 2000 AD cover, by construction (the pool passed in is
-  already scoped server-side to that tab/folder).
+- **Cover source:** up to 4 *distinct* covers picked at random from
+  whatever's actually shown on the active surface, never the whole
+  library — Home draws from the union of all currently-loaded strip items,
+  Browse/flat custom tabs draw from `getFilteredLibrary()`'s current
+  surface pool, Folder View draws from the current directory's own
+  folders+files. A custom tab like 2000 AD only ever shows 2000 AD covers,
+  by construction (the pool passed in is already scoped server-side to
+  that tab/folder). A surface with fewer than 4 covers gets fewer blobs —
+  never padded with repeats.
 - **Timing:** picked once per surface-entry (`renderBrowse()`/`loadHome()`/
   `renderFolderView()`), not on every filter tweak or pagination click, so
   it stays stable while browsing within a surface instead of flickering.
-- **Geometry:** `position: fixed`, pinned to the real viewport rather than
-  scrolling with page content — `top: var(--header-h)`,
-  `left: var(--sidebar-w)` (tracks the sidebar's collapsed width too), so
-  it fills the whole visible content area next to the sidebar, not just
-  the centered 1440px `.container` column. First cut clipped it to the
-  centered container, leaving flat gutters on wide screens — corrected
-  same day from a live screenshot.
-- **Visual recipe:** same image → blur → fade idea as the existing
-  `.series-backdrop`/`.issue-backdrop` (§20.6), anchored to the top-right
-  corner via a radial mask (`radial-gradient(circle at top right, …)`)
-  instead of a top-to-bottom wash — 40% opacity, 28px blur, `saturate(0.6)
-  sepia(0.15)` to mute strong colour casts (blue-toned covers read too
-  blue otherwise — also corrected same day), fading fully transparent by
-  ~70% of the gradient radius. Effect is a subtle wash, mostly covered by
-  foreground content on a densely-packed grid — most visible in the gaps
-  between Home strips and while a page is still loading.
-- **Where:** `frontend/index.html` (`.page-bg`/`.page-bg-img` markup),
-  `frontend/css/style.css` (`.page-bg`, `.page-bg-img`, and the
-  `position: relative; z-index: 1` elevation on `#homeView`/`#browseView`/
-  `#folderView`/`.menu-bar`), `frontend/js/app.js` (`setPageBackground()`
-  plus its three call sites).
+- **Geometry (container, unchanged since 2026-07-13):** `#pageBg` is
+  `position: fixed`, pinned to the real viewport rather than scrolling with
+  page content — `top: var(--header-h)`, `left: var(--sidebar-w)` (tracks
+  the sidebar's collapsed width too), so it fills the whole visible content
+  area next to the sidebar. (Historical note: the 2026-07-13 first cut
+  clipped this to the then-centered 1440px `.container` column, corrected
+  same day; `.container` itself dropped its 1440px cap entirely on
+  2026-07-15 — see the site-wide full-width layout change — making that
+  distinction moot going forward.)
+- **Reworked 2026-07-15 — multiple blobs instead of one masked image:** the
+  original single-cover version, anchored to a top-right radial mask fading
+  out at ~70% of its radius, "didn't cover enough" per Tez — most of the
+  content area stayed flat. `setPageBackground()` (`frontend/js/app.js`) now
+  appends up to 4 `<img class="page-bg-blob">` elements to `#pageBg`, each:
+  - A soft-masked circle (`radial-gradient(circle at center, #000 0%,
+    transparent 68%)`), so it reads as a cloud rather than a rectangle.
+  - Positioned via inline `--x`/`--y` custom props, seeded from one of four
+    shuffled quadrant anchors (~22/26, ~80/22, ~30/76, ~74/70 in %) plus
+    ±10% random jitter, and scaled via `--s` (0.9–1.4× random) — so blobs
+    reliably spread across the whole area (zoned randomness) while still
+    varying every surface-entry.
+  - `opacity: var(--pagebg-blob-opacity)` (0.32) so overlapping blobs build
+    up into a denser field where they meet; `filter: blur(var(--pagebg-blur))
+    saturate(0.9)` (30px blur) — colour is let through more than the
+    original (`saturate(0.6) sepia(0.15)` grey-mute dropped) since the
+    point of the effect is "colourful blurred clouds," confirmed with Tez.
+  - `--pagebg-blur` and `--pagebg-blob-opacity` are `:root` tokens, tunable
+    without touching the rule itself.
+- **Why real covers, not a generated gradient:** considered during this
+  rework — see `DECISIONS.md`.
+- **Where:** `frontend/index.html` (`.page-bg` markup, now an empty
+  container populated by JS), `frontend/css/style.css` (`.page-bg`,
+  `.page-bg-blob`, the `--pagebg-*` tokens, and the `position: relative;
+  z-index: 1` elevation on `#homeView`/`#browseView`/`#folderView`/
+  `.menu-bar`), `frontend/js/app.js` (`setPageBackground()`,
+  `shufflePageBg()`, `PAGE_BG_BLOBS`/`PAGE_BG_ANCHORS`, plus its three call
+  sites, unchanged).
 
 ---
 

@@ -4,6 +4,32 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Page background: multiple real covers, not a code-generated gradient
+
+**Decided:** 2026-07-15, reworking `SPEC.md` §20.19 (multi-cover cloud field).
+
+**Context:** Tez likes the random-cover background's "colourful blurred clouds…
+alien feel" but the single-cover top-right-corner mask didn't cover enough of
+the content area. Before committing to just widening the mask, he asked
+whether a code-generated colour effect (no cover image at all) would be a
+better/lighter option, expecting memory to be the deciding factor.
+
+**Why real covers, composited, won instead:** checked first, not assumed —
+the background already reuses the exact same `/api/cover/{id}` 300px
+thumbnail URL the card grid fetches and browser-caches for that page anyway
+(`frontend/js/app.js` `setPageBackground()`); nothing extra loads today, and
+compositing 3–4 of them changes that not at all (same cached URLs, no new
+endpoint, no larger images). So memory was never actually the differentiator
+— the real tradeoff was aesthetic. A generated gradient would look
+consistent but generic and unrelated to the library; real covers are what
+produce the "alien clouds" effect Tez already liked, and using *several* per
+page (vs. one) both fixes the coverage complaint and makes the randomness
+more pronounced (a new multi-cover palette every surface-entry, not just a
+new single hue). Chose: keep real cover art, layer several as soft-masked
+blurred blobs spread via zoned-random quadrant anchors (guarantees coverage
+without losing per-page randomness) rather than switching to synthetic
+colour. See `SPEC.md` §20.19 for the resulting mechanism.
+
 ### Full Editor 4-column redesign rebuilt locally, not recovered from the cloud build
 
 **Decided:** 2026-07-14. The Full Editor redesign (v2.6 Item 7) was first built by a

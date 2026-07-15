@@ -67,6 +67,8 @@
     to :root, so it silently resolved to nothing and broke sticky entirely. */
   --sidebar-w: 180px; /* fallback before sizeSidebarToContent() (app.js)
     measures the real longest-label width on load and overwrites this. */
+  --pagebg-blur: 30px;         /* .page-bg-blob cloud blur — tune to taste */
+  --pagebg-blob-opacity: 0.32; /* per-blob opacity; overlaps build up denser */
   --space-12: 48px;
   --space-16: 64px;
 
@@ -188,11 +190,33 @@ button { cursor: pointer; font: inherit; border: none; background: none; color: 
 img { display: block; max-width: 100%; }
 ul { list-style: none; }
 
+/* ── Site-wide scrollbars (2026-07-15) ───────────────────────────────────────
+   Promotes the filter-dropdown (.fd-panel) scrollbar treatment to every scroll
+   container site-wide, including the XML editor's tree/textarea/queue. The
+   Firefox props are inheritable, so setting them on :root cascades everywhere;
+   the bare ::-webkit-scrollbar pseudo-elements cover all WebKit/Blink scroll
+   areas. More specific existing rules still win — the home-strip 4px bar
+   (.continue-strip) and the hidden strip-track keep their intentional look. */
+:root {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
+}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: var(--radius-pill); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
 /* ── Layout ──────────────────────────────────────────────────────────────── */
+/* Full-width, site-wide (INBOX 2026-07-15): dropped the 1440px cap so
+   content/cards/details fill the available width, with a 10px L/R gutter and
+   5px top. margin:0 auto is kept as a harmless no-op at full width — it still
+   centres the one deliberately-narrow user of .container (guide.html's main,
+   which pins its own max-width inline). The header's own inner overrides the
+   vertical padding below (it's height-controlled and vertically centred). */
 .container {
-  max-width: 1440px;
+  max-width: none;
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 5px 30px 0;
 }
 
 /* ── Random library-page cover background (INBOX 2026-07-13, corrected
@@ -226,18 +250,25 @@ ul { list-style: none; }
   transition: left var(--dur) var(--ease);
 }
 body.sidebar-collapsed .page-bg { left: 60px; }
-.page-bg-img {
-  width: 100%;
-  height: 100%;
+/* Multi-cover "cloud field" (2026-07-15): app.js appends up to 4 of these,
+   one per shuffled quadrant anchor, each positioned via inline --x/--y/--s
+   custom props. A soft circular mask turns each cover into a cloud rather
+   than a rectangle; overlapping blobs build up into a denser field that
+   fills the whole content area (replacing the old single top-right-corner
+   wash). saturate keeps real colour through the blur — the point is
+   "colourful", not a grey mute. */
+.page-bg-blob {
+  position: absolute;
+  left: var(--x, 50%);
+  top: var(--y, 50%);
+  width: 60%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) scale(var(--s, 1));
   object-fit: cover;
-  object-position: top right;
-  opacity: 0.4;
-  /* saturate+sepia mute any strong colour cast (blue-toned covers read too
-     blue at this size/blur otherwise) instead of a flat grey wash */
-  filter: blur(28px) saturate(0.6) sepia(0.15);
-  transform: scale(1.15); /* keeps blurred edges off-canvas */
-  -webkit-mask-image: radial-gradient(circle at top right, #000 0%, transparent 70%);
-          mask-image: radial-gradient(circle at top right, #000 0%, transparent 70%);
+  opacity: var(--pagebg-blob-opacity);
+  filter: blur(var(--pagebg-blur)) saturate(0.9);
+  -webkit-mask-image: radial-gradient(circle at center, #000 0%, transparent 68%);
+          mask-image: radial-gradient(circle at center, #000 0%, transparent 68%);
   display: block;
 }
 
@@ -269,6 +300,9 @@ body.sidebar-collapsed .page-bg { left: 60px; }
   align-items: center;
   gap: 12px;
   flex-wrap: nowrap;
+  /* Override .container's 5px top: the header is a fixed-height, vertically
+     centred bar. 30px sides aligns the logo/settings with the content gutter. */
+  padding: 0 30px;
 }
 .site-logo {
   display: flex;
@@ -1448,7 +1482,7 @@ select.filter-select:focus,
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
   :root { --card-min: 100px; }
-  .container { padding: 0 12px; }
+  .container { padding: 5px 10px 0; }
   .series-header { flex-direction: column; gap: 16px; }
   .series-cover-wrap { width: 120px; }
   .filter-selects { gap: 6px; }
@@ -2933,15 +2967,22 @@ select.filter-select:focus,
   opacity: 0.75;
 }
 .fe-genre-chip-x:hover { color: var(--danger); opacity: 1; }
-/* The add-genre dropdown fills the wrap with no border/background of its own, so
-   the field reads as a single bordered control like Format / Age Rating (no inner
-   box). Selector is `select.fe-genre-add` to outweigh `.fe-field select`. */
+/* The add-genre dropdown fills the wrap with no border of its own, so the field
+   reads as a single bordered control like Format / Age Rating (no inner box).
+   Selector is `select.fe-genre-add` to outweigh `.fe-field select`.
+   Background matches the wrap (--surface-2) rather than being transparent:
+   this is a long, scrollable native <select>, and once the page defines custom
+   ::-webkit-scrollbar rules (site-wide scrollbars, 2026-07-15) Chromium renders
+   a scrollable select popup in CSS mode using the select's own background — a
+   transparent one then paints light. Matching the wrap keeps the closed look
+   seamless while giving the open popup a dark background like the short
+   Format/Age Rating selects. */
 select.fe-genre-add {
   flex: 1;
   width: auto;
   min-width: 120px;
   height: 24px;
-  background: transparent;
+  background: var(--surface-2);
   border: none;
   color: var(--text-2);
   font-size: 13px;

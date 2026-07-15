@@ -13,6 +13,20 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-15** — Site-wide scrollbar restyle (matching the filter-dropdown
+  look) across the main app and the XML Editor; fixed a same-session
+  regression where it caused the Editor's Genre dropdown popup to render
+  light instead of dark. See `v2.6/progress.md` "Site-wide layout width,
+  multi-cover background, scrollbars".
+- **2026-07-15** — Random library-page background reworked from one
+  corner-masked cover to a multi-cover "cloud field" (up to 4 blurred, soft-
+  masked covers spread across the whole content area) — fixes the "doesn't
+  cover enough" complaint on the 2026-07-13 original. See `v2.6/progress.md`
+  "Site-wide layout width, multi-cover background, scrollbars".
+- **2026-07-15** — Header and main content are full-width site-wide (was
+  capped at a centred 1440px column); settled on a 30px L/R gutter. See
+  `v2.6/progress.md` "Site-wide layout width, multi-cover background,
+  scrollbars".
 - **2026-07-14** — Full Editor 4-column redesign (v2.6 Item 7): `/editor` goes
   from 3 columns to a 4-column workspace (folder→series→issue tree · editor with
   genre chips + apply-to-all column · viewer with Fit/Fullscreen/lazy thumbnail

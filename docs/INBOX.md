@@ -39,13 +39,11 @@ Example:
 
 ---
 
-~~[change] the Full Editor has been redesigned using Claude Design - exported to D:\workshop\Claude Design\full editor. Also screenshot of old and new design D:\workshop\comicvault_v2\images~~ → built as v2.6 Item 7 (Full Editor 4-column redesign), 2026-07-14 — see `v2.6/comicvault-changes-v2.6.md` Item 7 / `EDITOR_SPEC.md` §5.4
+[change] mobile reader; build release apk for a permanent install
 
 [feature] are there any performace improvements that can be made to speed up the time between clicking Edit XML in /issue/id to when the editor opens?
 
-[code] scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base
-
-[change] build release apk for a permanent install
+[feature] scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base
 
 [feature] plan & build windows install package
 
@@ -55,7 +53,19 @@ Example:
 
 ## Processed
 
+15-7-2026
+
+- ~~[change] stretch/span header to full width of the available space - site wide~~ → header + main content full-width site-wide, `.container`'s 1440px cap dropped; settled on a 30px L/R gutter after a live iteration (10px → 30px) — see `v2.6/progress.md` "Site-wide layout width, multi-cover background, scrollbars"
+
+- ~~[change] remove/adjust container holding cards, issues, series that sets width, cards/details on all pages should fill the width available - with 10px gap left and right, 5px top - site wide change~~ → same `.container` fix as the header line above (both traced to the same rule) — resolved together, same session
+
+- ~~[change] ajust the main bg that uses a random cover behind the cards and fades from to right to bottom - make it fade from across the top not just the corner but from that same level going down~~ → superseded by a full rework rather than a mask tweak: background now composites up to 4 real covers as a "cloud field" spread across the whole content area (zoned-random placement), fixing the coverage complaint as a side effect of the redesign — see `SPEC.md` §20.19, `DECISIONS.md` "Page background: multiple real covers, not a code-generated gradient"
+
+- ~~[change] apply site wide style change to scroll bars - match the filter scrolls~~ → promoted the filter-dropdown (`.fd-panel`) scrollbar treatment to a global rule, reaching the main app, Admin, and the XML Editor. Found and fixed a same-session regression it caused (Editor's Genre dropdown popup rendering light instead of dark) — see `v2.6/progress.md`
+
 14-7-2026
+
+- ~~[change] the Full Editor has been redesigned using Claude Design - exported to D:\workshop\Claude Design\full editor. Also screenshot of old and new design D:\workshop\comicvault_v2\images~~ → built as v2.6 Item 7 (Full Editor 4-column redesign), 2026-07-14 — see `v2.6/comicvault-changes-v2.6.md` Item 7 / `EDITOR_SPEC.md` §5.4
 
 - ~~[feature] open reader from web library~~
 
