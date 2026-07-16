@@ -248,8 +248,19 @@ function ensureSelectionToolbar() {
     const star = el('button', 'rating-star', '★');
     star.type  = 'button';
     star.title = `Rate ${i}`;
-    star.addEventListener('click', () =>
-      runBulkAction('/progress/bulk/rate', { rating: i }, ids => applyRatingToDom(ids, i)));
+    star.addEventListener('click', () => {
+      // Clicking a star that already matches every selected card's rating
+      // clears it instead — mirrors the issue-page rating control's
+      // click-again-to-clear behaviour (BUG-009).
+      const ids = Array.from(selectedIds.keys());
+      const allAlreadyAtI = ids.length > 0 && ids.every(id => {
+        const node = document.querySelector(`[data-issue-id="${id}"]`);
+        const row  = node && node.querySelector('.cover-count-row .card-rating-row');
+        return (row ? row.children.length : 0) === i;
+      });
+      const newRating = allAlreadyAtI ? 0 : i;
+      runBulkAction('/progress/bulk/rate', { rating: newRating }, idsApplied => applyRatingToDom(idsApplied, newRating));
+    });
     rateWrap.appendChild(star);
   }
   actions.appendChild(rateWrap);

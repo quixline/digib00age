@@ -13,6 +13,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-17** — Bulk-select toolbar's rating stars now clear the rating
+  when clicked again at the selection's current value, matching the
+  issue-page rating control's behaviour. See `v2.6/progress.md`.
 - **2026-07-17** — Fixed bulk-select toolbar's rating action: it patched a
   dead pre-redesign cover badge instead of the actual rating row in the
   card's info block, so a new rating showed a stray star on the cover and

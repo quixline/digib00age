@@ -2950,3 +2950,22 @@ treatment across every grid-format card was feasible. Two research passes
   `buildCoverCard()`, so the same fix applies.
 - Cosmetic/behavioural bug fix, no nav/routing/IA change, no backend/
   data-model change — no `DECISIONS.md` entry needed per `CLAUDE.md` §5.
+
+## Session — 2026-07-17 — Bulk-select toolbar: rating stars now toggle-to-clear like the issue page
+
+- Tez pointed out the issue-detail page's rating control lets you clear a
+  rating by clicking its already-selected star again (BUG-009 behaviour),
+  but the bulk-select toolbar's rating stars didn't match — clicking a star
+  equal to the selection's current rating just re-applied the same value
+  instead of clearing it.
+- Fix: the toolbar's per-star click handler (`ensureSelectionToolbar()`,
+  `frontend/js/app.js`) now checks, before firing, whether every selected
+  card's rendered `.card-rating-row` (inside its `.cover-count-row`) already
+  has exactly `i` stars; if so the click clears the rating (0) instead of
+  re-setting it to `i` — mirrors the Favorite/Flag-for-Review buttons'
+  existing "all already set → toggle off" pattern in the same toolbar.
+- **Verified live:** selected "4 Kids Walk Into A Bank" (real 3-star rating),
+  clicked "Rate 3" — rating cleared to unrated; clicked "Rate 3" again —
+  restored to 3 stars. No console errors.
+- Cosmetic/behavioural fix within the existing toolbar — no `DECISIONS.md`
+  entry needed per `CLAUDE.md` §5.
