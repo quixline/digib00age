@@ -24,17 +24,8 @@ function el(tag, cls, text) {
   return node;
 }
 
-// Personal-rating pill (bottom-right of card/cover) — vertical stack of gold
-// stars, one per rating point. Inbox 2026-07-11.
-function buildRatingPill(rating) {
-  const pill = el('div', 'card-rating-pill');
-  for (let i = 0; i < rating; i++) pill.appendChild(el('span', 'rating-star', '★'));
-  return pill;
-}
-
-// Horizontal rating row (redesigned CoverCard only) — sits in the info block
-// rather than overlaid on the cover. Separate from buildRatingPill() so
-// Folder View's cover overlay is unaffected by the redesign.
+// Horizontal rating row — sits in the info block's count row (alongside
+// issue/page count), not overlaid on the cover.
 function buildRatingRow(rating) {
   const row = el('div', 'card-rating-row');
   for (let i = 0; i < rating; i++) row.appendChild(el('span', 'rating-star', '★'));
@@ -436,16 +427,17 @@ function _patchFlagReviewInCaches(id, value) {
 }
 
 // Bulk star rating — mirrors applyFavoriteToDom/_patchFavoritesInCaches.
-// Swaps the .card-rating-pill in place so the selection toolbar's rating
-// widget reflects immediately, without depending on a full reload.
+// Swaps the .card-rating-row in place (in the info block's count row, same
+// place buildCoverCard()/buildFolderFileCard() render it) so the change is
+// visible immediately, without depending on a full reload.
 function applyRatingToDom(ids, rating) {
   for (const id of ids) {
     const node = document.querySelector(`[data-issue-id="${id}"]`);
-    const wrap = node && node.querySelector('.cover-img-wrap');
-    if (wrap) {
-      const existing = wrap.querySelector('.card-rating-pill');
+    const row  = node && node.querySelector('.cover-count-row');
+    if (row) {
+      const existing = row.querySelector('.card-rating-row');
       if (existing) existing.remove();
-      if (rating > 0) wrap.appendChild(buildRatingPill(rating));
+      if (rating > 0) row.appendChild(buildRatingRow(rating));
     }
     _patchRatingInCaches(id, rating);
   }
@@ -1549,7 +1541,7 @@ function buildCoverCard(s) {
   if (genreRibbon) yearRow.appendChild(genreRibbon);
   if (yearRow.children.length) info.appendChild(yearRow);
 
-  const countRow = el('div', 'cover-meta-row');
+  const countRow = el('div', 'cover-meta-row cover-count-row');
   if (isSingle) {
     if (s.page_count) countRow.appendChild(el('div', 'cover-count', `${s.page_count} pages`));
   } else {
@@ -1911,7 +1903,7 @@ function buildFolderFileCard(issue) {
   if (genreRibbon) numberRow.appendChild(genreRibbon);
   if (numberRow.children.length) info.appendChild(numberRow);
 
-  const pagesRow = el('div', 'cover-meta-row');
+  const pagesRow = el('div', 'cover-meta-row cover-count-row');
   if (issue.page_count) pagesRow.appendChild(el('div', 'cover-count', `${issue.page_count} pages`));
   if (ratingRow) pagesRow.appendChild(ratingRow);
   if (pagesRow.children.length) info.appendChild(pagesRow);

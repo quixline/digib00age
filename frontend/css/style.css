@@ -1027,30 +1027,6 @@ select.filter-select:focus,
   line-height: 1.5;
 }
 
-/* Personal rating pill — bottom-right of card/cover, vertical stack of gold
-   stars growing upward, one per rating point (1-5). Bg matches the
-   bottom-toolbar rating pill (.selection-rate). Only rendered when
-   personal_rating > 0 — see buildCard()/buildFolderFileCard() in app.js. */
-.card-rating-pill {
-  position: absolute;
-  bottom: 6px;
-  right: 6px;
-  z-index: 1;
-  display: flex;
-  flex-direction: column-reverse;
-  align-items: center;
-  gap: 1px;
-  padding: 3px 4px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-}
-.card-rating-pill .rating-star {
-  font-size: 10px;
-  line-height: 1;
-  color: var(--favourite);
-}
-
 /* Part-read progress bar (overlaid at bottom of cover) */
 .card-progress-bar {
   position: absolute;

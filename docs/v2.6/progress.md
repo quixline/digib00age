@@ -2915,3 +2915,38 @@ treatment across every grid-format card was feasible. Two research passes
 - Cosmetic/behavioural fix within the existing toolbar, no new nav/routing/
   IA change, no backend/data-model change — no `DECISIONS.md` entry needed
   per `CLAUDE.md` §5.
+
+## Session — 2026-07-17 — Bulk-select toolbar: rating patch fixed (stale cover badge, unchanged info row)
+
+- Follow-up bug surfaced by the previous session's fix (screenshot:
+  `17-07-2026_003428_digib00age.png`): applying a new rating via the
+  toolbar's star widget made an unrated-looking star badge reappear
+  overlaid on the cover art, while the actual rating display under the
+  card's issue/page count (the info block) stayed on its old value.
+- Root cause: `applyRatingToDom()` (`frontend/js/app.js`) still patched
+  `.card-rating-pill` — a cover-overlay badge from before the 2026-07-07
+  redesign — inside `.cover-img-wrap`. No card builder has created that
+  element since the redesign moved ratings into `.card-rating-row`,
+  rendered in the info block's count row (`buildCoverCard()`/
+  `buildFolderFileCard()`, via `buildRatingRow()`). The patch function was
+  never updated to match, so every bulk-rate action added a legacy pill the
+  redesign had already replaced, and left the real, visible rating row
+  untouched.
+- Fix: `applyRatingToDom()` now swaps `.card-rating-row` in place inside a
+  new `.cover-count-row` marker class (added to `buildCoverCard()`'s and
+  `buildFolderFileCard()`'s count/pages row, the same row `buildRatingRow()`
+  is appended into at initial render) instead of touching `.cover-img-wrap`.
+  Removed the now-dead `buildRatingPill()` function and its
+  `.card-rating-pill` CSS (`style.css`) — nothing has rendered that markup
+  since the redesign.
+- **Verified live:** searched the real library for "4 Kids Walk Into A
+  Bank" (an already-3-star-rated series card), selected it, rated it 5 —
+  cover art showed no stray badge and the info-row rating updated to 5
+  stars immediately — then rated it back to 3 via the toolbar to restore
+  the real value. No console errors. Folder View's flat file cards
+  (`buildFolderFileCard()`) weren't live-tested (long-press doesn't
+  simulate cleanly via browser automation) but use the identical
+  `.cover-count-row`/`.card-rating-row` structure now shared with
+  `buildCoverCard()`, so the same fix applies.
+- Cosmetic/behavioural bug fix, no nav/routing/IA change, no backend/
+  data-model change — no `DECISIONS.md` entry needed per `CLAUDE.md` §5.
