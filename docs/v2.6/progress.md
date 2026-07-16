@@ -2851,3 +2851,37 @@ treatment across every grid-format card was feasible. Two research passes
   reload needed. Test issue, thumbnail, and scratch files deleted afterward.
   Tez confirmed fixed live in his own browser against the real library.
 - Full detail in `docs/archive/bugs-fixed-archive.md` BUG-023.
+
+## Session — 2026-07-17 — Hanken Grotesk not rendering; Admin scan-card green borders removed
+
+- Tez noticed Hanken Grotesk (installed at the OS level) wasn't showing
+  anywhere in the UI despite the Phase A font port. Root cause: `body`
+  (`style.css`) hardcoded `font-family: system-ui, -apple-system,
+  BlinkMacSystemFont, "Segoe UI", sans-serif` directly instead of using the
+  `--font-sans` token (`'Hanken Grotesk', system-ui, ...`) defined alongside
+  it — the Google Fonts `@import` was loading the font correctly, but no
+  rule anywhere ever referenced it, so every element inherited `body`'s
+  hardcoded fallback stack. Grepped the rest of the file to confirm this was
+  the only hardcoded `Segoe UI`/`system-ui` stack — `--font-mono` was already
+  wired up correctly at every technical-text call site. Fixed by changing
+  `body`'s `font-family` to `var(--font-sans)`.
+  - **Verified live:** confirmed via `getComputedStyle(document.body).fontFamily`
+    (resolved to `"Hanken Grotesk", system-ui, ...`) and `document.fonts` (the
+    four weights actually used — 400, 400 italic, 600, 700 — report
+    `status: "loaded"`); zoomed screenshot of Home confirms the letterforms
+    match Hanken Grotesk, not Segoe UI.
+- Tez also asked to remove the green borders appearing on several Admin →
+  Library Scan cards (screenshot: `15-07-2026_210200_digib00age-admin.png`
+  showed it on Last Scan/Changed Files/Missing Records, absent on Files
+  Found/New Files). Traced to `.has-pending`/`#scanNowCard.is-scanning`
+  (`style.css`, added 2026-07-11) — both just `border-color: var(--green)`,
+  toggled by `admin.js` per-card when a log has unread entries or a scan is
+  actively running. Removed both CSS rules (cosmetic only — left the
+  class-toggling JS untouched, it just has no visual effect now) and
+  tightened the now-stale comment above `.stat-card` that referenced them.
+  - **Verified live:** hard-reloaded `/admin` — all six Scan section cards
+    (Scan Now, Last Scan, Files Found, New Files, Changed Files, Missing
+    Records) render with the uniform dark card style, no green borders,
+    Library Stats/Settings cards unaffected (never had the rule).
+- Both changes are cosmetic (colour only, no nav/routing/IA change) per
+  `CLAUDE.md` §5 — no `DECISIONS.md`/build-queue entry needed.

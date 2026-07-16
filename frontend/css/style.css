@@ -180,7 +180,7 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: var(--font-sans);
   font-size: 15px;
   line-height: 1.5;
   min-height: 100vh;
@@ -2242,11 +2242,10 @@ select.filter-select:focus,
   gap: 12px;
 }
 
-/* Inbox 2026-07-11: no default outline — kept as a consistent 1px transparent
-   border (not `border: none`) so the state-driven colour overrides below
-   (#scanNowCard.is-scanning, .has-pending) still have a border to colour in,
-   without a visible outline in the idle state. Applies to every .stat-card
-   (Library Stats row + all six Scan section cards) uniformly. */
+/* No default outline — kept as a consistent 1px transparent border (not
+   `border: none`) to avoid a layout shift if a state-driven border colour
+   is ever reintroduced. Applies to every .stat-card (Library Stats row +
+   all six Scan section cards) uniformly. */
 .stat-card {
   background: var(--surface);
   border: 1px solid transparent;
@@ -2297,8 +2296,6 @@ select.filter-select:focus,
 
 /* Scan Now card */
 .scan-now-card { gap: 12px; }
-#scanNowCard.is-scanning { border-color: var(--green); }
-.has-pending { border-color: var(--green); }
 .scan-progress { width: 100%; }
 .scan-bar-wrap {
   height: 4px;

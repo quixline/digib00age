@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-17** — Fixed Hanken Grotesk not rendering anywhere (`body` had a
+  hardcoded fallback font stack instead of the `--font-sans` token); removed
+  the green `.has-pending`/`.is-scanning` borders from Admin scan-section
+  cards. See `v2.6/progress.md`.
 - **2026-07-16** — Fixed BUG-023: library cover image could stay stale for up to
   24h after an archive edit + rescan (browser cache regression from v2.6 Item 2
   Phase 4). Cover URLs now carry a version stamp tied to the scanner's own
