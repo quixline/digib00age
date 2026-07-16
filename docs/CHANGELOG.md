@@ -13,6 +13,8 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-17** — Fixed selection toolbar's Done pill showing black text
+  on its blue background instead of white. See `v2.6/progress.md`.
 - **2026-07-17** — Bulk-select toolbar's rating stars now clear the rating
   when clicked again at the selection's current value, matching the
   issue-page rating control's behaviour. See `v2.6/progress.md`.

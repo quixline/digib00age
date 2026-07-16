@@ -2969,3 +2969,13 @@ treatment across every grid-format card was feasible. Two research passes
   restored to 3 stars. No console errors.
 - Cosmetic/behavioural fix within the existing toolbar — no `DECISIONS.md`
   entry needed per `CLAUDE.md` §5.
+
+## Session — 2026-07-17 — Selection toolbar's Done pill: black text fixed to white
+
+- Follow-up from the Deselect-button work: the toolbar's "Done" pill
+  (`.selection-done-btn`, `style.css`) had `color: #000` — black text on
+  its solid accent-blue background — which had been asked for earlier but
+  not actually applied. Changed to `color: #fff`.
+- **Verified live:** selected a card, confirmed the Done pill now renders
+  white text on the blue background.
+- Cosmetic colour-only change per `CLAUDE.md` §5 — no `DECISIONS.md` entry.
