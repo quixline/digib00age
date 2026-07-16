@@ -2812,3 +2812,42 @@ treatment across every grid-format card was feasible. Two research passes
   opens a Code session for that purpose. Updated `docs/meta/working-rules.md`
   "Inbox workflow" and the `docs/INBOX.md` header to reflect the hold; logged
   in `DECISIONS.md`.
+
+## Session — 2026-07-16 — BUG-023: stale library cover after archive edit + rescan
+
+- Tez reported: editing a comic's cover inside its CBZ (unpack → replace page →
+  repack) and rescanning didn't update the cover shown in the library grid —
+  neither F5 nor Ctrl+Shift+R fixed it, delay reported as minutes.
+- Diagnosed live against a real affected issue (id 5469): scanner was working
+  correctly the whole time — archive mtime, DB `date_modified`, and the
+  regenerated thumbnail on disk all matched within ~2 minutes of the edit. Root
+  cause was the browser's HTTP cache: v2.6 Item 2 Phase 4 (2026-07-13) added
+  `Cache-Control: public, max-age=86400` to `GET /api/cover/{id}` to stop
+  re-transferring unchanged thumbnails, but the URL never changed, so a browser
+  that had already fetched a cover was entitled to reuse it for a full 24h with
+  no way for any reload gesture to force a re-fetch of images set via JS after
+  page load (how every cover in this app renders). A regression of the caching
+  win, not a scanner bug — matches Tez's own suspicion in the INBOX note.
+- Considered forcing revalidation on every request (`Cache-Control: no-cache`)
+  first, and built it as an interim fix — but Tez asked whether that adds
+  per-request overhead and whether invalidation could instead ride on the
+  scanner's own change detection. It can, and it's strictly better: added
+  `path_utils.cover_url(issue)`, which appends a `?v=` stamp from
+  `Issue.date_modified` (the same mtime the scanner already records the moment
+  it detects and applies a change) to every cover URL. Unchanged covers keep the
+  original zero-request 24h cache; changed covers get a structurally different
+  URL the instant a rescan updates that row, so the browser cache-misses
+  automatically. Reverted `reader.py`'s cache header back to a long
+  `"public, max-age=86400, immutable"`, now safe. All 9 call sites across
+  `library.py`/`home.py` that built the raw `/api/cover/{id}` string switched to
+  the new helper, including a data-shape change in Folder View's subfolder-cover
+  pick (`subfolder_issue_ids` now retains `Issue` objects, not bare ids, so
+  `.date_modified` is available with no extra query).
+- **Verified live:** built a scratch two-page CBZ (red cover), scanned it in as
+  an isolated test issue (id 5502, real library/DB otherwise untouched),
+  confirmed the served cover was red with a version-stamped URL. Repacked the
+  same archive with a green cover, rescanned, confirmed the version stamp
+  changed and the new URL served the green cover immediately — no delay, no
+  reload needed. Test issue, thumbnail, and scratch files deleted afterward.
+  Tez confirmed fixed live in his own browser against the real library.
+- Full detail in `docs/archive/bugs-fixed-archive.md` BUG-023.

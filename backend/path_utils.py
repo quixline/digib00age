@@ -51,6 +51,19 @@ def matches_field(issue: Issue, field_name: str, field_value: str) -> bool:
     return False
 
 
+def cover_url(issue: Issue) -> str:
+    """
+    /api/cover/{id} URL with a version stamp from Issue.date_modified, so the
+    URL itself changes when a rescan detects the archive changed — lets the
+    browser cache covers aggressively (BUGS.md, cover-refresh-delay,
+    2026-07-16) without ever serving a stale one after an edit. Second-level
+    granularity matches scanner.py's own unchanged-file tolerance.
+    """
+    if issue.date_modified:
+        return f"/api/cover/{issue.id}?v={issue.date_modified.strftime('%Y%m%d%H%M%S')}"
+    return f"/api/cover/{issue.id}"
+
+
 def matches_search(issue: Issue, q: str) -> bool:
     """
     Free-text match across the same fields as GET /api/search (series, title,

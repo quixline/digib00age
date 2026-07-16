@@ -4,6 +4,29 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Cover-image cache invalidation: version-stamped URL, not per-request revalidation
+
+**Decided:** 2026-07-16, BUG-023 fix session.
+
+**Why:** the interim fix for the stale-cover bug (`Cache-Control: no-cache` on
+`GET /api/cover/{id}`, forcing the browser to check with the server on every
+request) worked, but Tez asked whether that adds per-request overhead across a
+~5,500-issue library, and whether invalidation could instead ride on the
+scanner's own change detection rather than a blind "always ask" policy. It can:
+`path_utils.cover_url(issue)` now appends a `?v=` stamp derived from
+`Issue.date_modified` — the field the scanner already sets to the archive's
+filesystem mtime the moment it detects and applies a change. This gets both
+properties at once — unchanged covers keep the original zero-request 24h cache
+(`v2.6 Item 2 Phase 4`'s intent, `PERFORMANCE.md` finding #3), and changed
+covers get a structurally new URL the instant a rescan updates that row, with
+no reliance on reload gestures or revalidation timing. Chosen over the simpler
+`no-cache` approach specifically to avoid adding a network round trip to every
+cover load in the common (unchanged) case.
+
+**Where:** `backend/path_utils.py` (`cover_url()`), `backend/routers/reader.py`
+(`COVER_CACHE_CONTROL`), 9 call sites across `backend/routers/library.py` /
+`home.py`. Full detail in `docs/archive/bugs-fixed-archive.md` BUG-023.
+
 ### Full Editor's "never touches the DB" rule gets one confirmed exception, for review-queue saves only
 
 **Decided:** 2026-07-15, review-queue feature build session (v2.6 Item 8).

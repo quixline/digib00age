@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from backend.database import get_db
 from backend.models import CustomTab, Issue, IssueCredit, IssueGenre, Person, ReadingProgress
-from backend.path_utils import is_under, matches_field, matches_search, normalize_path
+from backend.path_utils import cover_url, is_under, matches_field, matches_search, normalize_path
 from backend.routers.progress import _get_or_create_progress
 
 router = APIRouter(tags=["library"])
@@ -89,7 +89,7 @@ def _issue_to_dict(issue: Issue, progress: ReadingProgress | None) -> dict:
         "page_count": issue.page_count,
         "count": issue.count,
         "genres": [g.genre_name for g in issue.genres],
-        "cover_path": f"/api/cover/{issue.id}",
+        "cover_path": cover_url(issue),
         "metadata_source": issue.metadata_source,
         "missing": issue.missing,
         "date_added": issue.date_added.isoformat() if issue.date_added else None,
@@ -217,7 +217,7 @@ def get_library(
             "read_count": read_count,
             "reading_count": reading_count,
             "cover_issue_id": cover_issue.id,
-            "cover_path": f"/api/cover/{cover_issue.id}",
+            "cover_path": cover_url(cover_issue),
             "publisher": cover_issue.publisher,
             "year": cover_issue.year,
             "format_group": cover_issue.format_group,
@@ -292,7 +292,7 @@ def get_tab_folder_contents(
 
     direct_files: list[Issue] = []
     subfolder_counts: dict[str, int] = {}
-    subfolder_issue_ids: dict[str, list[int]] = {}
+    subfolder_issues: dict[str, list[Issue]] = {}
     subfolder_has_favorite: dict[str, bool] = {}
     subfolder_has_flagged_review: dict[str, bool] = {}
     for issue in under_target:
@@ -303,7 +303,7 @@ def get_tab_folder_contents(
         rel = os.path.relpath(issue_dir, target_dir)
         immediate_child = rel.split(os.sep)[0]
         subfolder_counts[immediate_child] = subfolder_counts.get(immediate_child, 0) + 1
-        subfolder_issue_ids.setdefault(immediate_child, []).append(issue.id)
+        subfolder_issues.setdefault(immediate_child, []).append(issue)
         if issue.favorites:
             subfolder_has_favorite[immediate_child] = True
         if issue.flagged_for_review:
@@ -321,7 +321,7 @@ def get_tab_folder_contents(
             "name": name,
             "issue_count": count,
             "cover_path": (
-                f"/api/cover/{random.choice(subfolder_issue_ids[name])}" if count else None
+                cover_url(random.choice(subfolder_issues[name])) if count else None
             ),
             "has_favorite": subfolder_has_favorite.get(name, False),
             "has_flagged_review": subfolder_has_flagged_review.get(name, False),
@@ -475,7 +475,7 @@ def get_series(
             "number": iss.number,
             "title": iss.title,
             "year": iss.year,
-            "cover_path": f"/api/cover/{iss.id}",
+            "cover_path": cover_url(iss),
             "story_arc": iss.story_arc,
             "story_arc_number": iss.story_arc_number,
             "format": iss.format,
@@ -505,7 +505,7 @@ def get_series(
         "publisher": anchor.publisher,
         "year": anchor.year,
         "format_group": anchor.format_group,
-        "cover_path": f"/api/cover/{cover_issue.id}" if cover_issue else None,
+        "cover_path": cover_url(cover_issue) if cover_issue else None,
         "genres": sorted(all_genres),
         "issue_count": len(issues),
         "issues": issue_list,
@@ -612,7 +612,7 @@ def search(
             "year": issue.year,
             "publisher": issue.publisher,
             "format_group": issue.format_group,
-            "cover_path": f"/api/cover/{issue.id}",
+            "cover_path": cover_url(issue),
             "read_status": prog.status if prog else "unread",
         })
 
@@ -709,7 +709,7 @@ def reading_continue(db: Session = Depends(get_db)):
                 "id": issue.id,
                 "series": issue.series,
                 "number": issue.number,
-                "cover_path": f"/api/cover/{issue.id}",
+                "cover_path": cover_url(issue),
                 "current_page": prog.current_page,
                 "page_count": issue.page_count,
                 "last_read_at": prog.last_read_at.isoformat() if prog.last_read_at else None,
@@ -885,7 +885,7 @@ def reading_unread(
                 "series": issue.series,
                 "number": issue.number,
                 "year": issue.year,
-                "cover_path": f"/api/cover/{issue.id}",
+                "cover_path": cover_url(issue),
                 "format_group": issue.format_group,
             })
 

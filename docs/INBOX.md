@@ -49,7 +49,7 @@ Example:
 
 [feature] plan & build windows install package
 
-[bug] cover change in archive takes a long time to show in the library, refresh doesn't speed it up. eg a cover is shown in the library with a double cover/open book cover, archive unpacked, image edited to one page and archive repacked. Library scan detects changed file but doesn't update cover without some wait, when a scan detects the change it also needs to update the UI at a bare minum with f5 (-> BUGS.md, possible regression/duplicate of the 12-7-2026 cover-persist line below marked "not a bug" — this report says refresh doesn't fix it, worth re-checking)
+~~[bug] cover change in archive takes a long time to show in the library, refresh doesn't speed it up. eg a cover is shown in the library with a double cover/open book cover, archive unpacked, image edited to one page and archive repacked. Library scan detects changed file but doesn't update cover without some wait, when a scan detects the change it also needs to update the UI at a bare minum with f5 (-> BUGS.md, possible regression/duplicate of the 12-7-2026 cover-persist line below marked "not a bug" — this report says refresh doesn't fix it, worth re-checking)~~ → fixed same-session, 2026-07-16, as BUG-023 in `docs/archive/bugs-fixed-archive.md` (confirmed a regression from the 2026-07-13 cover-caching change, not a duplicate of the 12-7 report)
 
 
 

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models import CustomTab, HomeStrip, Issue, IssueGenre, Person, ReadingProgress
-from backend.path_utils import is_under, matches_field
+from backend.path_utils import cover_url, is_under, matches_field
 
 router = APIRouter(tags=["home"])
 
@@ -51,7 +51,7 @@ def _issue_card(issue: Issue, progress_map: dict[int, str], *,
         "year": issue.year,
         "publisher": issue.publisher,
         "format_group": issue.format_group,
-        "cover_path": f"/api/cover/{issue.id}",
+        "cover_path": cover_url(issue),
         "read_status": progress_map.get(issue.id, "unread"),
         "issue_count": issue_count,
         "series_anchor_id": series_anchor_id or issue.id,

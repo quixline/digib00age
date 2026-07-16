@@ -151,7 +151,7 @@ def get_page(issue_id: int, page_number: int, db: Session = Depends(get_db)):
 # GET /api/cover/{issue_id}
 # ---------------------------------------------------------------------------
 
-COVER_CACHE_CONTROL = "public, max-age=86400"
+COVER_CACHE_CONTROL = "public, max-age=86400, immutable"
 
 
 @router.get("/cover/{issue_id}")
@@ -165,6 +165,18 @@ def get_cover(issue_id: int, request: Request, db: Session = Depends(get_db)):
     but never checks it against the incoming request, so nothing was ever
     actually revalidated; every grid view re-transferred every visible
     thumbnail from scratch).
+
+    A long `max-age` is safe here (BUGS.md, cover-refresh-delay, 2026-07-16)
+    because callers now build this URL via path_utils.cover_url(), which
+    appends a `?v=` version stamp from Issue.date_modified — the URL itself
+    changes the moment a rescan detects the archive changed, so the browser
+    naturally cache-misses and re-fetches instead of relying on a stale
+    24h-old copy. Earlier this endpoint sent bare `/api/cover/{id}` with the
+    same `max-age=86400`, which meant an edited cover could stay stuck in
+    the browser cache for up to a day with no reload gesture able to force a
+    re-fetch for images set via JS after initial page load. The ETag/304
+    logic below stays as cheap defense-in-depth for the rare
+    `date_modified is None` fallback case (unversioned URL).
     """
     config = get_config()
     thumb_dir = Path(config["thumbnail_dir"])

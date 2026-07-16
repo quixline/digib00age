@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-16** — Fixed BUG-023: library cover image could stay stale for up to
+  24h after an archive edit + rescan (browser cache regression from v2.6 Item 2
+  Phase 4). Cover URLs now carry a version stamp tied to the scanner's own
+  change-detection instead of a blind time-based cache. See
+  `docs/archive/bugs-fixed-archive.md` BUG-023 and `v2.6/progress.md`.
 - **2026-07-16** — Process change: Inbox triage paused indefinitely
   (capture-only in Chat/Cowork/Code alike, until Tez says otherwise). See
   `v2.6/progress.md` "Inbox triage paused" and `DECISIONS.md`.

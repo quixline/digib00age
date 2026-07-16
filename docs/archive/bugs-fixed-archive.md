@@ -7,6 +7,67 @@ Append-only; entries kept exactly as they were in `BUGS.md` at the time of move.
 
 ---
 
+### BUG-023 — Cover image doesn't update in the library after an archive edit + rescan
+
+**Found:** 2026-07-16, user report (`INBOX.md`, "cover change in archive takes a
+long time to show in the library, refresh doesn't speed it up"). Reproduced with:
+cover shown as a double-cover/open-book spread, archive unpacked, page edited down
+to a single cover page, archive repacked, library rescanned. The scan correctly
+detected the change, but the library grid kept showing the old cover for minutes —
+neither a normal reload (F5) nor a hard reload (Ctrl+Shift+R) fixed it reliably.
+User flagged it as a possible regression of an earlier 2026-07-12 "not a bug"
+report about a removed cover persisting after scan (also referenced in BUG-022's
+Found note) — correctly, per the root cause below.
+
+**Where:** `backend/routers/reader.py`'s `GET /api/cover/{issue_id}`, and every
+place across `backend/routers/library.py` / `backend/routers/home.py` that built a
+cover URL as the literal `f"/api/cover/{issue.id}"`.
+
+**Root cause:** confirmed live against issue 5469 — the scanner was working
+correctly (archive mtime, DB `date_modified`, and the regenerated thumbnail file on
+disk all matched, thumbnail already fresh on disk within ~2 minutes of the edit).
+The problem was purely the browser's HTTP cache. v2.6 Item 2 Phase 4
+(2026-07-13, `PERFORMANCE.md` finding #3) added `Cache-Control: public,
+max-age=86400` to `/api/cover/{id}` to stop re-transferring unchanged thumbnails on
+every grid view — a real win for covers that never change. But the URL was always
+the same static `/api/cover/{id}` string, so once a browser had fetched it, it was
+entitled to reuse the cached bytes for a full 24h *without ever contacting the
+server*, regardless of what changed server-side. No reload gesture reliably forces
+revalidation for images set via JS (`img.src = item.cover_path`) after the initial
+page load, which is how every cover in this app is rendered
+(`frontend/js/app.js`) — so the "several minutes, refresh doesn't help" symptom was
+really "up to 24 hours, no client action can force it," just not run out yet.
+
+**Fixed, 2026-07-16.** Rather than forcing per-request revalidation (`no-cache`,
+which works but adds a round trip to every cover load), cache-busting was moved
+into the URL itself: added `path_utils.cover_url(issue)`, which appends a `?v=`
+version stamp built from `Issue.date_modified` — the same field the scanner already
+stamps with the archive's filesystem mtime the instant it detects and applies a
+change (`scanner.py:407`), at second-level granularity matching the scanner's own
+unchanged-file tolerance. All 9 call sites that built the raw `/api/cover/{id}`
+string now go through this helper (`library.py` lines 92, 220, 478, 508, 615, 712,
+888 — plus Folder View's subfolder-cover pick, which needed
+`subfolder_issue_ids: dict[str, list[int]]` changed to retain full `Issue` objects
+instead of bare ids so `.date_modified` was available; and `home.py` line 54).
+`reader.py`'s `COVER_CACHE_CONTROL` was kept at a long, now-safe
+`"public, max-age=86400, immutable"` — unchanged covers keep the original
+zero-request 24h cache Phase 4 intended, changed covers get a structurally
+different URL the instant a rescan updates that row, so the browser cache-misses
+and fetches fresh automatically. The existing ETag/`If-None-Match`/304 logic
+(Phase 4) was left in place as cheap defense-in-depth for the rare
+`date_modified is None` fallback case.
+
+**Verified live:** built a scratch two-page CBZ (red cover), scanned it in as an
+isolated test issue (id 5502, never touching real library files or the real DB
+beyond that one test row), confirmed the served cover pixel was red and the
+`cover_path` carried a version stamp. Repacked the same archive with a green cover,
+rescanned via `POST /api/scan/file`, confirmed the version stamp changed
+(`v=20260716215540` → `v=20260716215608`) and the new URL served the green cover
+immediately — no delay, no reload gymnastics. Test issue, its thumbnail, and the
+scratch archive were all deleted afterward; real library/DB confirmed untouched.
+
+---
+
 ### BUG-022 — Bulk star rating (multi-select bottom toolbar) doesn't update cards
 
 **Found:** 2026-07-12, user report while investigating an unrelated stale-cover
