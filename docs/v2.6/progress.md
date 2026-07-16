@@ -2885,3 +2885,33 @@ treatment across every grid-format card was feasible. Two research passes
     Library Stats/Settings cards unaffected (never had the rule).
 - Both changes are cosmetic (colour only, no nav/routing/IA change) per
   `CLAUDE.md` §5 — no `DECISIONS.md`/build-queue entry needed.
+
+## Session — 2026-07-17 — Bulk-select toolbar: actions no longer clear the selection
+
+- Tez reported that applying one bulk action (e.g. Favorite) to a selection
+  immediately cleared it, so combining two actions on the same cards (e.g.
+  favorite *and* rate) required long-pressing and re-selecting the same
+  cards a second time.
+- Root cause: `runBulkAction()` and the `→ Send to Full Editor` handler
+  (`frontend/js/app.js`) both unconditionally called `exitSelectionMode()`
+  after firing, on every action, success or failure.
+- Fix: removed the trailing `exitSelectionMode()` call from both
+  `runBulkAction()` (covers Mark Read/Unread, Favorite, Flag for Review,
+  Rate) and the Send to Full Editor handler, so the selection and toolbar
+  now stay live after an action fires — multiple actions can be applied to
+  the same selection in sequence. Added an explicit **Deselect** button to
+  the toolbar's end group (alongside the existing Cancel/Done, which were
+  already functionally identical to each other) so clearing the selection
+  is now a deliberate action rather than a side effect of every button
+  click.
+- **Verified live:** selected 2 cards in the "All" grid, applied Favorite
+  (both favorited, selection and toolbar stayed active, "2 selected" still
+  shown), then without re-selecting applied a 4-star rating to the same
+  pair (applied correctly, selection still persisted), then clicked
+  Deselect (cleared the selection/hid the toolbar, applied favorite/rating
+  values remained on the cards). No console errors during the flow.
+  Reverted the test favorite/rating values afterward so the real library
+  data matches its pre-test state.
+- Cosmetic/behavioural fix within the existing toolbar, no new nav/routing/
+  IA change, no backend/data-model change — no `DECISIONS.md` entry needed
+  per `CLAUDE.md` §5.

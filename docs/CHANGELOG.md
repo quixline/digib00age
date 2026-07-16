@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-17** — Bulk-select toolbar actions (Mark Read/Unread, Favorite,
+  Flag for Review, Rate, Send to Full Editor) no longer auto-clear the
+  selection after firing, so multiple actions can be applied to the same
+  selected cards; added a Deselect button to clear it explicitly. See
+  `v2.6/progress.md`.
 - **2026-07-17** — Fixed Hanken Grotesk not rendering anywhere (`body` had a
   hardcoded fallback font stack instead of the `--font-sans` token); removed
   the green `.has-pending`/`.is-scanning` borders from Admin scan-section

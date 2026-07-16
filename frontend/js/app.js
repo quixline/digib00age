@@ -244,7 +244,6 @@ function ensureSelectionToolbar() {
     } catch (_) {
       showLibraryToast('Failed to send files to Full Editor', true);
     }
-    exitSelectionMode();
   });
 
   const rateWrap = el('div', 'selection-rate');
@@ -266,6 +265,10 @@ function ensureSelectionToolbar() {
   bar.appendChild(actions);
 
   const endWrap    = el('div', 'selection-toolbar-end');
+  const deselectBtn = el('button', 'selection-cancel-btn', 'Deselect');
+  deselectBtn.id     = 'selDeselect';
+  deselectBtn.type   = 'button';
+  deselectBtn.addEventListener('click', () => exitSelectionMode());
   const cancelBtn  = el('button', 'selection-cancel-btn', 'Cancel');
   cancelBtn.id     = 'selCancel';
   cancelBtn.type   = 'button';
@@ -274,7 +277,7 @@ function ensureSelectionToolbar() {
   doneBtn.id       = 'selDone';
   doneBtn.type     = 'button';
   doneBtn.addEventListener('click', () => exitSelectionMode());
-  endWrap.append(cancelBtn, doneBtn);
+  endWrap.append(deselectBtn, cancelBtn, doneBtn);
   bar.appendChild(endWrap);
 
   document.body.appendChild(bar);
@@ -346,9 +349,8 @@ async function runBulkAction(path, extraBody, applyFn) {
     // there's no individual DOM node for issues inside an unopened series.
     if (applyFn) applyFn(originalIds);
   } catch (_) {
-    // Best-effort — selection still clears; a reload reflects true server state.
+    // Best-effort — a reload reflects true server state if this failed silently.
   }
-  exitSelectionMode();
 }
 
 // Targeted DOM + cache updates so the grid doesn't need a full refetch after
