@@ -13,6 +13,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-16** — Process change: Inbox triage paused indefinitely
+  (capture-only in Chat/Cowork/Code alike, until Tez says otherwise). See
+  `v2.6/progress.md` "Inbox triage paused" and `DECISIONS.md`.
 - **2026-07-15** — Card redesign (v2.6 Item 9): new border/genre-ribbon/
   favourite-badge/flag-badge/progress-pill look applied to the main library
   grid, Home Page Strips, and Folder View's flat file cards, via a new

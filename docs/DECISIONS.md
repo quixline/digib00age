@@ -2271,3 +2271,15 @@ a real functional/layout tradeoff rather than assuming it was implied by "apply 
 card design."
 **Where:** `frontend/css/style.css` (`.continue-strip .cover-card.strip-card.cover-card--redesign`),
 `SPEC.md` §20.20.
+
+### Inbox triage paused indefinitely — capture-only in every session type
+**Decided:** 2026-07-16, per Tez directly.
+**Why:** Tez wants `INBOX.md` to keep working purely as his own entry/tracking log
+for bugs, changes, and features for the foreseeable future — no session type
+(Chat, Cowork, or Code) should triage it off its own initiative, including Code
+opportunistically triaging it mid-session because it noticed the file growing.
+Triage resumes only when Tez deliberately opens a Code session for that purpose
+and says so explicitly. This doesn't change anything about how entries get
+written into `INBOX.md`, or how triage itself works once it's switched back on —
+only when it's allowed to run.
+**Where:** `docs/meta/working-rules.md` "Inbox workflow", `docs/INBOX.md` header.

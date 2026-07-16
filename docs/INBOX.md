@@ -2,8 +2,12 @@
 
 Raw capture only. Jot a line whenever, from whatever device, in whatever shape
 it's in — no formatting pressure beyond the tag. Nothing here is a decision;
-real classification and placement happens in a triage session with Claude
-Chat. This file should never need "getting right" before something goes in it.
+classification and placement happens in a dedicated triage session, run in
+Code, only when Tez explicitly starts one and says so. **Triage is on hold as
+of 2026-07-16, until Tez says otherwise** — no session (Chat, Cowork, or Code)
+triages this file on its own initiative in the meantime; it's capture-only
+everywhere. See `docs/meta/working-rules.md` "Inbox workflow" for the full
+rule.
 
 **Tag convention** — one of:
 
@@ -39,13 +43,13 @@ Example:
 
 ---
 
-[change] mobile reader; build release apk for a permanent install
 
-[feature] are there any performace improvements that can be made to speed up the time between clicking Edit XML in /issue/id to when the editor opens?
 
 [feature] scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base (includes: migrate writer/penciller off the raw-CSV `Issue` columns onto `people`/`issue_credits` — search, Group by Writer, and the series-card meta line still read the old columns — then drop them; see `DECISIONS.md` 2026-07-15 "Legacy raw-CSV credit columns")
 
 [feature] plan & build windows install package
+
+[bug] cover change in archive takes a long time to show in the library, refresh doesn't speed it up. eg a cover is shown in the library with a double cover/open book cover, archive unpacked, image edited to one page and archive repacked. Library scan detects changed file but doesn't update cover without some wait, when a scan detects the change it also needs to update the UI at a bare minum with f5 (-> BUGS.md, possible regression/duplicate of the 12-7-2026 cover-persist line below marked "not a bug" — this report says refresh doesn't fix it, worth re-checking)
 
 
 
@@ -54,6 +58,16 @@ Example:
 ## Processed
 
 15-7-2026
+
+- ~~[feature] scope - is there a way to tag issues in the library to easily then pull them into the XML editor. eg - various issues in different locations are identified as having incorrect info, I then have to locate each one manually and go through the file selection to get them into the editor~~
+
+- ~~[change] when multiple issues are selected and sent to xml editor - add message - Sending files in the background - add auto refresh on editor window when complete~~
+
+- ~~[change] mobile reader; build release apk for a permanent install~~
+
+- ~~[feature] are there any performace improvements that can be made to speed up the time between clicking Edit XML in /issue/id to when the editor opens?~~
+
+- ~~[change] mobile reader; build release apk for a permanent install~~
 
 - ~~[change] stretch/span header to full width of the available space - site wide~~ → header + main content full-width site-wide, `.container`'s 1440px cap dropped; settled on a 30px L/R gutter after a live iteration (10px → 30px) — see `v2.6/progress.md` "Site-wide layout width, multi-cover background, scrollbars"
 

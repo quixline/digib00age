@@ -2802,3 +2802,13 @@ treatment across every grid-format card was feasible. Two research passes
   (they're a different kind of card entirely, not a bug).
 - Full detail in `SPEC.md` §20.20, `docs/v2.6/comicvault-changes-v2.6.md`
   Item 9, and `DECISIONS.md`.
+
+## Inbox triage paused (process change, not a build item)
+
+- 2026-07-16: Tez asked that `INBOX.md` go back to capture-only, effective
+  immediately and until he says otherwise — no session type (Chat, Cowork,
+  or Code) triages it on its own initiative anymore, including Code doing
+  so opportunistically mid-session. Triage resumes only when Tez explicitly
+  opens a Code session for that purpose. Updated `docs/meta/working-rules.md`
+  "Inbox workflow" and the `docs/INBOX.md` header to reflect the hold; logged
+  in `DECISIONS.md`.
