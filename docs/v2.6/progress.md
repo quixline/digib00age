@@ -3375,3 +3375,59 @@ treatment across every grid-format card was feasible. Two research passes
   `SPEC.md` Reader screen section corrected — it previously said "Progress
   saved to server on every page turn," which implied this already worked
   uniformly across both modes.
+
+## Session — 2026-07-17 — Multi-select: shift-click range select, deselect-last-card no longer navigates
+
+- Tez reported two related multi-select issues: (1) shift-clicking a card
+  after selecting an earlier one didn't select the range between them —
+  there was no shift-click handling in `frontend/js/app.js`'s selection
+  code at all; (2) deselecting the *last* remaining selected card both
+  deselected it and navigated to that card's issue/series page, instead of
+  just exiting selection mode cleanly.
+- **Root cause of (2):** `makeSelectable()`'s `pointerup` handler calls
+  `toggleSelected()`, which calls `exitSelectionMode()` (setting
+  `selectionActive = false`) the moment the last id is removed from
+  `selectedIds`. The delegated capture-phase `click` listener that
+  normally suppresses the `<a>`'s navigation checks the *live*
+  `selectionActive` flag — but by the time the browser's synthetic `click`
+  event fires (after `pointerup`), `selectionActive` had already flipped
+  false, so the suppression check silently passed the click through to the
+  underlying link.
+- **Fix:** added a `suppressNextClick` flag, set `true` inside the
+  `pointerup` handler whenever selection mode was active *at pointerup
+  time* (before any toggle can exit it), consumed and cleared by the click
+  listener on the very next `click` event (plus a `setTimeout(...,0)`
+  safety-net reset in case the click never fires, e.g. `pointercancel`).
+  The click listener checks this flag before falling back to the live
+  `selectionActive` check, so the suppression decision is now pinned to
+  the gesture that triggered it rather than state that can change mid-flight.
+- **Shift-click range select:** added `selectionAnchorId` (the most
+  recently individually-selected card) and a new `selectRange(anchorId,
+  targetId)` helper that walks all `[data-issue-id]` elements in DOM order
+  and selects everything between the two indices (inclusive), in either
+  direction, without touching cards already selected outside the range —
+  same behaviour as typical file-explorer shift-click. Wired into
+  `makeSelectable()`'s `pointerup` short-tap branch: a shift-held tap while
+  selection mode is active calls `selectRange()` instead of
+  `toggleSelected()`. Each card element now also carries `__selectId`/
+  `__selectKind` (the original, non-stringified id/kind passed to
+  `makeSelectable()`) so range selection can key into `selectedIds`
+  consistently with every other call site — `dataset.issueId` coerces to a
+  string, which would otherwise create duplicate Map entries for numeric ids.
+- **Verified live** against the running dev server (`localhost:9424`, Tez's
+  tray-app instance) via `javascript_tool`, dispatching real
+  `pointerdown`/`pointerup`/`click` event sequences (not calling the
+  selection functions directly) so the actual event-handling fix was
+  exercised, not just the selection-math helpers: (1) bootstrapped
+  selection mode on a card, shift-clicked a card 3 positions later —
+  confirmed all 4 cards in between got the `.selected` class and the
+  toolbar read "4 selected", with `location.href` unchanged (no
+  navigation). (2) Deselected down to a single remaining card, then
+  deselected that last card — confirmed the toolbar hid, all `.selected`
+  classes cleared, and `location.href` stayed on the browse page instead of
+  navigating to the issue page (the reported bug). (3) Re-tested range
+  select in the reverse direction (anchor after target in DOM order) —
+  confirmed the same inclusive range regardless of click order. No
+  scan/library data touched — purely client-side selection state.
+- No spec doc describes multi-select gesture behaviour in this level of
+  detail, so nothing else needed updating.

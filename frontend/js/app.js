@@ -64,6 +64,18 @@ const PRESS_MOVE_TOLERANCE  = 10;  // px — a drag/scroll cancels the long-pres
 let selectionActive = false;
 const selectedIds   = new Map();   // id -> 'issue' | 'series'
 
+// Anchor for shift-click range select — the most recently individually
+// selected card. Shift+click on a later card selects every card between
+// the anchor and that card (inclusive), same as file-explorer range select.
+let selectionAnchorId = null;
+
+// Set true for the duration of a pointerup→click pair handled by the
+// selection gesture below, so the delegated click-suppression listener
+// (further down) can tell a synthetic post-toggle click was ours even if
+// the toggle just exited selection mode (selectionActive would otherwise
+// have already flipped false by the time the click event arrives).
+let suppressNextClick = false;
+
 // Shared by the long-press gesture (makeSelectable()) and the CoverCard
 // select-dot's click handler — either enters selection mode (first pick)
 // or toggles this id within an already-active selection.
@@ -90,6 +102,11 @@ function buildSelectDot(id, kind = 'issue') {
 
 function makeSelectable(element, issueId, kind = 'issue') {
   element.dataset.issueId = issueId;
+  // Kept as the original (non-stringified) values — dataset coerces to
+  // string, but selectedIds keys on whatever type the caller passed in
+  // (numeric ids in practice), so range-select must match that identity.
+  element.__selectId   = issueId;
+  element.__selectKind = kind;
 
   let pressTimer     = null;
   let longPressFired = false;
@@ -121,7 +138,15 @@ function makeSelectable(element, issueId, kind = 'issue') {
     clearPress();
     if (selectionActive) {
       e.preventDefault();
-      if (!firedLongPress) toggleSelected(issueId, kind);  // short tap while already selecting
+      suppressNextClick = true;
+      setTimeout(() => { suppressNextClick = false; }, 0);  // safety net if click never fires
+      if (!firedLongPress) {
+        if (e.shiftKey && selectionAnchorId !== null && selectionAnchorId !== issueId) {
+          selectRange(selectionAnchorId, issueId);  // short shift-tap while already selecting
+        } else {
+          toggleSelected(issueId, kind);  // short tap while already selecting
+        }
+      }
     }
     // else: plain short tap, no long-press — let the <a href> navigate normally
   });
@@ -134,6 +159,12 @@ function makeSelectable(element, issueId, kind = 'issue') {
 // reliable than preventDefault() in the pointerup handler alone, since some
 // browsers still dispatch a synthetic click afterward.
 document.addEventListener('click', (e) => {
+  if (suppressNextClick) {
+    suppressNextClick = false;
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
   if (selectionActive && e.target.closest('[data-issue-id]')) {
     e.preventDefault();
     e.stopPropagation();
@@ -142,6 +173,7 @@ document.addEventListener('click', (e) => {
 
 function enterSelectionMode(firstId, kind) {
   selectionActive = true;
+  selectionAnchorId = firstId;
   showSelectionToolbar();
   toggleSelected(firstId, kind);
 }
@@ -149,6 +181,7 @@ function enterSelectionMode(firstId, kind) {
 function exitSelectionMode() {
   if (!selectionActive && selectedIds.size === 0) return;
   selectionActive = false;
+  selectionAnchorId = null;
   for (const id of selectedIds.keys()) {
     const node = document.querySelector(`[data-issue-id="${id}"]`);
     if (node) node.classList.remove('selected');
@@ -164,8 +197,34 @@ function toggleSelected(id, kind = 'issue') {
   const node = document.querySelector(`[data-issue-id="${id}"]`);
   if (node) node.classList.toggle('selected', selectedIds.has(id));
 
+  // Track the most recent card an explicit (non-range) pick landed on, so
+  // a later shift-click has a reference point to range from.
+  if (selectedIds.has(id)) selectionAnchorId = id;
+
   if (selectedIds.size === 0) exitSelectionMode();
   else updateSelectionToolbar();
+}
+
+// Shift-click range select: selects every selectable card between anchorId
+// and targetId (inclusive), in current DOM order, without disturbing cards
+// already selected outside that range. Purely additive — mirrors typical
+// file-explorer shift-click, doesn't toggle cards already selected off.
+function selectRange(anchorId, targetId) {
+  const nodes = Array.from(document.querySelectorAll('[data-issue-id]'))
+    .filter(n => n.__selectId !== undefined);
+  const anchorIdx = nodes.findIndex(n => n.__selectId === anchorId);
+  const targetIdx = nodes.findIndex(n => n.__selectId === targetId);
+  if (anchorIdx === -1 || targetIdx === -1) return;
+
+  const [lo, hi] = anchorIdx <= targetIdx ? [anchorIdx, targetIdx] : [targetIdx, anchorIdx];
+  for (let i = lo; i <= hi; i++) {
+    const node = nodes[i];
+    if (!selectedIds.has(node.__selectId)) {
+      selectedIds.set(node.__selectId, node.__selectKind);
+      node.classList.add('selected');
+    }
+  }
+  updateSelectionToolbar();
 }
 
 function ensureSelectionToolbar() {
@@ -2311,11 +2370,34 @@ function buildIssueDetail(data) {
 
   const coverLink = el('a', `issue-cover-link issue-cover-link--redesign ${coverState}`);
   coverLink.href = `comicvault://read/${data.id}`;
+
+  // Collector-card frame: three nested layers (metallic bezel, state-mat,
+  // dark inner frame) around the art — see style.css .cc-frame-* for why
+  // this needs real elements rather than box-shadow rings.
+  const frameOuter = el('div', 'cc-frame-outer');
+  const frameMat   = el('div', 'cc-frame-mat');
+  const frameInner = el('div', 'cc-frame-inner');
+
+  // Glow-wrapper: separate element from the <img> itself, since ::before
+  // doesn't render on replaced elements (img/video) in browsers — the
+  // blur glow layer has to live on a wrapping div, not on .issue-cover-img
+  // directly, or it silently never paints.
+  const coverGlow = el('div', 'cc-cover-glow');
+
   const img = el('img', 'issue-cover-img');
   img.src     = data.cover_path || '';
   img.alt     = data.series;
   img.onerror = () => { img.style.display = 'none'; };
-  coverLink.appendChild(img);
+  coverGlow.appendChild(img);
+  frameInner.appendChild(coverGlow);
+
+  const favoriteBadge = el('span', 'cc-favorite-badge', '❤');
+  favoriteBadge.hidden = !data.favorites;
+  frameInner.appendChild(favoriteBadge);
+
+  frameMat.appendChild(frameInner);
+  frameOuter.appendChild(frameMat);
+  coverLink.appendChild(frameOuter);
   coverCol.appendChild(coverLink);
 
   // Progress bar under the cover (not overlaid, unlike the grid card) —
@@ -2334,7 +2416,7 @@ function buildIssueDetail(data) {
 
   const actions = el('div', 'issue-actions');
   actions.appendChild(buildStatusToggle(data));
-  actions.appendChild(buildFavoriteToggle(data));
+  actions.appendChild(buildFavoriteToggle(data, favoriteBadge));
   actions.appendChild(buildRatingControl(data));
   const editXmlBtn = el('button', 'btn-edit-xml', 'Edit XML');
   editXmlBtn.type = 'button';
@@ -2486,12 +2568,13 @@ function buildStatusToggle(data) {
 // Both reuse the same bulk endpoints with a 1-item issue_ids list — one code
 // path for multi-select and single-issue use, no separate endpoints needed.
 
-function buildFavoriteToggle(data) {
+function buildFavoriteToggle(data, badgeEl) {
   const btn = el('button', 'btn-favorite-toggle');
 
   function sync() {
     btn.textContent = data.favorites ? '★ Favorited' : '☆ Add to Favorites';
     btn.classList.toggle('is-favorite', !!data.favorites);
+    if (badgeEl) badgeEl.hidden = !data.favorites;
   }
   sync();
 

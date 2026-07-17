@@ -1804,56 +1804,172 @@ select.filter-select:focus,
 
 .issue-layout {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 250px 1fr;
   gap: 36px;
   padding: 24px 0 32px;
   align-items: start;
 }
 .issue-cover-col { display: flex; flex-direction: column; gap: 14px; }
 .issue-cover-link { display: block; }
+
+/* Collector-card frame (2026-07-17, "new issue cover card" design) — a
+   graded-card slab: metallic outer bezel, colour-coded mat (state ring,
+   blue = unread / green = reading·read, replaces the old flat box-shadow
+   ring), dark inner frame housing the art. Three real nested layers (not
+   box-shadow rings) so the metallic gradient + mat colour + noise texture
+   can each paint their own background — box-shadow alone can't fill with
+   a gradient. No hover interaction — static, matching the rest of the
+   page's non-hover cards. */
+.issue-cover-link--redesign { display: block; border-radius: 18px; }
+
+.cc-frame-outer {
+  position: relative;
+  border-radius: 18px;
+  padding: 11px;
+  box-sizing: border-box;
+  background: linear-gradient(148deg, #eef1f3 0%, #9aa0a8 8%, #6a7078 18%, #b7bcc3 30%, #545961 42%, #c4c9cf 54%, #6a7078 66%, #adb2b9 78%, #4a4f56 90%, #d8dce0 100%);
+  box-shadow:
+    0 2px 1px rgba(255, 255, 255, 0.35) inset,
+    0 -3px 6px rgba(0, 0, 0, 0.55) inset,
+    0 10px 24px -8px rgba(0, 0, 0, 0.7),
+    0 20px 36px -14px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(0, 0, 0, 0.4);
+}
+.cc-frame-outer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  pointer-events: none;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+.cc-frame-outer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  pointer-events: none;
+  background: linear-gradient(118deg, transparent 0%, rgba(255, 255, 255, 0.35) 15%, transparent 24%, transparent 45%, rgba(0, 0, 0, 0.2) 55%, transparent 65%, rgba(255, 255, 255, 0.22) 80%, transparent 90%);
+}
+
+/* Mat colour = read state. Green (reading/read) is the default since it's
+   the two-state group the old box-shadow ring also grouped together; blue
+   overrides for unread. */
+.cc-frame-mat {
+  position: relative;
+  border-radius: 12px;
+  padding: 3px;
+  box-sizing: border-box;
+  background: linear-gradient(160deg, #1cc610, #349932 45%, #0b440a 100%);
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.6) inset,
+    0 -1px 2px rgba(255, 255, 255, 0.15) inset,
+    0 0 0 1px rgba(0, 0, 0, 0.45);
+}
+.issue-cover-link--redesign.state-unread .cc-frame-mat {
+  background: linear-gradient(160deg, #2761c9, #1a439c 45%, #0f2c6e 100%);
+}
+
+.cc-frame-inner {
+  position: relative;
+  border-radius: 8px;
+  padding: 5px;
+  box-sizing: border-box;
+  overflow: visible;
+  background: linear-gradient(160deg, #232b3d 0%, #171d29 40%, #10141d 75%, #0a0d13 100%);
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.55) inset,
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 0 16px 3px rgba(63, 184, 119, 0.4) inset;
+}
+.issue-cover-link--redesign.state-unread .cc-frame-inner {
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.55) inset,
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 0 16px 3px rgba(10, 95, 255, 0.4) inset;
+}
+.cc-frame-inner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  pointer-events: none;
+  opacity: 0.55;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='l'><feTurbulence type='fractalNoise' baseFrequency='0.6 0.7' numOctaves='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23l)'/></svg>");
+}
+.cc-frame-inner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  pointer-events: none;
+  background: radial-gradient(90% 70% at 50% 30%, rgba(255, 220, 180, 0.1), transparent 60%);
+}
+
+/* Glow-wrapper around the cover art, ported from Design's
+   issue-cover-glow-recipe.css. Split across two elements deliberately: a
+   box-shadow (for the lift/drop shadow) and a blurred ::before (for the
+   soft white-to-black glow) can't both live on the same element as
+   overflow:hidden clipping without one clobbering the other — and ::before
+   doesn't render on the <img> itself anyway (replaced elements don't
+   support generated content), so the glow needs its own wrapper div
+   regardless. This wrapper carries the shadow + glow; .issue-cover-img
+   carries the actual clipping/border/radius. */
+.cc-cover-glow {
+  position: relative;
+  border-radius: 9px;
+  box-shadow: -2px -2px 6px rgba(255, 255, 255, 0.07), 8px 10px 18px 2px rgba(0, 0, 0, 0.85);
+}
+.cc-cover-glow::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 12px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95) 0%, rgba(0, 0, 0, 0.4) 100%);
+  filter: blur(5px);
+  z-index: 0;
+  pointer-events: none;
+}
+
 .issue-cover-img {
+  position: relative;
+  z-index: 1;
   width: 100%;
   aspect-ratio: 2 / 3;
   object-fit: cover;
-  border-radius: var(--radius-lg);
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6);
-  background: var(--surface-2);
   display: block;
-  border: 3px solid transparent;
-  transition: transform var(--dur) var(--ease), border-color var(--dur) var(--ease);
-}
-.issue-cover-img:hover {
-  transform: scale(1.04);
-  border-color: rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+  border-radius: 6px;
+  border: 2px solid rgba(#191b19, #191b19, #191b19, #191b19);
+  background: var(--surface-2);
 }
 
-/* Redesigned cover frame (matches the grid card's bezel) — fixed dark
-   palette regardless of site theme, state-coloured ring: blue = unread,
-   green = reading/read. Wraps the existing hover-zoom .issue-cover-img
-   rather than replacing it. */
-.issue-cover-link--redesign {
-  --rc-bezel: #7d838c;
-  --rc-unread: #0A5FFF;
-  --rc-progress: #3FB877;
-  display: block;
-  border-radius: var(--radius-lg);
-  box-shadow:
-    0 0 0 2px var(--rc-unread),
-    0 0 0 4px #1b1e24,
-    0 0 0 6px var(--rc-bezel),
-    0 0 0 8px #2a2e34,
-    0 10px 32px rgba(0, 0, 0, 0.6);
+/* Favourite badge overlaid on the art itself (mirrors the grid card's
+   corner badge, styled to match the slab rather than reusing its
+   white-circle version). Toggled via [hidden] from buildFavoriteToggle's
+   sync(), not a CSS state class — same element persists across toggles. */
+.cc-favorite-badge {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  left: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(60, 64, 72, 0.55);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  color: #e8342a;
+  font-size: 18px;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
 }
-.issue-cover-link--redesign.state-part-read,
-.issue-cover-link--redesign.state-read {
-  box-shadow:
-    0 0 0 2px var(--rc-progress),
-    0 0 0 4px #1b1e24,
-    0 0 0 6px var(--rc-bezel),
-    0 0 0 8px #2a2e34,
-    0 10px 32px rgba(0, 0, 0, 0.6);
-}
-.issue-cover-link--redesign .issue-cover-img { box-shadow: none; }
 
 /* Progress bar — under the cover, not overlaid, with a visible track so a
    partial fill still reads clearly at a glance. */
@@ -2020,6 +2136,8 @@ select.filter-select:focus,
   font-size: 14px;
   color: var(--text-2);
   line-height: 1.7;
+  max-width: 640px;
+  white-space: pre-line;
 }
 .meta-value {
   font-size: 14px;
@@ -2119,11 +2237,9 @@ select.filter-select:focus,
     align-items: flex-start;
     gap: 16px;
   }
-  .issue-cover-img {
-    width: 120px;
+  .issue-cover-link--redesign {
+    width: 150px;
     flex-shrink: 0;
-    aspect-ratio: unset;
-    height: 180px;
   }
   .issue-actions {
     flex: 1;

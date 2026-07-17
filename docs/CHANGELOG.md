@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-17** — Multi-select: added shift-click range select (selects
+  every card between the anchor and the shift-clicked card) and fixed a bug
+  where deselecting the last remaining selected card also navigated to that
+  card's issue/series page instead of just exiting selection mode. See
+  `v2.6/progress.md`.
 - **2026-07-17** — Desktop reader (Flutter): fixed Scroll mode (the default
   reading mode) never reporting reading progress to the server at all — the
   "Reading" left-nav filter showed nothing after reading partway through an

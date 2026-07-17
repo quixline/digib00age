@@ -4,11 +4,27 @@
 
 ### Unprocessed
 
-after selecting the first card with a double press, each card click should select it, not another long press. Also shift and clicking a card that comes later should select all the cards between the first and last selected. after deselecting the last card just deselect it, currently it deselects and opens the issue/series page for that card.
+after selecting the first card with a double press, then shift + single clicking a card that comes later should select all the cards between the first and last card selected.
+
+after deselecting the last card just deselect it, currently it deselects and opens the issue/series page for that card.
 
 when a issue is marked as read in the issue page - make the visual changes happen without the need for refreshing the page
 
-set the desktop reader to open the same dimensions as the archive cover image 50% size
+on the issue page add "Read" button under card and before "Mark as Read" - When in the Reading state - change "Read" to "Continue Reading" both open the desktop reader
+
+issue page - make the bg fit the whole area to the nav bar and header with less of a fade from the top so more of the image can be seen while keeping the same opacity with a slight blur
+
+All library Grid view cards have a shadow - locate and remove while maintaining the blur glow if poss
+
+All library Grid view cards - on hover the top glow gets cut off - add more space above
+
+redesign the list view and the series view
+
+review design of - mobile reader UI - get a closer consistency to the web ui, drop the outer glow around cards but keep the inner style and genre/info
+
+-
+
+(set the desktop reader to open the same dimensions as the archive cover image 50% size) - need to test
 
 scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base 
 
@@ -23,10 +39,6 @@ plan & build windows install package
 ---
 
 ## Processed
-
-_17-07-2026_
-
-- ~~[bug] desktop reader not reporting read state or resuming read state~~ → fixed same-session, 2026-07-17, as BUG-024 in `docs/archive/bugs-fixed-archive.md` (Scroll mode, the default reading mode, never reported page changes or resumed saved position — Page mode was unaffected)
 
 _16-07-2026_
 

@@ -37,17 +37,28 @@ required upstream stage Code waits on.
   ask if genuinely unclear, and feel free to suggest a tighter version of
   something he's asked for rather than executing a literal but clunky
   instruction.
-- **Plain-English companion for technical plans (added 2026-07-15).** When a
-  plan or proposed change is genuinely technical — schema/data migrations,
-  code internals, architecture — pair the technical plan with a short
-  plain-English brief alongside it: what's actually changing, in
-  non-technical terms, and the practical impact/risk. Tez needs to be able
-  to approve based on understanding what will happen, not just trust that
-  the technical detail is sound. This is additive — keep the full technical
-  plan too, don't replace it. Grew out of a real session (2026-07-15, the
-  legacy credit-column drop) where an overly technical plan left Tez unable
-  to confidently approve or reject it until it was re-explained in plain
-  terms.
+- **Plain-English companion for technical plans (added 2026-07-15, broadened
+  2026-07-16).** The technical plan produced in Plan Mode is what Code
+  actually works from in auto-mode — keep it, in full, every time. But
+  that's not what Tez reads to decide whether to approve it: every Plan
+  Mode plan gets a short plain-English paragraph alongside the technical
+  plan — what's actually changing, in non-technical terms, and the
+  practical impact/risk. This now applies to every plan, not just ones that
+  look "genuinely technical" — the judgment call about which plans need
+  simplifying was itself a source of drift. This is additive — keep the
+  full technical plan too, don't replace it. Grew out of a real session
+  (2026-07-15, the legacy credit-column drop) where an overly technical plan
+  left Tez unable to confidently approve or reject it until it was
+  re-explained in plain terms.
+- **Reporting back to Tez (settled 2026-07-16).** When explaining an issue
+  or a proposed change, two things only: (A) confirm you understand what
+  the issue actually is — one line, not a full technical report; (B) state
+  plainly whether the change has any negative impact on the current working
+  state — "if you change X, the impact is Y on Z." If there's no negative
+  impact, say so explicitly rather than leaving it implied. If Tez needs to
+  do something manually, say so explicitly. Don't proactively dump extra
+  detail he hasn't asked for — if he needs more, he'll ask for it. Keep the
+  whole response short — a few sentences, not a report.
 
 ## Structural vs. cosmetic threshold (settled 2026-07-08)
 - Small UI changes don't need to go through the full process (scoping, a
@@ -104,6 +115,16 @@ required upstream stage Code waits on.
   consolidated there when convenient. No formatting expected beyond the tag
   (`[bug]` / `[change]` / `[feature]` / `[unknown]`) he assigns as he writes
   it. The tag is his instinct at the time, not a final classification.
+  **`INBOX.md` is entry-only for Tez (settled 2026-07-16)** — Code never
+  adds to it or triages it unprompted; it's a capture surface, not a queue
+  Code works down on its own.
+- **Session shape for working through Inbox items (settled 2026-07-16).**
+  When Tez does open a session to work through Inbox items: small/cosmetic
+  UI changes get bundled together into one session covering several of them
+  at once; a larger change (a feature, or anything needing real scoping)
+  gets its own dedicated session. This governs how the *work* is split
+  across sessions — it's additive to the tagging/placement/archive mechanics
+  below, not a replacement for them.
 - **Triage is on hold, effective 2026-07-16, until Tez says otherwise.**
   Chat and Cowork sessions never triage the Inbox — they're entry-only, same
   as always. Code sessions don't triage opportunistically either while this
