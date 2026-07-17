@@ -485,6 +485,7 @@ def get_series(
             "current_page": prog.current_page if prog else 0,
             "page_count": iss.page_count,
             "summary": iss.summary,
+            "genres": [g.genre_name for g in iss.genres],
             "favorites": iss.favorites,
             "flagged_for_review": iss.flagged_for_review,
             "personal_rating": iss.personal_rating,

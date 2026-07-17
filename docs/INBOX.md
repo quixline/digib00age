@@ -4,19 +4,7 @@
 
 ### Unprocessed
 
-- [ ] when an issue is marked as read in the issue page - make the visual changes happen without the need for refreshing the page
-
-- [ ] on the issue page add "Read" button under card and before "Mark as Read" - When in the Reading state - change "Read" to "Continue Reading" both open the desktop reader
-
-- [ ] issue page - make the bg fit the whole area to the nav bar and header with less of a fade from the top so more of the image can be seen while keeping the same opacity with a slight blur
-
-- [ ] All library Grid view cards have a shadow - locate and remove while maintaining the blur glow if poss
-
-- [ ] All library Grid view cards - on hover the top glow gets cut off - add more space above
-
-- [ ] redesign the list view and the series view
-
-- [ ] review design of - mobile reader UI - get a closer consistency to the web ui, drop the outer glow around cards but keep the inner style and genre/info
+- [ ] design review - mobile reader UI - get a closer consistency to the web ui, drop the outer glow around cards but keep the inner style and genre/info
 
 - [ ] (set the desktop reader to open the same dimensions as the archive cover image 50% size) - need to test
   
@@ -37,6 +25,22 @@
 ## Processed
 
 _17-07-2026_
+
+* [x] All library Grid view cards have a shadow - locate and remove while maintaining the blur glow if poss
+
+* [x] All library Grid view cards - on hover the top glow gets cut off - add more space above
+
+* [x] rename all "YYYY"" folders in 2000 AD dir to "2000 AD - YYYY""
+
+* [x] when an issue is marked as read in the issue page - make the visual changes happen without the need for refreshing the page
+
+* [x] on the issue page add "Read" button under card and before "Mark as Read" - When in the Reading state - change "Read" to "Continue Reading" both open the desktop reader
+
+* [x] issue page - make the bg fit the whole area to the nav bar and header with less of a fade from the top so more of the image can be seen while keeping the same opacity with a slight blur
+
+* [x] when an issue is in the Read state ensure the progress bar doesn't appear - it should only be visible in the Reading state
+
+* [x] redesign the list view and the series view
 
 * ~~after selecting the first card with a double press, then shift + single clicking a card that comes later should select all the cards between the first and last card selected.~~
 

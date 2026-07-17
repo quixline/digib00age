@@ -928,7 +928,14 @@ A **list/grid toggle** applies on all browse surfaces (Home, Series, Singles, Al
 - **Full-cover backdrop:** the first-issue cover fills the header background at **20–30% opacity**, with slight blur, a dark semi-transparent tone overlay (so bright covers don't harm text legibility), and an extra gradual fade at the bottom. Layer order: image → blur → dark tone overlay → bottom gradient → text.
 - **Header contents:** back button, mark-all-read button, title. Header ≈15% of a 10" tablet screen.
 - **Below header:** Publisher · Year, then genre tags, then # Issues, then the issue list.
-- **Issue list follows the grid/list view** (same cards, read-state colours, progress indicators) — including page count, reading progress, and per-issue description.
+- **Issue list renders as a 2-column card grid** (added 2026-07-17, matching
+  the List View redesign's layout — collapses to one column under 1100px),
+  each issue its own card: cover thumbnail, `#N` + title, year · page count,
+  per-issue genre tags (linking to the fieldview genre filter, same pattern
+  as List View's genre links), per-issue description, reading-progress bar,
+  and a read/unread/reading status toggle button. Read/reading issues render
+  with dimmed title/meta text so unread issues stand out, mirroring List
+  View's read/unread emphasis swap.
 - **Paginated** (added v2.6 Item 3, 2026-07-13) — same page-size setting and page-number control as Browse (20.13); a large series (e.g. 2000 AD, 2,483 issues) no longer renders its whole issue list in one page load.
 - **No Series Overview field** in V1 — per-issue descriptions cover the need. (A series-level overview would require new XML + DB + editor fields; deferred to a possible later version.)
 
@@ -1287,6 +1294,14 @@ everything scoped under it — deliberately never the bare `.cover-card`/
 `.cover-img-wrap`/`.cover-info` selectors, so Series Detail rows and list view stay
 untouched), `backend/routers/library.py` (`current_page` addition), `backend/
 routers/home.py` (`_issue_card()` field additions).
+
+> **Superseded in part, 2026-07-17.** Series Detail's issue rows (`.issue-row`,
+> not `.cover-card`) were given their own separate but visually-matching
+> 2-column card treatment that session, once List View itself got the same
+> redesign treatment — see §20.6 above and `v2.6/progress.md`'s "Series View:
+> List View card layout applied to issue rows" entry. Still a distinct CSS/JS
+> component from `.cover-card--redesign`, not a reuse of it — the "stays
+> untouched" framing above only holds for *this* item's original scope.
 
 ---
 

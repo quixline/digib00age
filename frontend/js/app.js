@@ -2219,19 +2219,34 @@ function buildIssueRow(issue) {
   thumb.appendChild(tImg);
   row.appendChild(thumb);
 
-  // Issue number
-  const numText = issue.number != null && issue.number !== '' ? `#${issue.number}` : '—';
-  row.appendChild(el('div', 'issue-num', numText));
-
-  // Detail column: title, year · pages (left-aligned), optional summary, progress
+  // Detail column: #num + title (one line), year · pages, genre tags,
+  // optional summary, progress — card layout mirrors the List View redesign
+  // (2-col grid, per-item card, clickable genre tags).
   const detail = el('div', 'issue-detail');
-  detail.appendChild(el('div', 'issue-title', issue.title || ''));
+
+  const numText = issue.number != null && issue.number !== '' ? `#${issue.number}` : '—';
+  const titleLine = el('div', 'issue-title');
+  titleLine.appendChild(el('span', 'issue-num', numText));
+  titleLine.appendChild(document.createTextNode(issue.title || ''));
+  detail.appendChild(titleLine);
 
   const subParts = [
     issue.year       ? String(issue.year)              : null,
     issue.page_count ? `${issue.page_count} pages`     : null,
   ].filter(Boolean);
   if (subParts.length) detail.appendChild(el('div', 'issue-sub', subParts.join(' · ')));
+
+  if (issue.genres && issue.genres.length) {
+    const genreRow = el('div', 'issue-genres');
+    issue.genres.forEach((g, i) => {
+      if (i > 0) genreRow.appendChild(document.createTextNode(' · '));
+      const tag = el('a', 'issue-genre-tag', g);
+      tag.href = `/?surface=fieldview&field=genre&value=${encodeURIComponent(g)}`;
+      tag.addEventListener('click', (e) => e.stopPropagation());
+      genreRow.appendChild(tag);
+    });
+    detail.appendChild(genreRow);
+  }
 
   if (issue.summary) detail.appendChild(el('div', 'issue-summary', issue.summary));
 

@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-17** — Series View: issue rows redesigned as a 2-column card grid
+  matching the List View redesign — 115px thumb, clickable genre tags (new
+  `genres` field added to `GET /api/series/{id}`), permanent card glow +
+  hover lift, and the same read/unread text-emphasis swap. See
+  `v2.6/progress.md`.
 - **2026-07-17** — List View redesign: 2-column layout (collapses to one on
   narrow windows), 50px column gap + 10px row top padding + 25px row gap,
   genre tags are now links to the fieldview genre filter, read/unread text

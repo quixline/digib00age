@@ -3627,3 +3627,83 @@ multi-row grid just blends into the grid's own darkness).
   `rgba(255, 255, 255, 0.9)` (`.cover-grid.list-view .cover-card:not(.state-read):not(.state-part-read)
   .list-summary`), scoped the same way as the rest of the emphasis-swap
   rules above — List View only, Grid View untouched.
+
+## Session — 2026-07-17 — Series View: List View card layout applied to issue rows
+
+Tez asked for the new List View design/layout (this session's own prior entry
+above) to carry over to the Series Detail issue list, so each issue gets its
+own formatted card in a 2-column grid, matching Item 9's design language
+instead of Item 9's original "explicitly out of scope, same as list view"
+call on `buildIssueRow()` (see Item 9's build note in
+`comicvault-changes-v2.6.md`) — that call predates List View's own redesign
+and is superseded by this session's explicit ask.
+
+- **2-column card grid:** `.arc-group` (`style.css` ~1697, the direct parent
+  `buildIssueList()` wraps issue rows in — confirmed via `app.js` there is
+  currently always exactly one `.arc-group` per series, arc-label grouping is
+  present in CSS but not yet wired up in JS) changed from a plain vertical
+  stack to `grid-template-columns: repeat(2, 1fr)`, `column-gap: 50px`,
+  `row-gap: 25px` — same values as `.cover-grid.list-view`. Same
+  `@media (max-width: 1100px)` collapse-to-one-column fallback. Added
+  `grid-column: 1 / -1` to the (currently unused) `.arc-label` rule so an
+  arc heading will span both columns correctly whenever arc grouping is
+  wired up in JS.
+- **`.issue-row` restyled as a permanent card**, mirroring
+  `.cover-card.cover-card--redesign`'s resting-glow/hover-lift treatment
+  (`style.css` ~1231/1379): `background: var(--surface)`,
+  `border-radius: var(--radius-lg)`, permanent white glow ring at rest
+  (`box-shadow: 0 0 2px 1px rgba(255,255,255,0.5)`), lift + intensified glow
+  on hover. Thumbnail bumped 65px → 115px to match List View's card
+  prominence; grid-template-columns simplified from `65px 44px 1fr auto` to
+  `115px 1fr auto` (thumb / detail / status button) — the issue-number
+  column was folded into the title line as an inline `.issue-num` span
+  (`#12 Title`) rather than kept as its own grid column, since a portrait
+  card reads better with the number inline than as a separate centred
+  column. Existing left-border read-state colour (green/blue) kept —
+  wasn't part of the ask, low risk to leave as-is.
+- **Genre tags added to each issue card** — new, since `buildIssueRow()`
+  previously had no genre display at all (only the series header showed an
+  aggregate). Required a small backend addition:
+  `backend/routers/library.py`'s `GET /api/series/{issue_id}` issue_list
+  entries (~line 473-491) gained `"genres": [g.genre_name for g in
+  iss.genres]` — free, since `selectinload(Issue.genres)` was already
+  applied to the query for the existing series-wide genre aggregate.
+  `buildIssueRow()` (`app.js` ~2202) renders these the same way List View's
+  `.list-genre-tag` does: each genre its own `<a>` into
+  `/?surface=fieldview&field=genre&value=...`, `e.stopPropagation()` guarded
+  since the row itself is a link. New `.issue-genres`/`.issue-genre-tag` CSS,
+  same lightweight underline-on-hover treatment as `.list-genres`/
+  `.list-genre-tag`.
+- **Read/reading emphasis swap** added to issue cards, matching List View's
+  swap: `.issue-row.state-read`/`.state-reading` now dim `.issue-title`
+  (0.55 opacity, weight 500) and `.issue-sub`/`.issue-genres`/`.issue-summary`
+  (0.5 opacity), so unread issues stand out and already-read/in-progress
+  ones go quiet — same intent as the List View entry above, adapted to
+  issue-row's own two states (no "part-read" concept at single-issue
+  granularity).
+- **Backend server needed a restart** to pick up the new `genres` field —
+  `backend/main.py` runs `uvicorn.run(..., reload=False)`, so the change sat
+  inert (empty `genres` key absent from the live API response) until Tez
+  restarted the tray app's server process mid-session.
+- **Verified live** via `claude-in-chrome` against the running dev server
+  (`localhost:9424`, Tez's tray-app instance): 2000 AD series
+  (`/series/5546`, 2,484 issues) — confirmed 2-column card grid, resting
+  glow ring, hover lift, `#46`-`#50` (real `read` issues in the library)
+  render with dimmed title/sub/summary text and a green left border +
+  checkmark button versus bright/bold unread neighbours, genre tags
+  ("Action · Adventure · Sci-Fi") render as real `<a>` links to the
+  fieldview genre filter after the backend restart. No console errors.
+  **Accidentally toggled issue #43 to `read` while testing the status
+  button** (pre-existing click behaviour, not touched this session) —
+  caught immediately via a direct `/api/series/5546` fetch and reverted by
+  clicking the same button again; confirmed back to `unread` before moving
+  on. Did not get a reliable real-window resize to visually confirm the
+  1100px collapse-to-one-column breakpoint (same `resize_window` limitation
+  as the List View session above) — same well-established media-query
+  technique already proven elsewhere, worth a quick manual resize check by
+  Tez.
+- Cosmetic under `CLAUDE.md` §5's structural/cosmetic threshold (layout/
+  spacing/colour change to an existing page, no nav/routing/IA change) — no
+  `DECISIONS.md` entry or build-queue item, same precedent as the List View
+  session above. The one non-cosmetic piece (`genres` added to an API
+  response) is a pure additive field, no existing behaviour changed.

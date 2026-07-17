@@ -1394,7 +1394,7 @@ select.filter-select:focus,
 .cover-grid.list-view .card-genre-ribbon,
 .cover-grid.list-view .card-rating-row { display: none; }
 .cover-grid.list-view .cover-title + .cover-meta-row { margin-top: 0; }
-.cover-grid.list-view .cover-card.cover-card--redesign { padding: 0; }
+.cover-grid.list-view .cover-card.cover-card--redesign { padding: 6; }
 .cover-grid.list-view .cover-card--redesign .cover-info { padding: 9px 12px; }
 .cover-grid.list-view .cover-card--redesign .cover-img-wrap { border-radius: var(--radius) 0 0 var(--radius); }
 
@@ -1690,9 +1690,22 @@ select.filter-select:focus,
 .btn-primary:disabled { opacity: 0.6; cursor: default; }
 
 /* ── Issue list ──────────────────────────────────────────────────────────── */
+/* 2-column card grid, matching the List View redesign's .cover-grid.list-view
+   (style.css ~769) — each issue gets its own formatted card instead of a
+   plain full-width row. */
 .issue-list { padding-bottom: 48px; }
-.arc-group { margin-bottom: 22px; }
+.arc-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 50px;
+  row-gap: 25px;
+  margin-bottom: 22px;
+}
+@media (max-width: 1100px) {
+  .arc-group { grid-template-columns: 1fr; }
+}
 .arc-label {
+  grid-column: 1 / -1;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -1702,22 +1715,32 @@ select.filter-select:focus,
   border-bottom: 1px solid var(--border);
   margin-bottom: 4px;
 }
+/* Card frame — each issue its own card, 2-up in .arc-group. Permanent white
+   glow ring at rest, drop shadow + lift on hover — same treatment as the
+   List View redesign's .cover-card--redesign (style.css ~1231, ~1379). */
 .issue-row {
   display: grid;
-  grid-template-columns: 65px 44px 1fr auto;
-  align-items: start;
-  gap: 10px;
-  padding: 8px 8px 8px 6px;
-  border-radius: var(--radius);
-  border: 1px solid transparent;
+  grid-template-columns: 115px 1fr auto;
+  align-items: stretch;
+  gap: 0;
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
   border-left-width: 3px;
-  transition: background 0.12s, border-color 0.12s;
+  box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.5);
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
 }
-.issue-row:hover { background: var(--surface); border-color: var(--border); border-left-width: 3px; }
+.issue-row:hover {
+  transform: translateY(-3px);
+  border-color: transparent;
+  border-left-color: transparent;
+  box-shadow: 0 0 4px 2px rgba(255, 255, 255, 0.85), 0 5px 26px rgba(0, 0, 0, 0.45);
+}
 .issue-row.missing,
 .cover-card.missing { opacity: 0.38; pointer-events: none; }
 
-/* Read-state colours — left border + status button carry the state; no background needed */
+/* Read-state colours — left border carries the state; status button also reflects it */
 .issue-row.state-read { border-left-color: var(--green); }
 .issue-row.state-read:hover { border-left-color: var(--green); }
 .issue-row.state-reading {
@@ -1726,11 +1749,11 @@ select.filter-select:focus,
 }
 .issue-row.state-reading:hover { border-left-color: var(--blue); }
 
-/* Thumbnail */
+/* Thumbnail — flush against the card edge; .issue-row's own overflow:hidden
+   clips it to the card's corner radius, so no radius needed here. */
 .issue-thumb {
-  width: 65px;
+  width: 115px;
   aspect-ratio: 2 / 3;
-  border-radius: 4px;
   overflow: hidden;
   background: var(--surface-2);
   flex-shrink: 0;
@@ -1742,27 +1765,47 @@ select.filter-select:focus,
   display: block;
 }
 
-.issue-num {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-2);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding-top: 4px;
+.issue-detail {
+  min-width: 0;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
-.issue-detail { min-width: 0; }
 .issue-title {
   font-size: 14px;
+  font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.issue-num {
+  font-weight: 700;
+  color: var(--accent);
+  margin-right: 6px;
 }
 .issue-sub {
   font-size: 12px;
   color: var(--text-3);
   margin-top: 2px;
+}
+/* Genre tags — same compact underline-on-hover treatment as List View's
+   .list-genres/.list-genre-tag (style.css ~819-836). */
+.issue-genres {
+  font-size: 12px;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+.issue-genre-tag {
+  color: inherit;
+  text-decoration: none;
+}
+.issue-genre-tag:hover {
+  text-decoration: underline;
+  color: var(--accent);
 }
 .issue-summary {
   font-size: 12px;
@@ -1773,6 +1816,23 @@ select.filter-select:focus,
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.4;
+}
+
+/* Read/reading emphasis swap — dim already-seen issues so unread issues
+   stand out, mirroring the List View redesign's read/unread swap
+   (style.css ~1016-1046). */
+.issue-row.state-read .issue-title,
+.issue-row.state-reading .issue-title {
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 500;
+}
+.issue-row.state-read .issue-sub,
+.issue-row.state-read .issue-genres,
+.issue-row.state-read .issue-summary,
+.issue-row.state-reading .issue-sub,
+.issue-row.state-reading .issue-genres,
+.issue-row.state-reading .issue-summary {
+  color: rgba(255, 255, 255, 0.5);
 }
 .issue-progress-track {
   height: 2px;
@@ -1811,7 +1871,7 @@ select.filter-select:focus,
   background: var(--green);
   color: #000;
 }
-.issue-row .status-btn { align-self: center; }
+.issue-row .status-btn { align-self: center; margin: 0 14px; }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
