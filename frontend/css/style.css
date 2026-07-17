@@ -717,7 +717,7 @@ select.filter-select:focus,
 
 /* Hide scrollbar inside a strip track; arrows replace it */
 .strip-track .continue-strip {
-  padding-top: 5px;     /* headroom so hover lift isn't clipped */
+  padding-top: 8px;     /* headroom so hover lift isn't clipped */
   scrollbar-width: none;
 }
 .strip-track .continue-strip::-webkit-scrollbar { display: none; }
@@ -1154,27 +1154,39 @@ select.filter-select:focus,
   content: none;
 }
 
-/* Card frame — simplified again (2026-07-15, "rewind" fine-tune): one
-   uniform border for every card, no read-state colour on the border at all
-   (that signal now lives only on the genre ribbon — see below) and no
-   separate favourite ring (the heart badge alone covers that). 45% white,
-   1px, soft-edged via a small blur radius. Wraps the WHOLE card.
+/* Card frame — thin white glow only at rest, drop shadow added on :hover
+   (~line 1316, 2026-07-17 fine-tune). Originally one box-shadow with both
+   layers permanently on; split because the two layers read very
+   differently across the two surfaces sharing this class — a couple of
+   Home strip cards floating in open space made the dark drop-shadow layer
+   obvious, while the same shadow packed into a dense multi-row grid just
+   blended into the grid's own darkness. The white ring layer is kept at
+   rest (it's the "card edge" signal, wanted on both surfaces); the drop
+   shadow layer moved to hover-only, where it stacks with hover's own
+   glow/lift for the "lifted off the page" effect.
+   Blur tightened 5px→3px, alpha boosted 0.45→0.7 (2026-07-17 follow-up) —
+   the original 5px blur was bleeding past the 5px top / 10px bottom
+   padding .strip-track .continue-strip carries for hover headroom, giving
+   the ring a visible hard-clipped edge on Home (that container is
+   `overflow-x: auto`, and per the CSS overflow spec a non-visible x-axis
+   forces the y-axis to compute to `auto` too — see getComputedStyle,
+   there's no `overflow-x: auto` + `overflow-y: visible` combo on one
+   element). Tighter blur keeps the ring inside that headroom instead of
+   getting clipped; upping alpha keeps it reading as clearly as before
+   despite the smaller reach.
    Specificity: repeats .cover-card (see note ~line 1143) because the old
    .cover-card.selected rule (2 classes) would otherwise beat a bare
    .cover-card--redesign (1 class) on a selected redesigned card. */
 .cover-card.cover-card--redesign {
-  box-shadow:
-    0 0 5px 1px rgba(255, 255, 255, 0.45),
-    0 6px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.5);
 }
-/* No red border for flagged-for-review cards either — same uniform border
-   as every other card, explicit override so it beats the base rule
-   (style.css ~930) and its even-more-specific .is-favorite combo (~934)
-   regardless of source order. The flag SVG badge is the only signal now. */
+/* No red border for flagged-for-review cards either — same uniform glow
+   ring as every other card at rest, explicit override so it beats the
+   base rule (style.css ~930) and its even-more-specific .is-favorite combo
+   (~934) regardless of source order. The flag SVG badge is the only signal
+   now. */
 .cover-card.cover-card--redesign.is-flagged-review {
-  box-shadow:
-    0 0 5px 1px rgba(255, 255, 255, 0.45),
-    0 6px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 3px 1px rgba(255, 255, 255, 0.7);
 }
 
 /* Progress bar — a floating pill overlay on the cover (2026-07-15
@@ -1310,13 +1322,13 @@ select.filter-select:focus,
   transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
 .cover-card--redesign:hover {
-  transform: translateY(-4px);
+  transform: translateY(-3px);
   border-color: transparent;
 }
 .cover-card.cover-card--redesign:hover {
   box-shadow:
     0 0 4px 2px rgba(255, 255, 255, 0.85),
-    0 10px 26px rgba(0, 0, 0, 0.6);
+    0 5px 26px rgba(0, 0, 0, 0);
 }
 .cover-card.cover-card--redesign.selected {
   box-shadow:
@@ -2002,7 +2014,7 @@ select.filter-select:focus,
   display: block;
   text-align: center;
   background: var(--accent);
-  color: #000;
+  color: #FFFFFF;
   font-size: 13px;
   font-weight: 700;
   padding: 8px 18px;
@@ -2074,9 +2086,9 @@ select.filter-select:focus,
   text-align: center;
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 8px 18px;
+  padding: 7px 14px;
   border-radius: 20px;
   border: 1px solid var(--border);
   transition: all 0.15s;
@@ -2090,9 +2102,9 @@ select.filter-select:focus,
   text-align: center;
   background: var(--surface-2);
   color: var(--text-2);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 8px 18px;
+  padding: 7px 14px;
   border-radius: 20px;
   border: 1px solid var(--border);
   transition: all 0.15s;

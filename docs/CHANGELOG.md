@@ -13,6 +13,12 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-17** — Cover-card resting shadow split into a permanent white
+  glow ring + hover-only drop shadow (was always both, read inconsistently
+  between Home strips and the Grid), root-caused and fixed a hard clip line
+  on the glow from an `overflow-x`/`overflow-y` CSS coupling, and shrank
+  the Issue Detail page's Edit XML / Flag for Review pills. See
+  `v2.6/progress.md`.
 - **2026-07-17** — Issue Detail page: Mark as Read now updates the cover
   frame colour and progress bar live (no refresh needed, progress bar now
   Reading-only), added a "Read"/"Continue Reading" button above Mark as

@@ -3495,3 +3495,65 @@ Three small UI fixes to the Issue Detail page (`/issue/{id}`), all in
   unflagged label). Verified live — buttons now sit side by side at equal
   width, no icon, "Flag for Review" wraps to two lines at the narrower
   width which reads fine. No console errors.
+
+## Session — 2026-07-17 — Cover-card resting shadow rework (Home vs Grid), Issue Detail button sizing
+
+Tez noticed Home strip cards showed a "permanent" shadow at the base that
+looked like the Grid library cards' hover glow, and asked whether it was
+actually the same effect. Traced `.cover-card.cover-card--redesign`'s
+resting box-shadow (`style.css` ~1165) — confirmed via `getComputedStyle`
+in the running app that Home strip cards and Grid cards render byte-
+identical box-shadow values; the "permanent vs hover-only" read was a
+context illusion (a couple of Home cards floating in open space make a
+constant low-intensity shadow obvious, the same shadow packed into a dense
+multi-row grid just blends into the grid's own darkness).
+
+- **Split the single box-shadow into two layers, one resting one hover:**
+  the old rule combined a white glow ring + dark drop shadow, always on,
+  intensifying further on `:hover`. Tez asked to keep the white glow
+  permanent but move the dark drop-shadow layer to hover-only, so it stays
+  subtle at rest on Home specifically. Split `.cover-card.cover-card--redesign`
+  (and its `.is-flagged-review` specificity-override twin, same file ~1178)
+  down to just the glow layer; the drop shadow now lives solely in the
+  existing `.cover-card.cover-card--redesign:hover` rule (~1319), stacking
+  with hover's own intensified glow for the lift effect. Existing
+  `transition: box-shadow` on `.cover-card--redesign` already animates it
+  in smoothly — no new transition needed.
+- **Root-caused a hard clip line on the glow ring:** the original 5px-blur
+  glow was bleeding past `.strip-track .continue-strip`'s 5px top / 10px
+  bottom padding and getting a flat-cut edge instead of fading out. Found
+  why: that container is `overflow-x: auto` with no explicit `overflow-y`
+  — per the CSS overflow spec, a non-`visible` x-axis forces the y-axis to
+  compute to `auto` too (confirmed via `getComputedStyle`, `overflowY:
+  "auto"` despite only `overflow-x` being set in the stylesheet), so
+  anything bleeding past the padding box gets hard-clipped rather than
+  soft-fading. Tightened the glow's blur radius and raised its alpha so it
+  reads at the same intensity within the existing headroom instead of
+  reaching past it.
+- **Follow-up, Tez's own manual edits:** after the above, Tez took over
+  directly in the CSS to finish dialing in the pixel-level values —
+  further tightened the resting glow, bumped `.strip-track .continue-strip`
+  padding-top 5px→8px for more hover headroom, reduced the hover lift from
+  `translateY(-4px)` to `-3px`, zeroed the hover drop-shadow's alpha, and
+  changed `.btn-read-action`'s text colour from black to white. Left as
+  Tez's own working state — not re-verified by Claude beyond confirming
+  the file diff, since these were Tez's direct pixel-perfect adjustments
+  made hands-on rather than through a described requirement. Worth noting
+  the flagged-review twin rule (`.is-flagged-review`, ~1178) wasn't touched
+  in this manual pass and may now differ slightly from the base rule's
+  glow value — flag if that divergence wasn't intentional.
+- **Issue Detail — Edit XML / Flag for Review pill sizing:** Tez asked for
+  smaller text on both buttons since "Flag for Review" filling one line
+  was forcing both equal-width pills wider than needed. Reduced
+  `.btn-edit-xml`/`.btn-flag-review-toggle` `font-size` 13px→11px and
+  `padding` `8px 18px`→`7px 14px`. Verified live on `/issue/4439` — both
+  pills now sit noticeably thinner, text still legible.
+- **Verified live** throughout via `claude-in-chrome` against the running
+  dev server (`localhost:9424`, Tez's tray-app instance): compared Home
+  strip vs Singles-grid resting/hover states side by side, zoomed on card
+  edges to confirm the clip line was gone, and screenshotted the Issue
+  Detail button row before/after the font-size change. No real library
+  data touched (visual-only change, nothing read/write-path related).
+- Purely cosmetic (shadow timing/intensity, button text size) — no
+  `DECISIONS.md` entry or build-queue item per `CLAUDE.md` §5's
+  structural/cosmetic threshold.
