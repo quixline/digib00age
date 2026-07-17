@@ -267,7 +267,7 @@ function ensureSelectionToolbar() {
   bar.appendChild(actions);
 
   const endWrap    = el('div', 'selection-toolbar-end');
-  const deselectBtn = el('button', 'selection-cancel-btn', 'Deselect');
+  const deselectBtn = el('button', 'selection-action-btn', 'Deselect');
   deselectBtn.id     = 'selDeselect';
   deselectBtn.type   = 'button';
   deselectBtn.addEventListener('click', () => exitSelectionMode());

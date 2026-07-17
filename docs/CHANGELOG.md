@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-17** — Restyled the selection toolbar's Deselect pill to match
+  the other action pills (dark background, same hover state) instead of
+  the removed Cancel button's transparent/muted look. See
+  `v2.6/progress.md`.
 - **2026-07-17** — Removed the redundant Cancel button from the selection
   toolbar (identical to Deselect); Deselect and Done remain. See
   `v2.6/progress.md`.

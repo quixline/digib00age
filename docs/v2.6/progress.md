@@ -2990,3 +2990,21 @@ treatment across every grid-format card was feasible. Two research passes
   shows only Deselect and Done. No console errors.
 - Cosmetic/UI-simplification change per `CLAUDE.md` §5 — no `DECISIONS.md`
   entry needed.
+
+## Session — 2026-07-17 — Deselect pill restyled to match the other toolbar pills
+
+- Tez asked for Deselect to visually match the other action pills (Mark
+  Read, Favorite, etc.) — darker pill background, same hover behaviour —
+  instead of its previous transparent/muted-text look inherited from the
+  removed Cancel button.
+- Switched Deselect's class from `.selection-cancel-btn` to the shared
+  `.selection-action-btn` (`frontend/js/app.js`), which already carries the
+  `var(--surface-2)` background, `var(--text-2)` text, and accent-border/
+  text hover state every other pill uses. Removed the now-unused
+  `.selection-cancel-btn` CSS rule (`style.css`) since nothing referenced
+  it anymore after Cancel's removal.
+- **Verified live:** selected a card, confirmed Deselect renders with the
+  same dark pill background as Mark Read/Favorite/etc., and its hover
+  state matches (accent border + brighter text). No console errors.
+- Cosmetic colour/style-only change per `CLAUDE.md` §5 — no `DECISIONS.md`
+  entry needed.
