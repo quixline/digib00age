@@ -2364,11 +2364,7 @@ function buildIssueDetail(data) {
   // nothing has registered the handler on this PC, the browser's own
   // "can't open this link" affordance is all that happens, no error we
   // could catch or report on from here.
-  const coverState = data.read_status === 'read'    ? 'state-read'
-                    : data.read_status === 'reading' ? 'state-part-read'
-                    : 'state-unread';
-
-  const coverLink = el('a', `issue-cover-link issue-cover-link--redesign ${coverState}`);
+  const coverLink = el('a', 'issue-cover-link issue-cover-link--redesign');
   coverLink.href = `comicvault://read/${data.id}`;
 
   // Collector-card frame: three nested layers (metallic bezel, state-mat,
@@ -2402,20 +2398,47 @@ function buildIssueDetail(data) {
 
   // Progress bar under the cover (not overlaid, unlike the grid card) —
   // real page-level progress, same current_page/page_count this page
-  // already uses for Mark as Read.
-  if (coverState === 'state-part-read' || coverState === 'state-read') {
-    const pct = data.page_count > 0
-      ? Math.min(100, Math.round((data.current_page / data.page_count) * 100))
-      : 0;
-    const track = el('div', 'issue-progress-track');
-    const fill  = el('div', 'issue-progress-fill');
-    fill.style.width = `${pct}%`;
-    track.appendChild(fill);
-    coverCol.appendChild(track);
-  }
+  // already uses for Mark as Read. Built once and toggled via [hidden]
+  // rather than added/removed, so syncReadState() below can update it live.
+  const progressTrack = el('div', 'issue-progress-track');
+  const progressFill  = el('div', 'issue-progress-fill');
+  progressTrack.appendChild(progressFill);
+  coverCol.appendChild(progressTrack);
 
   const actions = el('div', 'issue-actions');
-  actions.appendChild(buildStatusToggle(data));
+
+  // "Read"/"Continue Reading" — a dedicated open-the-reader button ahead of
+  // Mark as Read, mirroring the cover art's own comicvault:// link so
+  // there's a text affordance for the same action.
+  const readActionBtn = el('a', 'btn-read-action', 'Read');
+  readActionBtn.href = `comicvault://read/${data.id}`;
+  actions.appendChild(readActionBtn);
+
+  // Live-syncs every read-state-dependent visual on this page (cover frame
+  // ring colour, progress bar, Read/Continue Reading label) from `data`, so
+  // toggling Mark as Read updates everything in place instead of requiring
+  // a page refresh.
+  function syncReadState() {
+    const coverState = data.read_status === 'read'    ? 'state-read'
+                      : data.read_status === 'reading' ? 'state-part-read'
+                      : 'state-unread';
+    coverLink.className = `issue-cover-link issue-cover-link--redesign ${coverState}`;
+
+    if (coverState === 'state-part-read' || coverState === 'state-read') {
+      const pct = data.page_count > 0
+        ? Math.min(100, Math.round((data.current_page / data.page_count) * 100))
+        : 0;
+      progressFill.style.width = `${pct}%`;
+      progressTrack.hidden = false;
+    } else {
+      progressTrack.hidden = true;
+    }
+
+    readActionBtn.textContent = data.read_status === 'reading' ? 'Continue Reading' : 'Read';
+  }
+  syncReadState();
+
+  actions.appendChild(buildStatusToggle(data, syncReadState));
   actions.appendChild(buildFavoriteToggle(data, favoriteBadge));
   actions.appendChild(buildRatingControl(data));
   const editXmlBtn = el('button', 'btn-edit-xml', 'Edit XML');
@@ -2535,7 +2558,7 @@ function buildIssueDetail(data) {
 
 // ── Status toggle button ──────────────────────────────────────────────────────
 
-function buildStatusToggle(data) {
+function buildStatusToggle(data, onChange) {
   const btn = el('button', 'btn-status-toggle');
 
   function sync() {
@@ -2558,6 +2581,7 @@ function buildStatusToggle(data) {
       await fetch(endpoint, { method: 'POST' });
       data.read_status = next;
       sync();
+      if (onChange) onChange();
     } catch (_) {}
   });
 

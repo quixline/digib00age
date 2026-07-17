@@ -1774,11 +1774,16 @@ select.filter-select:focus,
    issue.html, not built here) rather than behind it — a deliberate
    simplification, not worth restructuring static markup for a few px. */
 #issueContent { position: relative; }
+/* Full-bleed to the sidebar/viewport edges (2026-07-17): breaks out of
+   .container's 30px side padding via negative offsets equal to that
+   padding, same idea as .page-bg's full-content-width treatment above,
+   so the backdrop fills the whole area up to the nav bar instead of
+   sitting inset with visible margin either side. */
 .issue-backdrop {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  left: -30px;
+  right: -30px;
   height: 440px;
   overflow: hidden;
   z-index: 0;
@@ -1790,12 +1795,16 @@ select.filter-select:focus,
   object-fit: cover;
   object-position: center 20%;
   opacity: 0.18;
+  filter: blur(2px);
   display: block;
 }
+/* Shorter top fade (2026-07-17) than the old 0–8% solid / 55% transparent
+   recipe — reaches full transparency by 30% instead of 55%, so more of the
+   image reads through near the top; opacity above is unchanged. */
 .issue-backdrop-fade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, var(--bg) 0%, var(--bg) 8%, transparent 55%, var(--bg) 100%);
+  background: linear-gradient(to bottom, var(--bg) 0%, transparent 30%, var(--bg) 100%);
 }
 .issue-content {
   position: relative;
@@ -1989,6 +1998,19 @@ select.filter-select:focus,
   flex-direction: column;
   gap: 8px;
 }
+.btn-read-action {
+  display: block;
+  text-align: center;
+  background: var(--accent);
+  color: #000;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--accent);
+  transition: all 0.15s;
+}
+.btn-read-action:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn-status-toggle {
   display: block;
   text-align: center;

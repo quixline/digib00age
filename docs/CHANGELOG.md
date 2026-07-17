@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-17** — Issue Detail page: Mark as Read now updates the cover
+  frame colour and progress bar live (no refresh needed), added a "Read"/
+  "Continue Reading" button above Mark as Read that opens the desktop
+  reader, and the cover backdrop now spans full-bleed to the sidebar with
+  a lighter top fade and a slight blur. See `v2.6/progress.md`.
 - **2026-07-17** — Multi-select: added shift-click range select (selects
   every card between the anchor and the shift-clicked card) and fixed a bug
   where deselecting the last remaining selected card also navigated to that

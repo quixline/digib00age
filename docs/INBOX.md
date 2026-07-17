@@ -4,33 +4,29 @@
 
 ### Unprocessed
 
-after selecting the first card with a double press, then shift + single clicking a card that comes later should select all the cards between the first and last card selected.
+- [ ] when an issue is marked as read in the issue page - make the visual changes happen without the need for refreshing the page
 
-after deselecting the last card just deselect it, currently it deselects and opens the issue/series page for that card.
+- [ ] on the issue page add "Read" button under card and before "Mark as Read" - When in the Reading state - change "Read" to "Continue Reading" both open the desktop reader
 
-when a issue is marked as read in the issue page - make the visual changes happen without the need for refreshing the page
+- [ ] issue page - make the bg fit the whole area to the nav bar and header with less of a fade from the top so more of the image can be seen while keeping the same opacity with a slight blur
 
-on the issue page add "Read" button under card and before "Mark as Read" - When in the Reading state - change "Read" to "Continue Reading" both open the desktop reader
+- [ ] All library Grid view cards have a shadow - locate and remove while maintaining the blur glow if poss
 
-issue page - make the bg fit the whole area to the nav bar and header with less of a fade from the top so more of the image can be seen while keeping the same opacity with a slight blur
+- [ ] All library Grid view cards - on hover the top glow gets cut off - add more space above
 
-All library Grid view cards have a shadow - locate and remove while maintaining the blur glow if poss
+- [ ] redesign the list view and the series view
 
-All library Grid view cards - on hover the top glow gets cut off - add more space above
+- [ ] review design of - mobile reader UI - get a closer consistency to the web ui, drop the outer glow around cards but keep the inner style and genre/info
 
-redesign the list view and the series view
+- [ ] (set the desktop reader to open the same dimensions as the archive cover image 50% size) - need to test
+  
+  ------------------------------------ final steps before moving from dev to production ------------------------------------
 
-review design of - mobile reader UI - get a closer consistency to the web ui, drop the outer glow around cards but keep the inner style and genre/info
+- [ ] scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base 
 
--
+- [ ] stress test - how? 
 
-(set the desktop reader to open the same dimensions as the archive cover image 50% size) - need to test
-
-scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base 
-
-stress test - how? 
-
-plan & build windows install package
+- [ ] plan & build windows install package
 
 
 
@@ -39,6 +35,12 @@ plan & build windows install package
 ---
 
 ## Processed
+
+_17-07-2026_
+
+* ~~after selecting the first card with a double press, then shift + single clicking a card that comes later should select all the cards between the first and last card selected.~~
+
+* ~~after deselecting the last card just deselect it, currently it deselects and opens the issue/series page for that card.~~_
 
 _16-07-2026_
 

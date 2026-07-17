@@ -3431,3 +3431,49 @@ treatment across every grid-format card was feasible. Two research passes
   scan/library data touched — purely client-side selection state.
 - No spec doc describes multi-select gesture behaviour in this level of
   detail, so nothing else needed updating.
+
+## Session — 2026-07-17 — Issue Detail page: live read-state sync, Read/Continue Reading button, backdrop full-bleed
+
+Three small UI fixes to the Issue Detail page (`/issue/{id}`), all in
+`buildIssueDetail()`/`buildStatusToggle()` (`frontend/js/app.js`) and the
+`.issue-backdrop*`/`.issue-actions` rules (`frontend/css/style.css`).
+
+- **Live read-state sync (behaviour fix):** clicking Mark as Read/✓ Read
+  previously only updated the button itself — the collector-card frame's
+  mat colour (blue = unread / green = reading·read) and the progress bar
+  under the cover were computed once at initial render and stayed stale
+  until a manual page refresh. Refactored `buildIssueDetail()` to build the
+  cover frame and progress track once, then drive both from a new
+  `syncReadState()` closure that recomputes them from `data.read_status`/
+  `data.current_page`. `buildStatusToggle()` now takes an `onChange`
+  callback and calls it after a successful mark-read/unread fetch, so
+  `syncReadState()` re-runs and every dependent visual updates in place —
+  no refresh needed.
+- **"Read"/"Continue Reading" button:** added a filled accent-coloured
+  `.btn-read-action` pill above Mark as Read in `.issue-actions`, linking
+  to the same `comicvault://read/{id}` URI as the cover art. Label is
+  "Read" by default, "Continue Reading" while `read_status === 'reading'`
+  (kept "Read" for the fully-read state too — not asked to special-case
+  it). Label is also driven by `syncReadState()`, so it flips immediately
+  if Mark as Read changes the status.
+- **Backdrop full-bleed + lighter fade:** `.issue-backdrop` was inset by
+  `.container`'s 30px side padding, leaving a visible gap before the
+  sidebar/viewport edge. Changed to `left: -30px; right: -30px` (mirrors
+  `.page-bg`'s full-content-width approach) so it now spans edge-to-edge.
+  Shortened `.issue-backdrop-fade`'s top transition (was solid `var(--bg)`
+  through 8%, transparent by 55%; now transparent by 30%, no flat solid
+  band) so more of the cover art reads through near the top. Added
+  `filter: blur(2px)` to `.issue-backdrop-img` (image had no blur before);
+  opacity left unchanged at 0.18 per the request.
+- **Verified live** against the running dev server (`localhost:9424`,
+  Tez's tray-app instance) via `claude-in-chrome`: loaded issue 4318
+  (unread), clicked Mark as Read — confirmed the frame ring flipped
+  blue→green, the progress track appeared, and the button changed to
+  "✓ Read", all without a page reload. Set the issue to `reading` via
+  `POST /api/progress/4318` and reloaded — confirmed the button read
+  "Continue Reading" and the progress bar reflected the real page
+  fraction. Reset the issue back to `unread`/`current_page: 0` via
+  `POST /api/progress/4318/mark-unread` afterward — real library data
+  left as found. No console errors.
+- No spec doc describes the Issue Detail page's read-state visuals at this
+  level of detail, so nothing else needed updating.
