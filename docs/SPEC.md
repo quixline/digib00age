@@ -749,7 +749,14 @@ User can also switch manually in Settings.
   - Top bar: back button, issue title, page counter (e.g. "12 / 32")
   - Bottom bar: reading mode toggle, fit-width / fit-height toggle, page scrubber slider
 - Manga mode: if `manga = "YesAndRightToLeft"`, page mode reverses swipe direction
-- Progress saved to server on every page turn (POST `/api/progress/{id}`)
+- Progress saved to server on every page turn in Page mode (POST
+  `/api/progress/{id}`); Scroll mode has no native page-turn event, so
+  progress is estimated from scroll position instead and saved to the same
+  endpoint whenever that estimate's page number changes (fixed 2026-07-17,
+  BUG-024 — previously Scroll mode, the default, never saved progress at
+  all)
+- Reopening an issue resumes the saved page in both modes — Scroll mode's
+  resume is a scroll-fraction estimate, not pixel-exact
 - Auto-marks issue as "read" when last page is reached
 - "Next issue" prompt on completion
 

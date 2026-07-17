@@ -1,61 +1,36 @@
 # digib00age — Inbox
 
-Raw capture only. Jot a line whenever, from whatever device, in whatever shape
-it's in — no formatting pressure beyond the tag. Nothing here is a decision;
-classification and placement happens in a dedicated triage session, run in
-Code, only when Tez explicitly starts one and says so. **Triage is on hold as
-of 2026-07-16, until Tez says otherwise** — no session (Chat, Cowork, or Code)
-triages this file on its own initiative in the meantime; it's capture-only
-everywhere. See `docs/meta/working-rules.md` "Inbox workflow" for the full
-rule.
-
-**Tag convention** — one of:
-
-- `[bug]` — something that was scoped, planned, and implemented, but doesn't
-  work correctly.
-- `[change]` — something already in place that should look or behave
-  differently (most likely front-end/visual — "add a border colour around X").
-- `[feature]` — something new that doesn't exist yet.
-- `[unknown]` — not sure which of the above it is yet. Better to mark unknown
-  than guess wrong on purpose.
-
-Add a guess at the destination doc if one's obvious (`BUGS.md` /
-`comicvault-changes-*.md` / `ROADMAP.md`) — skip it if you don't know, that's
-what triage is for.
-
-**Format per line:**
-`- [tag] one-liner or short explanation (-> guessed doc, optional)`
-
-**On triage:** the line gets struck through, tag left exactly as originally
-entered (even if it turns out wrong — that's the point, see `DECISIONS.md`
-if a pattern's worth recording), and annotated with where it actually landed.
-Example:
-
-```
-- ~~[bug] series cover doesn't update after editor save~~ → added to BUGS.md as BUG-009
-```
-
-
-
 ---
 
-## Unprocessed
+### Unprocessed
 
----
+after selecting the first card with a double press, each card click should select it, not another long press. Also shift and clicking a card that comes later should select all the cards between the first and last selected. after deselecting the last card just deselect it, currently it deselects and opens the issue/series page for that card.
+
+when a issue is marked as read in the issue page - make the visual changes happen without the need for refreshing the page
+
+set the desktop reader to open the same dimensions as the archive cover image 50% size
+
+scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base 
+
+stress test - how? 
+
+plan & build windows install package
 
 
-
-[feature] scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base (includes: migrate writer/penciller off the raw-CSV `Issue` columns onto `people`/`issue_credits` — search, Group by Writer, and the series-card meta line still read the old columns — then drop them; see `DECISIONS.md` 2026-07-15 "Legacy raw-CSV credit columns")
-
-[feature] plan & build windows install package
-
-~~[bug] cover change in archive takes a long time to show in the library, refresh doesn't speed it up. eg a cover is shown in the library with a double cover/open book cover, archive unpacked, image edited to one page and archive repacked. Library scan detects changed file but doesn't update cover without some wait, when a scan detects the change it also needs to update the UI at a bare minum with f5 (-> BUGS.md, possible regression/duplicate of the 12-7-2026 cover-persist line below marked "not a bug" — this report says refresh doesn't fix it, worth re-checking)~~ → fixed same-session, 2026-07-16, as BUG-023 in `docs/archive/bugs-fixed-archive.md` (confirmed a regression from the 2026-07-13 cover-caching change, not a duplicate of the 12-7 report)
 
 
 
 ---
 
 ## Processed
+
+_17-07-2026_
+
+- ~~[bug] desktop reader not reporting read state or resuming read state~~ → fixed same-session, 2026-07-17, as BUG-024 in `docs/archive/bugs-fixed-archive.md` (Scroll mode, the default reading mode, never reported page changes or resumed saved position — Page mode was unaffected)
+
+_16-07-2026_
+
+- ~~[bug] cover change in archive takes a long time to show in the library, refresh doesn't speed it up. eg a cover is shown in the library with a double cover/open book cover, archive unpacked, image edited to one page and archive repacked. Library scan detects changed file but doesn't update cover without some wait, when a scan detects the change it also needs to update the UI at a bare minum with f5 (-> BUGS.md, possible regression/duplicate of the 12-7-2026 cover-persist line below marked "not a bug" — this report says refresh doesn't fix it, worth re-checking)~~ → fixed same-session, 2026-07-16, as BUG-023 in `docs/archive/bugs-fixed-archive.md` (confirmed a regression from the 2026-07-13 cover-caching change, not a duplicate of the 12-7 report)
 
 15-7-2026
 

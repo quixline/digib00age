@@ -36,13 +36,58 @@ class ComicPageViewState extends State<ComicPageView> {
 
   bool _zoomedToWidth = false;
   BoxConstraints? _pageConstraints;
+  int _lastReportedPage = -1;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: widget.initialPage);
-    _scrollController = ScrollController();
+    _scrollController = ScrollController()..addListener(_handleScrollProgress);
     _transformController = TransformationController();
+    if (widget.mode == ReadingMode.scroll && widget.initialPage > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToInitialPage());
+    }
+  }
+
+  // Scroll mode has no per-page callback like PageView's onPageChanged, so
+  // progress (and therefore the "Reading" status/left-nav filter) was never
+  // reported while scrolling — estimate the current page from scroll
+  // position instead, matching what a page turn would report.
+  void _handleScrollProgress() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final maxExtent = position.maxScrollExtent;
+    final count = widget.pageUrls.length;
+    if (count <= 1 || maxExtent <= 0) return;
+    final fraction = (position.pixels / maxExtent).clamp(0.0, 1.0);
+    final localPage = (fraction * (count - 1)).round();
+    // _buildScrollMode() renders a pre-reversed list for manga, unlike
+    // PageView (which only flips scroll direction, not item order) — remap
+    // back to the original index so saved progress matches Page mode.
+    final page = widget.reversePages ? (count - 1 - localPage) : localPage;
+    if (page != _lastReportedPage) {
+      _lastReportedPage = page;
+      widget.onPageChanged(page);
+    }
+  }
+
+  // Unlike PageController (constructed with initialPage above), a plain
+  // ScrollController has no notion of "start at item N" — estimate a pixel
+  // offset the same way _handleScrollProgress() estimates a page from an
+  // offset, just inverted. Runs once after first layout, when the Sliver's
+  // extrapolated maxScrollExtent becomes available.
+  void _jumpToInitialPage() => _scrollToPage(widget.initialPage);
+
+  // Shared by _jumpToInitialPage() (open-time resume) and jumpToPage()
+  // (bottom-bar slider drag) — same fraction-based estimate either way.
+  void _scrollToPage(int page) {
+    if (!_scrollController.hasClients) return;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    final count = widget.pageUrls.length;
+    if (count <= 1 || maxExtent <= 0) return;
+    final localPage = widget.reversePages ? (count - 1 - page) : page;
+    _scrollController.jumpTo((localPage / (count - 1)) * maxExtent);
+    _lastReportedPage = page;
   }
 
   @override
@@ -96,6 +141,8 @@ class ComicPageViewState extends State<ComicPageView> {
     resetZoom();
     if (widget.mode == ReadingMode.page) {
       _pageController.jumpToPage(page);
+    } else {
+      _scrollToPage(page);
     }
   }
 
@@ -223,13 +270,51 @@ class LocalComicPageViewState extends State<LocalComicPageView> {
 
   bool _zoomedToWidth = false;
   BoxConstraints? _pageConstraints;
+  int _lastReportedPage = -1;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: widget.initialPage);
-    _scrollController = ScrollController();
+    _scrollController = ScrollController()..addListener(_handleScrollProgress);
     _transformController = TransformationController();
+    if (widget.mode == ReadingMode.scroll && widget.initialPage > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToInitialPage());
+    }
+  }
+
+  // See ComicPageViewState._handleScrollProgress() — same gap, same fix.
+  // No reversal remap needed here: this widget's scroll-mode itemBuilder
+  // keeps list position i as the logical page number (it only flips which
+  // page's bytes are fetched per position), matching what its own PageView
+  // branch already reports directly.
+  void _handleScrollProgress() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final maxExtent = position.maxScrollExtent;
+    final count = widget.pageCount;
+    if (count <= 1 || maxExtent <= 0) return;
+    final fraction = (position.pixels / maxExtent).clamp(0.0, 1.0);
+    final page = (fraction * (count - 1)).round();
+    if (page != _lastReportedPage) {
+      _lastReportedPage = page;
+      widget.onPageChanged(page);
+    }
+  }
+
+  // See ComicPageViewState._jumpToInitialPage() — same fix, no reversal
+  // remap needed for the same reason _handleScrollProgress() above doesn't.
+  void _jumpToInitialPage() => _scrollToPage(widget.initialPage);
+
+  // Shared by _jumpToInitialPage() (open-time resume) and jumpToPage()
+  // (bottom-bar slider drag) — same fraction-based estimate either way.
+  void _scrollToPage(int page) {
+    if (!_scrollController.hasClients) return;
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    final count = widget.pageCount;
+    if (count <= 1 || maxExtent <= 0) return;
+    _scrollController.jumpTo((page / (count - 1)) * maxExtent);
+    _lastReportedPage = page;
   }
 
   @override
@@ -279,7 +364,11 @@ class LocalComicPageViewState extends State<LocalComicPageView> {
 
   void jumpToPage(int page) {
     resetZoom();
-    _pageController.jumpToPage(page);
+    if (widget.mode == ReadingMode.page) {
+      _pageController.jumpToPage(page);
+    } else {
+      _scrollToPage(page);
+    }
   }
 
   void resetZoom() {

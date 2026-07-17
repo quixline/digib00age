@@ -7,6 +7,61 @@ Append-only; entries kept exactly as they were in `BUGS.md` at the time of move.
 
 ---
 
+### BUG-024 — Desktop reader Scroll mode never reported or resumed reading progress
+
+**Found:** 2026-07-17, user report — opened an issue (Wordless) in the desktop
+reader, read partway through, closed it, clicked "Reading" in the web UI's left
+nav, and the list showed nothing. Also referenced `INBOX.md`'s existing
+"[bug] desktop reader not reporting read state or resuming read state" line.
+
+**Where:** `flutter_app/lib/widgets/comic_page_view.dart` — `ComicPageViewState`
+(server-mode reader) and `LocalComicPageViewState` (local/offline CBZ reader).
+
+**Root cause:** the desktop reader has two modes, Scroll (continuous vertical
+scroll, the default per `settings_service.dart:39`) and Page (swipe one page at
+a time). Page mode works because `PageView.builder`'s built-in `onPageChanged`
+fires on every page turn, which flows into `ReaderScreen._onPageChanged` →
+`ApiService.updateProgress`/`SyncStore.recordProgress` → backend auto-promotes
+`ReadingProgress.status` from `"unread"` to `"reading"` on the first
+`current_page > 0` (`backend/routers/progress.py`) → `GET /api/library`'s
+`reading_count` picks it up → the web UI's "Reading" left-nav filter shows the
+issue (`frontend/js/app.js`). Scroll mode's `ListView.builder` had no
+equivalent listener at all — scrolling through an entire issue never called
+`onPageChanged`, so the progress endpoint was never hit and `status` never left
+`"unread"`. Present since the reader was first built (V1); not a recent
+regression, and confirmed unrelated to the web frontend's recent
+selection-toolbar/bulk-rate commits (separate code path entirely). The reader
+also never resumed a saved page position on reopen in Scroll mode (a plain
+`ScrollController` has no `initialPage` equivalent), and the bottom-bar page
+slider was a no-op (server reader) or a live crash risk (local reader, calling
+an unattached `PageController.jumpToPage`) while in Scroll mode — same root
+cause, fixed alongside.
+
+**Fixed, 2026-07-17.** Added a `ScrollController` listener
+(`_handleScrollProgress()`) to both reader state classes that estimates the
+current page from `scrollController.position.pixels / maxScrollExtent` and
+calls the existing `onPageChanged` callback only when the rounded page index
+changes, reusing the same downstream save path Page mode already had — no
+backend changes needed. Server-mode scroll renders a pre-reversed page list for
+manga (unlike `PageView`, which only flips scroll direction, not item order),
+so the raw fraction-based index is remapped back to the original index when
+`reversePages` is set, matching what Page mode would report. Added
+`_jumpToInitialPage()` (run once via `addPostFrameCallback` after first
+layout) to resume position on open, and factored the shared fraction math into
+`_scrollToPage()`, also now used by `jumpToPage()` (the slider) in Scroll mode.
+The fraction-based estimate is approximate, not pixel-exact — see
+`DECISIONS.md` for why an exact per-item-extent approach (or a
+`scrollable_positioned_list` dependency) wasn't used instead.
+
+**Verified live (Tez, manual):** opened Wordless in Scroll mode, scrolled a
+few pages, closed the reader, confirmed the issue appeared under the web UI's
+"Reading" filter (previously empty). Reopened the same issue in Scroll mode
+and confirmed it resumed roughly where it left off rather than restarting at
+page 1. Confirmed Page mode unaffected. `flutter analyze` and `flutter build
+windows --debug` both clean ahead of the manual pass.
+
+---
+
 ### BUG-023 — Cover image doesn't update in the library after an archive edit + rescan
 
 **Found:** 2026-07-16, user report (`INBOX.md`, "cover change in archive takes a

@@ -2306,3 +2306,26 @@ and says so explicitly. This doesn't change anything about how entries get
 written into `INBOX.md`, or how triage itself works once it's switched back on —
 only when it's allowed to run.
 **Where:** `docs/meta/working-rules.md` "Inbox workflow", `docs/INBOX.md` header.
+
+### Desktop reader Scroll-mode progress: fraction-of-scroll-extent estimate, not exact per-item tracking
+**Decided:** 2026-07-17, fixing BUG-024 (Scroll mode never reported or resumed
+reading progress).
+**Why:** Scroll mode's `ListView.builder` has no native "current page" concept
+the way `PageView.builder` does — getting an exact answer would mean tracking
+each item's real rendered pixel extent (via per-item `GlobalKey`s or a
+`RenderBox` lookup) or pulling in a package like `scrollable_positioned_list`
+for its `ItemPositionsListener`. Chose a much simpler estimate instead:
+`page = round((scrollController.pixels / maxScrollExtent) * (count - 1))`,
+and the same formula inverted to resume position. This is only an
+approximation — comic pages have slightly different rendered heights
+depending on aspect ratio, and network images resolve their real height
+asynchronously after the initial layout guess — but comic pages within a
+single issue are close enough to uniform aspect ratio that the drift in
+practice is small, and it added zero new dependencies for what is otherwise a
+one-file fix. If this estimate turns out to be too imprecise in practice
+(e.g. issues with a mix of full-page splash art and dense multi-panel pages),
+revisit with real per-item extent tracking then rather than pre-emptively
+building it now.
+**Where:** `flutter_app/lib/widgets/comic_page_view.dart`
+(`_handleScrollProgress()`, `_scrollToPage()`), `archive/bugs-fixed-archive.md`
+BUG-024.

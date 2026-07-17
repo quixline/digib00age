@@ -13,6 +13,44 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-17** — Desktop reader (Flutter): fixed Scroll mode (the default
+  reading mode) never reporting reading progress to the server at all — the
+  "Reading" left-nav filter showed nothing after reading partway through an
+  issue and closing it, because `ReadingProgress.status` never left
+  `"unread"`. Also fixed Scroll mode never resuming your saved page on
+  reopen, and the bottom-bar page slider being a no-op (or a crash risk for
+  local files) in Scroll mode. See `v2.6/progress.md`; BUG-024 in
+  `archive/bugs-fixed-archive.md`.
+- **2026-07-17** — Issue detail page cover card: found and fixed the actual
+  root cause of the recurring "blur glow won't show up" reports — the glow
+  layer was being added to `.issue-cover-img` (an `<img>` itself), and
+  `::before` never renders on replaced elements. Added a `.cc-cover-glow`
+  wrapper `<div>` per Design's recipe, confirmed the blur now actually
+  computes and renders on both read states. See `v2.6/progress.md`.
+- **2026-07-17** — Issue detail page cover card: rebuilt as a "collector
+  card" slab (metallic bezel + state-coloured mat + dark inner frame,
+  three real nested layers replacing the old box-shadow ring) per Tez's
+  supplied design mockup, plus an on-cover favourite heart badge synced to
+  the existing Favorite button; follow-ups added a soft state-coloured
+  blur between the cover's black border and the mat line, then sized the
+  whole card up 25%, dropped the hover-lift effect, and thickened the
+  image border + all three frame layers by 5px each; final follow-up
+  reverted the black border back to 3px, tightened the gap before the mat
+  line, and grew both the cover art and the mat ring. See
+  `v2.6/progress.md`.
+- **2026-07-17** — Issue detail page cover card: switched the black gap
+  before the state ring from a blurred box-shadow to a crisp 6px border
+  (the shadow version wasn't visible enough at normal size), and gave the
+  cover a real offset drop shadow (Tez's `.image-with-shadow` recipe) that
+  casts onto the bezel for a lifted look. See `v2.6/progress.md`.
+- **2026-07-17** — Issue detail page cover card: thicker metal bezel ring
+  (+3px), thinner read-state ring (-1px), added an embossed/dropped inset
+  border around the cover image. Issue page only, grid cards unaffected.
+  See `v2.6/progress.md`.
+- **2026-07-17** — Issue detail page: capped the Summary paragraph's width
+  (was stretching full-window-wide on large screens) and preserved
+  paragraph breaks from `\n\n` in ComicInfo.xml's Summary field (was
+  rendering as one run-on paragraph). See `v2.6/progress.md`.
 - **2026-07-17** — Restyled the selection toolbar's Deselect pill to match
   the other action pills (dark background, same hover state) instead of
   the removed Cancel button's transparent/muted look. See

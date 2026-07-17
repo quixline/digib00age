@@ -3008,3 +3008,370 @@ treatment across every grid-format card was feasible. Two research passes
   state matches (accent border + brighter text). No console errors.
 - Cosmetic colour/style-only change per `CLAUDE.md` §5 — no `DECISIONS.md`
   entry needed.
+
+## Session — 2026-07-17 — Issue detail page: Summary text too wide on large screens, paragraph breaks lost
+
+- Tez reported that on the issue detail page (`/issue/{id}`, served via
+  `issue.html`), the Summary paragraph stretched to fill the full window
+  width on a maximized/large browser window — a side effect of the
+  2026-07-15 INBOX decision to drop `.container`'s 1440px cap site-wide
+  (`style.css` line ~210). That full-width policy was meant for card grids,
+  not a single prose paragraph, so at wide viewports the summary line
+  length became uncomfortably long. Separately, ComicInfo.xml `Summary`
+  fields containing blank-line paragraph breaks (`\n\n`) were rendering as
+  one run-on paragraph — `_text()` in `backend/scanner.py` preserves
+  internal newlines from the XML (only strips/leading trailing whitespace),
+  and the API passes `issue.summary` straight through, but the frontend
+  wrote it via `textContent` (`app.js` `initIssue()`) into a plain `<p>`,
+  and default CSS `white-space` collapses newlines on display.
+- Fix, both in `.summary-text` (`frontend/css/style.css`): added
+  `max-width: 640px` to cap the paragraph's line length regardless of
+  window width, and `white-space: pre-line` so embedded `\n`/`\n\n` from
+  the XML render as line/paragraph breaks instead of being collapsed. No
+  JS or backend change needed — the data already carried the newlines.
+- **Verified live:** loaded issue id 5 (`30 Days of Night Deluxe Edition
+  #1`, a Summary with two embedded blank-line breaks) at both 1920px and
+  1280px window widths. Summary now wraps at ~640px regardless of window
+  width and renders as four distinct paragraphs matching the XML's blank
+  lines. No console errors, no other page elements affected.
+- Cosmetic typography/sizing change per `CLAUDE.md` §5 — no `DECISIONS.md`
+  entry needed.
+
+## Session — 2026-07-17 — Issue detail page: cover card frame — thicker metal bezel, thinner state ring, embossed cover inset
+
+- Tez asked, staying on the issue detail page's cover card
+  (`.issue-cover-link--redesign` in `frontend/css/style.css`), for three
+  adjustments to the layered box-shadow "frame" around the cover: increase
+  the metal-grey bezel ring's thickness by 3px, reduce the inner
+  read-state ring (blue=unread/green=read) by 1px, and add a border
+  directly on the cover image's edge so it reads as dropped/embossed into
+  the frame rather than flush with it. Explicitly scoped to the issue page
+  only, not the browse/home grid cards.
+- The frame is a stack of concentric `box-shadow` rings on
+  `.issue-cover-link--redesign`: state ring → dark gap → metal bezel ring
+  → dark gap → drop shadow. Widened the state ring's spread from 2px to
+  1px (2px→1px thick) and the bezel ring's spread from 6px to 8px (2px→5px
+  thick, +3px), shifting the two dark-gap rings outward by the same
+  amounts so their own 2px thickness is preserved and nothing overlaps.
+  Confirmed via `grep` that the browse/home grid's cover cards use a
+  separate, differently-named class (`.cover-card--redesign`, its own
+  box-shadow block elsewhere in `style.css`) — `.issue-cover-link--redesign`
+  only ever applies to the issue detail page's single big cover, so this
+  change can't leak into grid cards.
+- Replaced `.issue-cover-link--redesign .issue-cover-img { box-shadow:
+  none; }` with an inset box-shadow (a 1px dark inset ring plus a soft
+  inward blur along the top) so the cover image itself now shows a
+  recessed/embossed edge inside the bezel frame, instead of sitting flush
+  against it.
+- **Verified live:** loaded issue id 5 (state: read, green ring) and issue
+  id 2886 (state: unread, blue ring) at the issue detail page, zoomed into
+  the cover card corner on both — confirmed the thinner state ring, the
+  visibly thicker metal bezel, and the embossed inset line around the
+  cover image. Loaded the home grid separately and confirmed grid cover
+  cards are visually unchanged (flush corners, no bezel frame) — the
+  redesign-class scoping held. No console errors.
+- Cosmetic sizing/decorative change per `CLAUDE.md` §5 — no `DECISIONS.md`
+  entry needed.
+
+## Session — 2026-07-17 — Issue detail page cover card: widened black gap before state ring, tried offset-shadow recipe for the embossed inset
+
+- Tez shared a screenshot (`Pictures/Screenshots/17-07-2026_092546_top-10-
+  digib00age.png`) of the issue page's cover card pointing out the black
+  gap between the cover art and the blue/green state ring was too thin
+  (a 1px inset ring from the previous session), and asked to try adapting
+  a generic drop-shadow recipe they had — `.image-with-shadow { box-shadow:
+  5px 5px 15px rgba(0,0,0,0.4); }` (horizontal/vertical offset + blur, not
+  a symmetric ring) — into this frame to see if it gave a better dropped/
+  embossed effect.
+- Widened the solid inset ring on `.issue-cover-link--redesign
+  .issue-cover-img` from 1px to 3px (`inset 0 0 0 3px rgba(0,0,0,0.75)`)
+  — this is what actually renders as the black gap between the cover art
+  and the state ring outside it, since the state ring sits on the parent
+  `.issue-cover-link--redesign` element with zero offset from the image's
+  edge. Adapted Tez's snippet as a second **inset** shadow layer (`inset
+  5px 5px 15px rgba(0,0,0,0.4)`) rather than a regular one — a
+  non-inset shadow on the image would extend outward past the parent's
+  own concentric box-shadow rings unpredictably, whereas inset keeps the
+  directional darkening contained within the cover itself, reading as a
+  subtle bottom-right-weighted shadow inside the recess.
+- **Verified live:** reloaded issue id 5, cropped/upscaled screenshots of
+  the top-left corner before and after — confirmed the black gap is now a
+  clearly visible solid band instead of a near-invisible hairline, and the
+  directional inset shadow adds a soft depth cue without any visible
+  artifacts or clipping. Full-page screenshot checked for regressions —
+  none. Change is still scoped to `.issue-cover-link--redesign
+  .issue-cover-img`, so grid/browse cards remain untouched.
+- Cosmetic/decorative, exploratory per Tez's request ("see if this gives
+  us the effect we want") — flagged as open to further iteration, not a
+  finished design decision. No `DECISIONS.md` entry.
+- **Follow-up same session:** Tez reported not seeing any difference.
+  Checked the server was serving the edited file (`curl .../style.css`)
+  and the computed style in a live tab (`getComputedStyle` via
+  `javascript_tool`) — both confirmed the 6px inset box-shadow was
+  correctly applied, so the gap was rendering, just too soft/blurred to
+  read clearly at normal (non-zoomed) viewing size, especially against a
+  dark cover. Switched from a blurred inset `box-shadow` ring to a real
+  `border` (`border-width: 6px; border-color: rgba(0,0,0,0.9);` on
+  `.issue-cover-link--redesign .issue-cover-img`, on top of the
+  pre-existing `border: 3px solid transparent` base rule already reserving
+  that space) — a border has no blur/anti-aliasing softness, so it reads
+  as a crisp, unmistakable dark gap even unzoomed. Kept the directional
+  inset shadow layer for depth. **Verified live:** hard-reloaded, screenshot
+  at normal size (no zoom) now clearly shows the gap, confirming the border
+  approach reads far better than box-shadow did at real viewing size.
+- **Follow-up same session:** Tez confirmed the border thickness now looks
+  right and asked to also add "the box-shadow effect" to the cover — i.e.
+  the literal `.image-with-shadow` recipe as a real (non-inset) offset
+  drop shadow, not the inset-adapted version from earlier. Changed
+  `.issue-cover-link--redesign .issue-cover-img`'s `box-shadow` from
+  `inset 5px 5px 15px rgba(0,0,0,0.4)` to the plain (non-inset) `5px 5px
+  15px rgba(0,0,0,0.4)` — since the image is a child of
+  `.issue-cover-link--redesign` (which paints its own ring stack first),
+  the child's outer shadow paints on top of the parent's rings where they
+  overlap, so it now visibly casts onto the metal bezel below/right of the
+  cover, reading as the cover being lifted/dropped rather than flush.
+  **Verified live:** hard-reloaded, confirmed via cropped screenshot that
+  the shadow spills onto the bezel in the bottom-right corner as intended,
+  with the border still providing the crisp gap on all sides.
+
+## Session — 2026-07-17 — Issue-page cover: "collector card" slab redesign
+
+- Tez supplied a finished design mockup (`D:\workshop\Claude\Claude Design\new
+  issue cover card\CollectorCard.dc.html` and its `-print` variant, both
+  Claude Design exports) and asked to integrate it into the issue page's
+  cover card, replacing the flat box-shadow-ring bezel from the earlier
+  sessions above with a proper graded-card "slab" look.
+- The old `.issue-cover-link--redesign` approach faked a bezel with stacked
+  solid-colour `box-shadow` rings — box-shadow can't fill with a gradient,
+  so it couldn't reproduce the mockup's metallic chrome bezel, its coloured
+  mat, or either layer's noise texture. Rebuilt as three real nested `div`s
+  instead (`.cc-frame-outer` → `.cc-frame-mat` → `.cc-frame-inner`, added in
+  `buildIssueDetail()`, `frontend/js/app.js`), each painting its own
+  gradient/noise/highlight background, wrapping the existing
+  `.issue-cover-img`. Values (gradients, noise SVG data-URIs, shadow
+  stacks) ported near-verbatim from the mockup, scaled down for the site's
+  200px cover column instead of the mockup's 408px preview frame.
+- **Kept, didn't drop, the existing state-colour signal:** the old ring
+  swapped blue (unread) / green (reading·read) via CSS class — same
+  grouping preserved on the new `.cc-frame-mat`'s gradient (`state-unread`
+  override; green is the default, matching the old rule's `state-part-read,
+  state-read` grouping). The mockup itself has no state concept — this
+  mapping was Code's call, not spelled out in the design, made to avoid
+  losing an already-shipped piece of information density.
+- **Favourite badge:** the mockup shows a heart badge overlaid on the art
+  itself (dark translucent circle, red ❤), not the site's existing
+  white-circle grid-card badge style. Added as `.cc-favorite-badge` inside
+  `.cc-frame-inner`, always present in the DOM and toggled via the
+  `hidden` attribute (not a CSS class) so `buildFavoriteToggle()` can sync
+  it live — passed the badge element into `buildFavoriteToggle(data,
+  badgeEl)` and added one line to its existing `sync()` closure. The
+  standalone "☆ Add to Favorites" / "★ Favorited" button below the cover
+  is unchanged and still the actual control; the badge is a read-only
+  mirror of its state, same relationship the grid card already has.
+- Hover: mockup's `translate(-3px,-9px)` "lift off the mat" effect on the
+  art itself, scaled down slightly to `translate(-3px,-8px)`, replacing the
+  old `scale(1.04)` zoom-on-hover.
+- Mobile (`≤640px`): old rule fixed `.issue-cover-img` to `120×180px`
+  (overriding its `aspect-ratio: 2/3`). Since 120:180 reduces to exactly
+  2:3, the fixed height was redundant — replaced with
+  `.issue-cover-link--redesign { width: 120px; flex-shrink: 0; }` so the
+  whole frame (not just the innermost image) shrinks together, and the img
+  keeps using its normal `aspect-ratio: 2/3` at every breakpoint instead of
+  a special-cased override.
+- **Verified live:** confirmed the running dev server (port 9424, already
+  owned by Tez's tray app) was serving the edited `style.css` via `curl`
+  before troubleshooting further — it was; the first screenshot round
+  showed no visible change only because of a stale browser cache, resolved
+  with a hard reload. After that: checked issue 28 (favourited, unread) —
+  metallic bezel, blue mat, dark inner frame, and the heart badge all
+  rendered correctly; checked issue 26 (read, not favourited) — green mat,
+  no badge, progress bar under the cover unaffected. Clicked "Add to
+  Favorites" on issue 26 live and confirmed the overlay badge appeared
+  immediately without a reload, then clicked it again to restore the
+  original (unfavourited) state — confirmed via `/api/issue/26` that
+  `favorites` was back to `false`. No console errors. Did not do a full
+  visual pass at the `≤640px` mobile breakpoint (window-resize in the
+  browser-automation tool didn't change the captured viewport) — the
+  mobile CSS change is a direct, dimensionally-equivalent substitution
+  (120:180 ⇔ 2:3) rather than new layout math, so risk is low, but this is
+  a real gap if Tez wants it double-checked by hand on a narrow window.
+- Cosmetic per `CLAUDE.md` §5 (colour/spacing/visual restyle of an existing
+  card, no navigation/IA change) — no `DECISIONS.md` entry, direct build.
+- **Follow-up same session:** Tez compared the live result against a
+  closer reference screenshot (`issue-card-design.PNG`) and flagged that
+  the gap between the image's black border and the state-colour mat line
+  should carry a soft blur, not sit flat — the mockup's dark inner frame
+  (`.cc-frame-inner`) had been ported as an opaque flat panel with no
+  colour bleed. Traced this back to the original `CollectorCard.dc.html`:
+  it has an inset `box-shadow: 0 0 10px rgba(80,220,120,.18) inset` glow
+  layered on the mat div itself, mostly hidden behind the opaque dark
+  frame nested inside it — porting the layer literally wouldn't have
+  reproduced the visible effect Tez pointed at. Added the glow directly to
+  `.cc-frame-inner` instead (`0 0 16px 3px rgba(63,184,119,.4) inset`,
+  state-coloured — green default, blue `state-unread` override matching
+  the mat's own colour split), so it reads as a soft light bleeding in
+  from the mat edge and fading toward the black border, before the crisp
+  mat line itself. **Verified live:** hard-reloaded issue 26 (green/read)
+  and issue 28 (blue/unread), cropped zoom screenshots on both confirm the
+  blurred colour transition now sits between the black border and the
+  mat line, matching the reference. No console errors.
+- **Follow-up same session:** Tez asked for three more adjustments: (1)
+  give the card more real estate, +25% — `.issue-layout`'s cover column
+  went `200px` → `250px`, and the `≤640px` mobile frame width went `120px`
+  → `150px` (same 25%) so both breakpoints scale together; (2) drop the
+  hover lift effect entirely — removed
+  `.issue-cover-link--redesign:hover .issue-cover-img`'s
+  translate+box-shadow rule and the now-unused `transition` off
+  `.issue-cover-img`, so the card is fully static, matching the rest of
+  the page's non-hover cards; (3) thicken the image border and the three
+  frame layers by 5px each — `.issue-cover-img` border `3px → 8px`,
+  `.cc-frame-outer` padding `6px → 11px`, `.cc-frame-mat` padding
+  `4px → 9px`, `.cc-frame-inner` padding `7px → 12px`. Border-radii left
+  unchanged — not asked for, and the thicker frame still reads cleanly
+  against them. **Verified live:** hard-reloaded issue 28, confirmed the
+  card is visibly larger with a heavier frame and the blur glow from the
+  prior follow-up still reads correctly at the new size; hovered over the
+  cover and confirmed no transform/shadow change fires. No console errors.
+- **Follow-up same session:** Tez felt the 8px black border from the prior
+  step was too heavy and asked to revert it, while still growing the
+  cover art and tightening the dark gap before the mat line. Reverted
+  `.issue-cover-img` border `8px → 3px`; shrank `.cc-frame-inner` padding
+  `12px → 5px` (this is literally the gap between the black border and the
+  mat — shrinking it both tightens the gap and hands the freed space to
+  the image); grew `.cc-frame-mat` padding `9px → 12px` so the
+  state-coloured ring itself reads thicker/more prominent now that it
+  sits closer to the art. Net effect on cover-art size: +9px of image per
+  side (border -5, inner gap -7, mat +3). **Verified live:** hard-reloaded
+  issue 28 (unread/blue) and issue 26 (read/green), zoom screenshots on
+  both confirm a thin black border, larger art, a tighter blurred gap,
+  and a visibly thicker mat ring. No console errors.
+
+## Session — 2026-07-17 — Issue-page cover: root cause of the recurring "Blur" struggle found — `::before` doesn't render on `<img>`
+
+- Tez reported still not getting the intended blur/glow effect right, despite
+  several rounds above, and supplied a targeted recipe from Design (`D:\workshop\
+  Claude\Claude Design\new issue cover card\issue-cover-glow-recipe.css`) —
+  the exact same box-shadow + blurred `::before` glow layer already present in
+  the original `CollectorCard.dc.html` mockup (line 56-59: the innermost element
+  wrapping the cover art, *inside* `cc-frame-inner`), isolated on its own so the
+  "split it exactly like this" structural gotcha would be unmissable.
+- Root cause: `.issue-cover-img` in `frontend/js/app.js`/`style.css` is the
+  actual `<img>` element itself, not a wrapping `<div>`. `::before`/`::after`
+  don't render on replaced elements (`<img>`, `<video>`) in browsers — so every
+  earlier attempt to add a blurred glow layer directly to `.issue-cover-img`
+  was silently a no-op, independent of any box-shadow/overflow-clipping
+  interaction. This was never diagnosed in the earlier sessions above because
+  the symptom (no visible blur) looked identical to a shadow/clip conflict.
+- Fix: added a new wrapper `<div class="cc-cover-glow">` in `buildIssueDetail()`
+  between `.cc-frame-inner` and the `<img class="issue-cover-img">`, matching
+  the recipe's two-element split — `.cc-cover-glow` carries the box-shadow
+  (moved off the img, values unchanged) and the blurred `::before` gradient
+  glow (`inset: -3px`, `filter: blur(5px)`, white-top-to-black-bottom); the img
+  keeps its border/border-radius/`overflow: hidden` (added) as the clipping
+  layer. Radii scaled down from the recipe's 14px/17px (mockup's 408px preview
+  frame) to 9px/12px to match the site's existing 6px `.issue-cover-img`
+  radius. **Did not reintroduce the recipe's hover-lift transform** — Tez
+  explicitly asked to remove all hover interaction on this card two sessions
+  ago (see "collector card slab redesign" above, follow-up 2), so only the
+  static shadow + glow were ported, not the hover state.
+- **Verified live:** hard-reloaded issue 28 (unread/blue, favourited) and issue
+  26 (read/green, not favourited). Confirmed via `getComputedStyle` in a live
+  tab that `.cc-cover-glow::before` actually has `filter: blur(5px)` and the
+  gradient background applied (not just present in the stylesheet — actually
+  computed on the rendered `::before`, ruling out the img-pseudo-element dead
+  end recurring). Temporarily scaled `.cc-frame-outer` 4× via `transform:
+  scale(4)` in a live tab (reverted after) to inspect the corner at high
+  resolution — confirms a visible soft light-to-dark blurred band between the
+  black inner-frame border and the cover art on both states, matching the
+  recipe. No console errors on either issue page.
+- Cosmetic/decorative fix to an existing card per `CLAUDE.md` §5 — no
+  `DECISIONS.md` entry needed.
+- **Follow-up same session:** Tez asked to push `.cc-frame-inner` (and
+  everything inside it — the glow wrapper, the image) a few more pixels away
+  from the `.cc-frame-mat` edge. Since `.cc-frame-inner` is a direct child of
+  `.cc-frame-mat` with no gap of its own, that spacing is entirely
+  `.cc-frame-mat`'s own `padding` — increased `12px → 16px`. Net effect: the
+  state-coloured mat ring reads thicker/more prominent, inner frame + art
+  shrink slightly to make room. **Verified live:** hard-reloaded issue 28
+  (unread/blue), zoomed on the corner and confirmed a visibly wider mat band
+  before the dark inner frame starts. No console errors.
+
+## Session — 2026-07-17 — Desktop reader: Scroll mode never reported or resumed reading progress
+
+- Tez reported the web UI's "Reading" left-nav filter showed nothing after
+  opening an issue (Wordless), reading partway, and closing it — traced the
+  whole chain (`frontend/js/app.js` nav filter → `GET /api/library`
+  `reading_count` → `ReadingProgress.status` → `POST /api/progress/{id}`)
+  and found the web frontend and backend both correct and consistent with
+  each other. The actual gap was upstream in the Flutter desktop reader
+  (`flutter_app/lib/widgets/comic_page_view.dart`): the reader's two modes,
+  Scroll (continuous vertical scroll) and Page (swipe), only wire
+  `onPageChanged` in Page mode via `PageView.builder`'s built-in callback.
+  Scroll mode's `_buildScrollMode()`/local-file equivalent used a plain
+  `ListView.builder` with no listener reporting page position at all — so
+  scrolling through an entire issue never called `onPageChanged`, never hit
+  `POST /api/progress/{id}`, and `ReadingProgress.status` never left
+  `"unread"`. Scroll is the default reading mode
+  (`settings_service.dart:39`), so this hit the out-of-the-box experience,
+  not an edge case — confirmed present since the reader was first built
+  (V1), not a recent regression.
+- **Fix (progress reporting):** added a `ScrollController` listener
+  (`_handleScrollProgress()`) to both `ComicPageViewState` (server-mode
+  reader) and `LocalComicPageViewState` (local/offline CBZ reader) that
+  estimates the current page from `scrollController.position.pixels /
+  maxScrollExtent` and calls the existing `widget.onPageChanged(page)`
+  callback only when the rounded page index changes — reusing the exact
+  same downstream path Page mode already had (`ReaderScreen._onPageChanged`
+  → `ApiService.updateProgress` / `SyncStore.recordProgress`), no backend or
+  `reader_screen.dart` changes needed. One correctness wrinkle: server-mode
+  scroll builds a pre-reversed `urls` list for manga
+  (`widget.pageUrls.reversed.toList()`), unlike `PageView`'s `reverse:` flag
+  (which only flips scroll *direction*, not item order), so the raw
+  scroll-fraction index has to be remapped (`count - 1 - localPage`) back to
+  the original index for `reversePages` issues — otherwise manga progress
+  would have saved backwards relative to what Page mode saves. The
+  local-file reader needed no such remap (its scroll-mode `itemBuilder`
+  already keeps position `i` as the logical page number, only flipping
+  which page's bytes get fetched per position).
+- **Tez confirmed this half working**, then asked to also fix the
+  resume-position half of the same `INBOX.md` line ("desktop reader not
+  reporting read state or resuming read state") in the same session.
+- **Fix (resume position):** Scroll mode also never jumped to
+  `widget.initialPage` on open (unlike `PageController(initialPage: ...)`,
+  a plain `ScrollController` has no "start at item N" concept) — reopening
+  an issue in Scroll mode always started at the top regardless of saved
+  progress. Added `_jumpToInitialPage()`, run once via
+  `WidgetsBinding.instance.addPostFrameCallback` after first layout (when
+  the Sliver's extrapolated `maxScrollExtent` becomes available), reusing
+  the same fraction-based estimate in reverse: `jumpTo((page / (count - 1))
+  * maxExtent)`. This is a pixel estimate, not exact — comic pages have
+  slightly different heights depending on aspect ratio, and network images
+  resolve their real height asynchronously after the initial layout
+  estimate — so "lands roughly where you left off" is the intended
+  behaviour, not frame-exact resume. Considered an exact approach (tracking
+  each item's real rendered extent, or pulling in a package like
+  `scrollable_positioned_list`) but the fraction estimate needed no new
+  dependency and comic pages are close enough to uniform aspect ratio that
+  the approximation is good enough in practice — see `DECISIONS.md`.
+- **Found and fixed alongside (same root cause, not separately requested):**
+  the bottom-bar page slider's `jumpToPage()` was silently a no-op in Scroll
+  mode for the server-mode reader, and would have thrown ("ScrollController
+  not attached to any scroll views") in Scroll mode for the local-file
+  reader, since it unconditionally called the unattached `PageController`.
+  Both now call a shared `_scrollToPage()` helper (factored out of
+  `_jumpToInitialPage()`, same math) when in Scroll mode.
+- Deliberately **not** fixed in this session, flagged to Tez and declined:
+  nothing further — Tez confirmed both halves working as tested below.
+- **Verified live** (Tez, manual): (1) opened Wordless in Scroll mode
+  (default), scrolled a few pages, closed the reader, confirmed the issue
+  now appears under the web UI's "Reading" left-nav filter — previously
+  empty. (2) Reopened the same issue in Scroll mode, confirmed it resumed
+  roughly where it left off instead of restarting at page 1. (3) Confirmed
+  Page mode unaffected (no regression). `flutter analyze` and `flutter
+  build windows --debug` both clean before Tez's manual pass.
+- **Docs:** `INBOX.md` line struck through and filed as BUG-024 in
+  `archive/bugs-fixed-archive.md` (found and fixed same session, never
+  spent time as a live `BUGS.md` open entry — same pattern as BUG-023).
+  `SPEC.md` Reader screen section corrected — it previously said "Progress
+  saved to server on every page turn," which implied this already worked
+  uniformly across both modes.
