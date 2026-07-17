@@ -3707,3 +3707,36 @@ and is superseded by this session's explicit ask.
   `DECISIONS.md` entry or build-queue item, same precedent as the List View
   session above. The one non-cosmetic piece (`genres` added to an API
   response) is a pure additive field, no existing behaviour changed.
+
+## Session — 2026-07-17 — Folder View subfolder cards: match redesigned cover-card border/image padding
+
+- Folder View's subfolder cards (`.folder-card`, `buildFolderCard()` in
+  `app.js`) still carried the pre-redesign chrome — a flat `1px solid
+  var(--border)` border, and (for subfolders with a representative cover,
+  which is effectively all non-empty ones per
+  `get_tab_folder_contents()`/`backend/routers/library.py`) the cover image
+  sitting flush against the card edge with no inset. Folder View's loose-file
+  issue cards (`buildFolderFileCard()`) already use `.cover-card.cover-card--
+  redesign`, so the two card types in the same grid looked visually
+  inconsistent.
+- `frontend/css/style.css`: `.folder-card` now uses the same resting glow
+  ring / hover lift+glow `box-shadow` treatment as `.cover-card--redesign`
+  (`border: none` + `box-shadow: 0 0 2px 1px rgba(255,255,255,0.5)` at rest,
+  brighter glow + lift on hover) instead of a flat border. `.folder-card.has-
+  cover` gets the same `5px 5px 7px` image-inset padding as the redesigned
+  card, with a new `.folder-card.has-cover .cover-img-wrap { border-radius:
+  var(--radius); }` rule so the now-inset cover keeps rounded corners.
+  Deliberately left unchanged: `.folder-card`'s background (`var(--surface)`,
+  stays theme-aware) and `.folder-card-info` (name/count block) — only the
+  outer chrome and image inset were asked to match, not the info layout.
+- Verified live via `claude-in-chrome` against the running dev server
+  (`localhost:9424`, Tez's tray-app instance): a Custom Tab's Folder View top
+  level (`2000 AD` decade subfolders) — resting glow ring and inset cover
+  image confirmed via zoomed screenshot, hover lift + brighter glow confirmed
+  on the first card. Drilled into a leaf folder to confirm the loose-file
+  `.cover-card--redesign` cards read as visually consistent with the
+  subfolder cards above them in the same grid. No console errors either
+  level.
+- Cosmetic under `CLAUDE.md` §5 (border/spacing/hover-effect change within an
+  existing layout, no nav/routing/IA impact) — no `DECISIONS.md` entry or
+  build-queue item.
