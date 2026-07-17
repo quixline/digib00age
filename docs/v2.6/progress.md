@@ -3477,3 +3477,11 @@ Three small UI fixes to the Issue Detail page (`/issue/{id}`), all in
   left as found. No console errors.
 - No spec doc describes the Issue Detail page's read-state visuals at this
   level of detail, so nothing else needed updating.
+- **Follow-up same session:** the progress bar was showing for the `read`
+  state too (a carry-over from the pre-existing `state-part-read ||
+  state-read` condition, not something introduced by the sync refactor
+  above). Tez asked for it to only appear while `reading`. Narrowed
+  `syncReadState()`'s condition to `coverState === 'state-part-read'`
+  only. Verified live: `read` state now shows no progress bar, `reading`
+  still shows it correctly at the real page fraction. Reset issue 4318
+  back to `unread`/`current_page: 0` afterward.

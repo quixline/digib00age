@@ -2424,7 +2424,7 @@ function buildIssueDetail(data) {
                       : 'state-unread';
     coverLink.className = `issue-cover-link issue-cover-link--redesign ${coverState}`;
 
-    if (coverState === 'state-part-read' || coverState === 'state-read') {
+    if (coverState === 'state-part-read') {
       const pct = data.page_count > 0
         ? Math.min(100, Math.round((data.current_page / data.page_count) * 100))
         : 0;
