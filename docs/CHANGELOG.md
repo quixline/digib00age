@@ -14,10 +14,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 2026-07-06).
 
 - **2026-07-17** — List View redesign: 2-column layout (collapses to one on
-  narrow windows), 50px column gap + 10px row top padding, genre tags are now
-  links to the fieldview genre filter, and read/unread text emphasis swapped
-  so unread issues stand out instead of read ones. Scoped entirely to List
-  View — Grid View unaffected. See `v2.6/progress.md`.
+  narrow windows), 50px column gap + 10px row top padding + 25px row gap,
+  genre tags are now links to the fieldview genre filter, read/unread text
+  emphasis swapped so unread issues stand out instead of read ones, and
+  unread summary text brightened to 90% white. Scoped entirely to List View
+  — Grid View unaffected. See `v2.6/progress.md`.
 - **2026-07-17** — Cover-card resting shadow split into a permanent white
   glow ring + hover-only drop shadow (was always both, read inconsistently
   between Home strips and the Grid), root-caused and fixed a hard clip line

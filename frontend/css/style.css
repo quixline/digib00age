@@ -769,7 +769,7 @@ select.filter-select:focus,
 .cover-grid.list-view {
   grid-template-columns: repeat(2, 1fr);
   column-gap: 50px;
-  row-gap: 6px;
+  row-gap: 25px;
 }
 /* Narrow window — not enough room for two readable columns, collapse to one.
    1100px is a starting point sized for the 115px thumbnail + genre/pub/summary
@@ -1040,6 +1040,9 @@ select.filter-select:focus,
 .cover-grid.list-view .cover-card:not(.state-read):not(.state-part-read) .cover-count,
 .cover-grid.list-view .cover-card:not(.state-read):not(.state-part-read) .cover-year {
   font-weight: 600;
+}
+.cover-grid.list-view .cover-card:not(.state-read):not(.state-part-read) .list-summary {
+  color: rgba(201 201 201);
 }
 
 .cover-img-wrap {

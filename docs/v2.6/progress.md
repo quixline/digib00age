@@ -3620,3 +3620,10 @@ multi-row grid just blends into the grid's own darkness).
 - Cosmetic under `CLAUDE.md` §5's structural/cosmetic threshold (colour,
   spacing, and link-ifying existing text within the same layout) — no
   `DECISIONS.md` entry or build-queue item.
+- **Follow-up, same session:** Tez asked for two further tweaks after
+  reviewing the above live. Both confirmed working: (1) row-gap on
+  `.cover-grid.list-view` bumped 6px → 25px (space below each row), column-gap
+  unchanged at 50px. (2) Unread rows' `.list-summary` text set to
+  `rgba(255, 255, 255, 0.9)` (`.cover-grid.list-view .cover-card:not(.state-read):not(.state-part-read)
+  .list-summary`), scoped the same way as the rest of the emphasis-swap
+  rules above — List View only, Grid View untouched.
