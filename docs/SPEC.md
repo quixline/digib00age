@@ -906,7 +906,7 @@ A **list/grid toggle** applies on all browse surfaces (Home, Series, Singles, Al
 
 **Grid view** (revised info under each cover): **Title, Year, and # of issues (series) / page count (singles)**. Publisher removed from grid.
 
-**List view** (NEW): one title per row — thumbnail left, then title, year, genres, publisher, first writer only (if multiple), and as much description as fits the row (truncated). List-view thumbnail sized to allow ~3 lines of text beside it.
+**List view**: one title per row — thumbnail left, then title, year, genres, publisher, first writer only (if multiple), and as much description as fits the row (truncated). List-view thumbnail sized to allow ~3 lines of text beside it. **Two-column layout as of 2026-07-17** (`docs/v2.6/progress.md` "List View redesign") — rows lay out in 2 columns by default (50px gap between columns, 10px top padding per row), collapsing to a single column below ~1100px window width. Each genre in the row is its own link into the fieldview genre filter (`?surface=fieldview&field=genre&value=...`), not plain text.
 
 **Card consistency (prerequisite):** web and Flutter cards currently differ (web has a border + larger gaps; app has neither). **Align card design across both before applying read-state colours**, so colour reads identically on each.
 
@@ -916,6 +916,7 @@ A **list/grid toggle** applies on all browse surfaces (Home, Series, Singles, Al
 - **Fully read** → green, 50% opacity
 - No red.
 - In **list view**, the state colour is carried as a border/background around the thumbnail.
+- **List-view text emphasis, as of 2026-07-17:** background tint colours above are shared with Grid View, but List View intentionally inverts *text* emphasis — read/part-read rows render with muted, lighter-weight text and unread rows render bold/high-contrast, so the eye is drawn to what's unread rather than what's already read. Grid View's text styling is unchanged (still brighter/bolder on read/part-read). See `docs/v2.6/progress.md` "List View redesign".
 
 **Progress indicator (part-read only):**
 - **Grid** → thin progress bar overlaid on the cover

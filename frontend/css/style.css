@@ -767,13 +767,21 @@ select.filter-select:focus,
 
 /* List view override — spec 20.5 */
 .cover-grid.list-view {
-  grid-template-columns: 1fr;
-  gap: 6px;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 50px;
+  row-gap: 6px;
+}
+/* Narrow window — not enough room for two readable columns, collapse to one.
+   1100px is a starting point sized for the 115px thumbnail + genre/pub/summary
+   text; hand-tune if it collapses too early/late in practice. */
+@media (max-width: 1100px) {
+  .cover-grid.list-view { grid-template-columns: 1fr; }
 }
 .cover-grid.list-view .cover-card {
   flex-direction: row;
   align-items: stretch;
   height: auto;
+  padding-top: 10px;
 }
 .cover-grid.list-view .cover-img-wrap {
   width: 115px;
@@ -814,6 +822,17 @@ select.filter-select:focus,
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* Per-genre links inside .list-genres — deliberately not the .genre-tag pill
+   style (style.css ~1600), which is too heavy for a compact single-line row.
+   Inherits the row's font-size/color, just adds an underline-on-hover cue. */
+.list-genre-tag {
+  color: inherit;
+  text-decoration: none;
+}
+.list-genre-tag:hover {
+  text-decoration: underline;
+  color: var(--accent);
 }
 .list-pub-writer {
   font-size: 12px;
@@ -992,6 +1011,35 @@ select.filter-select:focus,
 .cover-card.state-read      .list-pub-writer,
 .cover-card.state-read      .list-summary {
   color: rgba(255, 255, 255, 0.82);
+}
+
+/* List View only — invert the emphasis above so unread rows stand out and
+   read/part-read rows go quiet. Grid View keeps the bright/bold read styling
+   above untouched; these rules only apply once .list-view is on the grid. */
+.cover-grid.list-view .cover-card.state-read      .cover-title,
+.cover-grid.list-view .cover-card.state-part-read .cover-title {
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 500;
+}
+.cover-grid.list-view .cover-card.state-read      .cover-count,
+.cover-grid.list-view .cover-card.state-read      .cover-year,
+.cover-grid.list-view .cover-card.state-part-read .cover-count,
+.cover-grid.list-view .cover-card.state-part-read .cover-year {
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 400;
+  text-shadow: none;
+}
+.cover-grid.list-view .cover-card.state-read      .list-genres,
+.cover-grid.list-view .cover-card.state-read      .list-pub-writer,
+.cover-grid.list-view .cover-card.state-read      .list-summary,
+.cover-grid.list-view .cover-card.state-part-read .list-genres,
+.cover-grid.list-view .cover-card.state-part-read .list-pub-writer,
+.cover-grid.list-view .cover-card.state-part-read .list-summary {
+  color: rgba(255, 255, 255, 0.5);
+}
+.cover-grid.list-view .cover-card:not(.state-read):not(.state-part-read) .cover-count,
+.cover-grid.list-view .cover-card:not(.state-read):not(.state-part-read) .cover-year {
+  font-weight: 600;
 }
 
 .cover-img-wrap {

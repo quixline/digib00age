@@ -3557,3 +3557,66 @@ multi-row grid just blends into the grid's own darkness).
 - Purely cosmetic (shadow timing/intensity, button text size) — no
   `DECISIONS.md` entry or build-queue item per `CLAUDE.md` §5's
   structural/cosmetic threshold.
+
+## Session — 2026-07-17 — List View redesign
+
+- Scoped explicitly to the library List View (`#coverGrid.list-view`) only,
+  since it shares `buildCoverCard()` and most CSS classes with Grid View —
+  every change below was written to require `.list-view` (or an equivalent
+  guard) so Grid View's appearance and behaviour stay untouched.
+- **Two-column layout:** `.cover-grid.list-view` (`style.css` ~769) changed
+  from a fixed single column to `grid-template-columns: repeat(2, 1fr)` with
+  `column-gap: 50px`, plus a `@media (max-width: 1100px)` fallback back to
+  one column on narrow windows. 1100px is a first-pass breakpoint, not a
+  measured value — easy to hand-tune once lived with.
+- **Row/column spacing:** added `padding-top: 10px` to `.cover-grid.list-view
+  .cover-card` for breathing room at the top of each row; `row-gap` stayed
+  at the existing 6px, only `column-gap` changed.
+- **Genre tags → links:** `buildCoverCard()`'s list-genres block
+  (`app.js` ~1621) now renders each genre as its own `<a class="list-genre-tag">`
+  linking to `/?surface=fieldview&field=genre&value=...` (same fieldview
+  pattern the Series/Issue Detail pages already use), joined by ' · ' text
+  nodes, instead of one plain joined string. New `.list-genre-tag` CSS is
+  deliberately its own lightweight class, not a reuse of the existing
+  `.genre-tag` pill style (too heavy for a compact single-line row).
+  Because the row itself (`.cover-card`) is an `<a>`, each genre link calls
+  `e.stopPropagation()` on click (same guard pattern as `buildSelectDot`) so
+  clicking a genre navigates to the filter instead of also triggering the
+  row's own series/issue navigation.
+- **Read/unread emphasis swap (List View only):** the pre-existing
+  `.state-read`/`.state-part-read` text-colour rules (shared with Grid View,
+  `style.css` ~992) made read issues appear bolder/brighter than unread ones.
+  Added new `.cover-grid.list-view .cover-card.state-read ...` /
+  `.state-part-read ...` overrides (higher specificity via the extra
+  `.cover-grid.list-view` prefix, so they only apply in List View) that
+  invert this — read/part-read rows now render muted (~0.55 opacity, lighter
+  weight, no text-shadow), unread rows keep/gain the stronger look. Grid
+  View's cards are unaffected — confirmed live that a `state-read` card's
+  title colour/weight in Grid View is unchanged from before this session
+  (Grid View's `.cover-card--redesign` rule for title colour already wins
+  over the shared read-state rule regardless of this session's changes, a
+  pre-existing quirk, not something introduced here).
+- Grid View's page-level "cloud" background (`#pageBg`) needed no change —
+  confirmed it's already page-scoped (sits behind `#browseView` regardless
+  of grid/list mode) and was already visible behind List View before this
+  session.
+- **Verified live** via `claude-in-chrome` against the running dev server
+  (`localhost:9424`, Tez's tray-app instance, port already owned so no
+  second server started): confirmed the 2-column layout, 50px column gap,
+  and row padding render correctly on the Browse/All surface; clicked a
+  genre tag and confirmed it navigates to the fieldview genre filter (not
+  the card's own series/issue page); compared computed styles for a
+  `state-read` card's title/count/year between the Read and Unread filter
+  tabs in List View (read: `rgba(255,255,255,0.55)`/weight 500, unread:
+  `rgb(243,236,224)`/weight 700 — confirms the swap); re-checked the same
+  card in Grid View (unchanged `rgb(243,236,224)`/weight 700 regardless of
+  read state, matching pre-session behaviour). No console errors. Did not
+  get a reliable real-window resize to visually confirm the 1100px
+  collapse-to-one-column breakpoint — `resize_window` didn't change the
+  automation viewport in this environment — but the media query itself is
+  the same well-established technique already used elsewhere in this file
+  (`--card-min` breakpoints at ~1766); worth a quick manual resize check by
+  Tez to confirm the exact px feels right in practice.
+- Cosmetic under `CLAUDE.md` §5's structural/cosmetic threshold (colour,
+  spacing, and link-ifying existing text within the same layout) — no
+  `DECISIONS.md` entry or build-queue item.

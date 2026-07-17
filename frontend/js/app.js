@@ -1621,7 +1621,19 @@ function buildCoverCard(s) {
   // List-view extras — hidden in grid mode via CSS (spec 20.5)
   const listMeta = el('div', 'list-meta');
   if (s.genres && s.genres.length) {
-    listMeta.appendChild(el('div', 'list-genres', s.genres.join(' · ')));
+    // Each genre is its own link into the fieldview genre filter (same
+    // pattern as the Series/Issue Detail genre tags). The card itself is an
+    // <a>, so guard clicks with stopPropagation like buildSelectDot does —
+    // otherwise the row's own navigation would also fire.
+    const genreRow = el('div', 'list-genres');
+    s.genres.forEach((g, i) => {
+      if (i > 0) genreRow.appendChild(document.createTextNode(' · '));
+      const tag = el('a', 'list-genre-tag', g);
+      tag.href = `/?surface=fieldview&field=genre&value=${encodeURIComponent(g)}`;
+      tag.addEventListener('click', (e) => e.stopPropagation());
+      genreRow.appendChild(tag);
+    });
+    listMeta.appendChild(genreRow);
   }
   const metaParts = [s.publisher, s.writers && s.writers[0]].filter(Boolean);
   if (metaParts.length) listMeta.appendChild(el('div', 'list-pub-writer', metaParts.join(' · ')));
