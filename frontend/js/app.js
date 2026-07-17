@@ -2441,11 +2441,15 @@ function buildIssueDetail(data) {
   actions.appendChild(buildStatusToggle(data, syncReadState));
   actions.appendChild(buildFavoriteToggle(data, favoriteBadge));
   actions.appendChild(buildRatingControl(data));
+
+  const secondaryRow = el('div', 'issue-actions-row');
   const editXmlBtn = el('button', 'btn-edit-xml', 'Edit XML');
   editXmlBtn.type = 'button';
   editXmlBtn.onclick = () => openEditorModal(data.id, () => initIssue());
-  actions.appendChild(editXmlBtn);
-  actions.appendChild(buildFlagReviewToggle(data));
+  secondaryRow.appendChild(editXmlBtn);
+  secondaryRow.appendChild(buildFlagReviewToggle(data));
+  actions.appendChild(secondaryRow);
+
   coverCol.appendChild(actions);
 
   // Right: metadata
@@ -2625,7 +2629,7 @@ function buildFlagReviewToggle(data) {
   const btn = el('button', 'btn-flag-review-toggle');
 
   function sync() {
-    btn.textContent = data.flagged_for_review ? '🏷 Flagged for Review' : '🏷 Flag for Review';
+    btn.textContent = data.flagged_for_review ? 'Flagged for Review' : 'Flag for Review';
     btn.classList.toggle('is-flagged-review', !!data.flagged_for_review);
   }
   sync();

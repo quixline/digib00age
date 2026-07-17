@@ -3485,3 +3485,13 @@ Three small UI fixes to the Issue Detail page (`/issue/{id}`), all in
   only. Verified live: `read` state now shows no progress bar, `reading`
   still shows it correctly at the real page fraction. Reset issue 4318
   back to `unread`/`current_page: 0` afterward.
+- **Second follow-up same session:** Tez asked for Edit XML and Flag for
+  Review to share a row at equal width, and for the 🏷 emoji before Flag
+  for Review's label to go. Wrapped both buttons in a new
+  `.issue-actions-row` (`display:flex; gap:8px`) and gave both
+  `.btn-edit-xml`/`.btn-flag-review-toggle` `flex:1; min-width:0` so they
+  split the row evenly; dropped the `🏷 ` prefix from
+  `buildFlagReviewToggle()`'s `sync()` text (both the flagged and
+  unflagged label). Verified live — buttons now sit side by side at equal
+  width, no icon, "Flag for Review" wraps to two lines at the narrower
+  width which reads fine. No console errors.

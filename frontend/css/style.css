@@ -2062,8 +2062,15 @@ select.filter-select:focus,
 }
 .rating-control .rating-star:hover { transform: scale(1.15); }
 .rating-control .rating-star.is-filled { color: var(--favourite); }
+/* Edit XML + Flag for Review share a row, equal width (2026-07-17). */
+.issue-actions-row {
+  display: flex;
+  gap: 8px;
+}
 .btn-edit-xml {
   display: block;
+  flex: 1;
+  min-width: 0;
   text-align: center;
   background: var(--surface-2);
   color: var(--text-2);
@@ -2073,12 +2080,13 @@ select.filter-select:focus,
   border-radius: 20px;
   border: 1px solid var(--border);
   transition: all 0.15s;
-  width: 100%;
 }
 .btn-edit-xml:hover { border-color: var(--accent); color: var(--text); }
 
 .btn-flag-review-toggle {
   display: block;
+  flex: 1;
+  min-width: 0;
   text-align: center;
   background: var(--surface-2);
   color: var(--text-2);
