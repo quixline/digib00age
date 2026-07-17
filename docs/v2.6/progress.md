@@ -2979,3 +2979,14 @@ treatment across every grid-format card was feasible. Two research passes
 - **Verified live:** selected a card, confirmed the Done pill now renders
   white text on the blue background.
 - Cosmetic colour-only change per `CLAUDE.md` §5 — no `DECISIONS.md` entry.
+
+## Session — 2026-07-17 — Selection toolbar: removed the redundant Cancel button
+
+- Tez pointed out Cancel and Deselect did the exact same thing (both just
+  call `exitSelectionMode()`) — no reason to keep both. Removed the Cancel
+  button from `ensureSelectionToolbar()` (`frontend/js/app.js`); Deselect
+  and Done remain.
+- **Verified live:** selected a card, confirmed the toolbar's end group now
+  shows only Deselect and Done. No console errors.
+- Cosmetic/UI-simplification change per `CLAUDE.md` §5 — no `DECISIONS.md`
+  entry needed.

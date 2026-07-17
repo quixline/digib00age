@@ -271,15 +271,11 @@ function ensureSelectionToolbar() {
   deselectBtn.id     = 'selDeselect';
   deselectBtn.type   = 'button';
   deselectBtn.addEventListener('click', () => exitSelectionMode());
-  const cancelBtn  = el('button', 'selection-cancel-btn', 'Cancel');
-  cancelBtn.id     = 'selCancel';
-  cancelBtn.type   = 'button';
-  cancelBtn.addEventListener('click', () => exitSelectionMode());
   const doneBtn    = el('button', 'selection-done-btn', 'Done');
   doneBtn.id       = 'selDone';
   doneBtn.type     = 'button';
   doneBtn.addEventListener('click', () => exitSelectionMode());
-  endWrap.append(deselectBtn, cancelBtn, doneBtn);
+  endWrap.append(deselectBtn, doneBtn);
   bar.appendChild(endWrap);
 
   document.body.appendChild(bar);
