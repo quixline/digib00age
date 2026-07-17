@@ -3740,3 +3740,36 @@ and is superseded by this session's explicit ask.
 - Cosmetic under `CLAUDE.md` §5 (border/spacing/hover-effect change within an
   existing layout, no nav/routing/IA impact) — no `DECISIONS.md` entry or
   build-queue item.
+
+## Session — 2026-07-17 — Folder View: removed in-page "← Back" / "Mark all read" row
+
+- Same session, follow-up ask: Tez wanted the `folder-view-nav` row (the
+  "← Back" link + "Mark all read" button sitting above the Folder View grid)
+  removed outright so the card grid pushes up flush under the menu bar,
+  matching Browse's (`#coverGrid`) layout.
+- This one *is* navigation-touching, so treated as structural per `CLAUDE.md`
+  §5 rather than waved through as cosmetic — see the new `DECISIONS.md` entry
+  for the "is anything actually lost" check done before removing it (short
+  version: no — `folderBackBtn` duplicated the browser's own back button,
+  `folderMarkAllBtn` duplicated the existing multi-select toolbar's "Mark
+  Read" action).
+- `frontend/index.html`: `<nav class="back-nav folder-view-nav">` and its two
+  buttons removed from `#folderView`; `#folderSearchLabel` (still needed —
+  shows "Search results for…" during folder search) kept as a stand-alone
+  element.
+- `frontend/js/app.js`: removed the `folderBackBtn` history-back wiring and
+  the `folderMarkAllBtn` show/hide/`onclick` lines from `renderFolderView()`
+  and `startFolderViewSearch()`; deleted the now-unused `markFolderViewRead()`
+  function entirely. Backend `/library/tab/{id}/folder/mark-read` endpoint
+  left in place (not asked to remove it).
+- `frontend/css/style.css`: dropped the dead `.folder-view-nav` rule;
+  `.folder-search-label` now carries its own `padding: 14px 0 12px` so it
+  still reads clearly when a search is active, and (via the `hidden`
+  attribute already toggled in JS) takes zero space otherwise.
+- Verified live via `claude-in-chrome` against the running dev server: grid
+  now sits flush under the menu bar on a Folder View top level, matching
+  Browse's spacing. Confirmed folder search still shows the "Search results
+  for…" label with correct spacing and clears back to the normal grid.
+  Drilled into a leaf folder and used the browser's native back navigation to
+  confirm it still lands back on the parent folder listing with no in-page
+  Back button. No console errors at any step.

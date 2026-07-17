@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-17** — Folder View: removed the in-page "← Back" / "Mark all
+  read" row above the card grid (duplicated the browser's back button and
+  the multi-select toolbar's mark-read action) so the grid sits flush under
+  the menu bar, matching Browse. See `v2.6/progress.md`, `DECISIONS.md`.
 - **2026-07-17** — Folder View subfolder cards: border swapped from flat
   1px to the redesigned cover-card's glow-ring/hover-lift treatment, cover
   image now gets the same 5px inset padding as `.cover-card--redesign`. See

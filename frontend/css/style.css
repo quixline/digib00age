@@ -1420,9 +1420,18 @@ select.filter-select:focus,
 }
 
 
-/* ── Folder View (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9) ── */
-.folder-view-nav { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: var(--space-3); }
-.folder-search-label { font-size: 14px; color: var(--text-2); }
+/* ── Folder View (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9) ──
+   No back-nav/mark-all-read row above the grid (2026-07-17 — removed so the
+   grid starts flush under the menu bar, matching Browse's cover-grid); the
+   search label is the only thing that still needs to sit above the grid,
+   and only when folder search is active (toggled via the `hidden` attribute,
+   so it takes no space otherwise). */
+.folder-search-label {
+  display: block;
+  font-size: 14px;
+  color: var(--text-2);
+  padding: 14px 0 12px;
+}
 
 .folder-card {
   background: var(--surface);

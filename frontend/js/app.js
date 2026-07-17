@@ -1818,7 +1818,6 @@ function goToFolderPath(tabId, newPath) {
 async function renderFolderView(tabId, path) {
   const grid = document.getElementById('folderGrid');
   grid.innerHTML = '<div class="loading-state">Loading…</div>';
-  document.getElementById('folderMarkAllBtn').hidden = false;
   document.getElementById('folderSearchLabel').hidden = true;
 
   // Secondary filter dropdowns (genre/format/decade/year/rating/B&W) are
@@ -1831,16 +1830,6 @@ async function renderFolderView(tabId, path) {
     await populateFilterDropdowns();
     filtersReady = true;
   }
-
-  // Real browser history, not a guessed destination — same pattern as the
-  // Series/Issue "← Back" buttons (BUG-014 fix).
-  const folderBackBtn = document.getElementById('folderBackBtn');
-  folderBackBtn.onclick = (e) => {
-    if (window.history.length > 1) {
-      e.preventDefault();
-      window.history.back();
-    }
-  };
 
   const cacheKey = `${tabId}:${path}`;
   let data;
@@ -1905,8 +1894,6 @@ async function renderFolderView(tabId, path) {
   if (!folders.length && !files.length) {
     grid.appendChild(el('div', 'empty-state', 'This folder is empty.'));
   }
-
-  document.getElementById('folderMarkAllBtn').onclick = () => markFolderViewRead(tabId, path);
 }
 
 function buildFolderCard(tabId, currentPath, folder) {
@@ -1992,20 +1979,6 @@ function buildFolderFileCard(issue) {
   return card;
 }
 
-async function markFolderViewRead(tabId, path) {
-  const btn = document.getElementById('folderMarkAllBtn');
-  btn.disabled    = true;
-  btn.textContent = 'Marking…';
-  try {
-    await fetch(`${API}/library/tab/${tabId}/folder/mark-read?path=${encodeURIComponent(path)}`, { method: 'POST' });
-    delete folderViewCache[`${tabId}:${path}`];
-    await renderFolderView(tabId, path);
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = 'Mark all read';
-  }
-}
-
 // ── Search mode — swaps the folder grid for flat, depth-agnostic results ──────
 
 async function startFolderViewSearch(tabId, q) {
@@ -2013,7 +1986,6 @@ async function startFolderViewSearch(tabId, q) {
     folderViewReturnPath = viewTabPath;
     folderViewSearchActive = true;
   }
-  document.getElementById('folderMarkAllBtn').hidden = true;
   const searchLabel = document.getElementById('folderSearchLabel');
   searchLabel.textContent = `Search results for "${q}"`;
   searchLabel.hidden = false;

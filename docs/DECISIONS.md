@@ -4,6 +4,32 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Folder View's in-page "← Back" / "Mark all read" row removed, not just restyled
+
+**Decided:** 2026-07-17, Folder View card-chrome session (same session as the
+subfolder-card border/padding match above).
+
+**Why:** Tez asked to remove both buttons so the grid pushes up flush under
+the menu bar, matching Browse's cover-grid. Checked before removing rather
+than just deleting on request: `folderBackBtn`'s handler (`app.js`,
+`renderFolderView()`) was literally `window.history.back()` — a same-effect
+duplicate of the browser's own back button/gesture, not a "go up one folder
+level" action, so nothing is lost by dropping it (confirmed live: browser
+back from a leaf folder correctly lands back on its parent's listing).
+`folderMarkAllBtn` called a folder-scoped bulk mark-read endpoint; the
+already-existing multi-select toolbar (`ensureSelectionToolbar()`, `app.js`
+~line 230, "Mark Read"/"Mark Unread") covers the same job for whatever's
+currently selected in the grid, so the dedicated button was redundant rather
+than a genuine capability loss. Backend endpoint
+(`/library/tab/{id}/folder/mark-read`) deliberately left in place — removing
+it wasn't asked for and it's harmless dead surface, not a maintenance risk.
+
+**Where:** `frontend/index.html` (`#folderView` markup), `frontend/js/app.js`
+(`renderFolderView()`, `startFolderViewSearch()`; the now-unused
+`markFolderViewRead()` function deleted outright), `frontend/css/style.css`
+(`.folder-view-nav` rule removed, `.folder-search-label` given its own
+stand-alone spacing since it no longer sits inside that nav row).
+
 ### Cover-image cache invalidation: version-stamped URL, not per-request revalidation
 
 **Decided:** 2026-07-16, BUG-023 fix session.
