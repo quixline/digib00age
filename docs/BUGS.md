@@ -76,40 +76,6 @@ opt-in or unconditional, and whether a `VACUUM` runs afterwards.
 
 ---
 
-### BUG-025 — Series move updates the files on disk but not the DB rows pointing at them
-
-**Found:** 2026-07-18, performance re-baseline session (pre-flight).
-
-**Where:** Series move tool (`logs/series_move_log.md` writer); `issues.file_path`,
-`custom_tabs.folder_path`.
-
-**What happens:** Moving a series relocates the archives and logs the move as
-`[OK]`, but never updates the DB rows referencing the old location. After the
-2000 AD move on 2026-07-18 (12:49–13:21), all **2,484** `2000 AD` rows still
-had `file_path` under `L:\Comic Archives\20000AD\2000AD Progs - 1977-2026\`,
-a directory that no longer existed. A random 400-issue sample found **177 dead
-paths (44%), all 2000 AD** — meaning every 2000 AD issue was unopenable until a
-rescan. The Folder View custom tab (`custom_tabs.folder_path`) was left
-pointing at the same dead path.
-
-**Why a rescan doesn't quietly fix it:** `scanner.scan_single_file()` identifies
-an existing row solely by exact path match
-(`filter(Issue.file_path == file_path)`) — there's no hash, filename fallback,
-or move detection anywhere in `scanner.py`. Files at the new path take the
-INSERT branch as brand-new issues, while `scan_library()`'s post-walk sweep
-flags the old rows `missing=True` (it only *deletes* rows under `SCAN_EXCLUDE`
-folders). A plain rescan after a move therefore yields duplicate issues plus a
-matching set of dead rows, with reading progress stranded on the dead ones —
-which is what forced the full wipe-and-rebuild in this session.
-
-**Impact — high:** silent, total breakage of a moved series until someone
-notices and rebuilds. Scales with how much gets moved at once.
-
-**Related:** BUG-013 (scanner change-detection blind spot — same
-identity-by-path-and-mtime assumption).
-
----
-
 ### BUG-016 — Restore Database: restore completes but does not revert DB to backup state
 
 **Found:** 2026-06-28, manual test pass (Items 10–13).

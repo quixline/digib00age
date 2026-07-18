@@ -4,6 +4,36 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### BUG-025: kept the DB-sync fix even after re-diagnosing it as not-a-bug
+
+**Decided:** 2026-07-18, BUG-025 follow-up session.
+
+**Why:** BUG-025 was filed after the Move Series/Singles Folders tool moved
+already-in-library content (the 2000 AD reorg) without updating `Issue.file_path`
+/`CustomTab.folder_path`, leaving thousands of dead-path rows. A fix
+(`sync_moved_paths_to_db()` in `backend/library_move.py`) was built and
+scratch-verified before Tez pointed out the tool's actual intended workflow is
+Stage 3 Processing → Move → manual Scan — and `scan_exclude: ["Processing"]`
+means Processing content is never scanned before the move, so no DB row exists
+yet to desync in that normal flow. The 2000 AD case was the tool being pointed
+at content already inside the library (already scanned) — an atypical use, not
+the designed one. See `docs/archive/bugs-fixed-archive.md` BUG-025 for the full
+resolution writeup.
+
+**What changed:** BUG-025 was closed as "not a bug in the intended workflow"
+rather than left open or logged as a genuine fix. The sync code itself was
+kept rather than reverted, since it's a no-op on the normal path (nothing
+matches an unscanned source) and correctly protects the one case that actually
+broke (pointing the tool at already-in-library content) — reverting working,
+tested, harmless code just because the bug that prompted it turned out to be
+narrower than first thought would have been pure churn.
+
+**Also clarified:** BUG-025 and BUG-013 were being conflated. BUG-025 is
+specifically the Move tool's own DB bookkeeping when *it* relocates something.
+BUG-013 (still open) is the Scanner's inability to recognize a folder that
+moved/renamed *outside* the tool (e.g. a manual Explorer rename) while already
+in the library — a different bug, in `scanner.py`, not touched by this session.
+
 ### BUG-028 fix: centralize junk-entry filtering, don't reconcile the 5 inconsistent image-extension whitelists
 
 **Decided:** 2026-07-18, BUG-028 fix session.

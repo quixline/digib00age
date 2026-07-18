@@ -753,16 +753,56 @@ function initProcessingFolderTool() {
   loadProcessingFolderConfig();
 }
 
-// ── Sort by Filename (§11.5) ─────────────────────────────────────────────
+// ── Folder Processing card: Sort by Filename (§11.5), Move Series Folders /
+// Move Singles Folders (§11.7) ──────────────────────────────────────────
+// One shared card/picker/Run button; the selected <option> in fsScriptSelect
+// decides which endpoint Run/poll talk to. §11.5.6 anticipated this: "a
+// second script is expected eventually, at which point this becomes a real
+// dropdown with minimal rework."
 
 let fsPollTimer = null;
 
-function openFsBrowse() {
-  openFilePicker({
+const FS_SCRIPTS = {
+  filename_sort: {
+    label: 'Sort by Filename',
     browseUrl: `${API}/admin/filename-sort/browse`,
     drivesUrl: `${API}/admin/filename-sort/drives`,
+    pickerTitle: 'Choose Folder to Sort',
+    runPath: '/filename-sort/run',
+    runBody: (folder) => ({ folder }),
+    statusPath: () => '/filename-sort/status',
+  },
+  move_series: {
+    label: 'Move Series Folders',
+    browseUrl: `${API}/admin/library-move/browse`,
+    drivesUrl: `${API}/admin/library-move/drives`,
+    pickerTitle: 'Choose Folder Containing Series Folders to Move',
+    runPath: '/library-move/run',
+    runBody: (folder) => ({ folder, group: 'series' }),
+    statusPath: () => '/library-move/status?group=series',
+  },
+  move_singles: {
+    label: 'Move Singles Folders',
+    browseUrl: `${API}/admin/library-move/browse`,
+    drivesUrl: `${API}/admin/library-move/drives`,
+    pickerTitle: 'Choose Folder Containing Singles Folders to Move',
+    runPath: '/library-move/run',
+    runBody: (folder) => ({ folder, group: 'singles' }),
+    statusPath: () => '/library-move/status?group=singles',
+  },
+};
+
+function currentFsScript() {
+  return FS_SCRIPTS[document.getElementById('fsScriptSelect').value];
+}
+
+function openFsBrowse() {
+  const script = currentFsScript();
+  openFilePicker({
+    browseUrl: script.browseUrl,
+    drivesUrl: script.drivesUrl,
     mode: 'folder',
-    title: 'Choose Folder to Sort',
+    title: script.pickerTitle,
     onConfirm: ([folderPath]) => {
       document.getElementById('fsFolderInput').value = folderPath;
     },
@@ -791,33 +831,36 @@ function renderFsResult(headline, isError, detailLines) {
 }
 
 async function runFilenameSort() {
+  const script = currentFsScript();
   const folder = document.getElementById('fsFolderInput').value;
   if (!folder) {
     showToast('Choose a folder first', true);
     return;
   }
-  const res = await postJSON('/filename-sort/run', { folder });
+  const res = await postJSON(script.runPath, script.runBody(folder));
   if (res.started === false || res.detail) {
     showToast(res.detail || res.message || 'Could not start run', true);
     return;
   }
   document.getElementById('fsRunBtn').disabled = true;
+  document.getElementById('fsScriptSelect').disabled = true;
   document.getElementById('fsProgressWrap').hidden = false;
   document.getElementById('fsResultLine').hidden = true;
   document.getElementById('fsResultDetail').hidden = true;
-  pollFsStatus();
+  pollFsStatus(script);
 }
 
-async function pollFsStatus() {
-  const status = await (await fetch(`${API}/admin/filename-sort/status`)).json();
+async function pollFsStatus(script) {
+  const status = await (await fetch(`${API}/admin${script.statusPath()}`)).json();
 
   if (status.running) {
-    fsPollTimer = setTimeout(pollFsStatus, 500);
+    fsPollTimer = setTimeout(() => pollFsStatus(script), 500);
     return;
   }
 
   clearTimeout(fsPollTimer);
   document.getElementById('fsRunBtn').disabled = false;
+  document.getElementById('fsScriptSelect').disabled = false;
   document.getElementById('fsProgressWrap').hidden = true;
 
   if (status.error) {
@@ -826,18 +869,45 @@ async function pollFsStatus() {
   }
   if (!status.result) return; // idle poll, nothing ran
 
-  const { moved, total, folders, files } = status.result;
-  const failed = files.filter(f => !f.success);
+  if ('files' in status.result) {
+    // Sort by Filename result shape
+    const { moved, total, folders, files } = status.result;
+    const failed = files.filter(f => !f.success);
+
+    if (!total) {
+      renderFsResult('No CBZ/CBR files found in this folder.', false, []);
+    } else if (!failed.length) {
+      renderFsResult(`✅ Sorted ${moved} file${moved === 1 ? '' : 's'} into ${folders} folder${folders === 1 ? '' : 's'}`, false, []);
+    } else {
+      renderFsResult(
+        `⚠️ Sorted ${moved} of ${total} file${total === 1 ? '' : 's'} into ${folders} folder${folders === 1 ? '' : 's'} — ${failed.length} failed`,
+        true,
+        failed.map(f => `${f.filename}: ${f.error}`)
+      );
+    }
+    return;
+  }
+
+  // Move Series/Singles Folders result shape
+  const { moved, total, folders, near_misses } = status.result;
+  const failed = folders.filter(f => !f.success);
+  const detailLines = [];
+  for (const f of failed) {
+    detailLines.push(`${f.folder_name}: ${f.error}`);
+  }
+  for (const nm of (near_misses || [])) {
+    detailLines.push(`⚠ '${nm.folder_name}' looks similar to an existing folder: '${nm.existing_match}' — check before relying on this move`);
+  }
 
   if (!total) {
-    renderFsResult('No CBZ/CBR files found in this folder.', false, []);
+    renderFsResult('No folders found to move.', false, detailLines);
   } else if (!failed.length) {
-    renderFsResult(`✅ Sorted ${moved} file${moved === 1 ? '' : 's'} into ${folders} folder${folders === 1 ? '' : 's'}`, false, []);
+    renderFsResult(`✅ Moved ${moved} of ${total} folder${total === 1 ? '' : 's'}`, false, detailLines);
   } else {
     renderFsResult(
-      `⚠️ Sorted ${moved} of ${total} file${total === 1 ? '' : 's'} into ${folders} folder${folders === 1 ? '' : 's'} — ${failed.length} failed`,
+      `⚠️ Moved ${moved} of ${total} folder${total === 1 ? '' : 's'} — ${failed.length} failed`,
       true,
-      failed.map(f => `${f.filename}: ${f.error}`)
+      detailLines
     );
   }
 }
@@ -845,6 +915,11 @@ async function pollFsStatus() {
 function initFilenameSortTool() {
   document.getElementById('fsBrowseBtn').addEventListener('click', openFsBrowse);
   document.getElementById('fsRunBtn').addEventListener('click', runFilenameSort);
+  document.getElementById('fsScriptSelect').addEventListener('change', () => {
+    document.getElementById('fsFolderInput').value = '';
+    document.getElementById('fsResultLine').hidden = true;
+    document.getElementById('fsResultDetail').hidden = true;
+  });
 }
 
 // ── XML Tagging (§11.6) ──────────────────────────────────────────────────

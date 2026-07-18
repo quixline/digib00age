@@ -7,6 +7,73 @@ Append-only; entries kept exactly as they were in `BUGS.md` at the time of move.
 
 ---
 
+### BUG-025 — Series move updates the files on disk but not the DB rows pointing at them
+
+**Closed 2026-07-18 — not a bug in the intended workflow, defensive fix kept anyway.**
+
+**Found:** 2026-07-18, performance re-baseline session (pre-flight).
+
+**Where:** Series move tool (`logs/series_move_log.md` writer); `issues.file_path`,
+`custom_tabs.folder_path`.
+
+**What happens:** Moving a series relocates the archives and logs the move as
+`[OK]`, but never updates the DB rows referencing the old location. After the
+2000 AD move on 2026-07-18 (12:49–13:21), all **2,484** `2000 AD` rows still
+had `file_path` under `L:\Comic Archives\20000AD\2000AD Progs - 1977-2026\`,
+a directory that no longer existed. A random 400-issue sample found **177 dead
+paths (44%), all 2000 AD** — meaning every 2000 AD issue was unopenable until a
+rescan. The Folder View custom tab (`custom_tabs.folder_path`) was left
+pointing at the same dead path.
+
+**Why a rescan doesn't quietly fix it:** `scanner.scan_single_file()` identifies
+an existing row solely by exact path match
+(`filter(Issue.file_path == file_path)`) — there's no hash, filename fallback,
+or move detection anywhere in `scanner.py`. Files at the new path take the
+INSERT branch as brand-new issues, while `scan_library()`'s post-walk sweep
+flags the old rows `missing=True` (it only *deletes* rows under `SCAN_EXCLUDE`
+folders). A plain rescan after a move therefore yields duplicate issues plus a
+matching set of dead rows, with reading progress stranded on the dead ones —
+which is what forced the full wipe-and-rebuild in this session.
+
+**Resolution, same-day follow-up session:** re-examined against the tool's
+actual intended workflow — Stage 3 Processing folders → Move Series/Singles
+Folders → manual Scan. `config.json`'s `scan_exclude: ["Processing"]` plus
+`LIBRARY_ROOT` scoping means Stage 3 content is never scanned before the move,
+so no `Issue`/`CustomTab` row exists yet at the source path in that flow —
+there's nothing to desync, and the subsequent Scan discovers the moved files
+fresh with no duplicates. The 2000 AD run that surfaced this bug was the tool
+being pointed at content **already inside** `L:\Comic Archives` (already
+scanned, already had rows) to reorganize it into the new alpha-bucket
+structure — an atypical use of the tool, not the normal Processing → Library
+path. Confirmed via Tez's own manual test: renaming `'68 Homefron [2014]` →
+`'68 Homefront (2014)` **outside** the tool (a plain on-disk rename, not a
+Move Series Folders run — no entry appears in `series_move_log.md` for it)
+and then running a Scan reproduced 4 new + 4 missing rows exactly as this
+bug's root-cause section predicts — but that's a manual move outside the
+tool entirely, which is **BUG-013**'s territory (scanner exact-path-match
+blind spot), not this tool's DB bookkeeping.
+
+**Code kept, not reverted:** a defensive `sync_moved_paths_to_db()` fix was
+already built and scratch-tested before this was re-diagnosed (see
+`backend/library_move.py`, `backend/routers/library_move.py`,
+`backend/series_move_log.py`, `backend/singles_move_log.py` — per-folder
+prefix-rewrite of `Issue.file_path`/`CustomTab.folder_path`/
+`HomeStrip.folder_path`, committed per successful folder, skipped for
+blocked/failed folders). It's a no-op on the normal Stage 3 → Library path
+(nothing matches an unscanned source path) and correctly handles the 2000
+AD-style edge case if the tool is ever pointed at already-in-library content
+again — kept as a harmless safety net rather than reverted. See
+`docs/DECISIONS.md` for the reasoning.
+
+**Impact — none, in the intended workflow.** Only reachable by pointing the
+Move tool at already-scanned library content, which isn't its designed use.
+
+**Related:** BUG-013 (scanner change-detection blind spot — same
+identity-by-path-and-mtime assumption) — this is the bug that actually covers
+"a folder changed location while already in the library," still open.
+
+---
+
 ### BUG-028 — Cover extraction fails silently on macOS resource-fork entries; affected issues then display a stale, unrelated cover
 
 **Found:** 2026-07-18, instrumented full rescan (performance re-baseline session).

@@ -4042,3 +4042,60 @@ CBZ with 2 real pages + injected `._page.jpg`/`__MACOSX/._page.jpg` entries,
 ran it through `write_comicinfo_to_cbz()` directly (the exact function the
 Save button calls) — rebuilt archive contained only `ComicInfo.xml` + the 2
 real pages, junk gone.
+
+## Session — 2026-07-18 (BUG-025 follow-up)
+
+Scoped BUG-025 first per Tez's instruction (highest-impact of the three bugs
+open at session start — BUG-026, BUG-027 untouched, still open). Investigated
+the Move Series/Singles Folders tool (`backend/library_move.py`,
+`backend/routers/library_move.py`, `backend/series_move_log.py`,
+`backend/singles_move_log.py` — all uncommitted new code from the same day)
+and confirmed the bug's own description: the tool moves files on disk and
+logs `[OK]`, but never touches `Issue.file_path` / `CustomTab.folder_path`.
+
+**Built and scratch-tested a fix:** `_merge_into_existing()` now returns the
+exact `(src, dst)` pairs it actually moved (a merge isn't always a clean
+single-prefix rename — some entries can fail on a destination clash and stay
+put); `LibraryMoveFolderResult` gained `moved_paths` and `db_sync_error`; new
+`sync_moved_paths_to_db(db, result)` rewrites `Issue.file_path`/
+`CustomTab.folder_path`/`HomeStrip.folder_path` per successfully-moved folder,
+committing per-folder so a blocked/failed folder's rows stay untouched and a
+DB-write failure on one folder can't roll back another's already-good update.
+`routers/library_move.py`'s `_run()` opens/closes its own `SessionLocal()`
+(mirrors `admin.py`'s `_run_scan_background` pattern). Move log `[OK]` lines
+now show `N issue(s) re-pointed`, or a distinct `[OK, DB SYNC FAILED — rescan
+and check logs]` suffix if the sync step itself fails (kept separate from a
+real disk-move `FAILED:` line). Verified via an isolated scratch script —
+temp dirs, temp SQLite DB, temp log dir, nothing real touched — covering the
+plain-move case, the merge-into-existing case, and the exact-duplicate-blocked
+partial-failure case (confirmed that folder's `Issue` row is correctly left
+unchanged). Also unit-tested the DB-sync-failure branch in isolation.
+
+**Re-diagnosed as not a bug, same session, before docs were written.** Tez
+tried a real-world test — renamed `'68 Homefron [2014]` → `'68 Homefront
+(2014)` and ran a Scan — and got 4 new + 4 missing rows, which looked like
+the bug reproducing. Checking `logs/series_move_log.md` showed no entry for
+that rename at all: it was done outside the Move tool (a plain on-disk
+rename), so the code above was never exercised — this is `scanner.py`'s
+exact-path-match blind spot instead, i.e. **BUG-013**, not BUG-025. That
+prompted a closer look at BUG-025's actual trigger: the tool's intended
+workflow is Stage 3 Processing → Move → manual Scan, and
+`config.json`'s `scan_exclude: ["Processing"]` means Processing content is
+never scanned before the move — so in the normal flow there's no DB row at
+the source path to desync in the first place. The original 2000 AD report
+was the tool being pointed at content **already inside** `L:\Comic Archives`
+(already scanned) to reorganize it — an atypical use, not the designed one.
+
+**Resolution:** closed BUG-025 as not-a-bug in the intended workflow — moved
+to `docs/archive/bugs-fixed-archive.md` with the full writeup (not left open,
+not logged as a genuine fix). The sync code was kept rather than reverted: it's
+a no-op on the normal path and correctly covers the 2000-AD-style edge case if
+the tool is ever pointed at already-in-library content again. Reasoning logged
+in `docs/DECISIONS.md`. BUG-013 remains open, separately, as the actual bug
+covering "a folder changed location while already in the library."
+
+**Verified:** scratch script only (see above) — no live manual test of the
+kept sync code was run this session, since the bug it targets doesn't occur
+in the tool's normal, intended use. If the tool is ever deliberately pointed
+at already-in-library content again, that would be the moment to manually
+verify the sync path end-to-end.

@@ -1920,8 +1920,25 @@ support wired in now, unused — same rationale as §11.5.5.
   core logic). **Also runnable standalone from a terminal** — `python -m
   backend.library_move series|singles <folder>` — per the brief that these
   are ported-in scripts, not admin-page-only functionality.
+- **DB sync (defensive, usually a no-op):** `library_move.py` also has
+  `sync_moved_paths_to_db(db, result)`, called by the router right after
+  `move_folders()` returns. For every successfully-moved folder, it rewrites
+  any `Issue.file_path` / `CustomTab.folder_path` / `HomeStrip.folder_path`
+  row whose path was under the folder's old location, committing per folder
+  so a blocked/failed folder's rows are never touched. In the tool's normal,
+  intended use — a Stage 3 Processing folder (scan-excluded, never scanned
+  before the move) — no such row exists yet, so this is a no-op; the
+  subsequent manual Scan discovers the moved content fresh. It only does real
+  work if the tool is pointed at content that's already inside the library
+  and already scanned (BUG-025 — see `docs/DECISIONS.md` and
+  `docs/archive/bugs-fixed-archive.md`) — not the tool's designed use, but
+  the sync keeps that case from silently breaking anyway.
 - `backend/series_move_log.py` / `backend/singles_move_log.py` — thin
-  `tool_logs.py` wrappers, parallel to `filename_sort_log.py`.
+  `tool_logs.py` wrappers, parallel to `filename_sort_log.py`. `append_entry()`
+  also takes `issues_updated`/`db_sync_error` from the sync step above — an
+  `[OK]` line shows `N issue(s) re-pointed` when non-zero, or a distinct
+  `[OK, DB SYNC FAILED — rescan and check logs]` suffix if the sync itself
+  failed (kept separate from a real disk-move `FAILED:` line).
 - `backend/routers/library_move.py` — `browse`/`drives` (shared
   `file_picker.py`), `run`/`status` mirroring `filename_sort.py`'s shape,
   `group` passed in the run payload and as a query param on `/status`
@@ -1942,6 +1959,7 @@ support wired in now, unused — same rationale as §11.5.5.
 
 | Date | Change | Reason |
 |---|---|---|
+| 2026-07-18 | §11.7.7 — noted the defensive `sync_moved_paths_to_db()` DB-sync step and its `issues_updated`/`db_sync_error` log fields. | BUG-025 follow-up: re-diagnosed as not-a-bug in the tool's intended Processing→Library workflow, but the sync fix was kept as a safety net for the atypical already-in-library-content case that originally triggered it — see `docs/DECISIONS.md` and `docs/archive/bugs-fixed-archive.md`. |
 | 2026-06-27 | Added §11 Processing Tools (new top-level section) and §11.1 File Rename — full scope, picker behaviour, checkbox model, live preview, error handling, and audit log design. Ported from CAPT's standalone File Renamer per `ROADMAP.md`'s "CAPT extra tools" entry, brought in one tool at a time starting with Rename. | Dedicated scoping session 2026-06-27 — CAPT source code and `Processing/` folder structure inspected directly to ground design decisions. |
 | 2026-06-30 | Added §11.2 Convert Archives — full scope. Only CBR→CBZ and PDF→CBZ ported (CBZ→CBR/CBZ→PDF dropped, per Item 5's CBR-native-read and PDF-dropped-from-scanner resolutions). Content-based From-format filtering in the picker, `PDF_RENDER_DPI = 300` isolated constant (replaces CAPT's 72 DPI default), CBR CRC errors now surfaced as a `pages_skipped` warning instead of silently dropped, background-job + polling progress modelled on `backend/scanner.py`'s existing `scan_progress` pattern (not a blocking request like Rename), own `convert_log.md` audit log. | v2.4 Item 6 — dedicated scoping session 2026-06-30, CAPT source (`arc_convert_worker.py`, `arc_conv_cb_proc.py`, `arc_conv_pdf_proc.py`, `arc_conv_helpers.py`, `arc_convert_util.py`) and `backend/scanner.py` inspected directly to ground design decisions. |
 | 2026-06-30 | Added §11.3 Convert Images — full scope. Pre-ingest staging only (not library-wide). CBZ and CBR both accepted as input; CBR images convert but the archive always rebuilds as `.cbz` (CAPT's `rar`-CLI CBR repack dropped entirely — same WinRAR-dependency problem already ruled out for §11.2). User-facing lossless/quality-slider setting replaces CAPT's undocumented hardcoded `quality=95`. Flatten-on-rebuild reuses the Editor's existing `_rebuild_archive` flatten logic rather than CAPT's separate implementation. New backup model: rebuilt archive validated before replacing, original kept as a permanent `.bak` (never auto-deleted) — raised by Tez because a future, separately-scoped Auto Processing Folder feature will run this same conversion unattended on watched-folder files, where a silent bad conversion with no kept original could go unnoticed. Core conversion logic specified as a router-independent callable for that same future reuse. Background-job + polling progress (own `convert_images_progress` singleton), own `convert_images_log.md` audit log. | v2.4 Item 7 — dedicated scoping session 2026-06-30, CAPT source (`convert_images_window.py`, `utils/convert_images.py`, `widgets/file_management_widget.py`) and `backend/editor/archive_io.py` inspected directly to ground design decisions. |

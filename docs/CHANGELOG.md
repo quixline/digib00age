@@ -13,6 +13,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-18** — BUG-025 closed as not-a-bug: the Move Series/Singles
+  Folders tool's intended workflow (Stage 3 Processing → Move → manual Scan)
+  never has a pre-existing DB row to desync, since Processing is scan-excluded.
+  The original report was the tool being pointed at already-in-library content
+  (an atypical use). A defensive DB-sync fix was already built and kept as a
+  no-op safety net rather than reverted. See `v2.6/progress.md`,
+  `archive/bugs-fixed-archive.md`, `DECISIONS.md`.
 - **2026-07-18** — BUG-028 fixed: macOS junk entries (`._*.jpg`,
   `__MACOSX/`) no longer counted as pages or picked as covers. Centralized
   filter applied across scanner, reader, Editor, and the Convert

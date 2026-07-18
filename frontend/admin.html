@@ -739,16 +739,21 @@
       <div class="admin-content-block" data-category="processing-tools" data-subitem="folder-processing" hidden>
         <h3 class="admin-content-heading">Folder Processing</h3>
         <p class="admin-card-hint">
-          Moves each CBZ/CBR file directly inside the chosen folder into its own
-          same-named subfolder. Other file types are left alone. No library scan
-          is triggered.
+          Sort by Filename moves each CBZ/CBR file directly inside the chosen
+          folder into its own same-named subfolder. Move Series/Singles
+          Folders moves each immediate subfolder of the chosen folder into
+          its correct place in the library structure — the final stage
+          before a library scan. No library scan is triggered by any of
+          these.
         </p>
         <div class="admin-card">
           <div class="admin-field-row">
             <label class="admin-field-label" for="fsScriptSelect">Script</label>
             <div class="admin-field-input-wrap">
-              <select class="admin-select" id="fsScriptSelect" disabled>
+              <select class="admin-select" id="fsScriptSelect">
                 <option value="filename_sort" selected>Sort by Filename</option>
+                <option value="move_series">Move Series Folders</option>
+                <option value="move_singles">Move Singles Folders</option>
               </select>
             </div>
           </div>

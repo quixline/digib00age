@@ -113,6 +113,7 @@ from backend.auth import is_local_request, is_remote_admin_enabled, require_admi
 from backend.routers import (  # noqa: E402
     library, reader, progress, admin, home, editor_basic, editor_full, admin_auth,
     rename, convert, convert_images, processing_folder, filename_sort, xml_tagging, sync,
+    library_move,
 )
 
 app.include_router(library.router, prefix="/api")
@@ -136,6 +137,7 @@ app.include_router(convert_images.router, prefix="/api/admin", dependencies=_aut
 app.include_router(processing_folder.router, prefix="/api/admin", dependencies=_auth_gate)
 app.include_router(filename_sort.router,     prefix="/api/admin", dependencies=_auth_gate)
 app.include_router(xml_tagging.router,       prefix="/api/admin", dependencies=_auth_gate)
+app.include_router(library_move.router,      prefix="/api/admin", dependencies=_auth_gate)
 
 # ---------------------------------------------------------------------------
 # Serve frontend static files
