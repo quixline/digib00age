@@ -3773,3 +3773,262 @@ and is superseded by this session's explicit ask.
   Drilled into a leaf folder and used the browser's native back navigation to
   confirm it still lands back on the parent folder listing with no in-page
   Back button. No console errors at any step.
+
+## Session — 2026-07-18 — Move Series Folders / Move Singles Folders (v2.6 Item 10)
+
+Two new Processing Tools built, sharing the existing Folder Processing card
+alongside Sort by Filename (§11.5): `backend/library_move.py` (core logic,
+also runnable standalone via `python -m backend.library_move series|singles
+<folder>` per Tez's "port scripts in" intent), `backend/series_move_log.py`
+/ `backend/singles_move_log.py`, `backend/routers/library_move.py`
+(`browse`/`drives`/`run`/`status`, one progress singleton per group so a
+Series run and a Singles run can't collide). Frontend: `fsScriptSelect`
+enabled as a real 3-option dropdown, `processingTools.js` dispatches
+Run/poll by selection.
+
+**Scope changed twice mid-session before any code was written**, both times
+because checking the real library against the proposed rule surfaced a
+problem the plan hadn't accounted for:
+- Article-stripping alpha rule (`The`/`A`/`An` stripped before bucketing)
+  was picked after finding the literal-first-char rule contradicted
+  `SPEC.md` §5's own examples and most of the real library.
+- 2000 AD was originally going to need a hardcoded root-level exception
+  (`20000AD` sat outside the A–Z/`#` scheme entirely, holding progs *and*
+  megazines *and* one-shots). Tez restructured the actual folder instead —
+  renamed to `2000 AD`, moved under `#\Series\2000 AD`, years unchanged —
+  which meant the mover needed zero special-casing for it, so long as
+  merging worked correctly at that nested depth.
+
+**Two follow-up fixes came out of Tez's manual test pass**, not the
+automated checks:
+1. **Recursive merge.** First real Series run put a `2000 AD - 2026` Stage 3
+   folder directly under `#\Series` as a wrong sibling of `2000 AD`, instead
+   of merging into the existing `#\Series\2000 AD\2000 AD - 2026`. The old
+   flat merge treated every entry as opaque — a same-named subfolder at the
+   destination just failed instead of being merged into. Rewrote
+   `_merge_series_folder` → `_merge_into_existing`, now recursive: a
+   same-named folder at the destination merges one level deeper instead of
+   failing; a same-named plain file still fails individually as before.
+   Purely structural, no name-based logic — generalizes to any
+   container-style series, not just 2000 AD. Re-verified with a new nested
+   test case matching the real shape (existing dated sub-folder gets new
+   issues merged in, a brand-new dated sub-folder gets added inside the
+   container, an untouched sibling year stays untouched, a duplicate issue
+   fails individually without blocking the rest).
+2. **Exact-duplicate blocking.** Tez flagged that some older folders use
+   `[YYYY]` where newer ones use `(YYYY)` — an unprocessed Stage 3 folder
+   under the new convention could duplicate an existing folder under the
+   old one. Split near-miss detection into two tiers: a folder that
+   normalizes *identically* to an existing one (same letters/digits once
+   the year suffix and all punctuation are stripped, regardless of bracket
+   style) is now blocked outright — not moved, left in Stage 3, logged as a
+   failure with the exact existing path it matched. Genuinely-similar-but-
+   different names still only get the softer near-miss warning and still
+   move. Verified against both a Singles (`Barbarella [1964]` vs `(1964)`)
+   and a Series (`Tale of Sand  [2011]` vs `(2011)` — also caught a stray
+   double-space) case.
+
+**Also mid-session, unrelated to the build itself:** Code wrote an
+unprompted entry into `INBOX.md` (a note about the DB-relink gap found
+while investigating the 2000 AD move) — a direct violation of the
+entry-only rule already stated in `working-rules.md`. Tez caught it and
+clarified `INBOX.md` is his personal scratchpad, not something Code should
+factor into its own work. Entry reverted; `working-rules.md` and
+`CLAUDE.md`'s doc table both tightened to make the rule harder to miss
+next time (see `DECISIONS.md`).
+
+**Verified:** 18 automated checks (article stripping, `#`/`T`/`E` bucketing,
+flat and nested Series merge, Singles collision, missing-folder error,
+near-miss detection incl. the containment fix needed to actually catch the
+motivating Judge Dredd Megazine case, exact-duplicate blocking for both
+groups) against scratch library/Stage 3 copies in an isolated sandbox —
+`L:\Comic Archives` never touched by any test run. Manually tested live by
+Tez against real Stage 3 content afterward, including the real 2000 AD
+nested-merge case, confirmed working after the two fixes above.
+
+**Not done this session:** the library scan Tez deferred until all
+Processing Tools work is complete — done 2026-07-18, see the performance
+re-baseline entry below
+
+---
+
+## Performance Re-Baseline After the 2000 AD Move (2026-07-18)
+
+Tez asked for a fresh performance pass, since the 2000 AD series had been
+moved and ~2,500 new issues added — neither covered by the 2026-07-09
+baseline. Run via the `perf-diagnostics` skill. **No application code was
+changed at any point**; every measurement came from read-only scratchpad
+scripts outside the repo, and `L:\Comic Archives` was verified byte-identical
+before and after (5,452 files / 562.47 GB, zero added, removed or resized).
+
+**The pre-flight check stopped the plan before it started.** The DB still had
+all 2,484 2000 AD rows pointing at `L:\Comic Archives\20000AD\...`, a
+directory that no longer existed — 44% of a random 400-issue sample was dead
+paths. Reading `scanner.py` settled what a rescan would do:
+`scan_single_file()` matches existing rows by exact `file_path` only, with no
+hash or filename fallback, so the moved files would have been INSERTed as
+2,490 new issues while the 2,484 originals got swept to `missing=True`. Tez's
+assumption that the scan would detect the move and relink was wrong, and
+finding that out before running it avoided a duplicated library. Logged as
+**BUG-025**.
+
+**Decision: wipe and rebuild, and make the rebuild the measurement.** Only 33
+issues were marked read and 2 had a saved page position, so the DB held almost
+nothing irreplaceable — and a from-scratch scan of ~5,450 files was exactly
+the "scanner at real scale" number `PERFORMANCE.md` §3 had carried as an open
+follow-up since 2026-07-09. Tez cleared the DB via the Admin page; verified
+afterwards that all library tables were at 0 rows while `custom_tabs` and
+`home_strips` survived.
+
+**Results are written up in full in `PERFORMANCE.md` §1B.** Headlines:
+
+- **Scanner, first real measurement:** 5,452 files in **21.5 min** (4.23
+  files/s). Thumbnail generation is **53%** of that, per-file `db.commit()`
+  **18%** (5,452 commits, one per file), metadata parse 24%. **4 archive opens
+  per file**, not the 3 that code inspection had estimated. Cost is near-flat
+  against file size (189ms to 289ms across a 25x size range), so the scanner
+  is bound by fixed per-file overhead, not I/O.
+- **Both N+1 fixes held** at the larger scale: `/api/library` 7,508 to 13
+  queries, `/api/series` (2000 AD, now 2,490 issues) 4,969 to 9.
+- **Cold-start follow-up closed with a negative result** — cold/warm ratio
+  0.9-1.2x across all eight endpoints, i.e. no measurable first-request
+  penalty. Measured on the true first request after Tez restarted the tray
+  app.
+- **A third instance of the `Issue.genres` N+1** in `home.py` —
+  `/api/home/strips` went 7 to 39-52 queries, fingerprinted as 32 identical
+  `issue_genres` selects across two 15-item strips. `library.py` got this fix
+  in v2.6 Phase 1/2; `home.py` was never touched.
+- Phase 3 (reader page cache) and Phase 4 (cover ETag/304) fixes both
+  confirmed still working.
+
+**Correctness problems found along the way**, all logged rather than fixed,
+per the skill's hard rule that diagnostics don't change code:
+
+- **BUG-025** — series move doesn't update `issues.file_path` or
+  `custom_tabs.folder_path`.
+- **BUG-026** — Clear Database leaves orphaned thumbnails (2,516 files,
+  354MB) and doesn't `VACUUM`.
+- **BUG-027** — no safe DB-reset sequence, since Clear Database lives on the
+  Admin page the server must be up to serve. Raised by Tez as a flaw in the
+  session plan; it's a real product gap, not just a planning one.
+- **BUG-028** — macOS resource-fork entries (`._*.jpg`) inside archives break
+  cover extraction *and* double `page_count` (64 reported vs 32 real), while
+  the scan still reports `errors=0`. A full-library sweep found **22 of 5,452
+  issues affected**. Started as "21 covers failed"; chasing it turned up the
+  page-count effect and one further affected issue whose cover happened to
+  succeed, so it showed no visible symptom at all.
+
+**Two harness mistakes worth recording**, both caught before they reached the
+doc: the cover conditional-GET check first reported 0/15 Cache-Control and
+0/15 304s, which looked like a regression of the 2026-07-13 fix — it was a
+case-sensitive header lookup against uvicorn's lowercase header names (real
+answer: 15/15 and 15/15). And this run's archive-level "cold" timings are not
+cold, because the instrumented scan had just warmed the OS cache across the
+whole library; `PERFORMANCE.md` §1B flags this rather than claiming a 60x
+improvement over the 2026-07-09 figure.
+
+**Not done this session:** the browser-waterfall phase (Phase 6 of the plan) —
+the HTTP-level numbers are solid and the Folder View tab was broken for most
+of the session, so it was left for a follow-up. Cold-idle drive probe skipped
+by Tez's call (10-15 min wall-clock per rep); finding #9 stays inconclusive.
+No scanner optimisation attempted — findings #13/#14/#15 say where the time
+goes, but deciding what to fix is a separate triage step.
+
+**Still pending on Tez:** recreate the 2000 AD Folder View custom tab against
+the new path (the old one was removed mid-session, since it pointed at the
+deleted directory).
+
+## Session — 2026-07-18 — BUG-028 fixed (macOS junk entries)
+
+Two-part fix, per Tez's ask: (1) clean up the 22 already-affected issues,
+(2) catch it at the processing stage so it doesn't recur with new batches.
+
+**Root cause, confirmed by reading every "list image entries in an archive"
+call site in `backend/`:** every one filtered by file extension only, with
+no guard against macOS AppleDouble sidecars (`._foo.jpg`) or `__MACOSX/`
+folder entries — except `reader.py`'s `_sorted_pages()`, which already had
+an inline dot-prefix check. No centralized helper existed anywhere.
+
+**Code fix — new shared predicate `archive_formats.is_macos_junk_entry()`,
+applied at every read and write site:**
+- Read sites (exclude junk when counting/picking): `scanner.py`
+  `_generate_thumbnail()` (cover picker) and `_parse_cbz()` (page count),
+  `reader.py` `_sorted_pages()` (deduped its own inline check against the
+  shared one), `editor/archive_io.py` `get_archive_page_count()` /
+  `read_xml_and_page_count()`, `editor_full.py` `_cached_image_list()` — the
+  last three per Tez's go-ahead to extend past BUG-028's literal scope,
+  since it's the same root cause and the Basic/Full Editor would otherwise
+  keep showing wrong page counts for the same issues.
+- Write sites (drop junk so a rebuild doesn't reintroduce it): `editor/archive_io.py`
+  `flatten_and_zip()` — the single shared rebuild function behind Convert
+  Images, CT Auto-Tag, XML Tagging, and every Editor save, so one fix covers
+  all of them — and `archive_convert.py` `_convert_cbr()`, which does its
+  own separate extract+rezip. `image_convert.py`'s `_extract_all()` also
+  needed the same filter applied to its returned entry list, not just
+  extraction: `flatten_and_zip()` dropping junk but `expected_count` (used
+  by post-conversion validation) still counting it would have made
+  validation fail on every archive containing junk — caught this before it
+  shipped by tracing how `expected_count` flows through `_validate()`.
+- Also fixed `_convert_images_in_dir()` so a `._` sidecar isn't
+  Pillow-decode-attempted and counted into `images_skipped` (it was junk,
+  not a real conversion failure).
+
+**BUGS.md's fix #2 (scan errors) and #3 (cover endpoint) also done:**
+- `scan_single_file()` now increments `scan_progress.errors` and logs
+  `THUMBNAIL ERROR: <filename>` when `_generate_thumbnail()` fails, at all
+  three call sites (new/updated/skip-branch backfill) — without
+  reclassifying the row's own `"new"`/`"updated"` result, since the row
+  itself scanned fine. `GET /api/scan/status` now returns `error_files`;
+  `admin.js`'s scan-completion text appends `, N errors` when non-zero
+  (previously nothing surfaced this at all, not even a count field existed).
+- `GET /api/cover/{issue_id}` now looks up the `Issue` row first and only
+  trusts the on-disk `{id}.jpg` when `cover_path` is set — previously it
+  trusted a bare filename match, so a failed cover generation served
+  whatever stale file happened to sit at that ID (BUG-026 territory) instead
+  of falling through to live extraction.
+
+**Remediation (the 22 affected issues):** new script,
+`.claude/skills/perf-diagnostics/scripts/10_macos_junk_rebuild.py`,
+companion to the existing read-only `8_macos_junk_sweep.py`. Confirmed via
+that sweep script first that a plain rescan would **not** have fixed these —
+`scan_single_file()` skips re-parsing a file whose mtime hasn't changed, and
+this code fix doesn't touch any archive's mtime. The new script bypasses
+that gate entirely: re-derives the affected list live from the DB, recomputes
+`page_count` and regenerates the cover thumbnail via the now-fixed scanner
+logic, writes both directly to the DB row. Took a `.bak` copy of the dev DB
+first. Ran it: all 22 fixed (21× 2000 AD 64→32 pages, two of those at
+104→52, plus Judge Dredd - One-Eyed Jacks 232→116) — exact match to BUGS.md's
+predicted numbers. Archive files on `L:\Comic Archives` were never opened for
+writing; only DB rows and thumbnail cache files changed.
+
+**One wrinkle found during verification, logged in `DECISIONS.md`:**
+`8_macos_junk_sweep.py`'s headline "issues containing macOS junk entries"
+count stays at 22 even after the fix — it means "archive physically contains
+a `._` entry," and these 22 archives still do (only files that pass through
+Convert Archives/Convert Images/CT Auto-Tag get the junk physically stripped
+on rebuild; direct-to-library files keep the junk bytes but the app now
+correctly ignores them everywhere). The sweep's other number, "page_count is
+wrong," is the real fixed-or-not signal — that one dropped from 22 to 0.
+
+**Verified:** every fix checked by direct execution against the real
+affected archives (not mocks) — `_sorted_pages()`, `get_archive_page_count()`,
+`read_xml_and_page_count()`, and `_cached_image_list()` all confirmed
+returning 32 (not 64) for issue 2491 post-fix. Built a scratch CBZ with
+injected `._`/`__MACOSX/` junk entries, ran it through
+`convert_images_in_archive()` live — rebuilt archive contained zero junk
+entries, `images_skipped: 0` (junk didn't inflate that count), validation
+passed. Forced a thumbnail failure with a scratch all-undecodable CBZ,
+called `scan_single_file()` against a throwaway DB row (cleaned up after) —
+confirmed `scan_progress.errors` incremented and the log line appeared,
+result stayed `"new"`. Simulated the cover endpoint's `cover_path`-check
+logic against both states (set and forced-None, rolled back, never
+persisted). CBR-path fix (`archive_convert.py` `_convert_cbr()`) verified by
+code reading only — fabricating a real RAR file isn't practical without
+paid WinRAR, and the project deliberately never writes RAR anywhere. **Then
+restarted the live server** (`POST /api/admin/restart`, the existing
+sanctioned restart path — Tez confirmed this was fine) and re-checked live
+in the browser: issue 2491's detail page shows "32 pages" (not 64), cover
+loads 200 OK; `/api/issue/2491/pages` returns exactly 32 real page URLs,
+`/api/page/2491/0` and `/31` both serve real `image/jpeg` bytes, `/32`
+404s; issues 2503 and 4077 (the Judge Dredd one) spot-checked the same way,
+both matching the remediation script's output (52 and 116 pages).

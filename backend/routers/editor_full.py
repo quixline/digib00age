@@ -82,7 +82,9 @@ def _cached_image_list(archive_path: str) -> list[str]:
         return cached[1]
 
     image_files = sorted(
-        f for f in archive_formats.archive_namelist(archive_path) if f.lower().endswith(IMAGE_EXTENSIONS)
+        f for f in archive_formats.archive_namelist(archive_path)
+        if f.lower().endswith(IMAGE_EXTENSIONS)
+        and not archive_formats.is_macos_junk_entry(f)
     )
     _image_list_cache[archive_path] = (cache_key, image_files)
     return image_files

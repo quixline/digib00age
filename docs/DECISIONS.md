@@ -4,6 +4,138 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### BUG-028 fix: centralize junk-entry filtering, don't reconcile the 5 inconsistent image-extension whitelists
+
+**Decided:** 2026-07-18, BUG-028 fix session.
+
+**Why:** investigating the macOS-junk-entries bug turned up 5 different
+image-extension whitelists across the codebase (`scanner.py`, `reader.py`,
+`editor/archive_io.py`, `image_convert.py`, `archive_convert.py`), no two
+identical — a real inconsistency, but an unrelated one. BUG-028 is about
+`._`-prefixed/`__MACOSX/` junk entries being counted as pages, not about
+which extensions count as images. Reconciling the whitelists too would have
+widened the diff and risked changing behaviour (e.g. `.tiff` support) nobody
+asked to change in this session.
+
+**What changed instead:** one shared predicate,
+`archive_formats.is_macos_junk_entry()`, applied at every site that lists or
+rebuilds archive image entries (scanner, reader, Editor, Convert Archives,
+Convert Images) — each site kept its own existing extension whitelist,
+just piped through the new junk filter. The 5-way whitelist inconsistency
+is unfixed, noted here as a known, separate cleanup candidate if it ever
+causes an actual problem.
+
+**Also decided, same session:** the 22 already-affected issues' `page_count`/
+`cover_path` DB fields were remediated directly (see
+`docs/archive/bugs-fixed-archive.md` BUG-028), but their archive files on
+disk were deliberately left untouched — only files that pass through Convert
+Archives/Convert Images/CT Auto-Tag going forward get the junk physically
+stripped from the archive. Direct-to-library files keep the junk bytes on
+disk but the app now correctly ignores them everywhere. `8_macos_junk_sweep.py`
+will therefore keep reporting these 22 as "containing junk entries" even
+though the actual bug symptom (`page_count is wrong`) is fixed — the sweep
+script's two numbers now mean different things; use `page_count is wrong`
+as the real fixed-or-not signal, not the raw "containing junk" count.
+
+### `INBOX.md` is Tez's personal scratchpad — Code doesn't write to it, even with good intentions
+
+**Decided:** 2026-07-18, Move Series/Singles Folders session (v2.6 Item 10).
+
+**Why:** `working-rules.md` already said "Code never adds to it or triages it
+unprompted" (settled 2026-07-16), but mid-session Code wrote an unprompted
+entry into `INBOX.md` anyway — a note about a DB file_path-relink gap found
+while investigating the 2000 AD folder move, added because it seemed
+inbox-shaped and there was nowhere else obvious to put it. Tez caught it
+immediately and clarified the intent more strongly than the existing wording
+conveyed: it's not just "don't triage it," it's "this is mine, you don't
+need to factor it into your own work or use it as a place to park findings."
+Existing wording was technically sufficient but evidently not load-bearing
+enough in practice.
+
+**What changed:** Entry reverted. `working-rules.md`'s "Inbox workflow"
+section restated with an explicit no-parking-findings clause and a pointer
+to surface things directly in conversation instead. `CLAUDE.md`'s doc-map
+table row for `INBOX.md` updated to say the same, so it's visible from
+either entry point rather than living only in one doc.
+
+**Where:** `docs/meta/working-rules.md` ("Inbox workflow"), `CLAUDE.md`
+(§2 doc table), `docs/INBOX.md` (entry reverted).
+
+---
+
+### Move Series/Singles Folders: article-stripping alpha rule, and why 2000 AD needed no code exception
+
+**Decided:** 2026-07-18, same session.
+
+**Why (alpha rule):** the obvious rule — bucket on a folder name's literal
+first character — contradicts `SPEC.md` §5's own worked examples (`'68
+Homefront` → `#`, `The 13th Artifact` → `#`) and most of the real library.
+Checked the actual folder tree before picking a rule rather than trusting
+the spec's prose description in isolation: the library consistently strips
+a leading `The`/`A`/`An` before bucketing (`A Taste for Blood` → `T`, not
+`A`). Picked that as the rule. **Known residual gap, deliberately not
+fixed:** some titles are filed by subject rather than by this rule at all —
+`The Complete Terminal City` sits under `T` (matching `The Complete Bad
+Company` under `B`), which the article-strip rule alone would send to `C`.
+Near-miss detection (§11.7.4) is the mitigation, not a fix — flagging a
+probable mismatch for Tez to decide is safer than trying to encode a second,
+fuzzier filing convention into the mover.
+
+**Why (2000 AD):** originally scoped with a hardcoded root-level exception
+in mind, because `20000AD` sat outside the whole A–Z/`#` scheme at the time
+(a typo'd folder name, and historically home to more than just progs —
+megazines, one-shots, year books). Tez restructured the actual folder
+instead of asking for a code exception: renamed to `2000 AD`, moved under
+`#\Series\2000 AD`, kept the existing `2000 AD - YYYY` sub-folders exactly
+as they were. That fits the ordinary alpha rule with zero special-casing —
+the only reason it then worked correctly is the recursive-merge fix
+(source folder shape mirrors the library's, mover recurses to match).
+Preferred over a code exception because a naming/structure fix is permanent
+and self-documenting; a hardcoded exception is one more thing to remember
+exists and to keep in sync if the library structure ever changes again.
+
+**Where:** `backend/library_move.py` (`_alpha_bucket`), `ADMIN_SPEC.md`
+§11.7.2/§11.7.3.
+
+---
+
+### Move Series/Singles Folders: recursive merge and exact-duplicate blocking, both structural not name-based
+
+**Decided:** 2026-07-18, same session, both found during Tez's manual test
+pass (not caught by the automated test suite beforehand).
+
+**Why (recursive merge):** the first real run put a Stage 3 `2000 AD -
+2026` folder as a wrong sibling of the existing `#\Series\2000 AD`,
+instead of merging into `#\Series\2000 AD\2000 AD - 2026`. The original
+merge logic (`_merge_series_folder`) treated every entry in a matched
+folder as opaque — a same-named subfolder at the destination just failed
+instead of being merged into one level deeper. Considered and rejected:
+special-casing "2000 AD" by name to know it should nest. Chose instead to
+make the merge itself recursive and purely structural (same-named folder →
+merge deeper; same-named file → per-file clash, unchanged) — this
+generalizes to any future container-style series without the mover needing
+to know anything about it by name, and is the direct enabler for the "no
+2000 AD exception" decision above.
+
+**Why (exact-duplicate blocking):** Tez flagged that older library folders
+use `Title [YYYY]` where current Stage 3 output uses `Title (YYYY)` — an
+unprocessed folder under the new convention could duplicate an existing one
+under the old convention, and the existing near-miss warning (non-blocking)
+wasn't strong enough for a case this confident. Split into two tiers rather
+than just lowering the near-miss threshold: a folder that normalizes
+*identically* to an existing one (same content stripped of year-bracket
+style and punctuation) is blocked outright, not moved, logged as a failure
+naming the exact match; a folder that's merely *similar* keeps the older
+non-blocking warning behaviour. Kept as two separate checks rather than one
+sliding scale so a confident duplicate can never be "just a warning" by
+threshold tuning drifting later.
+
+**Where:** `backend/library_move.py` (`_merge_into_existing`,
+`_find_exact_duplicate`, `_find_near_miss`), `ADMIN_SPEC.md`
+§11.7.3/§11.7.4.
+
+---
+
 ### Folder View's in-page "← Back" / "Mark all read" row removed, not just restyled
 
 **Decided:** 2026-07-17, Folder View card-chrome session (same session as the

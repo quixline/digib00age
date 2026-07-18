@@ -441,7 +441,8 @@ function updateScanUI(state) {
     if (barEl) barEl.style.width = '100%';
     if (textEl && state.finished_at) {
       textEl.textContent =
-        `Done — ${state.new_files} new, ${state.updated_files} updated, ${state.missing_files} missing`;
+        `Done — ${state.new_files} new, ${state.updated_files} updated, ${state.missing_files} missing`
+        + (state.error_files ? `, ${state.error_files} errors` : '');
     }
     if (state.error && textEl) {
       textEl.textContent = 'Error: ' + state.error;

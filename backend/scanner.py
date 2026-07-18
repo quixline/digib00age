@@ -215,6 +215,7 @@ def _generate_thumbnail(cbz_path: str, issue_id: int) -> Optional[str]:
                 name for name in archive.namelist()
                 if name.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".gif"))
                 and "comicinfo" not in name.lower()
+                and not archive_formats.is_macos_junk_entry(name)
             )
             if not image_files:
                 logger.warning("No images found in %s", cbz_path)
@@ -335,6 +336,7 @@ def _parse_cbz(file_path: str) -> tuple[dict, str]:
             actual_page_count = sum(
                 1 for n in archive.namelist()
                 if n.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".gif"))
+                and not archive_formats.is_macos_junk_entry(n)
             )
     except Exception:
         pass
@@ -489,6 +491,9 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
                 if thumb:
                     existing.cover_path = thumb
                     db.commit()
+                else:
+                    scan_progress.errors += 1
+                    scan_progress.add_log(f"THUMBNAIL ERROR: {Path(file_path).name}")
             return "skipped"
 
     # --- Parse metadata ---
@@ -517,6 +522,9 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
         thumb = _generate_thumbnail(file_path, existing.id)
         if thumb:
             existing.cover_path = thumb
+        else:
+            scan_progress.errors += 1
+            scan_progress.add_log(f"THUMBNAIL ERROR: {Path(file_path).name}")
         db.commit()
         _since_scan_count += 1
         return "updated"
@@ -532,6 +540,9 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
         thumb = _generate_thumbnail(file_path, issue.id)
         if thumb:
             issue.cover_path = thumb
+        else:
+            scan_progress.errors += 1
+            scan_progress.add_log(f"THUMBNAIL ERROR: {Path(file_path).name}")
         db.commit()
         _since_scan_count += 1
         return "new"

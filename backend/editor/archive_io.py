@@ -50,7 +50,9 @@ def get_archive_page_count(archive_path: str) -> int:
     try:
         with archive_formats._opener(archive_path) as z:
             return sum(
-                1 for f in z.namelist() if f.lower().endswith(IMAGE_EXTENSIONS)
+                1 for f in z.namelist()
+                if f.lower().endswith(IMAGE_EXTENSIONS)
+                and not archive_formats.is_macos_junk_entry(f)
             )
     except Exception as exc:
         logger.error("Error counting pages in %s: %s", archive_path, exc)
@@ -67,7 +69,11 @@ def read_xml_and_page_count(archive_path: str) -> tuple[Optional[str], int]:
             names = z.namelist()
             xml_files = [f for f in names if f.lower().endswith(".xml")]
             xml_content = z.read(xml_files[0]).decode("utf-8") if xml_files else None
-            page_count = sum(1 for f in names if f.lower().endswith(IMAGE_EXTENSIONS))
+            page_count = sum(
+                1 for f in names
+                if f.lower().endswith(IMAGE_EXTENSIONS)
+                and not archive_formats.is_macos_junk_entry(f)
+            )
             return xml_content, page_count
     except Exception as exc:
         logger.error("Error reading archive %s: %s", archive_path, exc)
@@ -93,6 +99,13 @@ def flatten_and_zip(extract_dir: str, target_dir: str) -> str:
     try:
         for root, _dirs, files in os.walk(extract_dir):
             for name in files:
+                # Drop macOS AppleDouble sidecars (BUGS.md BUG-028) — never
+                # real page content, don't let a rebuild carry them forward.
+                # (A bare filename already carries the "._" prefix that
+                # marks these; the archive's __MACOSX/ folder is just the
+                # directory they were extracted from, not part of `name`.)
+                if archive_formats.is_macos_junk_entry(name):
+                    continue
                 shutil.copy2(os.path.join(root, name), os.path.join(flat_dir, name))
 
         staging_base = os.path.join(target_dir, f".cv_tmp_{uuid.uuid4().hex}")

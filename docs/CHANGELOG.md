@@ -13,6 +13,29 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-18** — BUG-028 fixed: macOS junk entries (`._*.jpg`,
+  `__MACOSX/`) no longer counted as pages or picked as covers. Centralized
+  filter applied across scanner, reader, Editor, and the Convert
+  Archives/Convert Images processing tools (so it's also caught at ingest,
+  not just read time); cover endpoint now respects `cover_path`; failed
+  thumbnail generation now surfaces as a scan error instead of passing
+  silently. 22 already-affected issues remediated (page_count and cover
+  regenerated). See `v2.6/progress.md`, `archive/bugs-fixed-archive.md`,
+  `DECISIONS.md`.
+- **2026-07-18** — Performance re-baseline after the 2000 AD move (no code
+  changed). Scanner measured at real scale for the first time (5,452 files,
+  21.5 min — thumbnails 53%, per-file commits 18%, 4 archive opens/file);
+  cold-start follow-up closed with a negative result; both N+1 fixes confirmed
+  holding; a third `Issue.genres` N+1 found in `home.py`. DB was cleared and
+  rebuilt to recover from the move. Four new bugs logged (BUG-025 to BUG-028).
+  See `PERFORMANCE.md` §1B, `v2.6/progress.md`.
+- **2026-07-18** — New Processing Tools: Move Series Folders / Move Singles
+  Folders (v2.6 Item 10), moving folders out of Stage 3 into their correct
+  library location, sharing the Folder Processing card with Sort by
+  Filename. Recursive Series merge (handles container-style series like
+  2000 AD), exact-duplicate blocking for `[YYYY]`/`(YYYY)` notation drift,
+  near-miss warnings. See `v2.6/progress.md`, `ADMIN_SPEC.md` §11.7,
+  `DECISIONS.md`.
 - **2026-07-17** — Folder View: removed the in-page "← Back" / "Mark all
   read" row above the card grid (duplicated the browser's back button and
   the multi-select toolbar's mark-read action) so the grid sits flush under

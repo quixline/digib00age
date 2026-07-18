@@ -61,7 +61,7 @@ def _sorted_pages(archive_path: str) -> list[str]:
         names = [
             n for n in archive_formats.archive_namelist(archive_path)
             if Path(n).suffix.lower() in IMAGE_EXTENSIONS
-            and not Path(n).name.startswith(".")  # skip hidden files
+            and not archive_formats.is_macos_junk_entry(n)
         ]
         pages = sorted(names)
     except (*archive_formats.BAD_ARCHIVE_EXCEPTIONS, FileNotFoundError) as exc:
@@ -186,9 +186,17 @@ def get_cover(issue_id: int, request: Request, db: Session = Depends(get_db)):
         from backend.config import PROJECT_ROOT
         thumb_dir = PROJECT_ROOT / thumb_dir
 
+    issue = db.query(Issue).filter(Issue.id == issue_id).first()
+    if not issue or issue.missing:
+        raise HTTPException(status_code=404, detail="Cover not found")
+
+    # Trust the on-disk {id}.jpg only if the DB says a thumbnail was
+    # actually generated for this issue (BUGS.md BUG-028) — otherwise a
+    # stale file from a reused/orphaned ID (BUG-026) gets served as this
+    # issue's cover even though generation failed.
     thumb_path = thumb_dir / f"{issue_id}.jpg"
 
-    if thumb_path.exists():
+    if issue.cover_path and thumb_path.exists():
         stat = thumb_path.stat()
         etag_base = f"{stat.st_mtime}-{stat.st_size}"
         etag = f'"{hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()}"'
@@ -198,10 +206,6 @@ def get_cover(issue_id: int, request: Request, db: Session = Depends(get_db)):
         return FileResponse(str(thumb_path), media_type="image/jpeg", headers=headers)
 
     # Fallback — extract first page from CBZ on the fly
-    issue = db.query(Issue).filter(Issue.id == issue_id).first()
-    if not issue or issue.missing:
-        raise HTTPException(status_code=404, detail="Cover not found")
-
     pages = _sorted_pages(issue.file_path)
     if not pages:
         raise HTTPException(status_code=404, detail="No pages found in CBZ")

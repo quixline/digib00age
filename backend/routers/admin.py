@@ -134,6 +134,7 @@ def scan_status():
         "new_files": sp.new,
         "updated_files": get_changes_last_cycle(),
         "missing_files": sp.missing,
+        "error_files": sp.errors,
         "current_file": "",
         "log": sp.log[-200:],
         "error": None,

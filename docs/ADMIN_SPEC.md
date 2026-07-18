@@ -152,6 +152,13 @@ Stat cards plus one action card:
 - **New Files:** new files found in last scan.
 - **Scan Now** (action card): triggers `POST /api/scan`; card expands inline to show
   a live progress bar and log output during the scan.
+- **Errors (BUGS.md BUG-028, fixed 2026-07-18):** a failed thumbnail-generation
+  attempt (e.g. an archive whose leading entries are all unreadable) now counts
+  toward `scan_progress.errors` and logs a `THUMBNAIL ERROR: <filename>` line,
+  instead of passing silently with `errors=0`. `GET /api/scan/status` returns it
+  as `error_files`; the completion text appends `, N errors` when non-zero. Does
+  **not** change the file's own `"new"`/`"updated"` result — the row itself still
+  scanned correctly, only its derived cover failed.
 
 **Scan log cards (built — V2.3 Item 7, 2026-06-24):** the four scan stat cards above
 additionally show per-category log details. See §8 for the log file format,
@@ -969,6 +976,14 @@ Ported from CAPT's standalone Archive Converter (`gui/convert_window.py`,
   requires paid WinRAR) is **not ported**. This confirms RAR creation is never
   required anywhere in ComicVault — consistent with `EDITOR_SPEC.md`'s CBR-edit
   path, which also never writes RAR.
+- **macOS AppleDouble sidecars dropped on rebuild (BUGS.md BUG-028, fixed
+  2026-07-18).** `._`-prefixed and `__MACOSX/` entries — junk left behind by
+  an archive that was ever touched on a Mac, not real page content — are now
+  excluded when this step rezips, via the shared `archive_formats.is_macos_junk_entry()`
+  predicate. Same fix applied to Convert Images' rebuild (§11.3.4, via the
+  shared `flatten_and_zip()`) and CT Auto-Tag/XML Tagging, since both funnel
+  through the same rebuild function — so a batch carrying this junk in no
+  longer reintroduces it once it passes through any of these tools.
 - **PDF → CBZ:** rendered via PyMuPDF (`fitz`), one page per image. New
   **`PDF_RENDER_DPI = 300`** module-level constant (resolved this session,
   print-scan-grade sharpness over CAPT's original 72 DPI), driving
@@ -1780,6 +1795,144 @@ signature change this required.
   `loadProcessingFolderConfig()`/`initProcessingFolderTool()` needed zero
   changes, they already bind via `getElementById` regardless of where in
   the DOM the elements physically sit.
+
+---
+
+### 11.7 Move Series Folders / Move Singles Folders
+
+**Built and manually tested 2026-07-18 — v2.6 Item 10.**
+
+Two scripts, ported in as standalone tools sharing §11.5's Folder Processing
+card and picker. The final stage of processing before a library scan: moves
+folders out of `Processing\Stage 3\series` / `\singles` (or any chosen
+folder — not restricted to Stage 3) into their correct place in the library
+structure per `SPEC.md` §5.
+
+#### 11.7.1 Scope
+
+- Operates on every **immediate subfolder** of the chosen folder — each one
+  treated as a series (or singles title) folder to file. No recursion past
+  that first level for deciding *what* to move; the merge itself (11.7.3)
+  can recurse further once a match is found.
+- Same picker as every other Processing Tool — not restricted to
+  `library_root`, fully browsable, no persistence to `config.json` (matches
+  §11.5.2's rationale: nothing to persist a folder for, chosen fresh each
+  run).
+- Same local-only gating as all Processing Tools (§11 shared notes). Not
+  part of Processing Folder Automation (§11.4) — manual, on-demand only.
+
+#### 11.7.2 Alpha Bucket
+
+A leading `The `/`A `/`An ` (case-insensitive) is stripped before bucketing
+— matches how the library is actually filed (`The 13th Artifact` → `#`, `A
+Taste for Blood` → `T`), not a literal first-character rule, which would
+contradict both `SPEC.md` §5's own examples and most of the existing
+library. After stripping: `A`–`Z` → that letter; a digit, apostrophe, or any
+other character → `#`.
+
+**Known gap, not fixed here:** some existing folders are filed by subject
+rather than by this rule — e.g. `The Complete Terminal City` sits under `T`
+(matching `The Complete Bad Company` under `B`), not `C`. The article-strip
+rule alone would send new folders shaped like this to the wrong bucket
+relative to that existing convention. Near-miss detection (11.7.4) is the
+mitigation — it flags the mismatch for a human decision rather than silently
+filing it "correctly" by the mechanical rule.
+
+#### 11.7.3 Collision Rules
+
+Every folder is attempted independently — one failure doesn't block any
+other:
+
+- **Series, destination doesn't exist** — moves the whole folder over as a
+  new addition (alpha/format-group levels created as needed).
+- **Series, destination exists** — merges rather than failing.
+  **Recursive and purely structural, no name-based special-casing:** for
+  each entry in the source folder, a same-named file at the destination
+  fails that one file only (everything else in the batch still attempted);
+  a same-named *folder* at the destination is merged into one level
+  deeper, recursively, rather than failing outright. This is what makes a
+  container-style series (one grouped into sub-folders — a series's issues
+  never sitting directly in its own top folder, e.g. one grouped by year)
+  merge correctly at whatever depth it already exists in the library,
+  without the mover needing to know anything about that series by name.
+  Source folder (and any subfolder emptied by the recursion) is removed
+  only if left empty — a folder holding even one failed file stays in
+  place so the failure is visible, not silently half-cleared.
+- **Singles, destination exists** — fails the whole folder outright, stays
+  in Stage 3 untouched. Singles are one-CBZ-per-folder by definition, so a
+  name collision here means an actual duplicate, not something to merge.
+- **Source folder not found / unreachable** — clean top-level error, no
+  folders attempted, nothing logged as a run.
+
+**2000 AD needed no special-casing.** Scoped mid-build with a hardcoded
+root-level exception in mind (`20000AD` sat outside the A–Z/`#` scheme
+entirely, at the time holding everything from progs to megazines to
+one-shots). Tez restructured the actual folder instead — renamed to
+`2000 AD`, moved under `#\Series\2000 AD`, `2000 AD - YYYY` sub-folders kept
+as-is — so it now buckets and files under the ordinary rule like everything
+else, and the recursive merge above is what makes moving new `2000 AD -
+YYYY` content into it work correctly. See `DECISIONS.md`.
+
+#### 11.7.4 Exact-Duplicate Blocking and Near-Miss Warnings
+
+Two tiers, both checked library-wide within the target format group (not
+just the computed destination's own alpha bucket):
+
+- **Exact duplicate (blocking).** A folder name that normalizes identically
+  to an existing library folder — same letters/digits once the year suffix
+  and all punctuation are stripped, regardless of bracket style — is a
+  confident match, not a maybe. Found because Tez flagged that older
+  library folders use `Title [YYYY]` where newer Stage 3 output uses `Title
+  (YYYY)`; an unprocessed folder under the new convention could otherwise
+  duplicate an existing one under the old convention. The move is blocked
+  entirely: nothing moves, the folder stays exactly where it is, and it's
+  logged as a failure naming the exact existing path it matched. Applies to
+  both Series and Singles.
+- **Near-miss (warning only, non-blocking).** Everything else — a folder
+  that looks like a *probable* variant of an existing one, by similarity
+  ratio or substring containment, but isn't a confident match — is reported
+  in the result detail and the log, but still moves normally. This is what
+  catches cases like `Judge Dredd Megazine` against an existing `2000 AD -
+  Judge Dredd Megazines`, or the `The Complete Terminal City` filing gap
+  noted in 11.7.2.
+
+#### 11.7.5 Run & Result
+
+Same shared shape as §11.5.4: single "Run" button, background job + polling
+progress, one `running`-boolean-guarded progress singleton per script
+(Series and Singles can't collide on state, but two Series runs — or two
+Singles runs — against the same script still can't overlap). Terse one-line
+result (`✅ Moved N of M folders` / `⚠️ Moved N of M — J failed`) with an
+expandable Details list combining per-folder failure reasons and any
+near-miss warnings.
+
+#### 11.7.6 Audit Log
+
+Two new logs, `series_move_log.md` / `singles_move_log.md`, same append-
+only/1MB-cap pattern as every other Processing Tool log. `[AUTO]`-prefix
+support wired in now, unused — same rationale as §11.5.5.
+
+#### 11.7.7 Implementation Notes (for Code)
+
+- `backend/library_move.py` — `move_folders(folder, group) ->
+  LibraryMoveResult`, `group` is `"series"` or `"singles"`. Plain,
+  router-independent callable (same requirement as every Processing Tool's
+  core logic). **Also runnable standalone from a terminal** — `python -m
+  backend.library_move series|singles <folder>` — per the brief that these
+  are ported-in scripts, not admin-page-only functionality.
+- `backend/series_move_log.py` / `backend/singles_move_log.py` — thin
+  `tool_logs.py` wrappers, parallel to `filename_sort_log.py`.
+- `backend/routers/library_move.py` — `browse`/`drives` (shared
+  `file_picker.py`), `run`/`status` mirroring `filename_sort.py`'s shape,
+  `group` passed in the run payload and as a query param on `/status`
+  (`library_move_progress` is a dict keyed by group, not a single
+  singleton — this is the one structural difference from §11.5's router).
+- Frontend: `fsScriptSelect` (previously a disabled single-option
+  `<select>`, per §11.5.6's anticipation) is now a live 3-option dropdown.
+  `processingTools.js`'s `FS_SCRIPTS` map holds each script's endpoints/
+  labels; `runFilenameSort()`/`pollFsStatus()` dispatch off the selected
+  option and branch on result shape (`'files' in status.result` for Sort by
+  Filename vs. the `folders`/`near_misses` shape for these two).
 
 ---
 

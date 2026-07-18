@@ -38,8 +38,14 @@ class ConvertImagesResult:
 
 def _extract_all(source_path: str, extract_dir: str) -> list[str]:
     """Extract every entry from a CBZ or CBR (content-detected) into
-    extract_dir. Returns the list of entry names."""
-    names = archive_formats.archive_namelist(source_path)
+    extract_dir. Returns the list of entry names, excluding macOS
+    AppleDouble sidecars (BUGS.md BUG-028) — flatten_and_zip() drops them
+    from the rebuilt archive too, so expected_count (derived from this
+    return value) must exclude them to match, or validation would fail."""
+    names = [
+        n for n in archive_formats.archive_namelist(source_path)
+        if not archive_formats.is_macos_junk_entry(n)
+    ]
     with archive_formats._opener(source_path) as archive:
         archive.extractall(extract_dir)
     return names
@@ -53,6 +59,8 @@ def _convert_images_in_dir(extract_dir: str, quality: int, lossless: bool) -> in
     images_skipped = 0
     for root, _dirs, files in os.walk(extract_dir):
         for name in files:
+            if archive_formats.is_macos_junk_entry(name):
+                continue
             ext = Path(name).suffix.lower()
             if ext not in CONVERT_EXTENSIONS:
                 continue

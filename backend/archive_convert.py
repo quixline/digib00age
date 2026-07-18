@@ -21,7 +21,7 @@ from typing import Optional
 import fitz  # PyMuPDF
 import rarfile
 
-from backend import backup_model
+from backend import archive_formats, backup_model
 
 # Print-scan-grade sharpness — replaces CAPT's hardcoded Matrix(1, 1) (72 DPI).
 # Isolated constant: adjusting DPI later needs no other code/schema changes.
@@ -85,7 +85,12 @@ def _convert_cbr(source_path: str, staged_path: str) -> tuple[int, int]:
         _extracted, _failed, crc_errors = _extract_rar_tolerant(source_path, temp_path)
         pages_skipped = len(crc_errors)
 
-        all_files = [f for f in temp_path.rglob("*") if f.is_file()]
+        # Drop macOS AppleDouble sidecars (BUGS.md BUG-028) — never real page
+        # content; don't let CBR->CBZ conversion carry them into the library.
+        all_files = [
+            f for f in temp_path.rglob("*")
+            if f.is_file() and not archive_formats.is_macos_junk_entry(f.name)
+        ]
         with zipfile.ZipFile(staged_path, "w", zipfile.ZIP_DEFLATED) as zf:
             for f in all_files:
                 zf.write(f, f.relative_to(temp_path))

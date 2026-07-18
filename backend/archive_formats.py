@@ -37,6 +37,17 @@ def archive_namelist(file_path: str, container_format: Optional[str] = None) -> 
         return archive.namelist()
 
 
+def is_macos_junk_entry(name: str) -> bool:
+    """True for macOS AppleDouble sidecar entries (`._foo.jpg`) and
+    `__MACOSX/` folder entries (BUGS.md BUG-028) — junk left behind by
+    archives that were ever touched on a Mac, not real comic pages."""
+    return (
+        Path(name).name.startswith(".")
+        or name.startswith("__MACOSX/")
+        or "/__MACOSX/" in name
+    )
+
+
 def archive_read_bytes(file_path: str, entry_name: str, container_format: Optional[str] = None) -> bytes:
     with _opener(file_path, container_format) as archive:
         return archive.read(entry_name)

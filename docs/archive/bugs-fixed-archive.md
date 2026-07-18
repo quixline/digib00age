@@ -7,6 +7,129 @@ Append-only; entries kept exactly as they were in `BUGS.md` at the time of move.
 
 ---
 
+### BUG-028 — Cover extraction fails silently on macOS resource-fork entries; affected issues then display a stale, unrelated cover
+
+**Found:** 2026-07-18, instrumented full rescan (performance re-baseline session).
+
+**Where:** `backend/scanner.py` `_generate_thumbnail()` / cover-candidate
+selection; `backend/routers/reader.py` `GET /api/cover/{issue_id}`;
+`backend/thumbnails/`.
+
+**What happens — two defects compounding.**
+
+*1. The failure isn't reported.* 21 files failed every cover attempt during a
+5,452-file scan, yet the run finished with `errors=0` and
+`scan_progress.errors` never incremented. `scan_single_file()` only returns
+`"error"` for a stat failure or a metadata parse exception — a
+`_generate_thumbnail()` that returns falsy is treated as success, leaving
+`cover_path` as `None`. The only trace is stderr text
+(`All cover attempts failed for ...`), which nothing captures or surfaces.
+Nothing in the Admin scan summary, `last_scan_log.md`, or any other log
+records it.
+
+*2. The affected issues then show the wrong picture.* `GET /api/cover/{id}`
+resolves the thumbnail purely by filename — `thumb_dir / f"{issue_id}.jpg"` —
+and never consults `Issue.cover_path`. So when cover generation fails, the
+endpoint doesn't fall through to "no cover"; it serves whatever `{id}.jpg`
+happens to exist on disk. Because a previous ID numbering left ~2,516
+orphaned thumbnails behind (BUG-026), all 21 of these issues had a stale file
+sitting at their new ID. Verified: every one of the 21 has `cover_path = None`
+in the DB alongside a `{id}.jpg` dated **2026-06-18**, i.e. a cover belonging
+to some unrelated issue from before the rebuild.
+
+**Root cause of the extraction failure:** the archives contain macOS
+resource-fork sidecar entries (`._2000_ad_prog_2489.PRG2489D_001.jpg`) — AppleDouble
+metadata files, not images. The cover picker sorts image-extension entries and
+takes the first, which puts `._`-prefixed junk ahead of the real page, and
+Pillow then fails with `cannot identify image file`. It retries the next two
+candidates, which are also `._` entries, then gives up.
+
+*3. `page_count` is inflated by the same junk — and this is the worst of the
+three.* The junk entries carry image extensions, so they're counted as pages.
+Verified on 5 affected issues: every one reports **64 pages against 32 real
+ones — exactly double**, because each real page has a paired `._` sidecar.
+That's not just a wrong number in the metadata; the reader will present 64
+pages, half of which cannot be decoded.
+
+**Full-library sweep (2026-07-18, all 5,452 issues, 0 unreadable):**
+**22 issues contain macOS junk entries, and all 22 have a wrong
+`page_count`.** 21 are 2000 AD (the same set whose covers failed), plus 1 in
+`Judge Dredd - One-Eyed Jacks` — that one's cover extraction happened to
+succeed, so it shows a correct cover while still carrying a doubled page
+count. Per-issue detail (real vs recorded page counts) is in
+`docs/archive/perf-2026-07-18/macjunk_affected.csv`. Re-run
+`.claude/skills/perf-diagnostics/scripts/8_macos_junk_sweep.py` after a fix
+to confirm the affected count drops to 0 — takes ~90 seconds over the whole
+library.
+
+**Affected issues — cover failures (all 2000 AD, ids as of the 2026-07-18
+rebuild):** 2491–2494, 2496–2504, 2508–2511, 2514, 2516–2518 — progs
+#2464–#2491. **Wrong `page_count`:** those 21 plus the One-Eyed Jacks issue.
+
+**Impact — high** (raised from medium-high once the page-count effect was
+confirmed): affected issues report double their real length and will fail to
+render half their pages in the reader, *and* show unrelated cover art — with
+no error surfaced anywhere. Silent by construction: the scan says it
+succeeded, the grid renders an image, nothing looks broken. Any archive
+touched on a Mac can trigger it, so it will recur on future imports. Currently
+contained (22 of 5,452), but it arrived with a recent batch, so the rate
+matters more than the current count.
+
+**Recommended fix (three separable pieces):**
+1. Filter `._`-prefixed and `__MACOSX/` entries out of the image-entry list
+   centrally — this is the single fix that addresses cover selection, page
+   counting, and page serving together, since all three consume the same
+   list. Affected issues need a rescan afterwards to correct their stored
+   `page_count`.
+2. Count a failed thumbnail as a scan error so it appears in the summary and
+   the logs, rather than passing silently.
+3. Make `GET /api/cover/{id}` respect `cover_path is None` instead of trusting
+   a bare filename match — otherwise any future ID reuse resurfaces this.
+
+**Related:** BUG-026 (the orphaned thumbnails that make defect 2 possible),
+BUG-001 (thumbnail/scanner state assumed from DB rather than checked on disk).
+
+**Fixed, 2026-07-18.** New shared predicate `archive_formats.is_macos_junk_entry()`
+(flags `._`-prefixed and `__MACOSX/` entries), applied at every site that
+lists or rebuilds archive image entries: `scanner.py` (`_generate_thumbnail()`
+cover picker, `_parse_cbz()` page count), `reader.py` (`_sorted_pages()`,
+deduped against its own prior inline check), `editor/archive_io.py`
+(`get_archive_page_count()`, `read_xml_and_page_count()`, and
+`flatten_and_zip()` — the last one is the shared rebuild step behind Convert
+Images, CT Auto-Tag, XML Tagging, and every Editor save, so fixing it once
+covers all of them), `editor_full.py` (`_cached_image_list()`),
+`archive_convert.py` (`_convert_cbr()`, its own separate extract+rezip),
+and `image_convert.py` (`_extract_all()`/`_convert_images_in_dir()` — needed
+care here since `flatten_and_zip()` dropping junk while `expected_count`
+still counted it would have failed post-conversion validation). Editor call
+sites weren't in the original bug write-up but were added per Tez's
+go-ahead, same root cause. Fix #2: `scan_single_file()` now increments
+`scan_progress.errors` and logs `THUMBNAIL ERROR: <filename>` on a failed
+thumbnail, without reclassifying the row's own scan result;
+`GET /api/scan/status` now returns `error_files`, surfaced in the Admin
+scan-completion text. Fix #3: `GET /api/cover/{issue_id}` now checks
+`Issue.cover_path` before trusting the on-disk `{id}.jpg` match.
+**Remediation:** new script `.claude/skills/perf-diagnostics/scripts/10_macos_junk_rebuild.py`
+recomputed `page_count` and regenerated the cover thumbnail for all 22
+affected issues directly (a plain rescan wouldn't have caught them —
+`scan_single_file()`'s mtime-skip check), writing only to DB rows and the
+thumbnail cache, never to the archive files themselves. All 22 confirmed
+fixed by both the sweep script (`page_count is wrong: 0`) and live checks
+against the running app after a restart. See `docs/v2.6/progress.md`
+(2026-07-18, "BUG-028 fixed") for the full session narrative and
+`docs/DECISIONS.md` for the whitelist-non-reconciliation and
+still-physically-present-junk-on-disk notes.
+
+**Verified live (Tez, manual):** server restarted via the existing sanctioned
+`POST /api/admin/restart` path; issue 2491 (2000 AD #2464)'s detail page
+confirmed showing "32 pages" (not 64) with a correctly-loading cover;
+`/api/issue/2491/pages` returned exactly 32 real page URLs, page 0 and page
+31 both served real JPEG bytes, page 32 correctly 404'd; issues 2503 (the
+other doubled-length one, 52 pages) and 4077 (Judge Dredd - One-Eyed Jacks,
+116 pages) spot-checked the same way.
+
+---
+
 ### BUG-024 — Desktop reader Scroll mode never reported or resumed reading progress
 
 **Found:** 2026-07-17, user report — opened an issue (Wordless) in the desktop
