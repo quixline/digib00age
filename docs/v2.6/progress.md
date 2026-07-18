@@ -4032,3 +4032,13 @@ loads 200 OK; `/api/issue/2491/pages` returns exactly 32 real page URLs,
 `/api/page/2491/0` and `/31` both serve real `image/jpeg` bytes, `/32`
 404s; issues 2503 and 4077 (the Judge Dredd one) spot-checked the same way,
 both matching the remediation script's output (52 and 116 pages).
+
+**Follow-up question from Tez, same session:** does opening an archive in
+the Full (or Basic) Editor and saving also strip macOS junk, on top of the
+ingest-time fix? Yes — both Editors' Save action calls
+`write_comicinfo_to_cbz()`, which rebuilds via the same `_rebuild_archive()`
+→ `flatten_and_zip()` path already fixed. Confirmed live: built a scratch
+CBZ with 2 real pages + injected `._page.jpg`/`__MACOSX/._page.jpg` entries,
+ran it through `write_comicinfo_to_cbz()` directly (the exact function the
+Save button calls) — rebuilt archive contained only `ComicInfo.xml` + the 2
+real pages, junk gone.

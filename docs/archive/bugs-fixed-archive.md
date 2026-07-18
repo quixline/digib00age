@@ -126,7 +126,11 @@ confirmed showing "32 pages" (not 64) with a correctly-loading cover;
 `/api/issue/2491/pages` returned exactly 32 real page URLs, page 0 and page
 31 both served real JPEG bytes, page 32 correctly 404'd; issues 2503 (the
 other doubled-length one, 52 pages) and 4077 (Judge Dredd - One-Eyed Jacks,
-116 pages) spot-checked the same way.
+116 pages) spot-checked the same way. Also confirmed (Tez asked): saving an
+edit in the Full/Basic Editor strips macOS junk too, since both Editors'
+Save action rebuilds via the same `flatten_and_zip()` path — verified with
+a scratch archive containing injected `._`/`__MACOSX/` entries run through
+`write_comicinfo_to_cbz()` directly.
 
 ---
 
