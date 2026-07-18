@@ -1408,3 +1408,86 @@ V1 app separately:
 **Verified:** Tez ran `flutter run -d windows` and confirmed navigation
 (rail → Home/Browse/Series/custom libraries) and reading (Scroll + Page
 mode) both work.
+
+### BUG-026 — Clear Database only clears DB rows; derived data on disk is left orphaned
+
+**Found:** 2026-07-18, performance re-baseline session.
+
+**Closed:** 2026-07-18.
+
+**Where:** Admin page — Clear Database (`ADMIN_SPEC.md` §7.4 — the entry's
+original "Where:" line cited §9, which is actually Database Backup; corrected
+during this fix), `backend/routers/admin.py` `clear_database()`;
+`backend/thumbnails/`.
+
+**What happened:** Clearing the database emptied the library tables but left
+everything derived from them on disk. Measured immediately after a
+successful clear (issues/credits/genres/people/reading_progress all at 0
+rows): 7,904 thumbnail files, 354MB, still present in `backend/thumbnails/`
+— all orphaned, since the next scan assigns fresh issue IDs that won't match
+any existing `{id}.jpg`. The DB file itself also wasn't reclaimed: 4,652 of
+4,677 pages were freelist (~99.5% empty) and the file stayed at 19.2MB, since
+nothing ran `VACUUM`.
+
+**Fix:** `clear_database()` now sweeps `backend/thumbnails/` unconditionally
+after the row deletes — once `Issue` is empty every `{id}.jpg` is orphaned
+by definition, so no diff-against-DB check is needed. It also resets the
+four scan log files (`scan_logs.clear_all_logs()`) and clears
+`log_last_viewed`/`next_processing_run` in `config.json` (scope decision —
+see `DECISIONS.md`), then runs `checkpoint_wal()` → `engine.dispose()` → a
+fresh raw `sqlite3` connection to `VACUUM` and re-checkpoint → sidecar
+cleanup, mirroring Restore Database's BUG-016 fix. Folded into the same
+session as BUG-027 since both center on the same endpoint and the restart
+mechanism BUG-027 needed is also what makes disposing the engine (required
+for VACUUM) safe. See `ADMIN_SPEC.md` §7.4 and BUG-027 below.
+
+**Verified:** live against the real dev DB (already disposable per
+`CLAUDE.md` §6) — before: 7,968 thumbnail files, 19.2MB DB file, 98KB `-wal`.
+After: 0 thumbnail files, 98KB DB file (VACUUM reclaimed ~19MB), 0-byte
+`-wal`, scan logs gone, `log_last_viewed` cleared. Processing Tools logs
+(Convert, Rename, CT Auto-Tag, etc.) confirmed untouched.
+
+### BUG-027 — No safe way to reset the DB: Clear Database can only be run against a live server
+
+**Found:** 2026-07-18, performance re-baseline session (pre-flight).
+
+**Closed:** 2026-07-18.
+
+**Where:** Admin page — Clear Database (`ADMIN_SPEC.md` §7.4 — same stale §9
+citation as BUG-026, corrected during this fix), tray app Stop/Start Server.
+
+**What happened:** There was no supported sequence for wiping and rebuilding
+the library. The safe-looking order — stop the server, then wipe — wasn't
+available in practice: Stop/Start Server exist only as tray-menu items, never
+as Admin page controls, and stopping the reader process takes the Admin page
+down with it (they're the same process). So the wipe had to run against a
+live server holding open connections to the DB it was clearing, which is
+exactly what left a 9MB `-wal` sidecar behind after the clear tested for
+BUG-026.
+
+**Fix:** rather than inventing a "quiesce without stopping" mechanism, made
+Clear Database self-restarting — it reuses the exact `checkpoint_wal()` →
+`engine.dispose()` → sidecar-delete → `_schedule_delayed_exit()` sequence
+already proven by Restore Database's BUG-016 fix. The endpoint does all its
+cleanup work (row deletes, thumbnail sweep, log/config reset, VACUUM) and
+then exits the process itself; the tray app's existing 30s health-check loop
+relaunches it automatically. No manual stop/start sequencing is needed at
+all — the premise that motivated this bug (no way to get a quiescent DB)
+turned out to have a simpler answer than "add a quiesce mode."
+
+**Found during this fix's own verification:** `clear_database()` had to be
+declared `async def`, not a plain `def` — `_schedule_delayed_exit()` calls
+`asyncio.create_task()`, which requires a running event loop; a plain `def`
+route runs in FastAPI's worker threadpool instead, where that call raises
+`RuntimeError: no running event loop`. `restart_server()`/`restore_database()`
+were already `async def` for the same reason; missed on the first pass here,
+caught by a live-server 500 during testing (see `DECISIONS.md`).
+
+**Verified:** live against the real dev DB — hit `POST
+/api/admin/clear-database` directly and via the Admin page UI, confirmed a
+200 response with correct removal counts, confirmed the server process
+actually exited and a new process started (via `Get-CimInstance
+Win32_Process`, no manual tray interaction), and confirmed the Admin page
+reloads and reconnects on its own ~15s later. Tez also ran the full UI flow
+(Unlock → Clear Database → confirm dialog) and confirmed no errors and an
+automatic restart.

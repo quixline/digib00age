@@ -4201,3 +4201,63 @@ normally afterward — sign-off given.
 previously pointed at the open bug). Added a `DECISIONS.md` entry for the
 `engine.dispose()` call, since the Windows file-lock behaviour behind it
 isn't obvious from reading the fix alone.
+
+## Session — 2026-07-18 — BUG-026/BUG-027 fixed (Clear Database orphaned thumbnails/no VACUUM; no safe DB-reset path)
+
+Asked which bug to fix next; recommended tackling BUG-026 and BUG-027
+together rather than as separate sessions — BUG-027's own scope note already
+said its fix should "dispose derived data (BUG-026)," so they're one design
+problem (a proper Clear Database reset), not two. Two Explore agents plus
+direct reads of `admin.py`, `database.py`, `scan_logs.py`, `config.py`,
+`admin.js`, `ADMIN_SPEC.md`, and the BUG-016 archive entry found the fix
+surface was smaller than BUG-027's note assumed: Restore Database had
+already solved "safely touch the DB file from a live server" via
+`checkpoint_wal()` → `engine.dispose()` → sidecar delete →
+`_schedule_delayed_exit()`. Confirmed with Tez: reuse that pattern
+(restart-after-clear) rather than inventing a quiesce mode, and expand the
+reset scope to also cover scan logs and `config.json` timestamps, not just
+thumbnails — see `DECISIONS.md`.
+
+**Built:** `clear_database()` (`backend/routers/admin.py`) now, in order:
+deletes `Issue`/`Person` rows in a single commit (previously two separate
+commits); sweeps every file in `backend/thumbnails/` (new
+`_clear_all_thumbnails()` helper — unconditional, since everything is
+orphaned once `Issue` is empty); resets the four scan log files (new
+`scan_logs.clear_all_logs()`); clears `log_last_viewed`/
+`next_processing_run` in `config.json`; runs `checkpoint_wal()` →
+`engine.dispose()` → a fresh raw `sqlite3` connection to `VACUUM` and
+re-checkpoint (new `_vacuum_database()` helper — VACUUM can't run inside a
+transaction, and the SQLAlchemy engine is already disposed by this point) →
+deletes any remaining `-wal`/`-shm` sidecars → `_schedule_delayed_exit()`.
+Frontend (`admin.js`) `clearDatabase()` now mirrors `doRestore()`'s UX:
+expanded confirm text, disabled/relabelled button while in flight, toast +
+`window.location.reload()` after ~4s instead of `loadStats()`.
+
+**Bug found during verification, fixed same session:** the first live test
+returned a 500. `clear_database()` was a plain `def`, so FastAPI ran it in a
+worker thread with no event loop, and `_schedule_delayed_exit()`'s
+`asyncio.create_task()` requires one. Changed to `async def` (matching
+`restart_server()`/`restore_database()`, which were already async for this
+exact reason) — see `DECISIONS.md`. A second, unrelated snag during testing:
+the running dev server process pre-dated these code edits, so the first
+click exercised the *old* endpoint (only issues/people deleted, no restart)
+— had to trigger `/api/admin/restart` manually once to load the new code
+before the real test could run.
+
+**Verified:** live against the real dev DB (disposable per `CLAUDE.md` §6).
+Before: 5,452 issues, 7,968 thumbnail files, 19.2MB DB, 98KB `-wal`,
+`log_last_viewed` populated, four scan logs present. After: 0 issues, 0
+thumbnail files, 98KB DB (VACUUM reclaimed ~19MB), 0-byte `-wal`, scan logs
+gone, `log_last_viewed` cleared, Processing Tools logs (Convert, Rename, CT
+Auto-Tag, etc.) confirmed untouched. Confirmed via `Get-CimInstance
+Win32_Process` that the server process actually exited and a new one started
+with no manual tray interaction (closing BUG-027). Tez then ran the full
+click-through UI flow (Unlock → Clear Database → confirm dialog) directly
+and confirmed no errors and a clean automatic restart.
+
+**Closeout:** moved BUG-026 and BUG-027 to `archive/bugs-fixed-archive.md`,
+correcting both entries' stale `ADMIN_SPEC.md §9` citation to §7.4 (Clear
+Database, not Database Backup) along the way. Updated `ADMIN_SPEC.md` §7.4
+with the full reset scope and restart mechanism, and added a `DECISIONS.md`
+entry for the quiesce-vs-restart call and the `async def` fix. BUG-029
+(scanner rename/move detection) remains the only open bug.

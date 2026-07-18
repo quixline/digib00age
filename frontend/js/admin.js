@@ -622,20 +622,33 @@ async function clearReadingProgress() {
 async function clearDatabase() {
   if (!confirm(
     'Clear the entire database?\n\nThis permanently deletes all issues, genres, ' +
-    'credits, and reading progress — your whole library record. Comic files on ' +
-    'disk are not touched; re-scanning will re-import them as new entries with ' +
-    'blank metadata. Custom Tabs and Home Page Strips are configuration and will ' +
-    'NOT be affected. Consider using Backup Database first. This cannot be undone.'
+    'credits, and reading progress — your whole library record — and also ' +
+    'clears cached thumbnails and resets the scan logs, then restarts the ' +
+    'server. Comic files on disk are not touched; re-scanning will re-import ' +
+    'them as new entries with blank metadata. Custom Tabs and Home Page Strips ' +
+    'are configuration and will NOT be affected. Consider using Backup Database ' +
+    'first. This cannot be undone.'
   )) return;
 
-  const r = await fetch(`${API}/admin/clear-database`, { method: 'POST' });
-  const d = await r.json();
-  if (!r.ok) {
-    showToast(d.detail?.error === 'local_access_required' ? 'Local access required' : 'Clear failed', true);
-    return;
+  const btn = document.getElementById('clearDbBtn');
+  btn.disabled = true;
+  btn.textContent = 'Clearing…';
+  try {
+    const r = await fetch(`${API}/admin/clear-database`, { method: 'POST' });
+    const d = await r.json();
+    if (r.ok) {
+      showToast(`Cleared ${d.issues_removed} issue(s), ${d.thumbnails_removed} thumbnail(s) — restarting…`);
+      setTimeout(() => { window.location.reload(); }, 4000);
+    } else {
+      showToast(d.detail?.error === 'local_access_required' ? 'Local access required' : (d.detail || 'Clear failed'), true);
+      btn.disabled = false;
+      btn.textContent = 'Clear Database';
+    }
+  } catch (e) {
+    showToast('Clear failed: ' + e.message, true);
+    btn.disabled = false;
+    btn.textContent = 'Clear Database';
   }
-  showToast(`Cleared ${d.issues_removed} issue(s), ${d.people_removed} person record(s)`);
-  await loadStats();
 }
 
 // ── Password Recovery (ADMIN_SPEC.md §7.1.7) ────────────────────────────────

@@ -21,6 +21,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from backend import scan_logs
+from backend import config as config_module
 from backend.auth import is_local_request
 from backend.config import get_config, save_config, PROJECT_ROOT
 from backend.database import get_db, SessionLocal, checkpoint_wal, engine
@@ -359,24 +360,90 @@ def cleanup_missing(db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 
 @router.post("/admin/clear-database")
-def clear_database(request: Request, db: Session = Depends(get_db)):
+async def clear_database(request: Request, db: Session = Depends(get_db)):
     """
     Hard-deletes ALL library data: issues, genres, credits, reading progress,
     and now-orphaned people. CustomTab and HomeStrip rows are configuration,
     not library data, and are deliberately left untouched.
+
+    Also sweeps backend/thumbnails/ (everything in it is orphaned once issues
+    is empty), resets the four scan log files and their config.json viewed-
+    timestamps/next_processing_run, then checkpoints the WAL, VACUUMs the DB
+    file, and restarts the process the same way restore_database() does
+    (BUG-026/BUG-027) — a live pooled connection can't otherwise be safely
+    reset, so the endpoint self-restarts instead of requiring the caller to
+    stop the server first.
     """
     if not is_local_request(request):
         raise HTTPException(status_code=403, detail={"error": "local_access_required"})
 
     issue_count = db.query(func.count(Issue.id)).scalar()
     db.query(Issue).delete(synchronize_session=False)
-    db.commit()
-
     person_count = db.query(func.count(Person.id)).scalar()
     db.query(Person).delete(synchronize_session=False)
     db.commit()
 
-    return {"issues_removed": issue_count, "people_removed": person_count}
+    thumbs_removed, thumbs_bytes = _clear_all_thumbnails()
+    scan_logs.clear_all_logs()
+    save_config({"log_last_viewed": {}, "next_processing_run": None})
+
+    config = get_config()
+    db_path = PROJECT_ROOT / config.get("db_path", "backend/comicvault.db")
+    size_before = db_path.stat().st_size if db_path.exists() else 0
+
+    # Fold pending WAL writes, then dispose the pooled connection so VACUUM
+    # (which can't run inside a transaction) and the sidecar cleanup below
+    # aren't blocked by a live file handle — same rationale as
+    # restore_database()'s BUG-016 fix. Safe to drop here since the process
+    # exits via _schedule_delayed_exit() right after.
+    checkpoint_wal()
+    engine.dispose()
+    _vacuum_database(db_path)
+    for suffix in ("-wal", "-shm"):
+        sidecar = Path(str(db_path) + suffix)
+        if sidecar.exists():
+            sidecar.unlink()
+
+    size_after = db_path.stat().st_size if db_path.exists() else 0
+
+    _schedule_delayed_exit()
+
+    return {
+        "message": "Database cleared, restarting",
+        "issues_removed": issue_count,
+        "people_removed": person_count,
+        "thumbnails_removed": thumbs_removed,
+        "thumbnail_bytes_freed": thumbs_bytes,
+        "db_bytes_before": size_before,
+        "db_bytes_after": size_after,
+    }
+
+
+def _clear_all_thumbnails() -> tuple[int, int]:
+    """Deletes every file in backend/thumbnails/ — after clear_database()'s
+    row deletes above, Issues is empty so every {id}.jpg is orphaned by
+    definition (no need to diff filenames against DB rows)."""
+    removed, freed = 0, 0
+    if config_module.THUMBNAIL_DIR.exists():
+        for f in config_module.THUMBNAIL_DIR.glob("*.jpg"):
+            freed += f.stat().st_size
+            f.unlink()
+            removed += 1
+    return removed, freed
+
+
+def _vacuum_database(db_path: Path) -> None:
+    """Runs outside the SQLAlchemy pool (engine already disposed by the
+    caller) since VACUUM can't run inside a transaction. Reclaims the
+    freelist pages the bulk deletes above just created."""
+    import sqlite3
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        conn.execute("VACUUM")
+        conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+    finally:
+        conn.close()
 
 
 @router.post("/admin/clear-reading-progress")

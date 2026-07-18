@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-18** — BUG-026/BUG-027 fixed: Clear Database now also sweeps
+  orphaned thumbnails, resets scan logs/timestamps, and VACUUMs the DB file,
+  then restarts itself automatically (reusing Restore Database's BUG-016
+  checkpoint/dispose pattern) — no more manual stop/start needed. See
+  `v2.6/progress.md`, `archive/bugs-fixed-archive.md`, `DECISIONS.md`.
 - **2026-07-18** — BUG-016 fixed: Restore Database now actually reverts DB
   state. Root cause was WAL replay — restore never cleared the `-wal`
   sidecar, so pending writes made after the backup got replayed straight back

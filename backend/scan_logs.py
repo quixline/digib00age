@@ -27,6 +27,13 @@ def log_path(log_name: str) -> Path:
     return LOGS_DIR / _FILENAMES[log_name]
 
 
+def clear_all_logs() -> None:
+    for name in _FILENAMES:
+        path = log_path(name)
+        if path.exists():
+            path.unlink()
+
+
 def append_log_line(log_name: str, line: str) -> None:
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
     path = log_path(log_name)

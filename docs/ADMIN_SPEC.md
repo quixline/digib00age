@@ -483,7 +483,8 @@ cached port and its managed process both pick up the change — don't assume
 the menu items or the listening port have updated just because `config.json`
 has.
 
-### 7.4 Clear Database *(built — V2.3 Item 9, 2026-06-24 — destructive)*
+### 7.4 Clear Database *(built — V2.3 Item 9, 2026-06-24 — destructive; full-reset +
+restart behaviour added 2026-07-18, BUG-026/BUG-027 fix)*
 
 Advanced Settings. Wipes all **library data** from the DB — issues, genres, credits,
 reading progress, and the now-orphaned People rows. **Custom Tabs and Home Strip
@@ -494,6 +495,40 @@ literal "confirmation warning/modal" wording. Gated to local sessions only — s
 tier as Restart Server and the backup folder dialog, since a full library wipe is at
 least as disruptive as either. Not reversible — pairs with the scheduled backup (§9)
 as a "start fresh" option; the confirm() message points at the Backup Database button.
+
+**Full reset scope (2026-07-18):** clearing the DB rows alone left orphaned data
+behind and no way to reclaim it (BUG-026), so `clear_database()`
+(`backend/routers/admin.py`) also:
+- Deletes every file in `backend/thumbnails/` — once the `Issue` rows above are
+  gone, every thumbnail is orphaned by definition (`{issue_id}.jpg` naming), so this
+  is an unconditional sweep, not a diff against DB rows.
+- Resets the four scan log files (`last_scan_log.md`, `changed_files_log.md`,
+  `new_files_log.md`, `missing_log.md` — §8) via `scan_logs.clear_all_logs()`.
+  Processing Tools logs (Convert, Rename, CT Auto-Tag, etc. — §11) are untouched,
+  since they aren't library-scan history.
+- Clears `log_last_viewed` and `next_processing_run` in `config.json`. The latter is
+  safe to null out — the Processing Folder Automation loop (`scheduler.py`) already
+  treats a missing/null value as "recompute on next tick," not "fire immediately."
+
+**Mechanism (restart-after-clear, 2026-07-18):** after the row/file/log cleanup
+above, `clear_database()` runs the same `checkpoint_wal()` → `engine.dispose()` →
+delete `-wal`/`-shm` sidecars sequence §9.2 uses for Restore Database, then opens a
+fresh raw `sqlite3` connection (the SQLAlchemy engine is already disposed at this
+point) to run `VACUUM` — reclaiming the freelist pages the bulk deletes created,
+which previously left the DB file at its pre-clear size — followed by one more
+`PRAGMA wal_checkpoint(TRUNCATE)`. It then calls the same `_schedule_delayed_exit()`
+helper §7.3/§9.2 use, so the process exits and the tray app's crash-recovery
+relaunches it automatically (frontend shows a toast and reloads the page after
+~4s). This is what closes BUG-027: there is no longer any need to stop the server
+before wiping — Clear Database is fully self-contained and was never reachable any
+other way from the Admin UI in the first place (Stop/Start Server exist only as
+tray-menu items, not Admin page controls).
+
+`clear_database()` must be declared `async def` for `_schedule_delayed_exit()`'s
+`asyncio.create_task()` call to work — a plain `def` route runs in a worker thread
+with no running event loop, which raises `RuntimeError: no running event loop`
+(hit during this fix's own verification; `restart_server()`/`restore_database()`
+were already `async def` for the same reason).
 
 ### 7.5 Clear Reading Progress *(built — V2.3 Item 9, 2026-06-24 — destructive)*
 
@@ -1977,6 +2012,7 @@ support wired in now, unused — same rationale as §11.5.5.
 
 | Date | Change | Reason |
 |---|---|---|
+| 2026-07-18 | §7.4 — Clear Database now documents the full reset scope (thumbnails, scan logs, `log_last_viewed`/`next_processing_run`) and the restart-after-clear mechanism (`checkpoint_wal()` → `engine.dispose()` → VACUUM → sidecar delete → `_schedule_delayed_exit()`), reusing §9.2's Restore Database pattern. | BUG-026/BUG-027 fixed — Clear Database left orphaned thumbnails/DB bloat and had no safe reset path since the Admin page and the DB-holding process are the same process; see `docs/DECISIONS.md` and `docs/archive/bugs-fixed-archive.md`. |
 | 2026-07-18 | §9.2 — Restore Database mechanism now documents the WAL-checkpoint + engine-dispose + sidecar-delete step (new step 2) that runs before the file copy, and notes `run_database_backup()` also checkpoints before its own copy. Status block corrected: Item 12 restore no longer marked failing. | BUG-016 fixed — restore was silently failing to revert DB state due to WAL replay; see `docs/DECISIONS.md` and `docs/archive/bugs-fixed-archive.md`. |
 | 2026-07-18 | §11.7.7 — noted the defensive `sync_moved_paths_to_db()` DB-sync step and its `issues_updated`/`db_sync_error` log fields. | BUG-025 follow-up: re-diagnosed as not-a-bug in the tool's intended Processing→Library workflow, but the sync fix was kept as a safety net for the atypical already-in-library-content case that originally triggered it — see `docs/DECISIONS.md` and `docs/archive/bugs-fixed-archive.md`. |
 | 2026-06-27 | Added §11 Processing Tools (new top-level section) and §11.1 File Rename — full scope, picker behaviour, checkbox model, live preview, error handling, and audit log design. Ported from CAPT's standalone File Renamer per `ROADMAP.md`'s "CAPT extra tools" entry, brought in one tool at a time starting with Rename. | Dedicated scoping session 2026-06-27 — CAPT source code and `Processing/` folder structure inspected directly to ground design decisions. |

@@ -4,6 +4,43 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### BUG-026/BUG-027 fix: Clear Database self-restarts instead of adding a "quiesce" mode
+
+**Decided:** 2026-07-18, BUG-026/BUG-027 fix session.
+
+**Why:** BUG-027's own `BUGS.md` note assumed the fix needed a way to "quiesce
+writes" — pause the live server without fully stopping it — before the DB
+could be safely wiped and VACUUMed. Investigation found that primitive
+doesn't exist anywhere in the codebase, and the only two proven process
+states are "live pooled engine" and "engine disposed, process about to exit"
+(the pattern `restore_database()` already uses for its BUG-016 fix). Rather
+than inventing a new quiesce concept, `clear_database()` reuses that exact
+sequence — `checkpoint_wal()` → `engine.dispose()` → sidecar delete →
+`_schedule_delayed_exit()` — and simply accepts the same ~15s self-restart
+Restore Database and the Server Port control already impose. This also
+resolves BUG-027 as a side effect: since the endpoint is fully
+self-contained, there's no longer any reason to look for a way to "stop the
+server, then wipe" — a sequence that was never actually reachable from the
+Admin UI anyway (Stop/Start Server are tray-menu-only).
+
+**Also decided (same session):** Clear Database's reset scope includes scan
+logs (`last_scan_log.md` etc.) and `log_last_viewed`/`next_processing_run`
+in `config.json`, not just thumbnails+VACUUM — Tez's call, for a fuller
+"start fresh" reset rather than the narrower thumbnails-only scope BUG-026
+itself would have minimally required. Confirmed safe to null
+`next_processing_run`: the Processing Folder Automation loop
+(`scheduler.py`) already treats a missing/null value as "recompute on next
+tick," not "fire immediately."
+
+**Bug found during this fix's own verification:** `clear_database()` had to
+be changed from a plain `def` to `async def`. `_schedule_delayed_exit()`
+calls `asyncio.create_task()`, which requires a running event loop in the
+calling context; FastAPI runs plain `def` routes in a worker thread with no
+event loop, so the call raised `RuntimeError: no running event loop` — caught
+via a live 500 response during manual testing, not by inspection beforehand.
+`restart_server()` and `restore_database()` were already `async def`, which
+is exactly why they didn't hit this.
+
 ### BUG-016 fix: `engine.dispose()` before deleting the post-checkpoint `-wal`/`-shm` sidecars
 
 **Decided:** 2026-07-18, BUG-016 fix session.
