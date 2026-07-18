@@ -13,6 +13,12 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-18** — BUG-029 fixed: scanner now detects a plain on-disk
+  rename/move via content hashing instead of creating a duplicate row and
+  orphaning the old one — forward-only (hashes new/updated files going
+  forward, no retroactive backfill of the existing library, since the dev DB
+  will be wiped again before production). See `v2.6/progress.md`,
+  `archive/bugs-fixed-archive.md`, `DECISIONS.md`.
 - **2026-07-18** — BUG-026/BUG-027 fixed: Clear Database now also sweeps
   orphaned thumbnails, resets scan logs/timestamps, and VACUUMs the DB file,
   then restarts itself automatically (reusing Restore Database's BUG-016

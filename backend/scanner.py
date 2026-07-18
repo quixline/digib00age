@@ -13,6 +13,7 @@ Rules:
 - Characters/Teams/Locations remain raw CSV strings — not in scope for this dedup.
 """
 
+import hashlib
 import logging
 import os
 import re
@@ -43,6 +44,7 @@ class ScanProgress:
     new: int = 0
     updated: int = 0
     skipped: int = 0
+    moved: int = 0
     missing: int = 0
     errors: int = 0
     log: list[str] = field(default_factory=list)
@@ -378,6 +380,20 @@ def _parse_cbz(file_path: str) -> tuple[dict, str]:
     }, "xml"
 
 
+def _hash_file(file_path: str) -> str:
+    """
+    blake2b of the file's full bytes, chunked so large compendiums don't load
+    fully into memory. Used for rename/move detection (BUG-029) — only called
+    on INSERT/UPDATE (via _apply_metadata), never on the unchanged/"skipped"
+    fast path, so this doesn't turn routine scans back into full-file reads.
+    """
+    h = hashlib.blake2b(digest_size=16)
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def _apply_metadata(issue: Issue, meta: dict, source: str,
                     file_path: str, mtime: datetime, file_size: int):
     """Write parsed metadata dict into an Issue ORM object."""
@@ -408,6 +424,7 @@ def _apply_metadata(issue: Issue, meta: dict, source: str,
     issue.container_format = archive_formats.format_for_path(file_path)
     issue.date_modified   = mtime
     issue.file_size       = file_size
+    issue.content_hash    = _hash_file(file_path)
     issue.missing         = False
 
 
@@ -555,6 +572,86 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
 
 
 # ---------------------------------------------------------------------------
+# Rename/move detection (BUG-029)
+# ---------------------------------------------------------------------------
+
+def _detect_renames(db: Session, disk_paths: set[str]) -> set[str]:
+    """
+    Match on-disk paths with no DB row against DB rows no longer on disk, by
+    file_size + content_hash — catches a plain OS-level rename/move that
+    scan_single_file's exact-path match would otherwise treat as a brand-new
+    file plus an orphaned "missing" row. Forward-only: only rows whose
+    content_hash was already populated (by a prior insert/update since this
+    fix shipped) are eligible — legacy rows stay unmatched until next touched.
+
+    Matches against every DB row currently off-disk, not just ones going
+    missing *this* scan, so a rename is still caught even if it happened
+    between two separate scan runs.
+
+    Returns the set of on-disk paths handled here, so scan_library's normal
+    per-file loop can skip them (avoids a duplicate INSERT for the same path).
+    """
+    existing_paths = {row[0] for row in db.query(Issue.file_path).all()}
+    candidate_new_paths = disk_paths - existing_paths
+    if not candidate_new_paths:
+        return set()
+
+    missing_rows = (
+        db.query(Issue)
+        .filter(Issue.file_path.notin_(disk_paths))
+        .filter(Issue.content_hash.isnot(None))
+        .filter(Issue.file_size.isnot(None))
+        .all()
+    )
+    if not missing_rows:
+        return set()
+
+    by_size: dict[int, list[Issue]] = {}
+    for row in missing_rows:
+        by_size.setdefault(row.file_size, []).append(row)
+
+    handled: set[str] = set()
+    for new_path in sorted(candidate_new_paths):
+        try:
+            size = os.path.getsize(new_path)
+        except OSError:
+            continue
+        bucket = by_size.get(size)
+        if not bucket:
+            continue
+
+        new_hash = _hash_file(new_path)
+        matches = [row for row in bucket if row.content_hash == new_hash]
+        if not matches:
+            continue
+        match = min(matches, key=lambda r: r.id)
+        if len(matches) > 1:
+            scan_progress.add_log(
+                f"MOVE MATCH AMBIGUOUS: {Path(new_path).name} matches "
+                f"{len(matches)} identical-content rows — picked id={match.id}"
+            )
+
+        old_path = match.file_path
+        stat_result = os.stat(new_path)
+        match.file_path = new_path
+        match.date_modified = datetime.utcfromtimestamp(stat_result.st_mtime)
+        match.file_size = size
+        match.missing = False
+        db.commit()
+
+        scan_progress.moved += 1
+        scan_progress.add_log(f"MOVED: {Path(new_path).name} (was {old_path})")
+        scan_logs.append_changed_files_entry(
+            Path(new_path).name, f"moved (renamed from {old_path})"
+        )
+
+        bucket.remove(match)
+        handled.add(new_path)
+
+    return handled
+
+
+# ---------------------------------------------------------------------------
 # Full library scan
 # ---------------------------------------------------------------------------
 
@@ -601,8 +698,17 @@ def scan_library(db: Session):
     scan_progress.total = len(disk_paths)
     scan_progress.add_log(f"Found {len(disk_paths)} CBZ/CBR files on disk")
 
+    # ---- Detect renamed/moved files before processing new/missing (BUG-029) ----
+    renamed_paths = _detect_renames(db, disk_paths)
+    if renamed_paths:
+        scan_progress.add_log(f"Detected {len(renamed_paths)} moved/renamed file(s)")
+
     # ---- Process each file ----
     for file_path in sorted(disk_paths):
+        if file_path in renamed_paths:
+            scan_progress.processed += 1
+            continue
+
         details: dict = {}
         result = scan_single_file(file_path, db, details)
         scan_progress.processed += 1
@@ -653,6 +759,7 @@ def scan_library(db: Session):
         f"new={scan_progress.new}, "
         f"updated={scan_progress.updated}, "
         f"skipped={scan_progress.skipped}, "
+        f"moved={scan_progress.moved}, "
         f"missing={scan_progress.missing}, "
         f"errors={scan_progress.errors}"
     )

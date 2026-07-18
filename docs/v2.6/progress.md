@@ -4261,3 +4261,57 @@ Database, not Database Backup) along the way. Updated `ADMIN_SPEC.md` §7.4
 with the full reset scope and restart mechanism, and added a `DECISIONS.md`
 entry for the quiesce-vs-restart call and the `async def` fix. BUG-029
 (scanner rename/move detection) remains the only open bug.
+
+## Session — 2026-07-18 — BUG-029 fixed: content-hash rename/move detection (forward-only)
+
+Tez asked for a cost/impact analysis of using content hashing to fix
+BUG-029 before deciding whether to build it: what full-file hashing costs
+versus the scanner's current ZIP-directory-only reads, whether it introduces
+new problems, and whether it helps performance elsewhere. Findings (see
+`DECISIONS.md` for the full write-up): the scanner is deliberately not
+I/O-bound today (`PERFORMANCE.md` finding #16), so hashing breaks that
+property; a one-time backfill across the whole library was estimated at
+~75-95 minutes of continuous USB HDD reads (~430GB at the drive's measured
+77-95MB/s), while hashing only new/changed files going forward is nearly
+free (real scans typically touch 0-2 files, `PERFORMANCE.md` finding #7).
+Tez confirmed the dev DB will be wiped at least once more before
+production, so there's no reason to spend that backfill time on data that
+won't survive — decided to go **forward-only**: hash new/updated files from
+here on, don't retroactively backfill the existing ~5,427 issues. The 4
+already-orphaned rows from the original bug report are unaffected by this
+fix and still need the existing manual `cleanup-missing` cleanup.
+
+**Built:**
+- `backend/models.py` — added `Issue.content_hash` (nullable `Text`).
+- `backend/database.py` — `_add_missing_issue_columns()` adds the column via
+  a plain guarded `ALTER TABLE`, deliberately with **no backfill loop**
+  (unlike the `file_size` column a few lines above it, which backfills
+  because a stat call is cheap — a full-file hash read is not).
+- `backend/scanner.py` — new `_hash_file()` (chunked `blake2b`, so large
+  compendiums don't load fully into memory), called from `_apply_metadata()`
+  so it only runs on INSERT/UPDATE, never on the unchanged/"skipped" fast
+  path. New `_detect_renames()` pre-pass in `scan_library()`: before the
+  per-file loop, matches on-disk paths with no DB row against DB rows
+  currently off-disk (by `file_size` prefilter, then `content_hash` exact
+  match) — this includes rows already flagged `missing=True` from an earlier
+  scan, not just ones going missing in the current run, so a rename is still
+  caught even if the move happened between two scans. On a match, the
+  existing row's `file_path`/`date_modified`/`file_size` are updated in
+  place (id, `content_hash`, `cover_path`, and reading progress all
+  untouched) instead of inserting a new row and flagging the old one
+  missing; logged via `scan_logs.append_changed_files_entry(...,
+  "moved (renamed from <old_path>)")` and a new `ScanProgress.moved` counter
+  surfaced in the scan summary line.
+
+**Verified:** scratch-only, isolated temp DB + temp library + temp
+thumbnails/logs dirs (never the real `backend/comicvault_v2.db` or
+`L:\Comic Archives`) — confirmed a plain on-disk rename updates the existing
+row (id/progress preserved, no duplicate, `moved` counter incremented,
+"moved" line written to the changed-files log) while a genuinely new file
+still INSERTs, a same-path content change still hits the BUG-013 mtime/size
+UPDATE path (not the rename path), and a genuine delete still flags
+`missing=True`. Separately smoke-tested the migration itself against a
+throwaway copy of the real dev DB: `init_db()` completed in ~0.04s, row
+count unchanged, and every existing row's `content_hash` confirmed `NULL`
+(proof the no-backfill guarantee holds against real data, not just a fresh
+test DB).

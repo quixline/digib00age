@@ -570,17 +570,24 @@ button that opens it. Log files live in `/logs/`:
 | Missing Records | `missing_log.md` | `filename.cbz — last known path — date went missing` |
 
 **"Changed" definition — resolved 2026-06-24 by reading `scanner.py` directly,
-updated 2026-07-18 (BUG-013 fix):** `scan_single_file()` matches files by exact
-`file_path` — it cannot distinguish a renamed/moved file from a genuinely new
-one. A filename change is confirmed to produce a separate new-row insert +
-missing-flag on the old row (not a "change") — `file_path` is the sole, unique
-match key; this rename/move blind spot is tracked as `BUGS.md` BUG-029, not
-fixed here. Within a single unchanged path, "changed" is now flagged on
-**either** a mtime delta (≥1 second from the stored `date_modified`) **or** a
-file-size mismatch (`Issue.file_size`, added for this fix) — previously mtime
-alone was checked, which meant a same-mtime, different-file-size re-zip (e.g.
-one that preserves the original timestamp) was silently skipped. That gap was
-`BUGS.md` BUG-013, fixed 2026-07-18 — see `archive/bugs-fixed-archive.md`.
+updated 2026-07-18 (BUG-013 fix), updated again same day (BUG-029 fix):**
+`scan_single_file()` matches files by exact `file_path` first; a path with no
+matching row is then checked against `scan_library()`'s `_detect_renames()`
+pre-pass, which matches it by `file_size` + `content_hash` against any DB row
+currently off-disk (including rows already flagged missing from an earlier
+scan) — a match updates that row's `file_path` in place ("moved", logged to
+`changed_files_log.md`) instead of inserting a duplicate and orphaning the
+original row. This only catches rows whose `content_hash` was already
+populated by a prior insert/update since the fix shipped (forward-only, no
+retroactive backfill — see `DECISIONS.md`); a rename of a row that predates
+this fix and was never re-touched still falls back to the old
+insert-new-plus-flag-missing behavior. Within a single unchanged path,
+"changed" is flagged on **either** a mtime delta (≥1 second from the stored
+`date_modified`) **or** a file-size mismatch (`Issue.file_size`, added for
+BUG-013) — previously mtime alone was checked, which meant a same-mtime,
+different-file-size re-zip (e.g. one that preserves the original timestamp)
+was silently skipped. That gap was `BUGS.md` BUG-013, fixed 2026-07-18 — see
+`archive/bugs-fixed-archive.md`.
 
 **Change-type classification (fixed — V2.3 post-test fixes, Fix 8, 2026-06-26):**
 the log entry now distinguishes *what* changed, instead of always logging the fixed

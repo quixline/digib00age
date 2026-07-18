@@ -121,6 +121,13 @@ def _add_missing_issue_columns():
                     text("UPDATE issues SET file_size = :size WHERE id = :id"),
                     {"size": size, "id": row.id},
                 )
+        if "content_hash" not in cols:
+            # No backfill here, unlike file_size above — that's a cheap stat
+            # call, this would mean reading every archive's full bytes
+            # (~75-95 min across the library on the USB HDD, see
+            # PERFORMANCE.md). Forward-only: existing rows stay NULL until
+            # next inserted/updated by scanner.py (BUG-029).
+            conn.execute(text("ALTER TABLE issues ADD COLUMN content_hash TEXT"))
         conn.commit()
 
 

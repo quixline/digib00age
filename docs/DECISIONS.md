@@ -4,6 +4,41 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### BUG-029 fix: content-hash rename detection is forward-only, no library backfill
+
+**Decided:** 2026-07-18, BUG-029 fix session.
+
+**Why:** Tez asked for a cost/impact analysis before committing to content
+hashing as the fix. The scanner is deliberately not I/O-bound today
+(`PERFORMANCE.md` finding #16 — it only reads the ZIP central directory and
+one cover per file, not the whole archive); a content hash requires a full
+sequential read of every byte, which is a fundamentally different cost
+profile. A one-time backfill across the whole library (~5,427 issues) was
+estimated at roughly 75-95 minutes of continuous reads off the `L:\Comic
+Archives` USB 3.0 HDD (~430GB at its measured 77-95MB/s), while hashing only
+new/changed files going forward is nearly free — real scans typically touch
+0-2 files (`PERFORMANCE.md` finding #7). Also ruled out doing the backfill
+automatically inside `database.py`'s existing `_add_missing_issue_columns()`
+startup migration — that pattern is safe for cheap additive columns like
+`file_size` (a stat call) but would block server startup for over an hour if
+applied to a full-content hash.
+
+Tez confirmed the dev DB will be wiped at least once more before production,
+so spending 75-95 minutes protecting data that won't survive to production
+wasn't worth it — decided to go forward-only: `content_hash` is computed and
+stored only on INSERT/UPDATE from this fix forward, no backfill tool built
+(not even as an optional/deferred add-on). Consequence accepted: the 4
+already-orphaned rows from the original bug report, and any row not touched
+again before it's next renamed, stay unprotected until they're naturally
+re-scanned — cleaned up via the existing manual `cleanup-missing` endpoint,
+same as before this fix.
+
+**Also decided (same session):** rename-matching runs against every DB row
+currently off-disk (`file_size` + `content_hash` match), not just rows going
+missing in the same scan pass — this catches a rename that happened between
+two separate scan runs, not only one detected within a single run, at no
+extra cost since it's the same query the missing-flagging loop already did.
+
 ### BUG-026/BUG-027 fix: Clear Database self-restarts instead of adding a "quiesce" mode
 
 **Decided:** 2026-07-18, BUG-026/BUG-027 fix session.

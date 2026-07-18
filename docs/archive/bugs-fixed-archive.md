@@ -1491,3 +1491,57 @@ Win32_Process`, no manual tray interaction), and confirmed the Admin page
 reloads and reconnects on its own ~15s later. Tez also ran the full UI flow
 (Unlock → Clear Database → confirm dialog) and confirmed no errors and an
 automatic restart.
+
+
+### BUG-029 — Scanner has no rename/move detection; a renamed file creates a duplicate row and leaves the old one an orphaned "missing" entry forever
+
+**Found:** 2026-07-18, during BUG-013's fix-verification session.
+
+**Closed:** 2026-07-18.
+
+**Where:** `backend/scanner.py`'s `scan_single_file()` / `scan_library()` —
+the only match key for "is this file already in the DB" was exact
+`Issue.file_path` string equality; no content hash, filename fallback, or
+move detection anywhere.
+
+**What happened:** Renaming or moving a file that's already scanned into the
+library — a plain on-disk rename, or any tool that changes the path without
+going through this app's own move-and-relink flow — made the scanner treat
+the new path as a brand-new issue on the next scan (fresh INSERT, new ID,
+regenerated thumbnail, reading progress reset), while the old row's path was
+no longer found on disk and just got flagged `missing = True` — never
+deleted by design — sitting there indefinitely unless someone manually ran
+the admin-only `cleanup-missing` endpoint.
+
+**Fix:** added content-based rename/move detection, **forward-only** (see
+`DECISIONS.md` for the full cost/impact analysis behind that scope call).
+`Issue.content_hash` (new nullable column, `backend/models.py`) is computed
+and stored on every INSERT/UPDATE (`backend/scanner.py` `_hash_file()`,
+called from `_apply_metadata()`) — never on the unchanged/"skipped" fast
+path, so routine scans stay cheap. A new `_detect_renames()` pre-pass in
+`scan_library()` runs before the per-file loop: it matches on-disk paths
+with no DB row against DB rows currently off-disk (by `file_size` prefilter,
+then exact `content_hash` match — covering rows already flagged missing from
+an earlier scan, not just ones going missing this run). On a match, the
+existing row's `file_path`/`date_modified`/`file_size` are updated in place
+— id, `content_hash`, `cover_path`, and reading progress all survive —
+instead of inserting a duplicate and orphaning the original. Logged via the
+existing changed-files log (`"moved (renamed from <old_path>)"`) and a new
+`ScanProgress.moved` counter in the scan summary.
+
+Deliberately **not** retroactive: existing rows scanned before this fix
+shipped have no `content_hash` and won't be rename-matched until they're
+next inserted/updated. The DB will be wiped at least once more before
+production, so a one-time full-library backfill (estimated ~75-95 minutes of
+USB HDD reads) wasn't worth building — see `DECISIONS.md`. The 4
+already-orphaned rows from the original bug report are unchanged by this fix
+and still need the existing manual `cleanup-missing` cleanup.
+
+**Verified:** scratch-only (isolated temp DB/library/thumbnails/logs, never
+the real DB or `L:\Comic Archives`) — confirmed a rename updates the
+existing row without creating a duplicate or losing reading progress, while
+genuinely new files, same-path content changes (BUG-013's path), and
+genuine deletions all still behave exactly as before. Separately smoke-tested
+the `ALTER TABLE` migration against a throwaway copy of the real dev DB:
+completed in ~0.04s, row count unchanged, all existing rows' `content_hash`
+confirmed `NULL` (no accidental backfill).

@@ -75,6 +75,8 @@ class Issue(Base):
     date_added      = Column(DateTime, default=datetime.utcnow, nullable=False)
     date_modified   = Column(DateTime, nullable=True)       # filesystem mtime at last scan
     file_size       = Column(Integer, nullable=True)        # filesystem size (bytes) at last scan — BUG-013
+    content_hash    = Column(Text, nullable=True)            # blake2b of file bytes, set on insert/update
+                                                              # only (forward-only, no backfill) — BUG-029
 
     # Relationships
     genres          = relationship("IssueGenre", back_populates="issue",
