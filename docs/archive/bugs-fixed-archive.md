@@ -7,6 +7,55 @@ Append-only; entries kept exactly as they were in `BUGS.md` at the time of move.
 
 ---
 
+### BUG-016 — Restore Database: restore completes but does not revert DB to backup state
+
+**Found:** 2026-06-28, manual test pass (Items 10–13).
+
+**Closed:** 2026-07-18.
+
+**Where:** Admin page — Restore Database control (`ADMIN_SPEC.md` §9.2),
+`backend/routers/admin.py` `restore_database()` / `run_database_backup()`;
+`backend/database.py`.
+
+**What happened:** The restore flow appeared to complete — confirm dialog fires, the
+pre-restore safety snapshot is taken, and the server restarts — but after the restart
+the DB was still in the pre-restore (current) state, not the backup state. Test
+procedure: backed up the DB with only the 2000 AD custom tab in place; then added a
+new 'testdb' custom tab and changed the read status on one issue; then restored the
+backup. After the server restarted, the testdb tab and read-status change both
+persisted — the DB was not reverted to the backed-up state.
+
+**Root cause (confirmed 2026-06-28 by reading code, fix built 2026-07-18):** the WAL
+theory, not a path-mismatch. `database.py` enables `PRAGMA journal_mode=WAL` on every
+connection, so recent writes land in a separate `comicvault.db-wal` sidecar, not the
+main `.db` file, until SQLite checkpoints them. `restore_database()` only did
+`shutil.copy2(source, db_path)` — it copied the backup over the main file but never
+touched the existing `-wal`/`-shm` files sitting next to it, so the pre-restore `-wal`
+(still holding the post-backup writes) got replayed straight back into the
+just-restored main file on the next server open — silently reintroducing exactly what
+the restore was meant to undo.
+
+**Fix:** added `checkpoint_wal()` (`database.py`) — runs `PRAGMA
+wal_checkpoint(TRUNCATE)` on the live engine to fold pending writes into the main
+file and empty the `-wal`. `run_database_backup()` now calls it before copying, so
+every backup (manual, scheduled, and the pre-restore snapshot) captures fully-flushed
+state — this also closes the "may affect backups too" risk BUG-016 originally flagged
+as unconfirmed. `restore_database()` calls it, then `engine.dispose()` (required —
+testing found the SQLAlchemy `QueuePool` connection still holds an OS-level file
+handle on `-wal`/`-shm` even after `TRUNCATE`, which blocks deleting them on Windows;
+safe to drop here since the process exits via `_schedule_delayed_exit()` right after),
+then deletes any remaining `-wal`/`-shm` sidecars before copying the backup over
+`db_path`. See `DECISIONS.md` for the `engine.dispose()` rationale.
+
+**Verified:** scratch-tested first, in full isolation (throwaway SQLite DB, then a
+real SQLAlchemy engine with `QueuePool` matching `database.py`'s setup, nothing real
+touched) — reproduced the original bug exactly (a post-backup write survived a bare
+`copy2`-only restore), then confirmed the fixed sequence (checkpoint → dispose →
+delete sidecars → copy) correctly discards it. Then Tez ran the actual repro live
+against the real dev DB: took a backup, made a change, ran Restore Database, confirmed
+the change was reverted, and confirmed the server restarts and the library browses
+normally afterward.
+
 ### BUG-013 — Scanner doesn't detect a same-mtime, different-size file change
 
 **Found:** 2026-06-24, v2.3 Item 7 build session (confirming ADMIN_SPEC.md §8's

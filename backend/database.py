@@ -36,6 +36,20 @@ engine = _get_engine()
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
+def checkpoint_wal() -> None:
+    """
+    Forces a full WAL checkpoint and truncates comicvault.db-wal to zero length,
+    folding any pending writes into the main .db file. Must run against the live
+    engine before any shutil.copy2() of db_path — otherwise a leftover -wal
+    sidecar sits next to the copied file and SQLite replays its pending frames
+    back into it the next time the DB is opened, silently undoing whatever the
+    copy was meant to capture or restore (BUG-016).
+    """
+    with engine.connect() as conn:
+        conn.execute(text("PRAGMA wal_checkpoint(TRUNCATE)"))
+        conn.commit()
+
+
 _PERF_INDEXES = [
     "CREATE INDEX IF NOT EXISTS ix_issues_date_added   ON issues (date_added DESC)",
     "CREATE INDEX IF NOT EXISTS ix_issues_missing_fmt  ON issues (missing, format_group)",

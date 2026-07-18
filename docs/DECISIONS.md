@@ -4,6 +4,25 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### BUG-016 fix: `engine.dispose()` before deleting the post-checkpoint `-wal`/`-shm` sidecars
+
+**Decided:** 2026-07-18, BUG-016 fix session.
+
+**Why:** the obvious fix for the WAL-replay bug is `PRAGMA wal_checkpoint(TRUNCATE)`
+before copying the backup over `db_path`. Testing that in isolation showed TRUNCATE
+alone empties the `-wal` file to 0 bytes but doesn't remove it, and a follow-up
+`unlink()` of the now-empty sidecar threw `PermissionError` on Windows — the app's
+SQLAlchemy engine uses `QueuePool` (confirmed via `type(engine.pool)`), which keeps a
+real, pooled OS-level connection open in the background, and that connection still
+holds a file handle on `-wal`/`-shm` even after the checkpoint. Calling
+`engine.dispose()` right after the checkpoint releases that handle and lets the
+sidecar deletion succeed. Only done in `restore_database()`, not
+`run_database_backup()` — disposing mid-request is harmless in restore's case since
+`_schedule_delayed_exit()` tears the process down ~1s later anyway (a fresh connection
+just gets opened on relaunch), but doing it during an ordinary backup would
+needlessly drop the live server's connection pool for no reason, since backup never
+deletes the sidecars at all.
+
 ### BUG-013 fix: backfill `file_size` at migration time; split the rename/move blind spot into a new bug (BUG-029) instead of stretching BUG-013's scope
 
 **Decided:** 2026-07-18, BUG-013 fix session.

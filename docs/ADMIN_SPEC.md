@@ -20,9 +20,11 @@
 > Items 10–13 built and code-verified 2026-06-27 (Password Recovery button §7.1.7,
 > Scheduled Backup frequency reduction §9, Restore Database §9.2, Card Size +75%
 > option §6). Manually tested 2026-06-28: Items 10, 11, 13 passed; Item 12 (Restore
-> Database) did not pass — restore completes but DB is not reverted to the backup
-> state (BUG-016, open). Item 14 (site-wide header unification) moved to `ROADMAP.md`
-> 2026-06-28 — not admin-page scope, blocked on Claude Design exploration.
+> Database) did not pass — restore completed but DB was not reverted to the backup
+> state (BUG-016). **Fixed 2026-07-18** — WAL-checkpoint bug, see §9.2 and
+> `archive/bugs-fixed-archive.md`. Item 14 (site-wide header unification) moved to
+> `ROADMAP.md` 2026-06-28 — not admin-page scope, blocked on Claude Design
+> exploration.
 >
 > **§11 Processing Tools, folded 2026-07-01** — the standalone
 > `admin-spec-section-12-processing-tools.md` scoping file is retired; its
@@ -637,11 +639,23 @@ inside the same renamed "Database Backup" section.
    `sep`) to write `pre-restore-{timestamp}.db` into the same backup folder. If
    there's no existing DB to snapshot (`FileNotFoundError`), this step is skipped
    rather than blocking the restore.
-2. Copies the chosen file over `comicvault.db` (`shutil.copy2`).
-3. Triggers the same delayed-exit relaunch the Server Listening Port control
+2. **WAL checkpoint + sidecar cleanup** (added 2026-07-18, BUG-016 fix) —
+   `checkpoint_wal()` (`database.py`) runs `PRAGMA wal_checkpoint(TRUNCATE)` on
+   the live engine, then `engine.dispose()` releases the pooled connection's
+   file handle (needed on Windows — `TRUNCATE` alone leaves the handle open and
+   blocks deletion), then any remaining `comicvault.db-wal`/`-shm` sidecars are
+   deleted outright. Without this, SQLite would replay the pre-restore `-wal`'s
+   pending writes straight back into the just-restored file on the next open —
+   the original BUG-016 failure mode.
+3. Copies the chosen file over `comicvault.db` (`shutil.copy2`).
+4. Triggers the same delayed-exit relaunch the Server Listening Port control
    (§7.3) and `/admin/restart` use — a full server restart rather than tearing
    down/rebuilding the live DB engine in-process. Factored into a shared
    `_schedule_delayed_exit()` helper used by both.
+
+`run_database_backup()` also calls `checkpoint_wal()` before its own
+`shutil.copy2`, so every backup (manual, scheduled, and this restore's own
+pre-restore snapshot) captures fully-flushed state — not just restores.
 
 No new dependency — `tkinter` is already used by the §9.1 folder picker.
 
@@ -1963,6 +1977,7 @@ support wired in now, unused — same rationale as §11.5.5.
 
 | Date | Change | Reason |
 |---|---|---|
+| 2026-07-18 | §9.2 — Restore Database mechanism now documents the WAL-checkpoint + engine-dispose + sidecar-delete step (new step 2) that runs before the file copy, and notes `run_database_backup()` also checkpoints before its own copy. Status block corrected: Item 12 restore no longer marked failing. | BUG-016 fixed — restore was silently failing to revert DB state due to WAL replay; see `docs/DECISIONS.md` and `docs/archive/bugs-fixed-archive.md`. |
 | 2026-07-18 | §11.7.7 — noted the defensive `sync_moved_paths_to_db()` DB-sync step and its `issues_updated`/`db_sync_error` log fields. | BUG-025 follow-up: re-diagnosed as not-a-bug in the tool's intended Processing→Library workflow, but the sync fix was kept as a safety net for the atypical already-in-library-content case that originally triggered it — see `docs/DECISIONS.md` and `docs/archive/bugs-fixed-archive.md`. |
 | 2026-06-27 | Added §11 Processing Tools (new top-level section) and §11.1 File Rename — full scope, picker behaviour, checkbox model, live preview, error handling, and audit log design. Ported from CAPT's standalone File Renamer per `ROADMAP.md`'s "CAPT extra tools" entry, brought in one tool at a time starting with Rename. | Dedicated scoping session 2026-06-27 — CAPT source code and `Processing/` folder structure inspected directly to ground design decisions. |
 | 2026-06-30 | Added §11.2 Convert Archives — full scope. Only CBR→CBZ and PDF→CBZ ported (CBZ→CBR/CBZ→PDF dropped, per Item 5's CBR-native-read and PDF-dropped-from-scanner resolutions). Content-based From-format filtering in the picker, `PDF_RENDER_DPI = 300` isolated constant (replaces CAPT's 72 DPI default), CBR CRC errors now surfaced as a `pages_skipped` warning instead of silently dropped, background-job + polling progress modelled on `backend/scanner.py`'s existing `scan_progress` pattern (not a blocking request like Rename), own `convert_log.md` audit log. | v2.4 Item 6 — dedicated scoping session 2026-06-30, CAPT source (`arc_convert_worker.py`, `arc_conv_cb_proc.py`, `arc_conv_pdf_proc.py`, `arc_conv_helpers.py`, `arc_convert_util.py`) and `backend/scanner.py` inspected directly to ground design decisions. |

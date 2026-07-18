@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 from backend import scan_logs
 from backend.auth import is_local_request
 from backend.config import get_config, save_config, PROJECT_ROOT
-from backend.database import get_db, SessionLocal
+from backend.database import get_db, SessionLocal, checkpoint_wal, engine
 from backend.models import CustomTab, HomeStrip, Issue, Person, ReadingProgress
 from backend.path_utils import is_under, normalize_path
 
@@ -438,6 +438,7 @@ def run_database_backup(prefix: str = "comicvault_backup", sep: str = "_") -> Pa
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     backup_path = dest_dir / f"{prefix}{sep}{timestamp}.db"
+    checkpoint_wal()  # fold pending WAL writes into db_path before copying (BUG-016)
     shutil.copy2(str(db_path), str(backup_path))
     save_config({"last_backup_at": datetime.now().isoformat(), "last_backup_error": None})
     return backup_path
@@ -507,6 +508,20 @@ async def restore_database(request: Request, payload: dict = Body(...)):
 
     config = get_config()
     db_path = PROJECT_ROOT / config.get("db_path", "backend/comicvault.db")
+
+    # Fold pending WAL writes into db_path, then clear its -wal/-shm sidecars
+    # outright so nothing is left for SQLite to replay back into the restored
+    # file on relaunch (BUG-016). dispose() first — the pool's live connection
+    # still holds an OS-level handle on -wal/-shm even after TRUNCATE, which
+    # blocks unlink() on Windows; safe to drop here since the process exits
+    # via _schedule_delayed_exit() right after.
+    checkpoint_wal()
+    engine.dispose()
+    for suffix in ("-wal", "-shm"):
+        sidecar = Path(str(db_path) + suffix)
+        if sidecar.exists():
+            sidecar.unlink()
+
     shutil.copy2(str(source), str(db_path))
 
     _schedule_delayed_exit()

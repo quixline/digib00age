@@ -4155,3 +4155,49 @@ example as confirmed real-world evidence, and updated BUG-025's stale
 `ADMIN_SPEC.md`'s "Changed" definition and `SPEC.md`'s incremental-rescan
 table/`Issue` schema table to describe the mtime-or-size check and the new
 `file_size` column.
+
+## Session — 2026-07-18 — BUG-016 fixed (Restore Database doesn't revert DB state)
+
+Asked which of the 4 open bugs to fix next; recommended BUG-016 over
+BUG-026/027/029 — it's the only one marked high impact, it's the safety net
+BUG-026/027's future DB-reset work will depend on, and unlike those two
+(which explicitly need their own scoping session) BUG-016 already had a
+confirmed root cause and a concrete recommended fix written into its
+`BUGS.md` entry from the 2026-06-28 investigation. Read `backend/database.py`
+and `backend/routers/admin.py` to confirm the diagnosis still held before
+proposing the fix.
+
+**Built:** added `checkpoint_wal()` (`database.py`) — runs `PRAGMA
+wal_checkpoint(TRUNCATE)` on the live engine, folding pending WAL writes into
+the main `.db` file and emptying the `-wal` sidecar. `run_database_backup()`
+(`admin.py`) now calls it right before its `shutil.copy2`, so every backup
+(manual, scheduled, and the pre-restore snapshot) captures fully-flushed
+state — closes the "may affect backups too" risk BUG-016 flagged as
+unconfirmed. `restore_database()` calls it, then `engine.dispose()`, then
+deletes any remaining `-wal`/`-shm` sidecars next to `db_path` before copying
+the chosen backup over it.
+
+The `engine.dispose()` step wasn't part of the original plan — added after a
+scratch test showed the app's `QueuePool`-backed engine still holds an
+OS-level file handle on the `-wal`/`-shm` sidecars even after `TRUNCATE`,
+which threw `PermissionError` on Windows when the fix tried to delete them.
+Disposing the pool first releases the handle; safe here specifically because
+restore already tears the process down via `_schedule_delayed_exit()` right
+after (see `DECISIONS.md`).
+
+**Verified:** scratch-tested in two stages outside the repo (throwaway
+SQLite DB in the session scratchpad, nothing real touched) — first
+reproduced the original bug mechanism directly (a post-backup write survived
+a bare `copy2`-only restore), then re-ran the exact fixed sequence
+(checkpoint → dispose → delete sidecars → copy) through a real SQLAlchemy
+engine with `QueuePool` matching `database.py`'s setup, confirming the
+post-backup write was correctly discarded. Then Tez ran the real repro live:
+took a backup, made a change, ran Restore Database, confirmed the change was
+reverted, and confirmed the server restarts and the library browses
+normally afterward — sign-off given.
+
+**Closeout:** moved BUG-016 to `archive/bugs-fixed-archive.md`. Updated
+`ADMIN_SPEC.md` §9.2's mechanism description and status block (both
+previously pointed at the open bug). Added a `DECISIONS.md` entry for the
+`engine.dispose()` call, since the Windows file-lock behaviour behind it
+isn't obvious from reading the fix alone.

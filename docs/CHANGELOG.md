@@ -13,6 +13,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-18** — BUG-016 fixed: Restore Database now actually reverts DB
+  state. Root cause was WAL replay — restore never cleared the `-wal`
+  sidecar, so pending writes made after the backup got replayed straight back
+  in on relaunch. Added `checkpoint_wal()`, applied to both backup and
+  restore; restore also disposes the engine before deleting the sidecars
+  (Windows file-lock issue found during testing). See `v2.6/progress.md`,
+  `archive/bugs-fixed-archive.md`, `DECISIONS.md`.
 - **2026-07-18** — BUG-013 fixed: scanner now checks file size alongside
   mtime to detect a same-mtime, different-content re-save. New `Issue.file_size`
   column, backfilled from disk for existing rows so the fix doesn't force a
