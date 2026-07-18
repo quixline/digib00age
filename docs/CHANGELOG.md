@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-19** — Three UI tweaks: genre ribbon on grid/strip cards now
+  links to the genre filter (same fieldview route as other genre tags),
+  Admin page content sections narrowed and centred (Filename Editor to 75%,
+  all others to 640px), Home Strip scroll arrows bled to the true page
+  edge. See `v2.6/progress.md`, "Three UI tweaks…" (2026-07-19).
 - **2026-07-18** — BUG-029 fixed: scanner now detects a plain on-disk
   rename/move via content hashing instead of creating a duplicate row and
   orphaning the old one — forward-only (hashes new/updated files going

@@ -4315,3 +4315,51 @@ throwaway copy of the real dev DB: `init_db()` completed in ~0.04s, row
 count unchanged, and every existing row's `content_hash` confirmed `NULL`
 (proof the no-backfill guarantee holds against real data, not just a fresh
 test DB).
+
+## Session — 2026-07-19 — Three UI tweaks: genre ribbon link, Admin page width, Home Strip arrow bleed
+
+Three small cosmetic/behavioural UI fixes, tested and passed one at a time,
+docs/commit batched at the end per Tez's request.
+
+**1. Genre ribbon on grid/strip cards now links to the genre filter.**
+`frontend/js/app.js` — the `card-genre-ribbon` shown on strip cards
+(`buildStripCard`), series/singles grid cards (`buildSeriesCard`), and
+folder-view cards (`buildFolderFileCard`) was a plain non-interactive
+`<span>`. Replaced with a new shared `buildGenreRibbon()` helper that
+renders it as a real `<a href="/?surface=fieldview&field=genre&value=...">`,
+same fieldview route the Series/Issue Detail page's genre tags and the
+list-view `list-genre-tag` already use. Since each card is itself an `<a>`
+wrapping the whole cover, the ribbon's click handler calls
+`stopPropagation()` — same guard `list-genre-tag` already uses — so
+clicking it opens the genre filter instead of also navigating into the
+card's series/issue. `frontend/css/style.css` `.card-genre-ribbon` gained
+`text-decoration: none` and a `:hover` accent-colour cue now that it's a
+link.
+
+**2. Admin page: content sections narrowed and centred.** Per-section
+settings blocks (`.admin-content-block`, one shown at a time under
+`#adminContentPane`/the Advanced Settings fieldset) were stretching to the
+full unconstrained `.container` width on wide viewports. Capped at
+`max-width: 640px; margin: 0 auto`, so every settings form — Auto Scan
+Settings, DB Backup Schedule, Library Folders, Home Page Strips,
+Genre/Format List, Password Protection, etc. — is now a narrow centred
+column. Filename Editor (`data-subitem="filename-editor"`) was called out
+by Tez as needing more room for its 3-column `pt-rename-row` layout;
+initially left at full width, then Tez asked for it narrowed too —
+settled at `max-width: 75%` (still centred via the same rule), rather than
+the 640px every other section gets.
+
+**3. Home strip scroll arrows pushed to the true page edge.** The
+left/right arrow buttons (`.strip-arrow`) are positioned `left:0`/`right:0`
+against `.strip-track`, which sat inside `.container`'s 30px gutter (10px
+at ≤640px) — leaving a visible gap between the arrow and the actual
+browser edge. `.strip-track` now bleeds full-width past that gutter
+(negative margin cancelling it, matching padding added back so the
+scrollable card row itself still lines up with the rest of the page) —
+same full-bleed technique as any edge-to-edge carousel row. Mobile
+breakpoint (`@media max-width: 640px`) gets the matching ±10px override so
+the bleed amount always matches `.container`'s actual padding at that
+width.
+
+**Verified:** all three manually tested live in-browser by Tez, one at a
+time, each confirmed passing before moving to the next.

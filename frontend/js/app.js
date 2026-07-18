@@ -32,6 +32,18 @@ function buildRatingRow(rating) {
   return row;
 }
 
+// Genre ribbon on grid cards — a real link into the fieldview genre filter,
+// same pattern as the Series/Issue Detail genre tags and list-genre-tag. The
+// card itself is an <a>, so guard clicks with stopPropagation — otherwise
+// the card's own navigation would also fire.
+function buildGenreRibbon(genres) {
+  if (!genres || !genres.length) return null;
+  const ribbon = el('a', 'card-genre-ribbon', genres[0]);
+  ribbon.href = `/?surface=fieldview&field=genre&value=${encodeURIComponent(genres[0])}`;
+  ribbon.addEventListener('click', (e) => e.stopPropagation());
+  return ribbon;
+}
+
 // Flag-for-review badge (redesigned CoverCard only) — real SVG flag icon,
 // same stroke-icon style as the sidebar nav (index.html's .app-sidebar-icon
 // SVGs), replacing the emoji-tag pseudo-element the base .cover-card rule
@@ -1093,7 +1105,7 @@ function buildStripCard(item) {
   const info = el('div', 'cover-info');
   info.appendChild(el('div', 'cover-title', item.series));
 
-  const genreRibbon = (item.genres && item.genres.length) ? el('span', 'card-genre-ribbon', item.genres[0]) : null;
+  const genreRibbon = buildGenreRibbon(item.genres);
   const ratingRow    = item.personal_rating > 0 ? buildRatingRow(item.personal_rating) : null;
 
   const yearRow = el('div', 'cover-meta-row');
@@ -1598,7 +1610,7 @@ function buildCoverCard(s) {
   // block — each paired onto its own row (year/ribbon, count/stars) rather
   // than a single side column, so the ribbon's row doesn't shift depending
   // on whether a rating row exists below it (2026-07-15 fine-tune).
-  const genreRibbon = (s.genres && s.genres.length) ? el('span', 'card-genre-ribbon', s.genres[0]) : null;
+  const genreRibbon = buildGenreRibbon(s.genres);
   const ratingRow   = s.personal_rating > 0 ? buildRatingRow(s.personal_rating) : null;
 
   // Grid info — spec 20.5: Title, Year, # issues (series) / page count (singles)
@@ -1960,7 +1972,7 @@ function buildFolderFileCard(issue) {
   const info = el('div', 'cover-info');
   info.appendChild(el('div', 'cover-title', issue.title || issue.series || `#${issue.number}`));
 
-  const genreRibbon = (issue.genres && issue.genres.length) ? el('span', 'card-genre-ribbon', issue.genres[0]) : null;
+  const genreRibbon = buildGenreRibbon(issue.genres);
   const ratingRow    = issue.personal_rating > 0 ? buildRatingRow(issue.personal_rating) : null;
 
   const numberRow = el('div', 'cover-meta-row');

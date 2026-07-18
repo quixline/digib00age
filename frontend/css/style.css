@@ -712,8 +712,18 @@ select.filter-select:focus,
 /* ≈5 mm gap between the strip label and the first card row */
 .home-strip .section-label { margin-bottom: 14px; }
 
-/* Strip scroll track — anchors the arrow buttons */
-.strip-track { position: relative; }
+/* Strip scroll track — anchors the arrow buttons. Bled out to the true page
+   edge (negative margin cancelling .container's gutter, padding added back
+   so the card row itself still lines up with the rest of the page) so the
+   arrow buttons sit flush against the browser edge instead of leaving a
+   gap the width of the container padding. */
+.strip-track {
+  position: relative;
+  margin-left: -30px;
+  margin-right: -30px;
+  padding-left: 30px;
+  padding-right: 30px;
+}
 
 /* Hide scrollbar inside a strip track; arrows replace it */
 .strip-track .continue-strip {
@@ -1342,6 +1352,10 @@ select.filter-select:focus,
   letter-spacing: 0.04em;
   white-space: nowrap;
   border-bottom: 2px solid var(--rc-unread);
+  text-decoration: none;
+}
+.card-genre-ribbon:hover {
+  color: var(--accent);
 }
 .cover-card--redesign.state-part-read .card-genre-ribbon,
 .cover-card--redesign.state-read      .card-genre-ribbon {
@@ -1893,6 +1907,7 @@ select.filter-select:focus,
 @media (max-width: 640px) {
   :root { --card-min: 100px; }
   .container { padding: 5px 10px 0; }
+  .strip-track { margin-left: -10px; margin-right: -10px; padding-left: 10px; padding-right: 10px; }
   .series-header { flex-direction: column; gap: 16px; }
   .series-cover-wrap { width: 120px; }
   .filter-selects { gap: 6px; }
@@ -2625,6 +2640,18 @@ select.filter-select:focus,
   font-weight: 800;
   letter-spacing: -0.02em;
   margin-bottom: 16px;
+}
+
+/* Content blocks are single-column settings forms shown one at a time — no
+   reason for them to stretch the full container width on wide viewports.
+   Capped and centred; Filename Editor is the one exception (its 3-column
+   pt-rename-row layout needs the room), left at full width. */
+.admin-content-block {
+  max-width: 640px;
+  margin: 0 auto;
+}
+.admin-content-block[data-subitem="filename-editor"] {
+  max-width: 75%;
 }
 
 /* Admin card — general panel */
