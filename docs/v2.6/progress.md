@@ -4412,3 +4412,20 @@ an isolated scratch log directory — recent view correctly isolated only the se
 scan's lines while the full file retained both. No real library files or Processing
 folder touched — verification scan was read-only against the archives, as scans
 always are.
+
+**Follow-on, same session — BUG-030 fixed.** Tez's own verification of the above
+surfaced a real, separate bug: a folder rename he'd made (`4 Kids Walk Into A Bank
+v1 [2016]` → `(2016)`) showed "Changed Files: 6" on the stat tile with an empty log
+underneath. Root cause traced to `_since_scan_count` (the counter behind that tile)
+incrementing on new-file inserts as well as genuine updates, while
+`changed_files_log.md` only ever logs genuine updates/moves — so a rename that
+BUG-029's forward-only content-hash matching couldn't catch (these rows predated
+that fix) fell back to new-insert-plus-missing-row handling, inflating the tile
+while leaving the log correctly empty. Fixed in `backend/scanner.py`: removed the
+insert-branch increment, added one to `_detect_renames()`'s match branch instead —
+tile and log now driven by the same two events (updated, moved). Full writeup in
+`archive/bugs-fixed-archive.md` BUG-030. Verified via code review of the small diff
+plus a real no-op rescan (tile and log both correctly zero); the positive case
+wasn't exercised with a synthetic new file per this project's real-library-only
+testing convention — will show correctly on Tez's next real scan with actual
+changes.

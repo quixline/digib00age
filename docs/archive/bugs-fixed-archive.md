@@ -1545,3 +1545,48 @@ genuine deletions all still behave exactly as before. Separately smoke-tested
 the `ALTER TABLE` migration against a throwaway copy of the real dev DB:
 completed in ~0.04s, row count unchanged, all existing rows' `content_hash`
 confirmed `NULL` (no accidental backfill).
+
+---
+
+### BUG-030 — Changed Files stat tile counted new-file inserts as "changes", disagreeing with its own log
+
+**Found:** 2026-07-19, while verifying the new Admin Logs "most recent scan"
+modal (a folder rename Tez made — `4 Kids Walk Into A Bank v1 [2016]` →
+`(2016)` — showed "Changed Files: 6" on the stat tile with an empty log
+underneath).
+
+**Closed:** 2026-07-19, same session.
+
+**Where:** `backend/scanner.py` — `_since_scan_count`, the counter behind the
+Changed Files stat tile (`get_changes_last_cycle()`).
+
+**What happened:** `_since_scan_count` incremented on *both* branches of
+`scan_single_file()` — the genuine metadata-update branch and the brand-new-
+insert branch — while `changed_files_log.md` only ever receives entries for
+genuine updates or rename/move matches (new inserts go to
+`new_files_log.md` instead, via a separate code path). Meanwhile
+`_detect_renames()`'s successful rename/move matches — which *do* write to
+`changed_files_log.md` — never incremented `_since_scan_count` at all. Net
+effect: a rename that BUG-029's forward-only content-hash matching couldn't
+catch (an old row with no `content_hash` yet) fell back to plain
+new-insert-plus-missing-row handling, which inflated the Changed Files tile
+by however many files were "new" while leaving the log genuinely empty — and
+a rename that *was* caught by `_detect_renames()` correctly logged to
+`changed_files_log.md` but was invisible on the stat tile.
+
+**Fix:** removed the `_since_scan_count += 1` from `scan_single_file()`'s
+INSERT branch (new files have their own dedicated stat/log already); added
+`_since_scan_count += 1` to `_detect_renames()`'s match branch, alongside its
+existing `scan_progress.moved += 1` and `changed_files_log.md` write. Tile
+and log are now driven by the same two events (updated, moved) and agree by
+construction — module-level comment above `_since_scan_count` updated to
+spell out the "existing issues only, mirrors what the log records" invariant
+so this doesn't drift again.
+
+**Verified:** code-level review of the (small, isolated) diff plus a real
+no-op rescan of the full library (5,452 files, 0 new/updated/moved) —
+Changed Files tile and `changed_files_log.md` both correctly showed zero.
+The positive case (a genuine new-file insert no longer inflating the tile)
+wasn't separately exercised with a synthetic file — no test file was added
+to the real library for this, per this project's testing conventions — and
+will show correctly on Tez's next real scan that adds or renames files.

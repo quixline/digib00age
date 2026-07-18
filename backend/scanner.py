@@ -62,8 +62,11 @@ class ScanProgress:
 # Module-level singleton — the API status endpoint reads this
 scan_progress = ScanProgress()
 
-# Tracks ALL metadata updates (editor rescans + full scan) since the last full
-# scan completed. _since_scan_count accumulates continuously; at the end of
+# Tracks changes to EXISTING issues — metadata updates (editor rescans + full
+# scan) and rename/move matches — since the last full scan completed. New-file
+# inserts don't count here; they have their own New Files stat/log. Mirrors
+# what changed_files_log.md actually records, since this feeds the Changed
+# Files stat tile. _since_scan_count accumulates continuously; at the end of
 # each full scan it is snapshotted into _last_cycle_changes then reset to 0.
 _since_scan_count: int = 0
 _last_cycle_changes: int = 0
@@ -567,7 +570,6 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
             scan_progress.errors += 1
             scan_progress.add_log(f"THUMBNAIL ERROR: {Path(file_path).name}")
         db.commit()
-        _since_scan_count += 1
         return "new"
 
 
@@ -591,6 +593,8 @@ def _detect_renames(db: Session, disk_paths: set[str]) -> set[str]:
     Returns the set of on-disk paths handled here, so scan_library's normal
     per-file loop can skip them (avoids a duplicate INSERT for the same path).
     """
+    global _since_scan_count
+
     existing_paths = {row[0] for row in db.query(Issue.file_path).all()}
     candidate_new_paths = disk_paths - existing_paths
     if not candidate_new_paths:
@@ -644,6 +648,7 @@ def _detect_renames(db: Session, disk_paths: set[str]) -> set[str]:
         scan_logs.append_changed_files_entry(
             Path(new_path).name, f"moved (renamed from {old_path})"
         )
+        _since_scan_count += 1
 
         bucket.remove(match)
         handled.add(new_path)

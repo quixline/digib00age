@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-19** — Fixed BUG-030: Changed Files stat tile counted new-file inserts
+  as "changes" (disagreeing with its own log, which never logs new files). Tile and
+  log now both driven by genuine updates + rename/move matches only. See
+  `archive/bugs-fixed-archive.md` BUG-030.
 - **2026-07-19** — Admin Logs modal now defaults to showing only the most recent
   scan's entries (marker-line boundaries in `changed_files_log.md`/
   `new_files_log.md`/`missing_log.md`), instead of the full accumulated log file —
