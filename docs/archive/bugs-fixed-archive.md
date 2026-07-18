@@ -7,6 +7,47 @@ Append-only; entries kept exactly as they were in `BUGS.md` at the time of move.
 
 ---
 
+### BUG-013 — Scanner doesn't detect a same-mtime, different-size file change
+
+**Found:** 2026-06-24, v2.3 Item 7 build session (confirming ADMIN_SPEC.md §8's
+open TODO about "changed" file semantics before building the scan log cards).
+
+**Closed:** 2026-07-18.
+
+**Where:** `backend/scanner.py`'s `scan_single_file()` unchanged-file skip
+check; `backend/models.py` `Issue.file_size`; `backend/database.py`
+`_add_missing_issue_columns()`.
+
+**What happened:** the skip check compared only the file's mtime against
+`Issue.date_modified`, with a 1-second tolerance. A CBZ re-saved/re-compressed
+with the same content but a preserved or coincidentally-identical mtime (and a
+different file size) was silently skipped — no "changed" entry, no
+reprocessing, stale page count/genres/credits/thumbnail left in the DB.
+
+**Fix:** added an `Issue.file_size` column, backfilled from disk for every
+existing row by `_add_missing_issue_columns()`'s migration (so the fix doesn't
+force a mass reprocess of the whole ~5,500-file library on the first scan
+after upgrading). `scan_single_file()` now reads both mtime and size from a
+single `os.stat()` call and requires **both** to match the stored values to
+skip — any mismatch (mtime, size, or both) falls through to the existing full
+re-parse/update path unchanged.
+
+**Verified:** scratch-tested first — a synthetic CBZ rewritten with different
+content but a forcibly-preserved mtime (`os.utime`) correctly reports
+"updated" instead of "skipped"; a genuinely unchanged file still skips, no
+regression on the fast path. Then manually verified live 2026-07-18 — Tez ran
+a scan across various areas of the real library with no issues, sign-off given.
+
+**Scope note — narrower than it sounds:** this only covers content changes at
+the *same file path* (an in-place rewrite). It does **not** cover a file being
+renamed/moved to a different path while already in the library (duplicate
+INSERT + orphaned `missing=True` row) — that's a distinct blind spot, split
+out as its own entry, **BUG-029**, in the live `BUGS.md`. BUG-025's note below
+originally pointed at "BUG-013" for that scenario; BUG-029 is now the correct
+reference for it.
+
+---
+
 ### BUG-025 — Series move updates the files on disk but not the DB rows pointing at them
 
 **Closed 2026-07-18 — not a bug in the intended workflow, defensive fix kept anyway.**
@@ -50,8 +91,9 @@ path. Confirmed via Tez's own manual test: renaming `'68 Homefron [2014]` →
 Move Series Folders run — no entry appears in `series_move_log.md` for it)
 and then running a Scan reproduced 4 new + 4 missing rows exactly as this
 bug's root-cause section predicts — but that's a manual move outside the
-tool entirely, which is **BUG-013**'s territory (scanner exact-path-match
-blind spot), not this tool's DB bookkeeping.
+tool entirely, which is **BUG-029**'s territory (scanner exact-path-match
+blind spot; split out from BUG-013 on that bug's 2026-07-18 closeout — see
+BUG-013's entry above), not this tool's DB bookkeeping.
 
 **Code kept, not reverted:** a defensive `sync_moved_paths_to_db()` fix was
 already built and scratch-tested before this was re-diagnosed (see
@@ -68,7 +110,7 @@ again — kept as a harmless safety net rather than reverted. See
 **Impact — none, in the intended workflow.** Only reachable by pointing the
 Move tool at already-scanned library content, which isn't its designed use.
 
-**Related:** BUG-013 (scanner change-detection blind spot — same
+**Related:** BUG-029 (scanner change-detection blind spot — same
 identity-by-path-and-mtime assumption) — this is the bug that actually covers
 "a folder changed location while already in the library," still open.
 

@@ -11,6 +11,47 @@ one).
 
 ## OPEN
 
+### BUG-029 — Scanner has no rename/move detection; a renamed file creates a duplicate row and leaves the old one an orphaned "missing" entry forever
+
+**Found:** 2026-07-18, during BUG-013's fix-verification session — surfaced by a
+real pre-existing example already sitting in the dev DB: issue IDs 1-4
+(`'68 Homefront`) still have `file_path` pointing at a bracket-style folder name
+(`[2014]`) that was renamed to parentheses (`(2014)`) at some point, with
+`missing` still `False` on all four rows. This is also the scenario BUG-025's
+investigation traced back to "BUG-013's territory" before BUG-013 was split in
+two on closeout (see `archive/bugs-fixed-archive.md`) — this entry is the
+correct home for it going forward.
+
+**Where:** `backend/scanner.py`'s `scan_single_file()` / `scan_library()` — the
+only match key for "is this file already in the DB" is exact `Issue.file_path`
+string equality (~line 479); no content hash, filename fallback, or move
+detection anywhere.
+
+**What happens:** Renaming or moving a file that's already scanned into the
+library — a plain on-disk rename, or any tool that changes the path without
+going through this app's own move-and-relink flow — makes the scanner treat
+the new path as a brand-new issue on the next scan (fresh INSERT, new ID,
+regenerated thumbnail, reading progress reset), while the old row's path is no
+longer found on disk and just gets flagged `missing = True` — never deleted,
+by design (`scanner.py` never runs DELETE outside `SCAN_EXCLUDE`-folder
+cleanup). The orphaned row then sits there indefinitely unless someone
+manually runs the admin-only `cleanup-missing` endpoint.
+
+**Impact — low/medium:** doesn't corrupt data or crash anything, but silently
+accumulates dead rows and duplicate issues over time on any manual
+reorganization outside the app's own Move Series/Singles Folders tool, and
+reading progress on the original row is stranded when this happens (same
+failure shape as BUG-025, minus that bug's Stage-3 safeguard).
+
+**Not fixed** — split out from BUG-013 2026-07-18 to keep that fix's scope to
+the mtime/size check it actually addressed. A real fix likely means matching
+by something more durable than exact path (content hash, or a lightweight
+"did file_path X disappear and file_path Y appear with the same size/hash this
+scan" heuristic) — candidate for a future scanner-accuracy pass, same family
+BUG-013 was in.
+
+---
+
 ### BUG-027 — No safe way to reset the DB: Clear Database can only be run against a live server
 
 **Found:** 2026-07-18, performance re-baseline session (pre-flight).
@@ -136,27 +177,3 @@ already tears it down immediately after). Apply the same checkpoint step to
 `run_database_backup()` if the backup-side risk above is confirmed.
 
 **Not fixed.**
-
----
-
-### BUG-013 — Scanner doesn't detect a same-mtime, different-size file change
-
-**Found:** 2026-06-24, v2.3 Item 7 build session (confirming ADMIN_SPEC.md §8's
-open TODO about "changed" file semantics before building the scan log cards).
-
-**Where:** `backend/scanner.py`'s `scan_single_file()` — the unchanged-file skip
-check (~lines 475-487) compares only the file's mtime against
-`Issue.date_modified`, with a 1-second tolerance. A CBZ re-saved/re-compressed
-with the same content but a preserved or coincidentally-identical mtime (and a
-different file size) will be silently skipped — `scan_progress`/the new
-`changed_files_log.md` will never see it as "updated".
-
-**Impact:** Low — this requires a tool that rewrites a CBZ without touching its
-mtime, which is unusual but possible (e.g. some batch re-compression tools
-preserve timestamps by default). Confirmed by direct code reading, not by
-reproducing the actual scenario live.
-
-**Not fixed** — out of scope for Item 7 (which only needed to document, not fix,
-the scanner's actual "changed" semantics before building the log format around
-them). A real fix would mean comparing file size (or a cheap hash) in addition
-to mtime — flagged here as a candidate for a future scanner-accuracy pass.

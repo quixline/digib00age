@@ -4,6 +4,8 @@ Import get_db() in routers for dependency injection.
 Call init_db() once at startup.
 """
 
+import os
+
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
@@ -89,6 +91,22 @@ def _add_missing_issue_columns():
             ))
         if "flagged_for_review" not in cols:
             conn.execute(text("ALTER TABLE issues ADD COLUMN flagged_for_review BOOLEAN NOT NULL DEFAULT 0"))
+        if "file_size" not in cols:
+            conn.execute(text("ALTER TABLE issues ADD COLUMN file_size INTEGER"))
+            conn.commit()
+            # Backfill from disk so the next scan doesn't treat every
+            # already-scanned row as "changed" (BUG-013 fix, size now part
+            # of the unchanged-file check alongside mtime).
+            rows = conn.execute(text("SELECT id, file_path FROM issues")).fetchall()
+            for row in rows:
+                try:
+                    size = os.path.getsize(row.file_path)
+                except OSError:
+                    continue
+                conn.execute(
+                    text("UPDATE issues SET file_size = :size WHERE id = :id"),
+                    {"size": size, "id": row.id},
+                )
         conn.commit()
 
 

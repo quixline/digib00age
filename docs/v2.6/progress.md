@@ -4091,11 +4091,67 @@ to `docs/archive/bugs-fixed-archive.md` with the full writeup (not left open,
 not logged as a genuine fix). The sync code was kept rather than reverted: it's
 a no-op on the normal path and correctly covers the 2000-AD-style edge case if
 the tool is ever pointed at already-in-library content again. Reasoning logged
-in `docs/DECISIONS.md`. BUG-013 remains open, separately, as the actual bug
-covering "a folder changed location while already in the library."
+in `docs/DECISIONS.md`. BUG-013 remained open at the time, separately, as the
+bug covering "a folder changed location while already in the library" — on
+BUG-013's own 2026-07-18 closeout (later the same day, see below), that
+rename/move blind spot was split out into its own entry, **BUG-029**, since
+BUG-013 itself only ever covered the narrower same-path mtime/size case.
 
 **Verified:** scratch script only (see above) — no live manual test of the
 kept sync code was run this session, since the bug it targets doesn't occur
 in the tool's normal, intended use. If the tool is ever deliberately pointed
 at already-in-library content again, that would be the moment to manually
 verify the sync path end-to-end.
+
+## Session — 2026-07-18 — BUG-013 fixed (scanner mtime/size change detection)
+
+Tez asked whether BUG-013 was connected to the rename/dead-entry concern
+raised earlier the same day. Explored `scanner.py`, `models.py`, `database.py`
+to answer precisely: they're related but distinct — an in-place content edit
+(same path) already worked correctly (mtime changes, scanner reprocesses); the
+narrow BUG-013 gap is only a re-save that *preserves* mtime while changing
+content; the rename/move case (no content-hash or path-independent matching
+at all) is a separate, previously-undocumented blind spot. Tez initially
+declined logging that second one — then, once BUG-013's fix was implemented
+and a dead `'68 Homefront [2014]`/`(2014)` row-pair turned up as a live
+example during migration testing, agreed to split it out as its own bug on
+BUG-013's closeout (see below) rather than leave BUG-025's "still open, see
+BUG-013" cross-reference pointing at a bug that had just been closed for
+something narrower.
+
+**Built:** added `Issue.file_size` (`models.py`); `_add_missing_issue_columns()`
+(`database.py`) now adds the column and backfills it from disk for every
+existing row (stat-only, avoids a mass "changed" storm on the first scan
+after upgrading — confirmed cheap per the 2026-07-18 performance baseline,
+~0.4s to stat the whole library). `scan_single_file()`'s skip check
+(`scanner.py`) now reads mtime and size from a single `os.stat()` call and
+requires both to match to skip; `_apply_metadata()` writes `file_size`
+alongside `date_modified` on both insert and update paths.
+
+**Verified:** scratch-tested first, in full isolation (temp DB, temp
+thumbnail dir, synthetic CBZ, nothing real touched) — built a CBZ, scanned it
+in, rewrote its contents with a different size while forcing the mtime back
+to its original value (`os.utime`), rescanned, and confirmed the scanner now
+reports "updated" instead of "skipped"; also confirmed a genuinely unchanged
+file still skips (no fast-path regression). Also ran the migration itself
+against a throwaway copy of the real dev DB: schema updated, 5,439/5,443 rows
+backfilled correctly; the 4 that didn't (IDs 1-4, `'68 Homefront`) turned out
+to be a real dead-entry example on disk — the folder was renamed from
+`[2014]` to `(2014)` at some point outside the app, and the DB never caught
+up (`missing` still `False`). That confirmed BUG-025's "still open, see
+BUG-013" note was pointing at a real, reproducing gap — just not the one this
+fix addresses.
+
+Then Tez restarted the live server (picking up the migration + code against
+the real dev DB) and ran a manual scan across various areas of the real
+library — no issues, sign-off given.
+
+**Closeout:** moved BUG-013 to `archive/bugs-fixed-archive.md`, scoped
+strictly to the mtime/size fix actually built. Opened **BUG-029** in
+`BUGS.md` for the rename/move blind spot (scanner's only match key is exact
+`file_path`; no hash or move detection), citing the live `'68 Homefront`
+example as confirmed real-world evidence, and updated BUG-025's stale
+"BUG-013" cross-reference to point at BUG-029 instead. Corrected
+`ADMIN_SPEC.md`'s "Changed" definition and `SPEC.md`'s incremental-rescan
+table/`Issue` schema table to describe the mtime-or-size check and the new
+`file_size` column.

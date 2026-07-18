@@ -240,9 +240,9 @@ addressed by v2.4 Item 5; flagged for whoever revisits Mobile Reader work
 | Case | Action |
 |---|---|
 | File in folder, not in DB | INSERT new row |
-| File in DB, `date_modified` changed | Re-parse XML, UPDATE row |
+| File in DB, `date_modified` or `file_size` changed | Re-parse XML, UPDATE row |
 | File in DB, not found on disk | Flag as `missing = True` — do NOT delete |
-| File unchanged | Skip |
+| File unchanged (both mtime and size match) | Skip |
 
 ### Cover / thumbnail generation
 - Open CBZ, sort image filenames alphabetically, take the first image
@@ -308,6 +308,7 @@ elif "Series" in file_path:
 | `missing` | BOOLEAN DEFAULT FALSE | True if file no longer found on disk |
 | `date_added` | DATETIME | When first scanned |
 | `date_modified` | DATETIME | File system modified date — used to detect changes |
+| `file_size` | INTEGER | File system size in bytes at last scan — added 2026-07-18 (BUG-013 fix) alongside `date_modified` to detect a re-saved archive whose mtime was preserved; existing rows backfilled from disk by `_add_missing_issue_columns()` |
 | `favorites` | BOOLEAN DEFAULT FALSE | User-set, independent of file metadata. Added Tier 4 Item 2 (2026-06-21) — `create_all()` doesn't add columns to an already-existing table, so `database.py`'s `init_db()` runs a one-time manual `ALTER TABLE` for this and `personal_rating` (see §21 change log) |
 | `personal_rating` | INTEGER | 1–5, NULL = not rated. Same Tier 4 Item 2 addition as `favorites` |
 

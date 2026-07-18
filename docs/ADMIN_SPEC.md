@@ -532,14 +532,18 @@ button that opens it. Log files live in `/logs/`:
 | New Files | `new_files_log.md` | `filename.cbz — location` |
 | Missing Records | `missing_log.md` | `filename.cbz — last known path — date went missing` |
 
-**"Changed" definition — resolved 2026-06-24 by reading `scanner.py` directly:**
-`scan_single_file()` matches files by exact `file_path` and flags "changed" purely
-on mtime delta (≥1 second from the stored `date_modified`) — it cannot distinguish
-*why* the mtime changed. A filename change is confirmed to produce a separate
-new-row insert + missing-flag on the old row (not a "change") — `file_path` is the
-sole, unique match key. A same-mtime, different-file-size change (e.g. a re-zip
-that preserves the timestamp) is confirmed **not** detected at all — logged as
-`BUGS.md` BUG-013, out of scope to fix here.
+**"Changed" definition — resolved 2026-06-24 by reading `scanner.py` directly,
+updated 2026-07-18 (BUG-013 fix):** `scan_single_file()` matches files by exact
+`file_path` — it cannot distinguish a renamed/moved file from a genuinely new
+one. A filename change is confirmed to produce a separate new-row insert +
+missing-flag on the old row (not a "change") — `file_path` is the sole, unique
+match key; this rename/move blind spot is tracked as `BUGS.md` BUG-029, not
+fixed here. Within a single unchanged path, "changed" is now flagged on
+**either** a mtime delta (≥1 second from the stored `date_modified`) **or** a
+file-size mismatch (`Issue.file_size`, added for this fix) — previously mtime
+alone was checked, which meant a same-mtime, different-file-size re-zip (e.g.
+one that preserves the original timestamp) was silently skipped. That gap was
+`BUGS.md` BUG-013, fixed 2026-07-18 — see `archive/bugs-fixed-archive.md`.
 
 **Change-type classification (fixed — V2.3 post-test fixes, Fix 8, 2026-06-26):**
 the log entry now distinguishes *what* changed, instead of always logging the fixed

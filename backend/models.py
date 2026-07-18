@@ -74,6 +74,7 @@ class Issue(Base):
     # Timestamps
     date_added      = Column(DateTime, default=datetime.utcnow, nullable=False)
     date_modified   = Column(DateTime, nullable=True)       # filesystem mtime at last scan
+    file_size       = Column(Integer, nullable=True)        # filesystem size (bytes) at last scan — BUG-013
 
     # Relationships
     genres          = relationship("IssueGenre", back_populates="issue",

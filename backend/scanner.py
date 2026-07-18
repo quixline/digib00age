@@ -379,7 +379,7 @@ def _parse_cbz(file_path: str) -> tuple[dict, str]:
 
 
 def _apply_metadata(issue: Issue, meta: dict, source: str,
-                    file_path: str, mtime: datetime):
+                    file_path: str, mtime: datetime, file_size: int):
     """Write parsed metadata dict into an Issue ORM object."""
     issue.series          = meta["series"]
     issue.volume          = meta["volume"]
@@ -407,6 +407,7 @@ def _apply_metadata(issue: Issue, meta: dict, source: str,
     issue.metadata_source = source
     issue.container_format = archive_formats.format_for_path(file_path)
     issue.date_modified   = mtime
+    issue.file_size       = file_size
     issue.missing         = False
 
 
@@ -464,7 +465,9 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
     file_path = str(Path(file_path).resolve())
 
     try:
-        mtime = datetime.utcfromtimestamp(os.path.getmtime(file_path))
+        stat_result = os.stat(file_path)
+        mtime = datetime.utcfromtimestamp(stat_result.st_mtime)
+        file_size = stat_result.st_size
     except FileNotFoundError:
         # File has disappeared since we started — flag it if it's in the DB
         issue = db.query(Issue).filter(Issue.file_path == file_path).first()
@@ -479,9 +482,12 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
     existing = db.query(Issue).filter(Issue.file_path == file_path).first()
 
     # --- Skip if unchanged ---
-    if existing and existing.date_modified:
-        # Compare to the nearest second to avoid float precision issues
-        if abs((existing.date_modified - mtime).total_seconds()) < 1:
+    if existing and existing.date_modified is not None and existing.file_size is not None:
+        # Compare mtime to the nearest second to avoid float precision issues.
+        # Size is also required to match (BUG-013) — a re-save that preserves
+        # mtime but changes content would otherwise be silently skipped.
+        if (abs((existing.date_modified - mtime).total_seconds()) < 1
+                and existing.file_size == file_size):
             # Unchanged metadata doesn't guarantee the thumbnail file still
             # exists on disk (e.g. a DB restored/copied without thumbnails/) —
             # check and backfill it before skipping (BUG-001).
@@ -515,7 +521,7 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
                 if new_page_count != old_page_count
                 else "metadata updated"
             )
-        _apply_metadata(existing, meta, source, file_path, mtime)
+        _apply_metadata(existing, meta, source, file_path, mtime, file_size)
         db.flush()
         _sync_genres(db, existing, meta["genres"])
         _sync_credits(db, existing, meta["credits"])
@@ -531,7 +537,7 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
     else:
         # INSERT
         issue = Issue(file_path=file_path, date_added=datetime.utcnow())
-        _apply_metadata(issue, meta, source, file_path, mtime)
+        _apply_metadata(issue, meta, source, file_path, mtime, file_size)
         db.add(issue)
         db.flush()
         _sync_genres(db, issue, meta["genres"])

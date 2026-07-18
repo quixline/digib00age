@@ -4,6 +4,32 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### BUG-013 fix: backfill `file_size` at migration time; split the rename/move blind spot into a new bug (BUG-029) instead of stretching BUG-013's scope
+
+**Decided:** 2026-07-18, BUG-013 fix session.
+
+**Why (backfill):** the fix adds `Issue.file_size` and requires it to match
+alongside mtime before the scanner will skip a file. Leaving every existing
+row's `file_size` at NULL after the migration would make the very next full
+scan treat all ~5,500 already-scanned files as "changed" (same effect as a
+NULL `date_modified` already has) — a one-time mass reprocess/re-thumbnail
+storm for something that isn't actually changed. Backfilling from disk inside
+the same migration (`_add_missing_issue_columns()`) avoids that; confirmed
+cheap (stat-only, not a read) against the 2026-07-18 performance baseline.
+
+**Why (split, not expand):** BUG-025's investigation earlier the same day had
+pointed at "BUG-013" as the bug covering a file/folder renamed *outside* the
+app while already in the library (scanner's exact-`file_path`-match, no hash
+or move detection). But BUG-013's own text was always scoped narrower — a
+same-path re-save that preserves mtime. Expanding BUG-013's scope retroactively
+to also cover renames would have been the easy path, but the two are different
+mechanisms with different fixes (a size check vs. some form of content-hash or
+move-heuristic matching), and a live example of the rename gap turned up
+directly during this session's migration test (`'68 Homefront [2014]` →
+`(2014)`, IDs 1-4, still `missing=False`) — concrete enough to warrant its own
+tracked entry rather than a footnote. Opened as **BUG-029**; BUG-025's stale
+"see BUG-013" cross-reference was updated to point at it.
+
 ### BUG-025: kept the DB-sync fix even after re-diagnosing it as not-a-bug
 
 **Decided:** 2026-07-18, BUG-025 follow-up session.
@@ -30,9 +56,11 @@ narrower than first thought would have been pure churn.
 
 **Also clarified:** BUG-025 and BUG-013 were being conflated. BUG-025 is
 specifically the Move tool's own DB bookkeeping when *it* relocates something.
-BUG-013 (still open) is the Scanner's inability to recognize a folder that
-moved/renamed *outside* the tool (e.g. a manual Explorer rename) while already
-in the library — a different bug, in `scanner.py`, not touched by this session.
+The Scanner's inability to recognize a folder that moved/renamed *outside* the
+tool (e.g. a manual Explorer rename) while already in the library is a
+different bug, in `scanner.py`, not touched by this session — at the time
+this was tracked under BUG-013; BUG-013's own 2026-07-18 closeout later split
+that rename/move scenario out into its own entry, **BUG-029** (see below).
 
 ### BUG-028 fix: centralize junk-entry filtering, don't reconcile the 5 inconsistent image-extension whitelists
 

@@ -13,6 +13,12 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-18** — BUG-013 fixed: scanner now checks file size alongside
+  mtime to detect a same-mtime, different-content re-save. New `Issue.file_size`
+  column, backfilled from disk for existing rows so the fix doesn't force a
+  mass reprocess. Split the rename/move blind spot out as a new bug,
+  **BUG-029** (not fixed — scanner still has no rename detection). See
+  `v2.6/progress.md`, `BUGS.md`, `archive/bugs-fixed-archive.md`.
 - **2026-07-18** — BUG-025 closed as not-a-bug: the Move Series/Singles
   Folders tool's intended workflow (Stage 3 Processing → Move → manual Scan)
   never has a pre-existing DB row to desync, since Processing is scan-excluded.
