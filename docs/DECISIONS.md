@@ -4,6 +4,28 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Admin Logs modal: scan-boundary markers written into the log file, not a persisted count
+
+**Decided:** 2026-07-19, Admin Logs "most recent scan only" session.
+
+**Why:** to slice "just the last scan's entries" out of `changed_files_log.md`/
+`new_files_log.md`/`missing_log.md` (which have zero-or-more lines per scan, no
+per-line timestamp), something needs to record where each scan's section starts.
+Two options: (a) persist the per-scan line counts `ScanProgress` already computes
+in-memory (e.g. alongside `log_last_viewed` in `config.json`), or (b) write an
+explicit marker line into the log file itself at the start of each scan.
+
+Went with (b). A config-side count is invisible outside the app and has to stay in
+lockstep with the log file (a manually-edited or externally-truncated log file
+would silently desync it); a marker line is self-describing, lives with the data it
+describes, survives being opened in a text editor (arguably *helps* there — it's a
+visible scan-run boundary for manual review too), and needs no new `config.json`
+state. Trade-off accepted: this changes the on-disk log format going forward
+(documented in `ADMIN_SPEC.md` §8) — pre-existing log files have no marker, so
+`read_recent_log()` falls back to full content for those until their next scan adds
+one. No backfill — forward-only, same convention as other scan-detection fixes (see
+BUG-029 entry below).
+
 ### BUG-029 fix: content-hash rename detection is forward-only, no library backfill
 
 **Decided:** 2026-07-18, BUG-029 fix session.

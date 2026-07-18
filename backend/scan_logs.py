@@ -22,6 +22,12 @@ _FILENAMES = {
     "missing": "missing_log.md",
 }
 
+# Logs that accumulate 0+ lines per scan (as opposed to last_scan_log.md, which is
+# always exactly one line per scan) get a marker line at the start of each scan run,
+# so the most recent scan's entries can be sliced out without a per-line timestamp.
+_MARKED_LOGS = ("changed_files", "new_files", "missing")
+_SCAN_MARKER_PREFIX = "## Scan "
+
 
 def log_path(log_name: str) -> Path:
     return LOGS_DIR / _FILENAMES[log_name]
@@ -52,6 +58,15 @@ def _truncate_if_oversized(path: Path) -> None:
     drop_count = max(1, len(lines) // 10)
     with open(path, "w", encoding="utf-8") as f:
         f.writelines(lines[drop_count:])
+
+
+def write_scan_markers(started_at: datetime) -> None:
+    """Called once at the start of each scan run, before any entries are appended,
+    so read_recent_log() always has a boundary to slice the latest scan from —
+    even a scan that finds zero changes still leaves a marker confirming it ran."""
+    marker = f"{_SCAN_MARKER_PREFIX}— {started_at.strftime('%d/%m/%Y %H:%M')}"
+    for log_name in _MARKED_LOGS:
+        append_log_line(log_name, marker)
 
 
 def append_last_scan_entry(started_at: datetime, finished_at: datetime) -> None:
@@ -94,3 +109,24 @@ def read_log(log_name: str, max_lines: int = 1000) -> tuple[str, bool]:
     with open(path, "r", encoding="utf-8") as f:
         lines = f.readlines()
     return "".join(lines[-max_lines:]), True
+
+
+def read_recent_log(log_name: str) -> tuple[str, bool]:
+    """Just the most recent scan's entries, not the full accumulated history —
+    full history is still on disk and viewable via a text editor (View Logs Folder)."""
+    path = log_path(log_name)
+    if not path.exists():
+        return "", False
+    with open(path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    if log_name == "last_scan":
+        return (lines[-1] if lines else ""), True
+
+    for i in range(len(lines) - 1, -1, -1):
+        if lines[i].startswith(_SCAN_MARKER_PREFIX):
+            return "".join(lines[i:]), True
+
+    # No marker found — pre-existing log from before this feature shipped.
+    # Fall back to full content rather than hiding history with no way to reach it.
+    return "".join(lines), True

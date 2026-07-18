@@ -319,7 +319,7 @@ def get_logs_folder_path():
 def get_log_contents(log_name: str):
     if log_name not in scan_logs._FILENAMES:
         raise HTTPException(status_code=404, detail={"error": "unknown_log"})
-    content, exists = scan_logs.read_log(log_name)
+    content, exists = scan_logs.read_recent_log(log_name)
     return {"content": content, "exists": exists}
 
 

@@ -674,6 +674,8 @@ def scan_library(db: Session):
         scan_progress.finished_at = datetime.utcnow()
         return
 
+    scan_logs.write_scan_markers(scan_progress.started_at)
+
     # ---- Collect all CBZ paths on disk ----
     exclude = config.SCAN_EXCLUDE  # folder name fragments to skip e.g. ["Processing"]
     if exclude:

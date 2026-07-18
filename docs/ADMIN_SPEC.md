@@ -602,6 +602,38 @@ as before.
 file has new entries since it was last viewed (tracked via `log_last_viewed` in
 `config.json`). Resets on open.
 
+**Logs modal defaults to the most recent scan only (2026-07-19):** the log file on
+disk keeps its full accumulated history — nothing above changed — but the modal
+opened by a card's **Logs** button now shows only the entries from the scan that was
+just run, not the whole file. Fixes the original UX: as a log grows over many scans,
+the entries the user actually came to check (the ones from the scan they just ran)
+used to be buried at the bottom, requiring scroll-through of old history to reach
+them.
+
+Mechanism: `changed_files_log.md`, `new_files_log.md`, and `missing_log.md` (the
+three logs with zero-or-more lines per scan) each get a marker line written at the
+very start of every scan run — `## Scan — DD/MM/YYYY HH:MM` — via
+`scan_logs.write_scan_markers()`, called from `scan_library()` before its per-file
+loop begins. This happens unconditionally, even for a scan that finds no changes, so
+a lone marker with nothing under it is still meaningful signal ("a scan ran and found
+nothing"), and the boundary is always well-defined going forward. `GET
+/api/admin/logs/{log_name}` (`scan_logs.read_recent_log()`) returns only the content
+from the last marker onward. `last_scan_log.md` needs no marker — it was already
+exactly one line per scan, so "recent" there is just the last line.
+
+**Fallback for pre-existing log files:** a log file written before this change has no
+marker lines yet. `read_recent_log()` falls back to returning the full file content
+in that case (same as before), rather than hiding history with no way to reach it —
+once the next scan runs and adds a marker, recent-scoping starts working normally on
+that file. No backfill was done or needed (forward-only, same convention as other
+scan-detection fixes — see `DECISIONS.md`).
+
+**Full history unaffected:** the log files themselves are untouched by this change —
+still one continuously-growing append-only file each, still viewable in full via any
+text editor by following the folder path in Settings → Library Management → Access
+Logs (§8 above). Only the in-app modal's default view changed; there is no in-app
+"show full history" toggle — reviewing older scans is a text-editor job, by design.
+
 
 ---
 

@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-19** — Admin Logs modal now defaults to showing only the most recent
+  scan's entries (marker-line boundaries in `changed_files_log.md`/
+  `new_files_log.md`/`missing_log.md`), instead of the full accumulated log file —
+  full history still on disk, viewable via a text editor. See `v2.6/progress.md`,
+  "Admin Logs modal defaults to most recent scan only" (2026-07-19).
 - **2026-07-19** — Three UI tweaks: genre ribbon on grid/strip cards now
   links to the genre filter (same fieldview route as other genre tags),
   Admin page content sections narrowed and centred (Filename Editor to 75%,

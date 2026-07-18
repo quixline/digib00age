@@ -4363,3 +4363,52 @@ width.
 
 **Verified:** all three manually tested live in-browser by Tez, one at a
 time, each confirmed passing before moving to the next.
+
+## Session — 2026-07-19 — Admin Logs modal defaults to most recent scan only
+
+Tez's complaint: after a scan, clicking a log card's **Logs** button showed the
+*entire* accumulated log file — as the file grows over many scans, the entries just
+written end up buried at the bottom, requiring scroll-through of old history to find
+them. Fix: the modal now defaults to showing only the entries from the scan that was
+just run; the underlying log file's full history is untouched and still reachable
+via a text editor (same as before).
+
+**Design problem:** `changed_files_log.md`, `new_files_log.md`, and
+`missing_log.md` accumulate zero or more lines *per scan* (one per changed/new/
+missing file), with no per-line timestamp or scan-boundary marker — so there was no
+way to tell, from file content alone, which lines belonged to which scan run.
+(`last_scan_log.md` didn't have this problem — it's already exactly one line per
+scan.)
+
+**Solution — scan-boundary marker lines.** `backend/scan_logs.py` gained
+`write_scan_markers(started_at)`, which appends a `## Scan — DD/MM/YYYY HH:MM` line
+to those three logs. `backend/scanner.py`'s `scan_library()` calls it once, right
+after the `library_root` existence check and before the disk-walk begins — so every
+scan that actually runs writes its marker first, before any of that scan's entries,
+including scans that find zero changes (a lone marker with nothing under it usefully
+confirms "ran, found nothing" rather than looking broken). `read_recent_log()` (new,
+alongside the existing `read_log()`) finds the last marker line and returns it plus
+everything after; `last_scan_log.md` just returns its last line. `GET
+/admin/logs/{log_name}` (`backend/routers/admin.py`) switched from `read_log()` to
+`read_recent_log()` — same response shape, so no frontend contract change.
+
+**Legacy fallback:** log files that predate this change have no marker yet;
+`read_recent_log()` falls back to full content until the next scan adds one. No
+backfill — forward-only, consistent with how this project already treats
+accumulated log/DB state.
+
+**Frontend:** no functional changes — same endpoint, same `{content, exists}`
+shape. Added one static hint line under the modal title (`frontend/admin.html`,
+`.log-viewer-hint` in `style.css`) pointing to Settings → Library Management →
+Access Logs for the full-history folder path, since the modal no longer shows it by
+default.
+
+**Verified:** ran a real scan via the Admin page (5,452 files, 0 changes) — each of
+the four Logs modals showed only that scan's marker/line, not the accumulated
+history; confirmed the full `new_files_log.md` on disk (474KB, pre-existing) was
+untouched apart from the new marker appended at the end. Separately verified the
+multi-entry-per-scan slicing logic (two simulated scans, several lines each) against
+an isolated scratch log directory — recent view correctly isolated only the second
+scan's lines while the full file retained both. No real library files or Processing
+folder touched — verification scan was read-only against the archives, as scans
+always are.
