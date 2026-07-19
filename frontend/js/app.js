@@ -1453,7 +1453,7 @@ function _renderBrowsePage() {
     // reads as broken with the generic filters message; give it its own.
     const emptyMsg = isFavoritesTab(activeSurface)
       ? 'No favourites yet — star some issues to see them here.'
-      : 'No comics match these filters.';
+      : 'No matching titles found';
     grid.innerHTML =
       '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
       `<p>${emptyMsg}</p></div>`;
