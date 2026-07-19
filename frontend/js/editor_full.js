@@ -213,6 +213,28 @@ function buildFileTree(files) {
   return folders;
 }
 
+// Flat file-id order matching the tree's rendered folder→series→issue order
+// exactly (natural-sorted series names and issue filenames, independent of
+// collapse state). BUG-031: Process All must send file_ids in this order —
+// `loadedFiles` itself stays in raw arrival order (os.walk / picker order,
+// neither of which is numeric-aware), and increment numbering just walks
+// whatever list it's given, so anything using raw `loadedFiles` order
+// silently mismatches what's shown in the tree.
+function treeOrderedFileIds(files) {
+  const folders = buildFileTree(files);
+  const ids = [];
+  for (const folder of folders.values()) {
+    const seriesNames = Array.from(folder.series.keys()).sort(naturalCompare);
+    for (const sName of seriesNames) {
+      const issues = folder.series.get(sName).slice().sort((a, b) => naturalCompare(a.filename, b.filename));
+      for (const iss of issues) ids.push(iss.id);
+    }
+    const direct = folder.direct.slice().sort((a, b) => naturalCompare(a.filename, b.filename));
+    for (const iss of direct) ids.push(iss.id);
+  }
+  return ids;
+}
+
 // Longest common directory prefix across all loaded files (for the path row).
 function commonRootPath(files) {
   if (!files.length) return '';
@@ -544,7 +566,7 @@ async function processBatch(mode) {
   const payload = { mode, increment_enabled: incrementEnabled, start_issue_no: startIssueNo };
   if (mode === 'all') {
     payload.fields = await warnOnFuzzyCredits(collectFieldsForProcessAll());
-    payload.file_ids = loadedFiles.map((f) => f.id);
+    payload.file_ids = treeOrderedFileIds(loadedFiles);
   }
 
   setProcessingState(true);
@@ -984,7 +1006,7 @@ function renderPickerTree(items) {
   items.sort((a, b) => {
     if (a.type === 'folder' && b.type === 'file') return -1;
     if (a.type === 'file' && b.type === 'folder') return 1;
-    return a.name.localeCompare(b.name);
+    return naturalCompare(a.name, b.name);
   });
 
   for (const item of items) {

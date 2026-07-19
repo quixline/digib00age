@@ -200,6 +200,14 @@ moves a file from CBR to CBZ, not a separate conversion step the user has to ask
   nothing in ComicVault's DB yet to collide with.
 - This feature does not exist in the Basic editor at all (single file, nothing to increment
   against) — omit the control entirely from that UI, not just disable it.
+- **"List order" is the Column 1 tree's natural-sorted display order, always
+  (fixed 2026-07-19, `archive/bugs-fixed-archive.md` BUG-031).** The frontend
+  computes `file_ids` for Process All by walking the same folder→series→issue
+  structure the tree renders (`treeOrderedFileIds()` in `editor_full.js`), so
+  increment numbering can't diverge from what's on screen regardless of how the
+  files arrived (`os.walk` order, picker order, or anything else) — the backend
+  (`apply_increment()`) has no ordering logic of its own, it trusts the list it's
+  given.
 
 ### 3.5 Multi-ComicInfo.xml detection (Full Editor only)
 Not present in CAPT's current code as investigated — `archive_xml_loader.py` lists `*.xml`

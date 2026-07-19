@@ -451,9 +451,13 @@ def process_batch(payload: dict = Body(...), db: Session = Depends(get_db)):
     mode="queue": process every file currently in the Queue, using each
         file's own captured field values. Successfully-processed files are
         removed from the Queue; failures stay so Tez can retry.
-    mode="all": process every file in file_ids (the Loaded Files list, in
-        its current display order — respects drag-and-drop reorder) using
-        the single shared `fields` payload for all of them.
+    mode="all": process every file in file_ids, in the order given, using
+        the single shared `fields` payload for all of them. The frontend is
+        responsible for sending file_ids in the same natural-sorted order
+        shown in the Column 1 tree (BUG-031) — drag-and-drop reorder no
+        longer exists (dropped in the v2.6 Item 7 tree redesign, no meaning
+        in a grouped tree per DECISIONS.md), so this endpoint has no
+        independent notion of "display order" of its own.
 
     Both support increment_enabled/start_issue_no (Section 3.4) — Number is
     recomputed sequentially in list order when enabled, no collision check.

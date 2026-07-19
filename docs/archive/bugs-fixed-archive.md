@@ -1590,3 +1590,59 @@ The positive case (a genuine new-file insert no longer inflating the tile)
 wasn't separately exercised with a synthetic file — no test file was added
 to the real library for this, per this project's testing conventions — and
 will show correctly on Tez's next real scan that adds or renames files.
+
+### BUG-031 — Full Editor Process All: Increment # writes numbers in file-arrival order, not the natural-sorted order shown in the tree
+
+**Found:** 2026-07-19, loading `L:\Comic Archives\E\Series\Empire of the Dead [2014-2015]`
+into the Full Editor for a genre change with Increment # enabled, Process All. Filenames
+didn't match the written XML issue numbers — displayed issue #2 got `<Number>8</Number>`,
+#3 got 9, and so on.
+
+**Closed:** 2026-07-19, same session.
+
+**Where:** `frontend/js/editor_full.js` (`processBatch`, `renderFileTree`,
+`renderPickerTree`), `backend/routers/editor_full.py` (`process_batch` docstring).
+
+**Root cause:** `renderFileTree()` (Column 1) sorts a *copy* of each series' issues
+with `naturalCompare` (numeric-aware) purely for display. The underlying
+`loadedFiles` array is never reordered to match — it keeps whatever order the files
+arrived in. `processBatch('all')` sent `payload.file_ids = loadedFiles.map(f => f.id)`,
+the raw arrival order, and the backend's `apply_increment()` (`backend/editor/batch.py`)
+just assigns `Number = start + idx` sequentially over that list, trusting the order it's
+given. Arrival order itself is non-numeric from two sources: `add_folder`'s `os.walk()`
+(filesystem enumeration order) and the folder-browse picker's own list, which sorted with
+plain `localeCompare` (no `numeric: true`), so Select All there also locked in non-numeric
+order.
+
+Surfaced only now because the pre-redesign flat list (drag-and-drop reorder) made
+`loadedFiles` order and display order the same thing by construction. The v2.6 Item 7
+four-column redesign (2026-07-14) correctly dropped drag-and-drop (`DECISIONS.md` — no
+meaning in a grouped tree) but nothing replaced it to keep the array's actual order in
+sync with the natural-sorted render. Small batches never showed the divergence; a
+10+-issue folder did.
+
+**Fix:** added `treeOrderedFileIds()`, which walks the same grouped folder→series→issue
+structure `buildFileTree()`/`renderFileTree()` already use, natural-sorted the same way,
+and returns just the ids in that order. `processBatch('all')` now sends
+`payload.file_ids = treeOrderedFileIds(loadedFiles)`, so Process All's numbering is
+derived from the tree at request time and can't diverge from what's displayed regardless
+of arrival order. Also fixed `renderPickerTree`'s sort from plain `localeCompare` to
+`naturalCompare` (same bug class in the folder-browse picker's own list — Select All
+there is now numeric-aware too). Updated `process_batch()`'s docstring, which still
+claimed file_ids "respects drag-and-drop reorder" (stale since the v2.6 Item 7 redesign
+dropped that feature).
+
+**Verified:** live against 10 synthetic scratch `.cbz` files (`Empire Test 1.cbz` …
+`Empire Test 10.cbz`, deliberately not zero-padded so plain string/filesystem order
+splits `10` away from `2`–`9`) under a temporary, scan-excluded `_bug031_test` folder
+inside `L:\Comic Archives\Processing`, loaded via Add Selected Folder (`os.walk`, the
+real repro's intake path). Ran Process All with Genre/Format/Age Rating "Apply to All"
+and Increment # from 1; confirmed via direct zip inspection that every archive's
+`<Number>` matched its tree position exactly (`Empire Test 1.cbz` → 1 … `Empire Test
+10.cbz` → 10) and Genre applied to all ten. (First attempt still showed the bug —
+turned out to be the browser serving a cached pre-fix `editor_full.js`, per
+`EDITOR_SPEC.md`'s existing deploy note that `/editor`'s static assets have no
+`cache-control`; a hard refresh fixed it.) Scratch folder deleted afterward; the real
+`Empire of the Dead` folder was never processed — its working set was cleared from the
+Full Editor's in-memory list only (not from disk) before testing, left empty after for
+Tez to reload and redo his actual batch.

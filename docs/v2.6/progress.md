@@ -4474,3 +4474,58 @@ untouched):
 - No XML, filename with no clean series pattern (`zzz garbage_%%%.cbz`) → degraded
   gracefully, no crash; the parser's whole-string fallback filled Series with the
   cleaned filename text rather than leaving it blank or erroring.
+
+## Session — 2026-07-19 — BUG-031: Full Editor Process All wrote Increment # numbers out of order
+
+Tez reported live, loading the real `Empire of the Dead [2014-2015]` folder for a
+genre change with Increment # + Process All: displayed issue #2 came back tagged
+`<Number>8</Number>`, #3 as 9, and so on — the written numbers didn't track the
+issues shown in the Column 1 tree.
+
+**Root cause:** `renderFileTree()` (`frontend/js/editor_full.js`) sorts a *copy* of
+each series' issues with `naturalCompare` (numeric-aware) purely for display. The
+underlying `loadedFiles` array driving `processBatch('all')`'s `file_ids` was never
+reordered to match — it kept whatever order the files arrived in, which is
+non-numeric from either intake path: `add_folder`'s `os.walk()` (raw filesystem
+enumeration order) or the folder-browse picker's own list (sorted with plain
+`localeCompare`, no `numeric: true`). The backend's `apply_increment()`
+(`backend/editor/batch.py`) just assigns `Number = start + idx` sequentially over
+whatever order it's handed, trusting the caller.
+
+This is why it only surfaced now: pre-v2.6-Item-7 the list was flat and
+drag-and-drop reorder *was* `loadedFiles`'s order, so display order and processing
+order were the same array by construction. The four-column tree redesign
+(2026-07-14) correctly dropped drag-and-drop (no meaning in a grouped tree, see
+`DECISIONS.md`) but nothing replaced it to keep `loadedFiles`'s actual order in
+sync with the natural-sorted render — small batches (or names where lexicographic
+and numeric order happen to coincide) never exposed the gap; a 15-issue folder did.
+
+**Fix:** added `treeOrderedFileIds()` — walks the same grouped folder→series→issue
+structure `buildFileTree()`/`renderFileTree()` already use, natural-sorted the same
+way, and returns just the ids in that order. `processBatch('all')` now sends
+`payload.file_ids = treeOrderedFileIds(loadedFiles)` instead of raw `loadedFiles`
+order, so Process All's numbering is derived from the tree at request time and can
+no longer diverge from what's displayed, regardless of arrival order. Also fixed
+the picker's own list sort (`renderPickerTree`) from plain `localeCompare` to
+`naturalCompare`, so Select All in the folder-browse modal is numeric-aware too —
+same bug class, same feature area. Updated `editor_full.py`'s `process_batch()`
+docstring, which still claimed file_ids "respects drag-and-drop reorder" (stale
+since the v2.6 Item 7 redesign).
+
+**Verified live** against 10 synthetic scratch `.cbz` files (`Empire Test 1.cbz` …
+`Empire Test 10.cbz`, no zero-padding) under a temporary `_bug031_test` folder
+inside `L:\Comic Archives\Processing` (scan-excluded, removed after testing) —
+chosen specifically because plain string sort/filesystem order splits `10` away
+from `2`–`9`, exactly the divergence that caused the bug. Loaded via **Add Selected
+Folder** (exercises `os.walk`, the real repro's intake path), tree displayed
+correctly natural-sorted (1–10) as before. First Process All attempt (against the
+already-fixed code) still showed the bug — turned out to be the browser serving a
+cached pre-fix `editor_full.js` (`EDITOR_SPEC.md`'s own deploy note: `/editor`'s
+static assets have no `cache-control`, need a hard refresh). After Ctrl+Shift+R and
+regenerating fresh scratch files, reran Process All (Genre=Crime/Format=Series/Age
+Rating=Teen all "Apply to All", Increment # from 1): every archive's
+`<ComicInfo><Number>` now matches its tree position exactly (`Empire Test 1.cbz` →
+1 … `Empire Test 10.cbz` → 10), Genre applied to all ten. Scratch folder deleted
+afterward; real `Empire of the Dead` folder was never touched — its working set was
+cleared from the Full Editor's in-memory list (not from disk) before testing and
+left empty afterward for Tez to reload and redo his actual batch.
