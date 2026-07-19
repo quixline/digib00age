@@ -20,6 +20,8 @@ dependencies:
   google_fonts: ^6.2.1
   win32: ^5.1.0
   ffi: ^2.1.0
+  window_manager: ^0.5.2
+  screen_retriever: ^0.2.2
 
 dev_dependencies:
   flutter_test:

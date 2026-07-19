@@ -4,6 +4,36 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Desktop reader window resize: size target measured against live chrome overhead, not the raw cover-to-window ratio
+
+**Decided:** 2026-07-19, desktop reader cover-resize session.
+
+**Why:** `window_manager`'s `setSize`/`getSize` operate on the Windows outer window
+rect — title bar and borders included — confirmed by reading its native Win32
+source (`SetWindowPos`/`GetWindowRect` directly, no client-area adjustment). Setting
+the window to exactly 75% of the cover's pixel dimensions therefore left the actual
+Flutter content area smaller than intended by that chrome's size. For a tall
+portrait cover this was a small, mostly invisible fraction of the height budget; for
+a short window (a wide/landscape cover) the same fixed ~30-40px title bar ate a much
+bigger fraction of a much smaller budget, visibly cropping the bottom of the page —
+caught by Tez during manual testing, not anticipated at plan time.
+
+Fixed by measuring the live chrome overhead each resize
+(`windowManager.getSize()` — current outer frame — minus `MediaQuery.sizeOf(context)`
+— current content area, both in logical pixels) and adding it back onto the desired
+content size before calling `setSize`, rather than hardcoding an assumed title-bar
+height. This self-corrects for whatever title bar/border style Windows is actually
+rendering (theme, DPI, etc.) instead of encoding an assumption that could drift.
+
+Same session, a second bug surfaced and got the same live-testing-driven fix: the
+resize calls are fire-and-forget (must never block opening a comic), so nothing
+guaranteed they'd apply in the order comics were opened — a slower call finishing
+after a faster one could silently overwrite a newer comic's correct size. Fixed with
+a monotonic request-generation counter in `WindowResizeService` (`window_resize_service.dart`)
+— a resize only applies if it's still the most recently *issued* request by the time
+it finishes, regardless of completion order. See `v2.6/progress.md` 2026-07-19
+session entry for full build detail.
+
 ### Admin Logs modal: scan-boundary markers written into the log file, not a persisted count
 
 **Decided:** 2026-07-19, Admin Logs "most recent scan only" session.

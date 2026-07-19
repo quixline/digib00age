@@ -13,6 +13,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-19** — Windows desktop reader now resizes/centers the window to 75% of
+  the comic's actual cover page dimensions on open (capped to fit the screen),
+  instead of a fixed 1280x720 for every comic.
 - **2026-07-19** — Full Editor: Select Series modal gained a Sort control
   (Series A-Z / Year / Issues / Publisher, asc/desc toggle, defaults to
   ComicVine's own relevance order until manually changed) and Cancel/Issues/Ok

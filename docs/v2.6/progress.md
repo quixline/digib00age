@@ -4658,4 +4658,58 @@ preservation (only sorts after a manual dropdown/toggle change), and all
 three buttons wire correctly with no console errors. Tez then manually
 tested against a real ComicVine search and confirmed everything working,
 including that the default order still matches the pre-change behaviour.
+
+## Session — 2026-07-19 — Windows desktop reader: resize window to 75% of cover dimensions
+
+Ad hoc request (not a `comicvault-changes-v2.6.md` build-queue item) — the desktop
+reader window (`flutter_app`, native host in `windows/runner`) opened at a hard-coded
+fixed `1280x720` for every comic regardless of its actual page dimensions. Wanted the
+window to instead match the comic being read: on open, read the cover page's real
+pixel dimensions and size the window to 75% of that.
+
+**Investigation confirmed** no window-resize mechanism existed anywhere (Dart or
+native) and no code decoded a page/cover's actual pixel dimensions — both net new.
+`/api/cover/{issue_id}` (`backend/routers/reader.py`) turned out to serve a
+pre-generated *thumbnail*, not the real page, so the fix reads the real first page
+(`/api/page/{id}/0` server-side, `LocalCbzService.readCover()` local-side) instead.
+
+Clarified with Tez up front and confirmed via `AskUserQuestion`: cap the resize to
+fit the screen's work area (preserving aspect ratio) rather than ever exceeding it;
+resize every time a comic opens/navigates, not just once per session; use the
+`window_manager` package rather than a hand-written native `MethodChannel`.
+
+**Build:** added `window_manager` + `screen_retriever` (`flutter_app/pubspec.yaml`);
+`windowManager.ensureInitialized()` gated behind `Platform.isWindows` in `main()`;
+new `flutter_app/lib/services/window_resize_service.dart` — decodes just the cover's
+pixel dimensions (`ui.instantiateImageCodec` + one frame decode, not the whole
+comic), computes 75% of that capped to the primary display, and resizes+centers the
+window; wired into both `_ReaderScreenState._load()` (server mode) and
+`_LocalReaderScreenState._load()` (local mode) in `reader_screen.dart`, fire-and-
+forget so a decode/resize failure can never block or delay opening a comic.
+
+**Two bugs found and fixed during manual testing** (see `DECISIONS.md` for the
+first): (1) `window_manager`'s `setSize`/`getSize` operate on the *outer window
+rect* (title bar + borders included, confirmed against its Win32 source), not the
+content/page-display area — for a short window (wide/landscape cover) that overhead
+ate a much bigger fraction of the height budget than for a tall one, visibly
+cropping the page. Fixed by measuring the live chrome overhead
+(`windowManager.getSize()` vs `MediaQuery.sizeOf(context)`) each resize and adding it
+back onto the target before calling `setSize`. (2) Fire-and-forget resize calls
+weren't sequenced — a slower call (e.g. a previous comic's network fetch) completing
+after a faster one could silently overwrite a newer comic's correct size with its own
+stale one. Fixed with a monotonic request-generation guard in
+`WindowResizeService` — only the still-current request's result is applied.
+
+**Also discovered mid-session:** the `comicvault://` protocol handler (Windows
+Registry, registered previously — not part of this session) points at the **Debug**
+build (`flutter_app/build/windows/x64/runner/Debug/comicvault.exe`), not Release.
+The web frontend's issue-page "Read" button goes through that registration, so the
+Debug configuration had to be rebuilt (`flutter build windows --debug`) for Tez's
+real workflow to pick up the fix — a Release build alone (what got built/tested
+first) wasn't enough. Noted here since it isn't obvious from the code and would trip
+up a future session touching desktop-reader native behaviour.
+
+**Verified live:** Tez tested via the actual "Read" button flow (browser issue page
+→ `comicvault://` deep link → running/rebuilt Debug exe) across several comics of
+different aspect ratios — confirmed working, no cropping, no stale-size carryover.
 Real Processing Folder path, checkboxes, and ComicVine key were never touched.
