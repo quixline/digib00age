@@ -4566,3 +4566,39 @@ an empty queue. No console errors on load. Did not click Process Queue/Process A
 run a full queue→clear round-trip against real library files — the Explorer/file-picker
 modal was opened once against the real `L:\Comic Archives` tree to inspect the folder
 browser but no files were selected or added, so nothing on disk was touched.
+
+## Session — 2026-07-19 — Auto Processing Schedule row: disable irrelevant fields, auto-save on change
+
+Tez flagged the Schedule/Time/Day row (Admin → Processing Tools → Auto Processing,
+`ADMIN_SPEC.md` §11.4.5) as confusing: the Day dropdown stayed active even when
+Schedule was Off or Daily, where it's meaningless. Bundled in a second, already-known
+gap from the same row: unlike every other control on this page, Schedule/Time/Day
+required an explicit **Save** click with no unsaved-changes indicator — flagged as a
+`ROADMAP.md` candidate and documented in §11.4.5 as the *actual root cause* of a past
+"scheduled runs weren't firing" report (someone changed Day/Time, assumed it was live
+like the rest of the page, never clicked Save).
+
+**Fix:** `frontend/js/processingTools.js` — added `updatePfScheduleFieldStates()`
+(same `.disabled = ` pattern already used for `convertImagesQuality`/Lossless), called
+on load and whenever Schedule changes: Time disabled only when Schedule is Off, Day
+disabled unless Schedule is Weekly. Replaced the explicit `pfSaveScheduleBtn` click
+handler with a `saveSchedule()` helper wired to `change` on all three fields
+(Schedule/Time/Day), matching the auto-save-on-change pattern every other Processing
+Folder Automation control already uses — reuses the existing `savePfSetting()` helper
+and its "Saved" toast, no backend changes needed (`POST /processing-folder/config`
+already accepted partial payloads and already nulled `next_processing_run` on any
+schedule/time/day change). `frontend/admin.html` — removed the now-unneeded
+`pfSaveScheduleBtn` button.
+
+**Verified live** at `http://localhost:9424/admin` via Claude-in-Chrome, against the
+real Processing Folder config (`L:\Comic Archives\Processing\Stage 1`, real ComicVine
+key, Schedule=Daily/01:00/Thursday — same static-asset caching quirk as the 2026-07-18/19
+Editor sessions, needed a hard refresh before the new JS took effect). Confirmed via
+direct DOM inspection: Off → both Time and Day disabled; Daily → Time enabled, Day
+disabled; Weekly → both enabled. Cycled Schedule through weekly → off → daily via
+real `change` events (not just calling the handler directly) to exercise the actual
+event wiring, then confirmed via `GET /api/admin/processing-folder/config` that the
+real config settled back to its original `daily`/`01:00`/`3` (only `next_processing_run`
+went `null`, which is expected — the endpoint already nulls it on any schedule/time/day
+change, and the scheduler loop recomputes it on its next poll). No console errors.
+Real Processing Folder path, checkboxes, and ComicVine key were never touched.

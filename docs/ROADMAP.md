@@ -101,14 +101,12 @@ just the one piece that no longer has to wait for Item 14 to land.
 Needs a quick scoping pass to confirm current header variants before Code starts,
 whenever this gets picked back up.
 
-**Two more items folded in, 2026-07-03 (Tez's call, `INBOX.md` triage):** both are
-low-priority Admin-page polish, deferred here rather than built standalone —
-(1) remove the redundant custom/editable path text input from Add Custom Tabs
-(the folder nav-picker already covers this); (2) Processing Folder Automation's
-Schedule/Time/Day row needs to either auto-save like the rest of that page or
-get a clear unsaved-changes indicator (found 2026-07-02 investigating a
-"scheduled run isn't firing" report — the wall-clock mechanism itself is fine,
-see `ADMIN_SPEC.md` §11.4.5). Neither blocks anything before v2.6 starts.
+**One item folded in, 2026-07-03 (Tez's call, `INBOX.md` triage):** low-priority
+Admin-page polish, deferred here rather than built standalone — remove the redundant
+custom/editable path text input from Add Custom Tabs (the folder nav-picker already
+covers this). Doesn't block anything before v2.6 starts. (A second item folded in the
+same session — Processing Folder Automation's Schedule/Time/Day row needing auto-save
+or an unsaved-changes indicator — was fixed 2026-07-19, see `ADMIN_SPEC.md` §11.4.5.)
 
 ---
 

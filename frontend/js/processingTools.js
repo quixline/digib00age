@@ -609,6 +609,7 @@ async function loadProcessingFolderConfig() {
   document.getElementById('pfScheduleSelect').value = cfg.processing_folder_schedule;
   document.getElementById('pfScheduleTime').value = cfg.processing_folder_schedule_time;
   document.getElementById('pfScheduleDay').value = cfg.processing_folder_schedule_day;
+  updatePfScheduleFieldStates();
 
   const hint = document.getElementById('pfNextRunHint');
   hint.textContent = cfg.next_processing_run
@@ -616,9 +617,24 @@ async function loadProcessingFolderConfig() {
     : (cfg.processing_folder_schedule === 'off' ? '' : 'Next run time will be computed shortly.');
 }
 
+function updatePfScheduleFieldStates() {
+  const schedule = document.getElementById('pfScheduleSelect').value;
+  document.getElementById('pfScheduleTime').disabled = schedule === 'off';
+  document.getElementById('pfScheduleDay').disabled = schedule !== 'weekly';
+}
+
 async function savePfSetting(payload) {
   await postJSON('/processing-folder/config', payload);
   showToast('Saved');
+}
+
+async function saveSchedule() {
+  await savePfSetting({
+    processing_folder_schedule: document.getElementById('pfScheduleSelect').value,
+    processing_folder_schedule_time: document.getElementById('pfScheduleTime').value,
+    processing_folder_schedule_day: document.getElementById('pfScheduleDay').value,
+  });
+  await loadProcessingFolderConfig();
 }
 
 function openPfBrowse() {
@@ -740,15 +756,12 @@ function initProcessingFolderTool() {
   document.getElementById('pfConvertImagesQuality').addEventListener('change', (e) =>
     savePfSetting({ processing_folder_convert_images_quality: e.target.value }));
 
-  document.getElementById('pfSaveScheduleBtn').addEventListener('click', async () => {
-    await savePfSetting({
-      processing_folder_schedule: document.getElementById('pfScheduleSelect').value,
-      processing_folder_schedule_time: document.getElementById('pfScheduleTime').value,
-      processing_folder_schedule_day: document.getElementById('pfScheduleDay').value,
-    });
-    showToast('Schedule saved');
-    await loadProcessingFolderConfig();
+  document.getElementById('pfScheduleSelect').addEventListener('change', () => {
+    updatePfScheduleFieldStates();
+    saveSchedule();
   });
+  document.getElementById('pfScheduleTime').addEventListener('change', saveSchedule);
+  document.getElementById('pfScheduleDay').addEventListener('change', saveSchedule);
 
   loadProcessingFolderConfig();
 }

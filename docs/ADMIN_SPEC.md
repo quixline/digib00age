@@ -1577,11 +1577,17 @@ itself).
   "Off"** while Day/Time were the only fields actually changed — the loop's first
   check (`if schedule not in ("daily","weekly"): continue`) means Day/Time are
   irrelevant whenever Schedule reads Off, matching "Run Now works, scheduled
-  doesn't" exactly. Unlike every other Processing Folder Automation setting on the
-  page (which auto-save on change), Schedule/Time/Day require a separate explicit
-  **Save** click with no "unsaved changes" indicator — easy to adjust Time/Day and
-  assume it's live the way everything else on the page behaves. Flagged as a
-  worthwhile UX fix, not yet built (`ROADMAP.md` candidate).
+  doesn't" exactly. At the time, Schedule/Time/Day required a separate explicit
+  **Save** click with no "unsaved changes" indicator, unlike every other Processing
+  Folder Automation setting on the page — flagged as a `ROADMAP.md` candidate.
+- **Fixed 2026-07-19** — Schedule/Time/Day now auto-save on `change`, same as every
+  other control on this page (`frontend/js/processingTools.js`'s `saveSchedule()`,
+  reusing `savePfSetting()`); the separate Save button was removed. The Day dropdown
+  is also now disabled unless Schedule is Weekly, and the Time field is disabled
+  when Schedule is Off — `updatePfScheduleFieldStates()`, called on load and on every
+  Schedule change — so a field that doesn't apply to the current Schedule value can't
+  be edited in the first place, closing off the exact confusion the 2026-07-02
+  investigation traced the false-alarm report to.
 
 #### 11.4.6 Unified Backup Model
 

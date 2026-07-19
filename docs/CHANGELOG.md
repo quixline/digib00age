@@ -13,6 +13,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-19** — Auto Processing Schedule row: Day dropdown now disables unless
+  Weekly is selected (Time disables when Off), and Schedule/Time/Day auto-save on
+  change like the rest of the page instead of requiring a separate Save click.
 - **2026-07-19** — Full Editor: removed the misplaced/nonfunctional Column 2
   "Clear" button, moved "Clear Queue" into Column 4's Queue Actions row (between
   Process Queue and Process All) as a matching white-text blue pill.
