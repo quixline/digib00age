@@ -34,6 +34,9 @@ let multiXmlFileId = null;
 let searchOnlineOpen = false;   // focus trap — blocks card-swap/Process while the modal is open
 let soSeriesResults = [];       // cached Step 1 results, so "Back to Series" doesn't re-fetch
 let soSelectedSeriesId = null;
+let soSelectedSeries = null;    // full series object of the highlighted row (set by previewSoSeries)
+let soSortKey = '';             // '' (relevance order, as returned by ComicVine) | name | start_year | count_of_issues | publisher
+let soSortDir = 'asc';
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
@@ -1200,6 +1203,15 @@ function wireSearchOnlineModal() {
   document.getElementById('feSearchOnlineBtn').onclick = openSearchOnline;
   document.getElementById('feSearchOnlineCloseBtn').onclick = closeSearchOnlineModal;
   document.getElementById('feSoBackBtn').onclick = () => showSoStep('series');
+  document.getElementById('feSoSortSelect').onchange = (e) => { soSortKey = e.target.value; renderSoSeriesTable(); };
+  document.getElementById('feSoSortDirBtn').onclick = () => {
+    soSortDir = soSortDir === 'asc' ? 'desc' : 'asc';
+    document.getElementById('feSoSortDirBtn').innerHTML = soSortDir === 'asc' ? '&#8593;' : '&#8595;';
+    renderSoSeriesTable();
+  };
+  document.getElementById('feSoCancelBtn').onclick = closeSearchOnlineModal;
+  document.getElementById('feSoIssuesBtn').onclick = soIssuesBtnClick;
+  document.getElementById('feSoOkBtn').onclick = soOkBtnClick;
 }
 
 function escapeHtml(s) {
@@ -1244,18 +1256,39 @@ function showSoStep(step) {
   document.getElementById('feSearchOnlineTitle').textContent = step === 'series' ? 'Select Series' : 'Select Issue';
 }
 
+const SO_SORT_KEY_FNS = {
+  name:             s => (s.name || '').toLowerCase(),
+  start_year:       s => s.start_year || 0,
+  count_of_issues:  s => s.count_of_issues || 0,
+  publisher:        s => (s.publisher || '').toLowerCase(),
+};
+
+// soSeriesResults stays in ComicVine's own relevance order (closest match
+// first) and is never mutated — sorting only ever applies to what's
+// displayed, and only once the user picks a Sort option.
+function getSortedSoSeriesResults() {
+  if (!soSortKey) return soSeriesResults;
+  const keyFn = SO_SORT_KEY_FNS[soSortKey] || SO_SORT_KEY_FNS.name;
+  return [...soSeriesResults].sort((a, b) => {
+    const ka = keyFn(a), kb = keyFn(b);
+    const cmp = typeof ka === 'string' ? ka.localeCompare(kb) : ka - kb;
+    return soSortDir === 'desc' ? -cmp : cmp;
+  });
+}
+
 function renderSoSeriesTable() {
   const tbody = document.getElementById('feSoSeriesTbody');
   tbody.innerHTML = '';
   document.getElementById('feSoSeriesCover').src = '';
   document.getElementById('feSoSeriesDescription').innerHTML = '';
 
-  if (!soSeriesResults.length) {
+  const sorted = getSortedSoSeriesResults();
+  if (!sorted.length) {
     tbody.innerHTML = '<tr><td colspan="4">No results found.</td></tr>';
     return;
   }
 
-  for (const series of soSeriesResults) {
+  for (const series of sorted) {
     const row = document.createElement('tr');
     row.innerHTML = `<td>${escapeHtml(series.name)}</td><td>${series.start_year || ''}</td>` +
       `<td>${series.count_of_issues != null ? series.count_of_issues : ''}</td><td>${escapeHtml(series.publisher)}</td>`;
@@ -1263,14 +1296,35 @@ function renderSoSeriesTable() {
     row.addEventListener('dblclick', () => proceedToSoIssues(series.id));
     tbody.appendChild(row);
   }
-  previewSoSeries(soSeriesResults[0], tbody.firstElementChild);
+  previewSoSeries(sorted[0], tbody.firstElementChild);
 }
 
 function previewSoSeries(series, row) {
+  soSelectedSeries = series;
   document.querySelectorAll('#feSoSeriesTbody tr').forEach((r) => r.classList.remove('selected'));
   if (row) row.classList.add('selected');
   document.getElementById('feSoSeriesCover').src = series.image_url || '';
   document.getElementById('feSoSeriesDescription').innerHTML = series.description || '';
+}
+
+function soIssuesBtnClick() {
+  if (!soSelectedSeries) return;
+  proceedToSoIssues(soSelectedSeries.id);
+}
+
+async function soOkBtnClick() {
+  if (!soSelectedSeries) return;
+  const res = await fetch(`/api/editor/full/search/issues?series_id=${encodeURIComponent(soSelectedSeries.id)}`);
+  if (!res.ok) {
+    showError('Could not load issues.');
+    return;
+  }
+  const data = await res.json();
+  if (!data.results.length) {
+    showError('No issues found for this series.');
+    return;
+  }
+  confirmSoIssue(data.results[0].issue_id);
 }
 
 async function proceedToSoIssues(seriesId) {

@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-19** — Full Editor: Select Series modal gained a Sort control
+  (Series A-Z / Year / Issues / Publisher, asc/desc toggle, defaults to
+  ComicVine's own relevance order until manually changed) and Cancel/Issues/Ok
+  buttons below the results list, left-aligned.
 - **2026-07-19** — File Rename tool: output format changed from `Series - Title
   #Issue (Year)` to `Series #Issue - Title (Year)`, Edit Panel field order swapped
   to match (Series, Issue, Title, Year).

@@ -349,6 +349,17 @@
 
       <!-- Step 1: Select Series -->
       <div id="feSoStepSeries" class="fe-so-step">
+        <div class="fe-so-controls">
+          <label for="feSoSortSelect">Sort by</label>
+          <select id="feSoSortSelect" class="filter-select" aria-label="Sort series by">
+            <option value="" selected>Best match</option>
+            <option value="name">Series (A-Z)</option>
+            <option value="start_year">Year</option>
+            <option value="count_of_issues">Issues</option>
+            <option value="publisher">Publisher</option>
+          </select>
+          <button type="button" class="sort-dir-btn" id="feSoSortDirBtn" title="Toggle ascending/descending">&uarr;</button>
+        </div>
         <div class="fe-so-layout">
           <table class="fe-so-results-table">
             <thead><tr><th>Series</th><th>Year</th><th>Issues</th><th>Publisher</th></tr></thead>
@@ -358,6 +369,11 @@
             <img id="feSoSeriesCover" class="fe-so-cover-img" alt="">
             <div class="fe-so-description" id="feSoSeriesDescription"></div>
           </div>
+        </div>
+        <div class="editor-actions">
+          <button type="button" class="btn-admin-action" id="feSoCancelBtn">Cancel</button>
+          <button type="button" class="btn-admin-action" id="feSoIssuesBtn">Issues</button>
+          <button type="button" class="btn-primary" id="feSoOkBtn">Ok</button>
         </div>
       </div>
 

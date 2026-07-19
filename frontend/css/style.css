@@ -3902,7 +3902,9 @@ select.fe-genre-add:focus { outline: none; }
 .fe-search-online-modal { max-width: 900px; }
 .fe-so-step { padding: 14px 20px 20px; }
 #feSoBackBtn { margin-bottom: 12px; }
+.fe-so-controls { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; }
 .fe-so-layout { display: flex; gap: 16px; }
+.fe-so-step .editor-actions { padding: 12px 0 0; justify-content: flex-start; }
 .fe-so-results-table {
   flex: 1 1 auto;
   min-width: 0;

@@ -4620,4 +4620,42 @@ array reordered to match, including the one positional reference
 (`Series #Issue - Title (Year)`, and correctly degrading when Title/Issue/Year
 are blank), then Tez manually tested with a sample file in the live Admin UI —
 confirmed field order and generated filename both correct.
+
+## Session — 2026-07-19 — Full Editor: Select Series modal — Sort control + Cancel/Issues/Ok buttons
+
+Tez asked for a Sort control in the Select Series modal's (§9.6) top row —
+Series (A-Z), Year, Issues, Publisher, with an asc/desc toggle — plus two
+buttons below the results list: **Issues** (same as double-clicking the
+highlighted row) and **Ok** (skips Select Issue entirely, applies the first/
+only issue's metadata directly). A **Cancel** button (closes the modal, same
+as ×) was added in a follow-up round, and all three buttons moved from
+right-aligned to left-aligned.
+
+**Fix:** `frontend/editor_full.html` — added a `.fe-so-controls` row (Sort
+`<select>` + `.sort-dir-btn` toggle) above `#feSoStepSeries`'s results table,
+and an `.editor-actions` row (Cancel / Issues / Ok) below it.
+`frontend/css/style.css` — `.fe-so-controls` rule, plus a `.fe-so-step
+.editor-actions` override (`justify-content: flex-start`, no doubled-up
+padding from being nested inside `.fe-so-step`'s own padding, unlike the
+file-picker modal's button row which sits directly under `.editor-modal`).
+`frontend/js/editor_full.js` — `soSeriesResults` now stays in ComicVine's own
+relevance order (closest match first) and is never mutated; a new
+`getSortedSoSeriesResults()` returns a sorted *copy* only when `soSortKey` is
+non-empty, so the list only re-sorts once the user actually picks a Sort
+option (dropdown defaults to a "Best match" placeholder, `value=""`) — the
+first build round wired sorting to run unconditionally on every fresh search,
+which silently changed the existing "closest match at the top" default
+ordering; caught by Tez before docs/commit and fixed same session. `Cancel`
+wires to the existing `closeSearchOnlineModal()`; `Issues` calls the same
+`proceedToSoIssues()` double-click already used; `Ok` fetches the series'
+issue list and applies the first result through the existing
+`confirmSoIssue()` confirm path — no new backend endpoint.
+
+**Verified live** at `http://localhost:9424/editor` via Claude-in-Chrome:
+self-tested with fake in-memory series data (no real files touched) —
+confirmed all 4 sort keys, direction toggle, default relevance-order
+preservation (only sorts after a manual dropdown/toggle change), and all
+three buttons wire correctly with no console errors. Tez then manually
+tested against a real ComicVine search and confirmed everything working,
+including that the default order still matches the pre-change behaviour.
 Real Processing Folder path, checkboxes, and ComicVine key were never touched.
