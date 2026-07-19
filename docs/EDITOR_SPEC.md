@@ -116,10 +116,19 @@ wanted here either.
 - Parse with `lxml.etree` in recovery mode (`recover=True`), matching CAPT's existing
   tolerant-parsing behaviour.
 - Build a tag→text map; extract the field set in Section 4.
-- If XML is missing or parsing fails entirely: fall back to filename-pattern parsing
-  (`Series Name #Number (Year).cbz`), same rule already defined in `SPEC.md` Section 9 — this
-  logic already exists in ComicVault's scanner and should be reused/shared rather than
-  reimplemented a third time if practical.
+- **Built 2026-07-19:** if no `ComicInfo.xml` is present in the archive at all,
+  `get_file_xml()` (`backend/routers/editor_full.py`) seeds Series/Number/Year from
+  filename-pattern parsing instead of loading the form blank, via
+  `backend/editor/xml_parser.py::parse_filename_for_comicinfo()` — a shim that had
+  existed unused since the original port, now repointed to reuse the Filename
+  Editor's own parser (`backend/rename_tool.py::parse_comic_filename()`, the
+  tested, scene-release-tolerant one also used by CT Auto-Tag) rather than the
+  scanner's simpler internal fallback. Title is never filled — the filename pattern
+  has no title component. If a filename doesn't parse to a usable series, the
+  Series field still loads blank and "Search ComicVine" falls back to its existing
+  manual-entry prompt. **Scope note:** this only covers "no XML file found" — an
+  archive whose `ComicInfo.xml` exists but fails to parse still loads blank
+  (`parse_comicinfo_xml()`'s existing internal catch), unchanged by this session.
 
 ### 3.2 Writing — full archive rebuild (confirmed, not changing)
 Ported as-is from `utils/xml_archive_unpacker.py`:
@@ -680,6 +689,10 @@ misleading-results-summary UI bug caught during the low-confidence test pass).
 - Blocked with a message if the form's Series field is empty — matches CT's own
   guard in `taggerwindow.py::query_online()` ("Need to enter a series name to
   search").
+- **Built 2026-07-19:** for a freshly-loaded file with no `ComicInfo.xml`, Series is
+  now often already pre-filled from the filename (see §3.1), so this guard is hit
+  less often in practice — it still applies unchanged when a filename doesn't parse
+  to a usable series.
 
 ### 9.5 Search Online — field source
 
@@ -922,3 +935,4 @@ it reflects the populated working set instead of an empty one.
 | 2026-07-09 | §9.4 — "Search Online" renamed **"Search ComicVine"** and relocated out of the header into its own row directly above the three-column layout, sharing `.fe-layout`'s exact grid columns so it sits centred over the XML Editor column. New **"Search GoodReads"** external link added alongside it in the same row — plain `target="_blank"` link to goodreads.com, no field wiring. | Tez's post-redesign UI tweak pass — see `docs/v2.6/progress.md`. |
 | 2026-07-11 | **§6.1 — Basic Editor save made async ("fire and forget").** `POST /api/editor/{issue_id}` used to run the whole field-merge + archive-rebuild + rescan chain synchronously, blocking the popup open for the full round trip (dominated by the archive rebuild, which scales with page count). Now only validates + merges the XML synchronously (still 422s immediately on bad input) and queues the rebuild + rescan as a background task, returning `{success, pending: true, issue_id}` right away; new `GET .../save-status` polling endpoint; new `saving` flag on `GET /api/editor/{issue_id}` plus a `409` guard against a second concurrent save on the same issue. Accepted trade-off, confirmed with Tez: if a background save fails after the user has already navigated away, it's silent (discoverable only by reopening the editor) — no new cross-page notification system. Safe either way since `os.replace()` only swaps in the rebuilt archive after it's fully staged, so a failure never corrupts the original file. Full rationale in `DECISIONS.md`; build narrative in `docs/v2.6/progress.md`. | Inbox 2026-07-11 — "quick save hits a bottleneck," scoped and built same day. |
 | 2026-07-15 | **Added Section 13, Review Queue (Flag for Review) — v2.6 Item 8, built and manually verified same day.** New `Issue.flagged_for_review` DB column (mirrors `favorites`), single-issue + bulk set/clear endpoints, a menu-bar filter toggle (mirrors the Favourites filter, §2.3 in `MENU_BAR_SPEC.md`), and a "Send to Full Editor" bulk action that resolves selected issues to their known file paths and adds them straight to the Full Editor's working set via a new `add-by-issues` endpoint — skipping the manual folder-browse picker. One confirmed, scoped exception to Section 5's "Full Editor never touches the DB" rule: `process_batch()` now rescans + clears the flag when the saved path matches an existing `Issue.file_path`; files with no match (the original pre-library use case) are completely untouched. Section 14 (old §13, Change Log) renumbered to make room — no other content changed. | Ad-hoc feature request 2026-07-15, scoped and built same session; see `v2.6/progress.md` "Basic Editor popup-open perf fix" session's follow-ups and the dedicated review-queue session entry for the full build narrative. |
+| 2026-07-19 | **§3.1/§9.4 — Full Editor now pre-fills Series/Number/Year from the filename when a loaded file has no `ComicInfo.xml`**, built and manually verified same day. Repointed the previously-unused `parse_filename_for_comicinfo()` shim (`backend/editor/xml_parser.py`) from the scanner's minimal internal fallback to the Filename Editor's own tested parser (`backend/rename_tool.py::parse_comic_filename()`), then wired it into `get_file_xml()`'s no-XML branch. No frontend changes — existing field-population and Search-ComicVine-guard logic just work once Series is pre-filled. | Tez's request 2026-07-19 — "Full XML Editor doesn't have any filename parsing... reuse the current parsing that is built." Scoped to Full Editor only (Basic Editor has the same gap, deliberately left out of scope). See `docs/v2.6/progress.md`. |

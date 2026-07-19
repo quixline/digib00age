@@ -2658,3 +2658,22 @@ building it now.
 **Where:** `flutter_app/lib/widgets/comic_page_view.dart`
 (`_handleScrollProgress()`, `_scrollToPage()`), `archive/bugs-fixed-archive.md`
 BUG-024.
+
+### Full Editor's no-XML filename fallback: repoint the existing dormant shim to `rename_tool`'s parser, not write new remap code
+**Decided:** 2026-07-19, scoping Tez's request to wire filename parsing into the
+Full XML Editor for files with no `ComicInfo.xml`.
+**Why:** `backend/editor/xml_parser.py::parse_filename_for_comicinfo()` already
+existed with exactly the Series/Number/Year/Title field-remapping this needed —
+but it was wired to `backend/scanner.py::_parse_filename()` (the scanner's minimal
+internal fallback, used for the full-library scan) and was never actually called
+from anywhere. The Filename Editor's own parser
+(`backend/rename_tool.py::parse_comic_filename()`) is the tested,
+scene-release-tolerant one Tez actually meant — it's already reused once outside
+its home file, by CT Auto-Tag's `ct_bridge.py::identify_file()`. Repointing the
+existing shim's import and return-key remap to call that parser instead reused
+built infrastructure and fixed a latent inconsistency in the same move, rather
+than adding a second, parallel piece of remap code. `scanner._parse_filename()`
+itself was left untouched — its own internal callers in the scanner are a
+separate, unrelated use.
+**Where:** `backend/editor/xml_parser.py` (`parse_filename_for_comicinfo()`),
+`backend/routers/editor_full.py` (`get_file_xml()`), `EDITOR_SPEC.md` §3.1/§9.4.

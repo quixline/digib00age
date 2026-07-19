@@ -13,6 +13,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-19** — Full XML Editor now pre-fills Series/Number/Year from the
+  filename when a loaded file has no `ComicInfo.xml`, reusing the Filename Editor's
+  parser (`rename_tool.parse_comic_filename`) instead of leaving the form blank.
 - **2026-07-19** — Fixed BUG-030: Changed Files stat tile counted new-file inserts
   as "changes" (disagreeing with its own log, which never logs new files). Tile and
   log now both driven by genuine updates + rename/move matches only. See

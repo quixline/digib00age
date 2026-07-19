@@ -10,7 +10,7 @@ import logging
 
 from lxml import etree
 
-from backend.scanner import _parse_filename
+from backend.rename_tool import parse_comic_filename
 
 logger = logging.getLogger(__name__)
 
@@ -73,19 +73,20 @@ def parse_comicinfo_xml(xml_content: str) -> dict:
 def parse_filename_for_comicinfo(filename: str) -> dict:
     """
     Fall back to filename-pattern parsing when ComicInfo.xml is missing or
-    unparseable. Reuses the scanner's existing filename parser (same pattern
-    documented in SPEC.md Section 9) rather than reimplementing it, remapped
-    from the scanner's lowercase keys to the editor's tag-cased field names.
+    unparseable. Reuses the Filename Editor's parser (backend/rename_tool.py's
+    parse_comic_filename -- the tested, scene-release-tolerant one, not the
+    minimal scanner.py fallback) rather than reimplementing it, remapped from
+    its lowercase keys to the editor's tag-cased field names.
 
     :param filename: archive filename, without path
-    :return: dict with Series/Number/Year/Title keys (Title always blank —
+    :return: dict with Series/Number/Year/Title keys (Title always blank --
         the filename pattern has no title component, matching CAPT's
         original behaviour)
     """
-    parsed = _parse_filename(filename)
+    parsed = parse_comic_filename(filename)
     return {
         "Series": parsed.get("series") or "",
-        "Number": parsed.get("number") or "",
-        "Year": str(parsed["year"]) if parsed.get("year") else "",
+        "Number": parsed.get("issue_num") or "",
+        "Year": parsed.get("year") or "",
         "Title": "",
     }

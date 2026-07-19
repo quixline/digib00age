@@ -57,7 +57,11 @@ from backend.editor.archive_io import (
 from backend.editor.batch import apply_increment
 from backend.editor.field_merge import build_xml_from_fields
 from backend.editor.validation import validate_enforced_fields
-from backend.editor.xml_parser import COMICINFO_TAGS, parse_comicinfo_xml
+from backend.editor.xml_parser import (
+    COMICINFO_TAGS,
+    parse_comicinfo_xml,
+    parse_filename_for_comicinfo,
+)
 from backend.models import Issue
 from backend.scanner import scan_single_file
 
@@ -310,11 +314,11 @@ def get_file_xml(file_id: str):
         return {"file_id": file_id, "multiple_xml": True, "candidates": candidates}
 
     original_xml = extract_xml_from_archive(path, xml_files[0]) if xml_files else None
-    fields = (
-        parse_comicinfo_xml(original_xml)
-        if original_xml
-        else {tag: "" for tag in COMICINFO_TAGS}
-    )
+    if original_xml:
+        fields = parse_comicinfo_xml(original_xml)
+    else:
+        fields = {tag: "" for tag in COMICINFO_TAGS}
+        fields.update(parse_filename_for_comicinfo(os.path.basename(path)))
     fields["PageCount"] = str(get_archive_page_count(path))
 
     return {"file_id": file_id, "multiple_xml": False, "fields": fields}

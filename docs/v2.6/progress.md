@@ -4429,3 +4429,48 @@ plus a real no-op rescan (tile and log both correctly zero); the positive case
 wasn't exercised with a synthetic new file per this project's real-library-only
 testing convention — will show correctly on Tez's next real scan with actual
 changes.
+
+## Session — 2026-07-19 — Full XML Editor pre-fills Series/Number/Year from filename when no XML exists
+
+Full Editor's `get_file_xml()` (`backend/routers/editor_full.py`) used to return
+every field blank when a loaded archive had no `ComicInfo.xml` at all, leaving Tez
+to type at least a Series name by hand before "Search ComicVine" would fire (its
+existing guard: *"Need to enter a series name to search"*). The Filename Editor
+(Admin → File Rename, `ADMIN_SPEC.md` §11.1) already solves the same problem for
+its own use case via `backend/rename_tool.py::parse_comic_filename()` — a
+well-tested, scene-release-tolerant regex parser, also reused by CT Auto-Tag
+(`ct_bridge.py::identify_file()`).
+
+Found a dormant, purpose-built shim already sitting unused for exactly this:
+`backend/editor/xml_parser.py::parse_filename_for_comicinfo()` did the
+Series/Number/Year/Title field-remapping needed, but was wired to
+`backend/scanner.py::_parse_filename()` — the simpler fallback the library scanner
+uses internally — and was never actually called from anywhere. Repointed it to
+`rename_tool.parse_comic_filename()` instead (updated the import, the field-key
+remap to match that parser's `series`/`issue_num`/`year` return shape, and the
+docstring), rather than writing new remapping code. `scanner._parse_filename()`
+itself is untouched — its own internal callers (`scanner.py` lines ~304, ~352) are
+unaffected.
+
+`editor_full.py::get_file_xml()`'s no-XML branch now calls this shim to seed
+`fields` before returning. No frontend changes needed — `populateForm()`
+(`frontend/js/editor_full.js`) already writes `fields.Series`/`Number`/`Year`
+straight into the form inputs, and `openSearchOnline()`'s existing series-required
+guard just naturally passes once Series is pre-filled (or still shows the same
+manual-entry prompt if a filename doesn't parse to anything useful).
+
+**Verified live** via the actual Full Editor UI (`/editor`) against three synthetic
+scratch `.cbz` files added under a temporary `_claude_test_scratch` folder inside
+`L:\Comic Archives` (removed immediately after testing, real library otherwise
+untouched):
+- No XML, well-formed filename (`Amazing Test-Man 003 (2019).cbz`) → Series/Number/
+  Year auto-populated correctly on load, Title stayed blank; clicked "Search
+  ComicVine" and it fired immediately using the parsed series, returning real
+  ComicVine matches, no manual typing required.
+- Existing `ComicInfo.xml` present (`Already Tagged Comic 001 (2020).cbz`, embedded
+  Series "Existing Series"/Number 5) → fields loaded from the XML unchanged,
+  filename-derived values ("Already Tagged Comic"/001/2020) were not used —
+  confirms the XML-present path is untouched by this change.
+- No XML, filename with no clean series pattern (`zzz garbage_%%%.cbz`) → degraded
+  gracefully, no crash; the parser's whole-string fallback filled Series with the
+  cleaned filename text rather than leaving it blank or erroring.
