@@ -28,8 +28,8 @@ function showPtSummary(title, headline, errors) {
 
 const RENAME_FIELDS = [
   { dataKey: 'series',      id: 'Series' },
-  { dataKey: 'issue_title', id: 'Title'  },
   { dataKey: 'issue_num',   id: 'Issue'  },
+  { dataKey: 'issue_title', id: 'Title'  },
   { dataKey: 'year',        id: 'Year'   },
 ];
 
@@ -61,7 +61,7 @@ function currentRenameBatchOptions() {
 }
 
 function updateRenameAutoIncrementAvailability() {
-  const issueAllChecked = renameFieldEls(RENAME_FIELDS[2]).all.checked; // Issue
+  const issueAllChecked = renameFieldEls(RENAME_FIELDS[1]).all.checked; // Issue
   const cb = document.getElementById('renameAutoIncrement');
   cb.disabled = !issueAllChecked;
   if (!issueAllChecked) cb.checked = false;

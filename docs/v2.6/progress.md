@@ -4601,4 +4601,23 @@ event wiring, then confirmed via `GET /api/admin/processing-folder/config` that 
 real config settled back to its original `daily`/`01:00`/`3` (only `next_processing_run`
 went `null`, which is expected — the endpoint already nulls it on any schedule/time/day
 change, and the scheduler loop recomputes it on its next poll). No console errors.
+
+## Session — 2026-07-19 — File Rename: field order + output format changed
+
+Tez asked to change the File Rename tool's field order/output format so Issue #
+sits right after Series instead of after Title.
+
+**Fix:** `backend/rename_tool.py`'s `build_filename()` — reordered parts from
+`Series - Title #Issue (Year)` to `Series #Issue - Title (Year)`. Edit Panel row
+order in `frontend/admin.html` swapped to match (Series, Issue, Title, Year — the
+table previously read Series, Title, Issue, Year despite `ADMIN_SPEC.md` §11.1.4
+already describing the Series/Issue/Title/Year order, a pre-existing doc/code
+mismatch this also resolves). `frontend/js/processingTools.js`'s `RENAME_FIELDS`
+array reordered to match, including the one positional reference
+(`RENAME_FIELDS[1]` for Issue, used by `updateRenameAutoIncrementAvailability()`).
+
+**Verified:** sanity-checked `build_filename()` output via a scratch Python call
+(`Series #Issue - Title (Year)`, and correctly degrading when Title/Issue/Year
+are blank), then Tez manually tested with a sample file in the live Admin UI —
+confirmed field order and generated filename both correct.
 Real Processing Folder path, checkboxes, and ComicVine key were never touched.

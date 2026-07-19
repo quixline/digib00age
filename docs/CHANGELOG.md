@@ -13,6 +13,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-19** — File Rename tool: output format changed from `Series - Title
+  #Issue (Year)` to `Series #Issue - Title (Year)`, Edit Panel field order swapped
+  to match (Series, Issue, Title, Year).
 - **2026-07-19** — Auto Processing Schedule row: Day dropdown now disables unless
   Weekly is selected (Time disables when Off), and Schedule/Time/Day auto-save on
   change like the rest of the page instead of requiring a separate Save click.

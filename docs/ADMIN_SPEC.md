@@ -877,9 +877,12 @@ and a firm scope boundary drawn around what the parser is and isn't expected to 
 - **One-shots/OGNs with no issue number in the filename** parse correctly today —
   Series and Year populate, Issue stays empty, and the output template omits the
   `#Issue` segment entirely rather than inventing one.
-- **Output separator, decided:** `Series - Title #Issue (Year)`, dash-joined. No
-  conditional separator logic — the dash is always present when Title is non-empty,
-  omitted along with Title when it's blank.
+- **Output separator, decided:** `Series #Issue - Title (Year)` (changed 2026-07-19
+  from the original `Series - Title #Issue (Year)` — Issue now sits right after
+  Series instead of after Title, matching the Edit Panel's field order below). No
+  conditional separator logic — the dash before Title is always present when Title
+  is non-empty, omitted along with Title when it's blank; `#Issue` and `(Year)` are
+  each included independently.
 
 Sample-tested clean-parse rate once the three bugs above are fixed: ~88% of the
 323-file periodical sample requires no manual correction at all. The remaining ~12%
@@ -2057,6 +2060,7 @@ support wired in now, unused — same rationale as §11.5.5.
 
 | Date | Change | Reason |
 |---|---|---|
+| 2026-07-19 | §11.1.3/§11.1.4 — File Rename output format changed from `Series - Title #Issue (Year)` to `Series #Issue - Title (Year)`, and the Edit Panel's field order swapped to match (Series, Issue, Title, Year). Manually tested with a sample file, confirmed working. | Tez request — Issue reads more naturally right after Series than after Title. |
 | 2026-07-18 | §7.4 — Clear Database now documents the full reset scope (thumbnails, scan logs, `log_last_viewed`/`next_processing_run`) and the restart-after-clear mechanism (`checkpoint_wal()` → `engine.dispose()` → VACUUM → sidecar delete → `_schedule_delayed_exit()`), reusing §9.2's Restore Database pattern. | BUG-026/BUG-027 fixed — Clear Database left orphaned thumbnails/DB bloat and had no safe reset path since the Admin page and the DB-holding process are the same process; see `docs/DECISIONS.md` and `docs/archive/bugs-fixed-archive.md`. |
 | 2026-07-18 | §9.2 — Restore Database mechanism now documents the WAL-checkpoint + engine-dispose + sidecar-delete step (new step 2) that runs before the file copy, and notes `run_database_backup()` also checkpoints before its own copy. Status block corrected: Item 12 restore no longer marked failing. | BUG-016 fixed — restore was silently failing to revert DB state due to WAL replay; see `docs/DECISIONS.md` and `docs/archive/bugs-fixed-archive.md`. |
 | 2026-07-18 | §11.7.7 — noted the defensive `sync_moved_paths_to_db()` DB-sync step and its `issues_updated`/`db_sync_error` log fields. | BUG-025 follow-up: re-diagnosed as not-a-bug in the tool's intended Processing→Library workflow, but the sync fix was kept as a safety net for the atypical already-in-library-content case that originally triggered it — see `docs/DECISIONS.md` and `docs/archive/bugs-fixed-archive.md`. |

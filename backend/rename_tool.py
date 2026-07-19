@@ -155,20 +155,19 @@ def apply_title_style(text: str, style: str = 'title') -> str:
 
 def build_filename(series: str, issue_title: str, issue_num: str, year: str, ext: str) -> str:
     """
-    'Series - Title #Issue (Year)', dash-joined — the format decided during
-    the 2026-07-01 re-scope (§12.1.3), replacing CAPT's original
-    'Series #Issue Title (Year)' space-joined order. The dash+Title segment
-    is present only when Title is non-empty; #Issue and (Year) are each
-    included independently of the other, same as CAPT's original
-    non-empty-parts-only behaviour.
+    'Series #Issue - Title (Year)', the format decided 2026-07-19 (replacing
+    the original 2026-07-01 re-scope's 'Series - Title #Issue (Year)') so
+    Issue sits right after Series instead of after Title. The dash+Title
+    segment is present only when Title is non-empty; #Issue and (Year) are
+    each included independently of the other, same as before.
     """
     parts = []
     if series:
         parts.append(series)
-    if issue_title:
-        parts.append(f"- {issue_title}")
     if issue_num:
         parts.append(f"#{issue_num}")
+    if issue_title:
+        parts.append(f"- {issue_title}")
     if year:
         parts.append(f"({year})")
     return " ".join(parts) + ext
