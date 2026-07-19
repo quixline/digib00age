@@ -13,6 +13,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-19** — Full Editor: removed the misplaced/nonfunctional Column 2
+  "Clear" button, moved "Clear Queue" into Column 4's Queue Actions row (between
+  Process Queue and Process All) as a matching white-text blue pill.
 - **2026-07-19** — Fixed BUG-031: Full Editor's Process All wrote Increment #
   numbers in raw file-arrival order instead of the natural-sorted order shown in
   the Column 1 tree, scrambling issue numbers on larger batches. See

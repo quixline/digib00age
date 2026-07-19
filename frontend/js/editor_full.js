@@ -607,7 +607,6 @@ function wireXmlEditor() {
     });
   }
   document.getElementById('feQueueBtn').onclick = addCurrentToQueue;
-  document.getElementById('feClearFormBtn').onclick = resetForm;
   document.getElementById('fe-genre-add').addEventListener('change', (e) => {
     addGenre(e.target.value);
     e.target.value = '';
@@ -722,6 +721,7 @@ function updateActionButtonStates() {
   document.getElementById('feQueueBtn').disabled = !focusedFileId;
   document.getElementById('feProcessAllBtn').disabled = loadedFiles.length === 0;
   document.getElementById('feProcessQueueBtn').disabled = queueFiles.length === 0;
+  document.getElementById('feClearQueueBtn').disabled = queueFiles.length === 0;
 }
 
 function showError(msg) {

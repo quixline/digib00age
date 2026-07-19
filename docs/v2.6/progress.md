@@ -4529,3 +4529,40 @@ Rating=Teen all "Apply to All", Increment # from 1): every archive's
 afterward; real `Empire of the Dead` folder was never touched — its working set was
 cleared from the Full Editor's in-memory list (not from disk) before testing and
 left empty afterward for Tez to reload and redo his actual batch.
+
+## Session — 2026-07-19 — Full Editor: consolidated the three "Clear" buttons into one Clear Queue
+
+Tez reported the Column 2 "Clear" button (bottom of "Edit ComicInfo.xml", next to
+"+ Queue") "appears broken and no longer clears the queue." Investigating found no
+code-level bug there: that button (`feClearFormBtn`) only ever called `resetForm()` —
+it reset the form fields and was never wired to the queue at all. It just sat directly
+below "+ Queue" and read as if it should be queue-related. (Initial pass mis-flagged
+`clearQueue()`'s fetch URL as having a backslash/forward-slash bug — that was an
+artifact of how the Grep tool rendered the string in this session, not an actual defect;
+`backend/routers/editor_full.py`'s `/api/editor/full/queue/clear` handler and its
+frontend caller were already correct.)
+
+**Fix, per Tez's direction:** removed `feClearFormBtn` from Column 2 entirely (only
+"+ Queue" remains in that panel's foot). Removed the old "🗑 Clear Queue" button from
+Column 4's top toolbar and relocated it into the Queue Actions row, between Process
+Queue and Process All. Restyled it from the ghost-button look to the same `btn-primary`
+blue-pill class as its two siblings, added `disabled` (tied to `queueFiles.length === 0`,
+same condition already driving Process Queue) so all three buttons now share identical
+enable/disable behaviour. Per a follow-up request, added `color: #fff` (including on
+`:hover`) scoped to `.fe-queue-actions .btn-primary` so all three queue-action buttons
+render white text instead of `btn-primary`'s default black-on-blue.
+
+Files touched: `frontend/editor_full.html` (button removal/move/restyle),
+`frontend/js/editor_full.js` (dropped the dead `feClearFormBtn` wiring line, added
+`feClearQueueBtn` to `updateActionButtonStates()`), `frontend/css/style.css`
+(white-text override for the queue action row).
+
+**Verified live** at `http://localhost:9424/editor` (dev server already running under
+Tez's tray app, port 9424) via Claude-in-Chrome: hard-refreshed past the static-asset
+cache (same caching quirk noted in the 2026-07-18 BUG-031 session), confirmed Column 2's
+foot shows only "+ Queue", confirmed Column 4's Queue Actions row reads Process Queue /
+🗑 Clear Queue / Process All as matching white-text blue pills, all three disabled with
+an empty queue. No console errors on load. Did not click Process Queue/Process All or
+run a full queue→clear round-trip against real library files — the Explorer/file-picker
+modal was opened once against the real `L:\Comic Archives` tree to inspect the folder
+browser but no files were selected or added, so nothing on disk was touched.

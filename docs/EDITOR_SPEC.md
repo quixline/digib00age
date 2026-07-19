@@ -508,10 +508,12 @@ right-hand column under an `Apply to All` header — **all 16 `data-field`s are
 retained, so Process All behaviour is identical**. **Genre is now removable chips +
 a "＋ Add genre" dropdown** (replaces the checkbox grid; still backed by
 `/api/editor/genres` per §4.1). Format / Age Rating stay native selects. Action row:
-`＋ Queue` and `Clear` — **Clear now resets the current form**, not the Queue (the
-Queue's own clear lives in Column 4). Issue Number keeps the separate `Increment #`
-checkbox (no apply-to-all), its label placed in front of the checkbox which aligns in
-the apply column.
+`＋ Queue` only *(2026-07-19: the column's own `Clear` button — which reset the form,
+not the Queue, despite sitting right next to `＋ Queue` and reading as if it should —
+was removed outright rather than kept as a source of confusion; the Queue's clear
+lives solely in Column 4 now, see below)*. Issue Number keeps the separate
+`Increment #` checkbox (no apply-to-all), its label placed in front of the checkbox
+which aligns in the apply column.
 
 **Column 3 — Comic Viewer.** Toolbar: zoom in/out, **Fit** (reset to fit), page
 prev/next with an `X / Y` counter, and **Fullscreen** (Fullscreen API on the viewer
@@ -523,11 +525,15 @@ optional `?w=` downscale param (JPEG q70; full-res bytes returned when absent),
 cached, active page highlighted, click-to-jump.
 
 **Column 4 — Edited Files Queue.** The Queue moves out of Column 1 into its own
-column: `Clear Queue`, an "N files in queue" count with the **loaded-vs-queued
-counts-differ warning** (§5.2's completion-check requirement, preserved), per-file
-cards (✓ / filename / "Edited" / ✕ remove), and a Queue Actions footer with
-`Process Queue` / `Process All` (the primary save actions, unchanged). The
-processing-status text ("Processing…") shows in this footer.
+column: an "N files in queue" count with the **loaded-vs-queued counts-differ
+warning** (§5.2's completion-check requirement, preserved), per-file cards
+(✓ / filename / "Edited" / ✕ remove), and a Queue Actions footer with
+`Process Queue` / `🗑 Clear Queue` / `Process All` *(2026-07-19: `Clear Queue`
+relocated here from its own top-toolbar spot, between the two Process buttons, and
+restyled to the same blue-pill/white-text `btn-primary` treatment as its siblings —
+previously it was a secondary/ghost-styled button separate from the primary actions;
+all three now share one disabled-state rule, enabled only once the Queue is
+non-empty)*. The processing-status text ("Processing…") shows in this footer.
 
 **Footer status bar** (new): `Selected: <file>` · `XML Status` (**Valid ✓** for a
 single parsed ComicInfo.xml; a warning label for none or multiple — a lightweight

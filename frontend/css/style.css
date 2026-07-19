@@ -3799,6 +3799,8 @@ select.fe-genre-add:focus { outline: none; }
 }
 .fe-queue-actions { display: flex; gap: 8px; }
 .fe-queue-actions .btn-primary { flex: 1; }
+.fe-queue-actions .btn-primary,
+.fe-queue-actions .btn-primary:hover { color: #fff; }
 .fe-status-indicator {
   font-size: 11px;
   color: var(--text-3);

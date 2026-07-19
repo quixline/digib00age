@@ -220,7 +220,6 @@
 
         <div class="fe-panel-foot">
           <button type="button" class="btn-admin-action" id="feQueueBtn">＋ Queue</button>
-          <button type="button" class="btn-admin-action btn-admin-action--ghost" id="feClearFormBtn">Clear</button>
         </div>
       </section>
 
@@ -257,9 +256,6 @@
           <span class="fe-panel-num">4</span>
           <span class="fe-panel-title">Edited Files Queue</span>
         </div>
-        <div class="fe-panel-toolbar">
-          <button type="button" class="btn-admin-action btn-admin-action--ghost" id="feClearQueueBtn">🗑 Clear Queue</button>
-        </div>
         <div class="fe-queue-meta">
           <span class="fe-count" id="feQueueCount">0 files in queue</span>
           <span class="fe-mismatch-inline" id="feMismatchIndicator" hidden>⚠ counts differ</span>
@@ -269,6 +265,7 @@
           <div class="fe-queue-actions-label">Queue Actions</div>
           <div class="fe-queue-actions">
             <button type="button" class="btn-primary" id="feProcessQueueBtn" disabled>Process Queue</button>
+            <button type="button" class="btn-primary" id="feClearQueueBtn" disabled>🗑 Clear Queue</button>
             <button type="button" class="btn-primary" id="feProcessAllBtn" disabled>Process All</button>
           </div>
           <div class="fe-status-indicator" id="feStatusIndicator">Files will be updated with edited ComicInfo.xml.</div>
