@@ -1,0 +1,154 @@
+issues in DB before scan: 0
+Starting instrumented scan_library()...
+  ... 250 files, 54s elapsed, 4.6 files/s
+  ... 500 files, 98s elapsed, 5.1 files/s
+  ... 750 files, 141s elapsed, 5.3 files/s
+  ... 1000 files, 194s elapsed, 5.2 files/s
+  ... 1250 files, 239s elapsed, 5.2 files/s
+  ... 1500 files, 280s elapsed, 5.4 files/s
+  ... 1750 files, 324s elapsed, 5.4 files/s
+  ... 2000 files, 369s elapsed, 5.4 files/s
+  ... 2250 files, 427s elapsed, 5.3 files/s
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2464 (2026).cbz (._2000_ad_prog_2464.PRG2464D_001.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003DA30>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2464 (2026).cbz (._2000_ad_prog_2464.PRG2464D_002.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA59E8E0>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2464 (2026).cbz (._2000_ad_prog_2464.PRG2464D_003.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA59E8E0>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2464 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2465 (2026).cbz (._2000_ad_prog_2465.PRG2465D_001.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003E6B0>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2465 (2026).cbz (._2000_ad_prog_2465.PRG2465D_002.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003E6B0>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2465 (2026).cbz (._2000_ad_prog_2465.PRG2465D_003.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003E6B0>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2465 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2466 (2026).cbz (._2000_ad_prog_2466.PRG2466D_001.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70F790>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2466 (2026).cbz (._2000_ad_prog_2466.PRG2466D_002.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70F790>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2466 (2026).cbz (._2000_ad_prog_2466.PRG2466D_003.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70F790>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2466 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2467 (2026).cbz (._2000_ad_prog_2467.PRG2467D_001.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70E020>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2467 (2026).cbz (._2000_ad_prog_2467.PRG2467D_002.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70E020>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2467 (2026).cbz (._2000_ad_prog_2467.PRG2467D_003.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70E020>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2467 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2469 (2026).cbz (._2000_ad_prog_2469.PRG2469D_001.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001EED0>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2469 (2026).cbz (._2000_ad_prog_2469.PRG2469D_002.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001EED0>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2469 (2026).cbz (._2000_ad_prog_2469.PRG2469D_003.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001EED0>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2469 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2470 (2026).cbz (._2000_ad_prog_2470.PRG2470D_001.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001DF80>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2470 (2026).cbz (._2000_ad_prog_2470.PRG2470D_002.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001DF80>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2470 (2026).cbz (._2000_ad_prog_2470.PRG2470D_003.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001DF80>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2470 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2471 (2026).cbz (._2000_ad_prog_2471.PRG2471D_001.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70DA80>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2471 (2026).cbz (._2000_ad_prog_2471.PRG2471D_002.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70DA80>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2471 (2026).cbz (._2000_ad_prog_2471.PRG2471D_003.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70DA80>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2471 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2472 (2026).cbz (._2000_ad_prog_2472.PRG2472D_001.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70CEF0>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2472 (2026).cbz (._2000_ad_prog_2472.PRG2472D_002.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70CEF0>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2472 (2026).cbz (._2000_ad_prog_2472.PRG2472D_003.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70CEF0>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2472 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2473 (2026).cbz (._2000_ad_prog_2473.PRG2473D_001.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70E4D0>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2473 (2026).cbz (._2000_ad_prog_2473.PRG2473D_002.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70E4D0>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2473 (2026).cbz (._2000_ad_prog_2473.PRG2473D_003.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70E4D0>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2473 (2026).cbz
+  ... 2500 files, 489s elapsed, 5.1 files/s
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2474 (2026).cbz (._2000_ad_prog_2474.PRG2474D_001.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001FD30>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2474 (2026).cbz (._2000_ad_prog_2474.PRG2474D_002.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001FD30>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2474 (2026).cbz (._2000_ad_prog_2474.PRG2474D_003.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001FD30>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2474 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2475 (2026).cbz (._2000_ad_prog_2475.PRG2475D_001.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001E700>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2475 (2026).cbz (._2000_ad_prog_2475.PRG2475D_002.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001E700>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2475 (2026).cbz (._2000_ad_prog_2475.PRG2475D_003.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001E700>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2475 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2476 (2026).cbz (._2000_ad_prog_2476.PRG2476D_001.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001EF70>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2476 (2026).cbz (._2000_ad_prog_2476.PRG2476D_002.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001EF70>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2476 (2026).cbz (._2000_ad_prog_2476.PRG2476D_003.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001EF70>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2476 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2477 (2026).cbz (._2000_ad_prog_2477.PRG2477D_001.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001DDA0>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2477 (2026).cbz (._2000_ad_prog_2477.PRG2477D_002.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001DDA0>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2477 (2026).cbz (._2000_ad_prog_2477.PRG2477D_003.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001DDA0>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2477 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2481 (2026).cbz (._2000_ad_prog_2481.PRG2481D_001.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003CC70>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2481 (2026).cbz (._2000_ad_prog_2481.PRG2481D_002.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003CC70>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2481 (2026).cbz (._2000_ad_prog_2481.PRG2481D_003.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003CC70>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2481 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2482 (2026).cbz (._2000_ad_prog_2482.PRG2482D_001.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70F830>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2482 (2026).cbz (._2000_ad_prog_2482.PRG2482D_002.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70F830>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2482 (2026).cbz (._2000_ad_prog_2482.PRG2482D_003.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70F830>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2482 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2483 (2026).cbz (._2000_ad_prog_2483.PRG2483D_001.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70EA20>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2483 (2026).cbz (._2000_ad_prog_2483.PRG2483D_002.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70EA20>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2483 (2026).cbz (._2000_ad_prog_2483.PRG2483D_003.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70EA20>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2483 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2484 (2026).cbz (._2000_ad_prog_2484.PRG2484D_001.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70DA80>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2484 (2026).cbz (._2000_ad_prog_2484.PRG2484D_002.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70DA80>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2484 (2026).cbz (._2000_ad_prog_2484.PRG2484D_003.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70DA80>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2484 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2487 (2026).cbz (._2000_ad_prog_2487.PRG2487D_001.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003DE40>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2487 (2026).cbz (._2000_ad_prog_2487.PRG2487D_002.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003DE40>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2487 (2026).cbz (._2000_ad_prog_2487.PRG2487D_003.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003DE40>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2487 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2489 (2026).cbz (._2000_ad_prog_2489.PRG2489D_001.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001D440>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2489 (2026).cbz (._2000_ad_prog_2489.PRG2489D_002.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001D440>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2489 (2026).cbz (._2000_ad_prog_2489.PRG2489D_003.jpg): cannot identify image file <_io.BytesIO object at 0x000002148001D440>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2489 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2490 (2026).cbz (._2000_ad_prog_2490.PRG2490D_001.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003FA10>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2490 (2026).cbz (._2000_ad_prog_2490.PRG2490D_002.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003FA10>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2490 (2026).cbz (._2000_ad_prog_2490.PRG2490D_003.jpg): cannot identify image file <_io.BytesIO object at 0x000002148003FA10>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2490 (2026).cbz
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2491 (2026).cbz (._2000_ad_prog_2491.PRG2491D_001.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70C450>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2491 (2026).cbz (._2000_ad_prog_2491.PRG2491D_002.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70C450>
+Cover image unreadable in L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2491 (2026).cbz (._2000_ad_prog_2491.PRG2491D_003.jpg): cannot identify image file <_io.BytesIO object at 0x00000214FA70C450>
+All cover attempts failed for L:\Comic Archives\#\Series\2000 AD\2000 AD - 2026\2000AD #2491 (2026).cbz
+C:\Users\tezdr\AppData\Roaming\Python\Python313\site-packages\PIL\TiffImagePlugin.py:949: UserWarning: Corrupt EXIF data.  Expecting to read 2 bytes but only got 0. 
+  warnings.warn(str(msg))
+  ... 2750 files, 560s elapsed, 4.9 files/s
+  ... 3000 files, 635s elapsed, 4.7 files/s
+  ... 3250 files, 707s elapsed, 4.6 files/s
+C:\Users\tezdr\AppData\Roaming\Python\Python313\site-packages\PIL\Image.py:3574: DecompressionBombWarning: Image size (90218896 pixels) exceeds limit of 89478485 pixels, could be decompression bomb DOS attack.
+  warnings.warn(
+  ... 3500 files, 781s elapsed, 4.5 files/s
+  ... 3750 files, 851s elapsed, 4.4 files/s
+  ... 4000 files, 922s elapsed, 4.3 files/s
+  ... 4250 files, 990s elapsed, 4.3 files/s
+  ... 4500 files, 1052s elapsed, 4.3 files/s
+  ... 4750 files, 1116s elapsed, 4.3 files/s
+  ... 5000 files, 1174s elapsed, 4.3 files/s
+  ... 5250 files, 1237s elapsed, 4.2 files/s
+
+====================================================================
+WALL CLOCK: 1289.2s  (21.5 min)
+files processed: 5452   issues in DB after: 5452
+scan_progress: new=5452 updated=0 skipped=0 missing=0 errors=0
+throughput: 4.23 files/s
+
+results: {'new': 5452}
+
+=== per-file cost, result='new' (n=5452) ===
+  total      median=   208.3ms  p95=    412.6ms  max=   5811.8ms  sum= 1278.9s (100.0% of total)
+  parse      median=    51.8ms  p95=    105.5ms  max=   5426.6ms  sum=  305.3s ( 23.9% of total)
+  thumbnail  median=   104.7ms  p95=    265.5ms  max=   1168.5ms  sum=  677.6s ( 53.0% of total)
+  commit     median=    35.1ms  p95=     67.8ms  max=    391.2ms  sum=  234.2s ( 18.3% of total)
+
+  archive opens per file: {2: 4, 4: 5448}
+  SQL queries per file (top 5): {12: 906, 28: 735, 13: 666, 14: 493, 26: 483}
+  commits per file: {1: 5452}
+  total SQL queries: 116871
+  total commits:     5452
+
+=== cost by file size ===
+  size band          n   med total   med parse   med thumb  med MB/s
+  0-10MB           328      189.3ms       51.6ms       84.8ms     43.5
+  10-25MB         1849      165.1ms       49.6ms       61.4ms    100.2
+  25-50MB          868      230.4ms       54.5ms      119.2ms    161.6
+  50-100MB         769      255.7ms       55.1ms      149.9ms    276.8
+  100-250MB       1053      259.2ms       52.3ms      153.5ms    619.8
+  250MB+           585      288.7ms       54.2ms      180.3ms   1318.8
+
+=== 10 slowest files ===
+     5811.8ms     50.0MB  parse=  5426.6 thumb=  301.2  '68 Homefront #1 (2014).cbz
+     1267.4ms    151.0MB  parse=    69.1 thumb= 1168.5  Evil Inc After Dark #5 (2017).cbz
+     1126.7ms    129.2MB  parse=    24.6 thumb=  798.5  Evil Inc After Dark #2 (2017).cbz
+     1050.0ms    745.2MB  parse=    68.0 thumb=  933.0  Judge Dredd Megazine #493 (2026).cbz
+     1025.7ms    748.5MB  parse=    23.0 thumb=  966.6  Prince of Cats (2016).cbz
+      999.7ms    738.9MB  parse=    66.1 thumb=  890.6  Judge Dredd Megazine #494 (2026).cbz
+      976.1ms   1166.0MB  parse=   106.9 thumb=  806.5  Into the Unbeing #1 (2025).cbz
+      917.9ms    374.2MB  parse=   762.2 thumb=  111.5  The Nice House on the Lake - The Deluxe Editio
+      860.2ms    334.6MB  parse=   593.6 thumb=  222.2  Rise of Dracula (2021).cbz
+      818.9ms    384.0MB  parse=    43.4 thumb=  734.5  Luna (2021).cbz
+
+per-file CSV: C:\Users\tezdr\AppData\Roaming\Claude\local-agent-mode-sessions\ab6dd9ed-3814-4347-806f-218f628092b1\3e17b778-d67b-44ad-9237-8aefcaf2bd9e\local_169e5d7b-1b2a-4153-82f0-650216dcb86f\outputs\phase2_scan_perfile.csv

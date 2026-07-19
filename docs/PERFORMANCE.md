@@ -152,6 +152,108 @@ no wall adapter).
 
 ---
 
+## 1B. Baseline — 2026-07-18 (post-2000 AD move, post-rebuild)
+
+*Numbering note: further baselines append as 1B, 1C, … so that references to
+§2 (Methodology), §3 (Open follow-ups) and §4 (Raw data) stay stable across
+re-runs.*
+
+**Why this run:** the 2000 AD series was moved on disk and ~2,500 new issues
+added — neither covered by the 2026-07-09 baseline. Two of that baseline's
+open follow-ups (scanner at real scale, cold-server-restart) were also closed
+here.
+
+**Library scale:** 5,452 issues / 2,102 series / **562.5 GB** across 5,452
+archives (was 5,427 / 2,080). Thumbnails 7,968 on disk — 5,452 live,
+**2,516 orphaned** (BUG-026). Same hardware and paths as 2026-07-09.
+
+**Important context — the DB was cleared and rebuilt from scratch mid-session.**
+The series move updated the files but not the DB rows pointing at them
+(BUG-025), leaving 2,484 dead `file_path`s; a plain rescan would have produced
+duplicates rather than repairing them, because `scan_single_file()` identifies
+rows by exact path only. So every issue ID in this baseline differs from
+2026-07-09's, and endpoint targets were re-resolved rather than reused.
+
+### Headline deltas vs 2026-07-09
+
+| Metric | 2026-07-09 | 2026-07-18 | Note |
+|---|---|---|---|
+| `/api/library` queries | 7,508 | **13** | fix holds at +25 issues |
+| `/api/library` in-process | 3.9–4.1s | **0.65–0.70s** | |
+| `/api/library` over HTTP | 3,932ms | **935ms** | |
+| `/api/series` (2000 AD) queries | 4,969 | **9** | now 2,490 issues |
+| `/api/series` (2000 AD) in-process | 2.5–2.7s | **0.39–0.42s** | |
+| `/api/series` (2000 AD) over HTTP | 2,544ms | **606ms** | |
+| Cover conditional-GET | 0/15 honored 304 | **15/15** | Phase 4 fix intact |
+| Reader page re-flip | no benefit (22.8 vs 22.7ms) | **2.0x (40.5 → 20.4ms)** | Phase 3 fix intact |
+| `/api/home/strips` queries | 7 | **39–52** | ← new N+1, see below |
+
+The v2.6 Phase 1–5 fixes all hold at the rebuilt library's scale. Nothing
+regressed.
+
+### New findings
+
+| # | Finding | Measured | Root cause | Fixable-in-code? | Impact |
+|---|---|---|---|---|---|
+| 12 | **Scanner at real scale — first ever measurement.** Full from-scratch scan of 5,452 files | **21.5 min, 4.23 files/s, 0 reported errors** | n/a — this is the baseline number, not a defect | n/a | Closes the §3 follow-up. All 18 historical log entries (5–14s) were no-op walks and were never representative |
+| 13 | **Thumbnail generation dominates the scan** | median 104.7ms/file, **677.6s total = 53.0%** of scan runtime | Cover extract + resize per file | Likely — parallelism, or cheaper decode path | Highest-value scanner optimisation by a wide margin |
+| 14 | **Per-file `db.commit()`** | 5,452 commits, median 35.1ms, **234.2s total = 18.3%** | `scan_single_file()` commits once per file | **Yes** — batch every N files | ~3.9 min of a 21.5 min scan |
+| 15 | **4 archive opens per file, not 3** | 5,448 files at exactly 4 opens; 4 files at 2 | Same redundant-reopen family as findings #4/#5/#6/#11, never applied to the scan path | **Yes** | Code inspection undercounted this on 2026-07-09 |
+| 16 | **Scanner is not I/O-bound** | median cost 189ms (0–10MB) → 289ms (250MB+) — 1.5x across a 25x size range | Fixed per-file overhead, not throughput. Apparent 1,318MB/s on large files vs the drive's real 85MB/s confirms it only reads the ZIP directory + one cover | n/a | Explains why scan time tracks file *count*, not library size |
+| 17 | **Third instance of the `Issue.genres` N+1, in `home.py`** | `/api/home/strips` 39–52 queries (varies — two strips pick randomly), ~345ms. Fingerprint: **32 identical `issue_genres` queries**, one per issue across two 15-item strips | `_strip_recently_added` (16q) and `_strip_random_unread` (16q, 245.8ms) lazy-load `Issue.genres` per issue. Findings #1/#2 fixed exactly this in `library.py`; `home.py` was never touched | **Yes** — `selectinload(Issue.genres)`, same pattern | Medium — it's the homepage, hit first on every visit |
+| 18 | **No cold-start penalty** (follow-up closed, negative result) | cold/warm ratio **0.9–1.2x** across all 8 endpoints, measured on the true first request after a tray-app restart | `_warmup_db()` appears to be doing its job | n/a | The §3 concern doesn't generalise beyond the one `/api/home/strips` case that originally prompted it |
+
+### What's *not* a problem
+
+- **Raw USB throughput unchanged and healthy** — cold median 85.1MB/s, warm
+  86.8MB/s across a 40-file / 3.2GB stride sample (2026-07-09: 77–95MB/s).
+  Cold ≈ warm again, because a 3.2GB sample far exceeds what the OS cache
+  holds — expected, not a fault.
+- **Both N+1 fixes scale** — see the delta table. `/api/library`'s remaining
+  ~0.65s is Python-level aggregation over 5,452 issues, exactly as the
+  2026-07-09 entry predicted; it is no longer DB-bound.
+- **Cover caching works** — 15/15 `Cache-Control: public, max-age=86400,
+  immutable` + ETag, 15/15 return a real 304 on a matching `If-None-Match`
+  (43.6ms → 2.3ms). 300 covers fetched sequentially: median 16.7ms, p95
+  43.8ms.
+- **Reader page cache works** — 2.0x benefit on re-flip, against no measurable
+  benefit before the Phase 3 fix.
+- Small/typical page loads remain fast: Postal (25 issues) 5.6ms in-process /
+  15.8ms HTTP, issue detail 3.7ms, search 28.6ms, continue-reading 0.6ms.
+
+### Correctness issues surfaced by this pass (not performance)
+
+Logged rather than fixed, per this doc's scope and the perf-diagnostics
+skill's hard rules:
+
+- **BUG-025** — series move doesn't update `issues.file_path` /
+  `custom_tabs.folder_path`. Forced the rebuild this session.
+- **BUG-026** — Clear Database leaves orphaned thumbnails (2,516, 354MB) and
+  doesn't `VACUUM`.
+- **BUG-027** — no safe DB-reset sequence: Clear Database lives on the Admin
+  page, which the server must be up to serve.
+- **BUG-028** — macOS resource-fork entries (`._*.jpg`) inside archives break
+  cover extraction *and* double `page_count` (64 reported vs 32 real), with
+  `errors=0` reported. Full-library sweep: **22 of 5,452 issues affected**.
+
+### Caveats on this run's numbers
+
+- **The D1 archive-level "cold" numbers are not cold.** `archive_namelist()`
+  measured 0.7ms here vs 42.5ms on 2026-07-09 — that is *not* a 60x
+  improvement. The instrumented full scan had just read every archive's
+  central directory minutes earlier, so Windows' file cache was warm across
+  the whole library. Treat this run's D1 as a warm-only measurement; the
+  2026-07-09 figure remains the honest cold number.
+- **Full Editor page preview is still unmeasured**, for a new reason. Admin
+  auth is currently off (`admin_password_hash: null`), so the 2026-07-09
+  blocker is gone — but `GET /api/editor/full/files` returns `{"files":[]}`
+  because that endpoint works from a staged file list, not the library. It
+  needs files staged before it can be measured.
+- Cold-idle drive probe skipped by request (10–15 min of wall-clock per rep);
+  finding #9 remains inconclusive.
+
+---
+
 ## 2. Methodology (for re-running this baseline later)
 
 All measurements were taken with **zero application code changes** — every
@@ -221,20 +323,25 @@ shape for a future comparison:
   the port/hub level. A definitive answer would need same-size files repeated
   across several genuine idle windows — each rep costs ~12-15 real minutes,
   so this was capped at 2 valid samples this pass.
-- **Full Editor page-preview** never measured directly (admin-auth-gated;
-  this session deliberately avoided scripting a login with the real admin
-  password). Flagged as the highest-risk unmeasured area based on code
-  inspection alone (full-res, base64-in-JSON, no caching).
-- **Scanner at real scale** never measured — all 18 historical log entries
-  were near-no-op incremental runs. A representative "process N new files"
-  number would require either a fresh instrumented scan (writes thumbnails/DB
-  rows, needs explicit sign-off) or waiting for a natural batch of new files.
-- **No cold-server-restart baseline** — this pass measured against the
-  already-warm, already-running tray-app server by design (see `CLAUDE.md`
-  session request). `main.py`'s `_warmup_db()` exists specifically because a
-  prior cold-start slowness was noticed once (for `/api/home/strips`) — true
-  first-request-after-boot timing for the endpoints in this baseline is still
-  unmeasured.
+- **Full Editor page-preview** still never measured under controlled
+  conditions. Originally blocked by admin auth; that blocker is gone (admin
+  auth is currently off), but as of 2026-07-18 `GET /api/editor/full/files`
+  returns `{"files":[]}` — the endpoint works from a staged file list, not
+  the library, so files must be staged first. Note the 2026-07-13 Phase 5 fix
+  *was* verified live against a real 1,220-page compendium at the time; what's
+  missing is a repeatable measurement in the standard harness.
+- ~~**Scanner at real scale** never measured~~ — **RESOLVED 2026-07-18**, see
+  §1B findings #12–#16. 5,452 files from scratch: 21.5 min, 4.23 files/s,
+  with thumbnail generation (53%), per-file commits (18%) and 4 archive opens
+  per file as the cost drivers.
+- ~~**No cold-server-restart baseline**~~ — **RESOLVED 2026-07-18**, see §1B
+  finding #18. Negative result: cold/warm ratio 0.9–1.2x across all eight
+  endpoints, i.e. no measurable first-request penalty.
+- **Scanner cost drivers are measured but untested against a fix** — findings
+  #13/#14/#15 identify where the 21.5 minutes goes, but no optimisation has
+  been attempted or scoped. Batching commits is the cheapest candidate
+  (~3.9 min); parallelising thumbnail generation is the largest (~11.3 min)
+  and the most invasive.
 - **Full Editor's `GET /editor/full/files/{file_id}/xml`
   (`backend/routers/editor_full.py`) has the same redundant-3-archive-opens
   pattern finding #11 just fixed in the Basic Editor** —
@@ -247,6 +354,177 @@ shape for a future comparison:
 ---
 
 ## 4. Raw data appendix
+
+### Where the raw files live
+
+The 2026-07-18 run's raw data is committed to
+**`docs/archive/perf-2026-07-18/`**:
+
+| File | What it is |
+|---|---|
+| `phase2_scan_perfile.csv` | Per-file scanner timing, all 5,452 rows — total/parse/thumbnail/commit ms, archive opens, query count, size |
+| `phase2_scan_summary.json` | Scan totals (wall clock, counts, queries, commits) |
+| `macjunk_affected.csv` | The 22 BUG-028 issues with real vs recorded page counts |
+| `L_snapshot_prescan.json` | Pre-scan snapshot of all 5,452 archive paths + sizes, used to prove `L:` was never written to |
+| `scan_raw_output.txt` | Full stdout of the instrumented scan, incl. the cover-failure lines |
+| `cold_start_raw_output.txt` | Cold vs warm endpoint timings |
+| `page_serving_raw_output.txt` | Page-flip, cover grid, Full Editor probe |
+| `perf-test-plan-2026-07-18.md` | The plan this run followed, incl. the pre-flight findings that changed it |
+
+Three new reusable scripts were added to
+`.claude/skills/perf-diagnostics/scripts/` from this run:
+`7_instrumented_scan.py` (the scanner harness — monkeypatches timing onto
+`backend.scanner` at runtime, no source edits), `8_macos_junk_sweep.py`
+(BUG-028 detection; re-run after a fix to confirm the count drops to 0), and
+`9_cold_start.py` (fires one shot per endpoint immediately after a restart,
+then 8 warm trials).
+
+### 2026-07-18 run
+
+<details>
+<summary>Phase 1 — snapshot + raw I/O baseline (40-file stride, pre-scan)</summary>
+
+Library snapshot before the scan: **5,452 files, 562.47 GB**, `os.walk` +
+`getsize` in 0.42s. Stride sample of 40 files, 3,393MB:
+
+| Pass | median time | p95 | max | median MB/s | slowest 5% |
+|---|---|---|---|---|---|
+| Cold | 480.8ms | 3,168.6ms | 8,400.7ms | 85.1 | 70.0 |
+| Warm | 486.3ms | 3,172.6ms | 8,384.7ms | 86.8 | 76.4 |
+
+Sampled from disk, not from the DB — 2,484 DB paths were dead at this point
+(BUG-025) and the stock script's `os.path.exists` guard would have silently
+dropped the entire 2000 AD series from the sample.
+
+</details>
+
+<details>
+<summary>Phase 2 — instrumented full scan (5,452 files from empty DB)</summary>
+
+Wall clock **1,289.2s (21.5 min)**. `new=5452, updated=0, skipped=0,
+missing=0, errors=0`. Throughput 4.23 files/s. 116,871 SQL queries total
+(~21.4/file), 5,452 commits (exactly 1/file).
+
+Per-file cost, all 5,452 `new`:
+
+| Stage | median | p95 | max | total | share |
+|---|---|---|---|---|---|
+| total | 208.3ms | 412.6ms | 5,811.8ms | 1,278.9s | 100% |
+| parse | 51.8ms | 105.5ms | 5,426.6ms | 305.3s | 23.9% |
+| thumbnail | 104.7ms | 265.5ms | 1,168.5ms | 677.6s | 53.0% |
+| commit | 35.1ms | 67.8ms | 391.2ms | 234.2s | 18.3% |
+
+Archive opens per file: 4 (5,448 files), 2 (4 files).
+
+Cost by file size — note how flat this is:
+
+| band | n | med total | med parse | med thumb | med MB/s |
+|---|---|---|---|---|---|
+| 0–10MB | 328 | 189.3ms | 51.6ms | 84.8ms | 43.5 |
+| 10–25MB | 1,849 | 165.1ms | 49.6ms | 61.4ms | 100.2 |
+| 25–50MB | 868 | 230.4ms | 54.5ms | 119.2ms | 161.6 |
+| 50–100MB | 769 | 255.7ms | 55.1ms | 149.9ms | 276.8 |
+| 100–250MB | 1,053 | 259.2ms | 52.3ms | 153.5ms | 619.8 |
+| 250MB+ | 585 | 288.7ms | 54.2ms | 180.3ms | 1,318.8 |
+
+The single 5,811.8ms outlier ('68 Homefront #1, parse=5,426.6ms) was the
+first file touched in the run — cold-disk seek, consistent with findings
+#9/#11, not a code path.
+
+Throughput decayed steadily through the run: 5.4 files/s at 1,750 files →
+4.2 files/s at 5,250. Not investigated; candidates include growing index
+maintenance cost as the tables fill, and the size distribution of files
+encountered later in the walk.
+
+</details>
+
+<details>
+<summary>Phase 3 — cold-server-restart (one shot per endpoint, then 8 warm trials)</summary>
+
+| Endpoint | cold (1st ever request) | warm median | warm p95 | cold/warm |
+|---|---|---|---|---|
+| Library — All | 1,109.1ms | 935.5ms | 971.9ms | 1.2x |
+| Series — 2000 AD (2,490) | 643.6ms | 605.6ms | 663.9ms | 1.1x |
+| Series — Postal (25) | 17.6ms | 15.8ms | 16.8ms | 1.1x |
+| Home strips | 306.8ms | 335.3ms | 369.1ms | 0.9x |
+| Folder View tab | 196.4ms | 202.4ms | 263.0ms | 1.0x |
+| Issue detail | 16.5ms | 16.6ms | 17.4ms | 1.0x |
+| Search — batman | 37.0ms | 33.3ms | 34.1ms | 1.1x |
+| Continue reading | 20.7ms | 16.7ms | 16.8ms | 1.2x |
+
+All 8 cold requests completed within 2.4s of the first. The Folder View tab
+returned 46 bytes — it was still pointing at the pre-move path (BUG-025) and
+has since been removed by Tez.
+
+</details>
+
+<details>
+<summary>Phase 4 — in-process query counts (3 runs, stable)</summary>
+
+| Endpoint | Time (run1/2/3) | Queries | 2026-07-09 |
+|---|---|---|---|
+| `/api/library` (unfiltered) | 699.7 / 648.8 / 658.1 | **13** | 7,508 |
+| `/api/series/29` (2000 AD, 2,490) | 385.6 / 402.4 / 421.3 | **9** | 4,969 |
+| `/api/series/4618` (Postal, 25) | 6.8 / 5.6 / 5.6 | 5 | 53 |
+| `/api/issue/1` | 7.0 / 4.7 / 3.7 | 8 | 15 |
+| `/api/home/strips` | 347.0 / 345.8 / 292.7 | **52** | 7 |
+| `/api/library/tab/1/folder` | 193.8 / 192.0 / 234.9 | 3 | 3 |
+| `/api/search?q=batman` | 30.3 / 28.6 / 28.6 | 8 | 8 |
+| `/api/reading/continue` | 1.8 / 0.6 / 0.6 | 1 | 1 |
+
+Per-helper attribution for `/api/home/strips` (finding #17):
+
+```
+_load_progress_map         1 query     67.5ms
+_strip_continue_reading    1 query      4.3ms
+_strip_recently_added     16 queries   40.9ms
+_strip_random_unread      16 queries  245.8ms
+_strip_random_genre        4 queries   10.1ms
+```
+
+Statement fingerprint: 32x `SELECT issue_genres.issue_id, issue_genres.genre_name
+FROM issue_genres WHERE ... = ?` — one per issue across the two 15-item strips.
+
+</details>
+
+<details>
+<summary>Phase 5 — page serving, covers, Full Editor</summary>
+
+D1 (archive-level, n=15) — **warm-only, see caveat**: namelist 0.7ms
+"cold" / 0.6ms warm; read_bytes 22.6ms / 3.9ms; raw sequential 89.9MB/s.
+
+D2 (page flip, id=1, 28 pages): 10 never-read pages median **40.5ms**;
+re-flip to page 0 3x median **20.4ms** — 2.0x, cache working. Compare
+2026-07-09: 22.8ms vs 22.7ms, no benefit.
+
+E (covers): 300 sequential fetches, median 16.7ms, p95 43.8ms, 15.5MB.
+Conditional-GET 15/15 `Cache-Control: public, max-age=86400, immutable` +
+ETag present, **15/15 returned 304** on a matching `If-None-Match`
+(43.6ms → 2.3ms).
+
+*Method note:* a first pass reported 0/15 on both. That was a harness bug —
+uvicorn emits header names lowercase and the check was case-sensitive. Worth
+knowing for future runs: always compare header names case-insensitively.
+
+F (Full Editor): `GET /api/editor/full/files` → 200, `{"files":[]}`.
+Page-preview endpoints return 404 for library issue ids, since `editor_full.py`
+mints its own file ids. Not measurable without staging files first.
+
+</details>
+
+<details>
+<summary>macOS resource-fork sweep (BUG-028)</summary>
+
+All 5,452 issues opened and their image-entry lists inspected; 0 unreadable.
+**22 issues contain `._`-prefixed AppleDouble entries, and all 22 have a wrong
+`page_count`** — verified cases report exactly double (64 vs 32 real pages),
+one junk sidecar per real page. 21 are 2000 AD (progs #2464–#2491, the same
+set whose cover extraction failed); 1 is in `Judge Dredd - One-Eyed Jacks`,
+whose cover happened to extract successfully and so shows no visible symptom.
+
+</details>
+
+### 2026-07-09 run
 
 <details>
 <summary>Phase A1 — raw I/O baseline (40-file stride sample)</summary>

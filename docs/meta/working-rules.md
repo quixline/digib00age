@@ -115,9 +115,16 @@ required upstream stage Code waits on.
   consolidated there when convenient. No formatting expected beyond the tag
   (`[bug]` / `[change]` / `[feature]` / `[unknown]`) he assigns as he writes
   it. The tag is his instinct at the time, not a final classification.
-  **`INBOX.md` is entry-only for Tez (settled 2026-07-16)** — Code never
-  adds to it or triages it unprompted; it's a capture surface, not a queue
-  Code works down on its own.
+  **`INBOX.md` is Tez's personal scratchpad, entry-only (settled
+  2026-07-16, restated 2026-07-18 after Code wrote an unprompted entry
+  into it mid-session)** — Code never adds to it, edits it, or triages it
+  unprompted, and doesn't need to factor its contents into unrelated work
+  either. It's not a queue Code works down on its own, and it's not a
+  place for Code to park findings from a session (stray bugs, doc drift,
+  decisions to revisit later) just because they seem inbox-shaped — surface
+  those directly in conversation instead and let Tez decide where they go,
+  if anywhere. The only exception is a session Tez explicitly opens to work
+  through Inbox items (see "Session shape" and "Triage is on hold" below).
 - **Session shape for working through Inbox items (settled 2026-07-16).**
   When Tez does open a session to work through Inbox items: small/cosmetic
   UI changes get bundled together into one session covering several of them
@@ -194,6 +201,15 @@ required upstream stage Code waits on.
 ## Quality bar (carried over from how Claude Code works on this project)
 - Never touch real library files when testing or verifying anything — use
   scratch copies.
+- **The dev DB is disposable (settled 2026-07-18).** `comicvault_v2.db` is
+  development data and gets wiped before production. Read/unread states and
+  saved page positions in it are artefacts of testing, not real user
+  history — don't weigh them as something to preserve when a wipe or rebuild
+  is on the table, and don't propose export/restore ceremony around them.
+  The real asymmetry is the bullet above: the archives on `L:` are
+  irreplaceable, the DB isn't. Wiping it is routine — flag it plainly, take
+  a `.bak` copy, move on. See `CLAUDE.md` Section 6 for the same rule stated
+  for Code sessions.
 - A change isn't "done" until it's actually been checked working, not just
   written and assumed correct.
 - Clean up any test data or scratch files created during verification.

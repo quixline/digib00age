@@ -1,0 +1,13 @@
+{
+  "wall_seconds": 1289.19,
+  "files": 5452,
+  "issues_after": 5452,
+  "new": 5452,
+  "updated": 0,
+  "skipped": 0,
+  "missing": 0,
+  "errors": 0,
+  "files_per_sec": 4.229,
+  "total_queries": 116871,
+  "total_commits": 5452
+}

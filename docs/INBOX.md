@@ -4,27 +4,55 @@
 
 ### Unprocessed
 
+- [x] Clear (queue is broken) - fix and move between Process queue and Process all in column 4
+
+- [ ] open web reader with page dimensions - whole thing needs full design review
+
 - [ ] design review - mobile reader UI - get a closer consistency to the web ui, drop the outer glow around cards but keep the inner style and genre/info
 
-- [ ] (set the desktop reader to open the same dimensions as the archive cover image 50% size) - need to test
-  
-  ------------------------------------ final steps before moving from dev to production ------------------------------------
+- [ ] 
 
-- [ ] scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base 
+- [ ] do the css refractoring that's been planned
 
-- [ ] stress test - how? 
+- [ ] **Scanner speedups:** — thumbnails are 53% of the 21.5 min, per-file commits 18%. Batching commits is the easy win (~4 min). Both need scoping; nothing's been attempted.
+
+- [ ] scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base - do in focused sessions or overview then specific
+
+- [ ] stress test - how? scan test - current collection - fake it?
 
 - [ ] plan & build windows install package
-
-
-
-
+  
+  
+  
+  
 
 ---
 
 ## Processed
 
+_19-07-2026_
+
+* [x] [bug] full editor - load Empire of the Dead 1-15 all listed in correct order - selected #1, changed genre, applied all, increment # yes, process all = filenames dont match the xml issue numbers - #2 = #8 #3 = #9 and so on. check the select all function again. With Series and Processing All - first file selected dictates what is or isn't written to the other issues in the folder (or folders) if All is selected in any field, what is in that field gets written to All, if All is not selected for a particular field in #1 then the values of the other issues aren't changed. Because we dropped the drag n drop for the list view, the auto numbering seems to have failed and only now picked up when editing a larger number of issues.
+
+_18-07-2026_
+
+* [x] full editor needs to parse filenames
+
+* [x] turn the genre ribbon to a href that loads the chosen genre - same as genre links in issue/series
+
+* [x] admin page - reduce width and centre final section, Filename Editor is the only exception, all others can shrink at lease 50%
+
+* [x] home page strips navigation needs to be pushed to the edge of the page removing the small gap
+
+* [x] after a scan - the logs should only show the new entries not the whole log
+
 _17-07-2026_
+
+* [x] make the folder cards to match the others in size, border and image padding + effect
+
+* [x] redesign the list view 1. make it 2 column by default, reducing to one if browser window pushes past the second column. 2. add 10px top padding to the rows and 50px gap between the columns. 3. make the genre tags into links 4. switch the font colour/weight = Issue that is Read has lighter and stronger font than those not read, it should be the other way so the emphsis is on the unread issue. Add the same random bg that the Grid view has
+
+* [x] redesign series view - list and add grid, both should use the same properties that are already set
 
 * [x] All library Grid view cards have a shadow - locate and remove while maintaining the blur glow if poss
 
@@ -39,8 +67,6 @@ _17-07-2026_
 * [x] issue page - make the bg fit the whole area to the nav bar and header with less of a fade from the top so more of the image can be seen while keeping the same opacity with a slight blur
 
 * [x] when an issue is in the Read state ensure the progress bar doesn't appear - it should only be visible in the Reading state
-
-* [x] redesign the list view and the series view
 
 * ~~after selecting the first card with a double press, then shift + single clicking a card that comes later should select all the cards between the first and last card selected.~~
 

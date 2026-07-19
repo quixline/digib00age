@@ -878,3 +878,77 @@ not be live-verified same-session (no Custom Tabs existed in the environment), b
 Folder and Flat view plus the Favourites tab: all consistent with the rest of the
 redesign. Folder View's subfolder tiles correctly fall outside the redesign, as
 scoped — they're a different kind of card entirely (§20.20/`DECISIONS.md`).
+
+---
+
+## Item 10 — Move Series Folders / Move Singles Folders (Processing Tools)
+
+**Status: ✅ built and manually verified 2026-07-18.**
+
+**Feature.** Two new Processing Tools, ported in as standalone scripts sharing
+the existing Folder Processing card alongside Sort by Filename (§11.5) — the
+final stage of processing before a library scan, moving folders out of
+`Processing\Stage 3\series` / `\singles` into their correct place in the
+library structure.
+
+**Scope, decided in-session:**
+- Operates on every immediate subfolder of the chosen folder (picker
+  identical to every other Processing Tool — not restricted to Stage 3,
+  fully browsable, `library_root`-defaulted).
+- Alpha bucket derived from the folder name: strip a leading `The `/`A `/
+  `An `, then A–Z → that letter, anything else (digit, apostrophe,
+  punctuation) → `#` — matches how the library is actually filed, confirmed
+  against real examples (`The 13th Artifact` → `#`, `A Taste for Blood` → `T`).
+- **Series**: merges into an existing destination rather than failing.
+  Merge is recursive and purely structural — no name-based special-casing —
+  so a container-style series (one grouped into sub-folders rather than
+  holding CBZ/CBR files directly, e.g. a series grouped by year) merges
+  correctly at whatever depth it already exists at in the library. A
+  same-named file clash at any level fails that one file only; everything
+  else in the batch still moves. Source folder (and any subfolder emptied
+  by the merge) is removed only if left empty.
+- **Singles**: an existing destination fails the whole folder outright
+  (Singles are one-CBZ-per-folder by definition, so a name collision means
+  a duplicate) — folder stays in Stage 3 untouched.
+- **Exact-duplicate detection (blocking):** a Stage 3 folder whose name
+  normalizes identically to an existing library folder — same title,
+  differing only in punctuation or year-bracket style (`Barbarella [1964]`
+  vs `Barbarella (1964)`) — is not moved at all. Logged as a failure with
+  the exact existing path it matched, left in place for manual resolution.
+  Applies to both Series and Singles.
+- **Near-miss detection (warning only, non-blocking):** every folder is also
+  checked, library-wide within its format group, for a probable-but-not-
+  certain variant among existing folders (similarity ratio or substring
+  containment, e.g. `Judge Dredd Megazine` against an existing `2000 AD -
+  Judge Dredd Megazines`). Reported in the result detail; never changes
+  where anything gets filed or blocks the move.
+- **2000 AD needed no special-casing.** Originally scoped with a hardcoded
+  exception (the folder was `20000AD` at the root, outside the A–Z/`#`
+  scheme, holding everything from progs to one-shots). Tez restructured it
+  mid-session instead — renamed to `2000 AD`, moved under
+  `#\Series\2000 AD`, kept the existing `2000 AD - YYYY` sub-folders as-is —
+  so it now buckets and files under the same general rule as everything
+  else. The recursive-merge fix (above) is what actually makes this work:
+  without it, a Stage 3 `2000 AD - YYYY` folder either landed as a wrong
+  sibling next to `2000 AD` (flat top-level move) or failed outright (old
+  flat-merge logic didn't recurse into an existing same-named subfolder).
+- Runnable standalone as well as from the admin card: `python -m
+  backend.library_move series|singles <folder>`.
+
+**Explicitly out of scope:** fixing the library-wide filing-convention
+inconsistencies the near-miss/exact-duplicate work surfaced (e.g. "The
+Complete X" / "The Best of X" folders filed by subject, not by the literal
+leading word — a real gap between the article-stripping rule and how Tez
+actually files some titles). Not fixed here; near-miss detection is the
+mitigation, not a fix to the underlying convention.
+
+**Verified:** 18 automated checks against scratch library/Stage 3 copies in
+an isolated sandbox (never `L:\Comic Archives`) — article stripping, `#`
+bucketing, Series merge (flat and nested/recursive), Singles collision,
+missing-folder error, near-miss detection (including the containment fix
+needed to actually catch the motivating Megazine case), and exact-duplicate
+blocking for both Series and Singles. Then manually tested live by Tez
+against real Stage 3 content, including the real 2000 AD nested-merge case —
+confirmed working after two follow-up fixes found during that manual pass
+(recursive merge support; exact-duplicate blocking for bracket/paren year
+notation drift).
