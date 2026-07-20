@@ -2183,13 +2183,16 @@ function renderSeriesIssuePage() {
   });
 }
 
-function buildIssueRow(issue) {
+function issueRowClass(issue) {
   const readState = issue.read_status === 'read'    ? 'state-read'
                   : issue.read_status === 'reading' ? 'state-reading' : '';
-  const cls = ['issue-row', issue.missing ? 'missing' : '', readState, issue.favorites ? 'is-favorite' : '',
+  return ['issue-row', issue.missing ? 'missing' : '', readState, issue.favorites ? 'is-favorite' : '',
     issue.flagged_for_review ? 'is-flagged-review' : '']
     .filter(Boolean).join(' ');
-  const row = el('a', cls);
+}
+
+function buildIssueRow(issue) {
+  const row = el('a', issueRowClass(issue));
   row.href  = `/issue/${issue.id}`;
   makeSelectable(row, issue.id);
 
@@ -2244,12 +2247,12 @@ function buildIssueRow(issue) {
   }
 
   row.appendChild(detail);
-  row.appendChild(buildStatusButton(issue));
+  row.appendChild(buildStatusButton(issue, row));
 
   return row;
 }
 
-function buildStatusButton(issue) {
+function buildStatusButton(issue, row) {
   const STATUS_ICON = { read: '✓', reading: '▶', unread: '' };
   const btn = el('button', `status-btn ${issue.read_status}`, STATUS_ICON[issue.read_status] || '');
   btn.title = `Status: ${issue.read_status}`;
@@ -2267,6 +2270,7 @@ function buildStatusButton(issue) {
       btn.className        = `status-btn ${next}`;
       btn.textContent      = STATUS_ICON[next] || '';
       btn.title            = `Status: ${next}`;
+      if (row) row.className = issueRowClass(issue);
     } catch (_) {}
   });
 
@@ -2296,6 +2300,10 @@ async function markAllRead(issues) {
     b.className   = 'status-btn read';
     b.textContent = '✓';
     b.title       = 'Status: read';
+  });
+  document.querySelectorAll('.issue-row').forEach(row => {
+    row.classList.remove('state-reading');
+    row.classList.add('state-read');
   });
 
   btn.textContent       = 'All read ✓';

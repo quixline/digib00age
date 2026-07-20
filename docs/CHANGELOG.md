@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-20** — Series Detail page: fixed the issue-row read-state border
+  (and other state-dependent styling) not updating live on Mark as Read/Unread or
+  Mark all read — `app.js` was never resyncing the row's CSS class after the
+  initial render, only the status button. Pre-existing bug, unrelated to the CSS
+  token split below.
 - **2026-07-20** — CSS theme-token refactor: split `style.css`'s theme-variable
   system into `tokens-base.css`/`tokens-dark.css`/`tokens-light.css`; fixed two
   light-theme bugs (unreadable genre pill on grid cards, `.state-read` black

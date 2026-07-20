@@ -4799,3 +4799,41 @@ writeup and suggested fix in `docs/BUGS.md`.
 further by page/component (`admin.css`, `editor.css`, `grid.css`,
 `series/issue.css` — section boundaries already marked by existing comment
 headers) — noted in `docs/ROADMAP.md`, not detailed further.
+
+## Session — 2026-07-20 — Series Detail read-state border not live-updating (bug fix)
+
+Tez reported, while doing a fuller pass over the prior session's CSS theme-token
+split: on an issue page, the read-state border around the cover no longer changes
+when read status is toggled. Investigated live via Claude-in-Chrome against the
+running dev server (port 9424).
+
+**Root cause — not a CSS regression.** The token split itself is correct: verified
+`.issue-cover-link--redesign.state-unread`'s collector-card frame (blue↔green mat)
+on the single-issue page (`issue.html`) toggles live and correctly via
+`syncReadState()`. The actual bug is on the **Series Detail page**
+(`buildIssueRow()` / `buildStatusButton()` / `markAllRead()` in `app.js`): the
+`.issue-row` element's `state-read`/`state-reading` class — which drives the
+left-edge border colour via `.issue-row.state-read { border-left-color: var(--green) }`
+— was baked in once at row-creation time from `issue.read_status`, but never
+recomputed when the per-row status button or "Mark all read" toggled that status
+afterward. The button's own icon/label updated; the row's border (and the CSS rules
+keyed off the row's state class for title/sub/genre/summary styling) did not,
+until a full page reload re-rendered the row from fresh data. Pre-existing gap,
+unrelated to yesterday's token split — just made visible by Tez's closer pass.
+
+**Fix (`frontend/js/app.js`):** extracted the row's class-list logic into
+`issueRowClass(issue)`, used both at row creation and to resync `row.className`
+after a status change. `buildStatusButton(issue, row)` now takes the row and
+updates its class alongside the button on click; `markAllRead()` now also swaps
+every visible `.issue-row`'s class to `state-read`.
+
+**Verification:** live-tested against the dev DB (issue IDs 2554, 2555, 4318 —
+reset back to unread after testing, matching CLAUDE.md's read-state-is-disposable
+rule). Confirmed via DOM inspection that `row.className` updates correctly on both
+the individual per-row toggle and "Mark all read", and confirmed the resulting
+`border-left-color` resolves to the correct token value. Note for future live
+checks via Claude-in-Chrome: a backgrounded/non-focused automation tab can freeze
+a CSS `transition` mid-flight (frames aren't ticked), making a computed style look
+stale even though the underlying value is already correct — confirmed by disabling
+the transition and by taking a screenshot (which forces a repaint) showing the
+correct colour. Not an app bug, just a quirk of testing via an inactive tab.
