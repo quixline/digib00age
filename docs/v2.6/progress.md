@@ -4713,3 +4713,89 @@ up a future session touching desktop-reader native behaviour.
 → `comicvault://` deep link → running/rebuilt Debug exe) across several comics of
 different aspect ratios — confirmed working, no cropping, no stale-size carryover.
 Real Processing Folder path, checkboxes, and ComicVine key were never touched.
+
+## Session — 2026-07-20 — CSS theme-token refactor executed (plan from 2026-07-17)
+
+Executed `docs/v2.6/code-handoffs/css-theme-token-refactor-plan.md` end to end — all
+9 steps of its execution order, each verified before moving to the next (network-tab
+check for exactly 4 stylesheet requests per page, console-error check, visual
+comparison) across all 6 pages (index, admin, guide, editor, series, issue) and both
+themes.
+
+**What moved:** `frontend/css/style.css`'s theme-variable system (previously
+`:root` + two duplicated light-override blocks, lines 1-174) split into three new
+files — `tokens-base.css` (theme-neutral: spacing, typography, radii, shadows,
+motion, semantic aliases), `tokens-dark.css`, `tokens-light.css` — loaded via 4
+`<link>` tags (base → dark → light → style) added to all 6 HTML pages. `style.css`
+itself only contains component/layout CSS now, net -152 lines. No visual change from
+the split alone — confirmed inert at every intermediate step.
+
+`--accent-dim` and the semantic alias block moved into `tokens-base.css` alongside
+`--on-accent`/`--favourite`, extending the plan's own stated rule (vars never
+overridden by the light block belong in the base file) to a var the plan's file
+inventory hadn't explicitly named — same reasoning, so treated the same way.
+
+**Two real fixes landed alongside the token move** (the plan's step 6, extended by
+one item found during verification):
+
+1. `.state-read`/`.state-part-read`'s black-overlay treatment got the planned
+   `--read-overlay`/`--read-overlay-text` tokens (dark: unchanged `#000`/`#fff`;
+   light: `#2A2E36` neutral so a "read" card doesn't look like a broken black
+   rectangle on a white page). **Discovered during verification that this
+   component is currently dead code** — every card builder in `app.js`
+   (`buildStripCard`, `buildFolderFileCard`, the main grid card) unconditionally
+   emits `.cover-card--redesign`, whose own CSS nulls the legacy `.cover-info`
+   background for this exact state and substitutes a progress-bar/`% Read` label
+   instead. The token fix is correct and harmless (a live safety net if a
+   non-redesigned card path ever returns) but has no visible effect today.
+
+2. Found and fixed a real, currently-live light-theme bug while checking the above:
+   `.card-genre-ribbon` (the genre pill on grid cards, e.g. "FICTION") was
+   unreadable in light theme. Root cause: it referenced the theme-dependent
+   `var(--text)` from inside `.cover-card--redesign`, a component SPEC.md §20.20
+   requires to render identically in both themes ("looks the same in light or dark
+   site theme, like a physical card"). In dark theme `--text` happens to resolve
+   near-white, which looked correct by coincidence; in light theme it resolves
+   near-black, breaking the fixed-dark invariant. Fixed with a new fixed literal
+   `--rc-genre-text: #F2F4F7` inside `.cover-card.cover-card--redesign`'s existing
+   local-var block, alongside `--rc-title`/`--rc-meta` — matching the pattern
+   already used one section over for `.folder-result-path` (style.css ~1354, same
+   "fixed dark face, don't use the theme-dependent var" comment already present in
+   the codebase before this session).
+
+**Danger/error hex literals (plan step 7):** grepped broadly for reddish hex
+literals first, then cross-checked each against already-correct sibling patterns
+in the file to separate real oversights from decorative fixed-color badges (the
+favourite-heart overlays on cover art, `style.css` ~751/~1978, are deliberately
+theme-independent — a physical-sticker effect on the comic art, not a themed UI
+state — left untouched). Five confirmed oversights fixed: `.fe-file-row.needs-review`
+box-shadow, `.admin-backup-error`, `.folder-remove-btn:hover`, `.admin-toast--error`,
+`.editor-error` banner — all swapped to `var(--danger)` or a new `--danger-text`
+alias (`color-mix(in srgb, var(--danger) 60%, white)`, added to `tokens-base.css`
+for the "lightened danger" text-on-tinted-background pattern that 3 of the 5 sites
+needed).
+
+**Verification:** each of the 9 plan steps checked before proceeding (see above).
+Final Section-7 pass confirmed exactly 4 stylesheet requests per page (all 200s, no
+404s) and zero console errors across all 6 pages in both dark and light theme
+(toggled via Admin → Library Appearance → Theme Selection). The `.folder-remove-btn`
+hover, `.fe-file-row.needs-review`, `.admin-toast--error`, and `.editor-error`
+fixes were spot-checked visually in both themes (the last three via safe temporary
+DOM injection, not real error conditions, then removed). Tez then did a manual pass
+across the pages and themes and confirmed everything looked right except one
+unrelated issue — logged as **BUG-032** (see below) — no other open items.
+
+**BUG-032 found during Tez's manual pass, logged not fixed:** the 6 HTML page
+routes and the `/static` mount send no `Cache-Control` header (`backend/main.py`),
+so the browser can serve a stale cached copy of a page on normal navigation without
+revalidating. Reproduced directly: a live page's `<link>` tags didn't match a fresh
+`fetch(..., {cache:'no-store'})` of the same URL, so the page rendered unstyled
+(new token stylesheets missing from the stale HTML). Not a regression from this
+session's CSS work — it's how these routes have always been served — but editing
+all 6 HTML files in one session made the staleness obvious for the first time. Full
+writeup and suggested fix in `docs/BUGS.md`.
+
+**Deferred (per the plan, not started this session):** splitting `style.css`
+further by page/component (`admin.css`, `editor.css`, `grid.css`,
+`series/issue.css` — section boundaries already marked by existing comment
+headers) — noted in `docs/ROADMAP.md`, not detailed further.

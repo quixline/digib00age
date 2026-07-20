@@ -1,177 +1,10 @@
 /* ComicVault — style.css */
 
-/* digib00age brand fonts (v2.6 Item 1 Phase A). First external network
-   dependency in this app — self-hosting the .woff2 files locally is a
-   possible fast-follow if that's ever a problem; not blocking this phase. */
-@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-
-:root {
-  /* digib00age design system (v2.6 Item 1 Phase A) — dark-first palette.
-     --accent-dim is kept as the pre-existing hover-state name (3 call sites)
-     and aliased to --accent-hover rather than renamed, to avoid an
-     unnecessary sweep of otherwise-unrelated CSS. */
-  --bg: #0D0E10;
-  --surface: #16181C;
-  --surface-2: #1F2228;
-  --surface-3: #2A2E36;
-  --accent: #0A5FFF;
-  --accent-hover: #2E72FF;
-  --accent-press: #0048D6;
-  --accent-dim: var(--accent-hover);
-  --accent-tint: color-mix(in srgb, var(--accent) 16%, transparent);
-  --accent-text: #5C90FF;
-  --on-accent: #FFFFFF;
-  --text: #F2F4F7;
-  --text-2: #9BA1AC;
-  --text-3: #5E6470;
-  --green: #3FB877;
-  --blue: #0A5FFF;
-  --favourite: #F0C419;
-  --danger: #E8625A;
-  --border: #2C3038;
-  --radius: 6px;
-  --radius-xs: 3px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-pill: 999px;
-  --card-min: 120px;
-  --control-md: 30px; /* standard input/control height (Full Editor v2.6 Item 7) */
-
-  /* Semantic aliases matching the digib00age design reference verbatim, so
-     Phase B–D CSS can be ported without a second translation pass. */
-  --surface-card: var(--surface);
-  --surface-raised: var(--surface-2);
-  --surface-sunken: var(--surface-3);
-  --text-primary: var(--text);
-  --text-secondary: var(--text-2);
-  --text-muted: var(--text-3);
-  --state-read: var(--green);
-  --state-progress: var(--green);
-  --state-reading: var(--blue);
-  --focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent);
-  --scrim: rgba(0, 0, 0, 0.55);
-
-  /* Spacing scale (4px base) */
-  --space-0: 0;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --space-10: 40px;
-  --header-h: 56px; /* .site-header's real height — .app-sidebar's sticky
-    top-offset/height calc (Phase B) depends on this being defined at all,
-    not just correct; was referenced in 3 places but never actually added
-    to :root, so it silently resolved to nothing and broke sticky entirely. */
-  --sidebar-w: 180px; /* fallback before sizeSidebarToContent() (app.js)
-    measures the real longest-label width on load and overwrites this. */
-  --pagebg-blur: 30px;         /* .page-bg-blob cloud blur — tune to taste */
-  --pagebg-blob-opacity: 0.32; /* per-blob opacity; overlaps build up denser */
-  --space-12: 48px;
-  --space-16: 64px;
-
-  /* Typography */
-  --font-sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
-  --weight-regular: 400;
-  --weight-medium: 500;
-  --weight-semibold: 600;
-  --weight-bold: 700;
-  --weight-black: 800;
-  --text-2xs: 11px;
-  --text-xs: 12px;
-  --text-sm: 13px;
-  --text-base: 15px;
-  --text-md: 17px;
-  --text-lg: 20px;
-  --text-xl: clamp(20px, 2.2vw, 26px);
-  --text-2xl: 30px;
-  --text-3xl: clamp(28px, 4vw, 44px);
-  --leading-tight: 1.15;
-  --leading-snug: 1.3;
-  --leading-normal: 1.5;
-  --leading-relaxed: 1.7;
-  --tracking-tight: -0.03em;
-  --tracking-snug: -0.02em;
-  --tracking-normal: 0;
-  --tracking-label: 0.08em;
-
-  /* Shadows */
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.45);
-  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.55);
-  --shadow-toast: 0 4px 24px rgba(0, 0, 0, 0.5);
-
-  /* Backdrop recipe (v2.6 Item 1 Phase E) — series/issue detail cover
-     backdrops: image → blur → dark overlay → gradient fade. Same values
-     in both themes (Design's elevation.css doesn't override these for light). */
-  --blur-backdrop: 3px;
-  --backdrop-opacity: 0.28;
-  --backdrop-overlay: rgba(0, 0, 0, 0.45);
-
-  /* Motion */
-  --ease: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --dur-fast: 0.12s;
-  --dur: 0.18s;
-  --dur-slow: 0.28s;
-  --lift: translateY(-3px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --dur-fast: 0s;
-    --dur: 0s;
-    --dur-slow: 0s;
-    --lift: none;
-  }
-}
-
-/* Light theme (SPEC.md §20.17) — applied either by explicit override
-   (data-theme="light", set by the Admin Appearance setting) or by following
-   the OS preference when no override is stored (data-theme absent). The
-   override attribute is set by a render-blocking inline script in each
-   page's <head> so there's no dark-then-light flash on load. */
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme]) {
-    --bg: #F4F6F9;
-    --surface: #FFFFFF;
-    --surface-2: #EDF0F4;
-    --surface-3: #E1E6EC;
-    --accent: #0A5FFF;
-    --accent-hover: #0048D6;
-    --accent-press: #0039AB;
-    --accent-tint: color-mix(in srgb, var(--accent) 12%, transparent);
-    --accent-text: #0048D6;
-    --text: #14161A;
-    --text-2: #565C66;
-    --text-3: #888E98;
-    --green: #2E9E60;
-    --blue: #0A5FFF;
-    --danger: #D24A42;
-    --border: #DCE0E6;
-  }
-}
-:root[data-theme="light"] {
-  --bg: #F4F6F9;
-  --surface: #FFFFFF;
-  --surface-2: #EDF0F4;
-  --surface-3: #E1E6EC;
-  --accent: #0A5FFF;
-  --accent-hover: #0048D6;
-  --accent-press: #0039AB;
-  --accent-tint: color-mix(in srgb, var(--accent) 12%, transparent);
-  --accent-text: #0048D6;
-  --text: #14161A;
-  --text-2: #565C66;
-  --text-3: #888E98;
-  --green: #2E9E60;
-  --blue: #0A5FFF;
-  --danger: #D24A42;
-  --border: #DCE0E6;
-}
+/* digib00age design system (v2.6 Item 1 Phase A) — dark-first palette.
+   Theme-neutral tokens (spacing, typography, radii, shadows, motion,
+   aliases) live in tokens-base.css; theme-dependent color tokens
+   (--bg, --surface*, --accent*, --text*, --green, --blue, --danger,
+   --border) live in tokens-dark.css / tokens-light.css. */
 
 /* ── Reset ───────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -970,7 +803,7 @@ select.filter-select:focus,
    box-shadow-ring technique above, red instead of gold, different condition
    (a low-confidence CT Auto-Tag match, not a favourite). EDITOR_SPEC.md §9.3. */
 .fe-file-row.needs-review {
-  box-shadow: 0 0 0 1px #e05252;
+  box-shadow: 0 0 0 1px var(--danger);
 }
 
 /* Read-state card colours */
@@ -978,12 +811,16 @@ select.filter-select:focus,
 /* Fully read — flat dark-green tint, same as before */
 .cover-card.state-read { background: color-mix(in srgb, var(--state-read) 50%, var(--surface)); }
 
-/* Partially read — near-black base with green gradient rising from the bottom */
+/* Partially read — dark overlay base with green gradient rising from the
+   bottom. Overlay colour is themed (--read-overlay: pure black in dark,
+   dark neutral in light) — see tokens-dark.css/tokens-light.css — so this
+   reads as an intentional "shaded/read" chip rather than a broken black
+   rectangle when the site is in light theme. */
 .cover-card.state-part-read {
-  background: #000;
+  background: var(--read-overlay);
   border-color: rgba(76, 175, 118, 0.35);
 }
-/* Feather the bottom of the cover image into the black so the transition is seamless */
+/* Feather the bottom of the cover image into the overlay so the transition is seamless */
 .cover-card.state-part-read .cover-img-wrap::after {
   content: '';
   position: absolute;
@@ -991,25 +828,29 @@ select.filter-select:focus,
   left: 0;
   right: 0;
   height: 36px;
-  background: linear-gradient(to bottom, transparent, #000);
+  background: linear-gradient(to bottom, transparent, var(--read-overlay));
   pointer-events: none;
 }
-/* Info area: black at top (directly below thumbnail) → subtle green at the card bottom */
+/* Info area: overlay colour at top (directly below thumbnail) → subtle green at the card bottom */
 .cover-card.state-part-read .cover-info {
-  background: linear-gradient(to bottom, #000 0%, rgba(76, 175, 118, 0.30) 100%);
+  background: linear-gradient(to bottom, var(--read-overlay) 0%, rgba(76, 175, 118, 0.30) 100%);
 }
 
-/* Text on coloured cards: override the dim --text-3 colour so all labels are legible */
+/* Text on coloured cards: override the dim --text-3 colour so all labels are
+   legible. --read-overlay-text stays white in both themes (the overlay
+   itself stays dark-ish regardless of site theme), tokenized here purely
+   for consistency with --read-overlay rather than because the value
+   changes by theme. */
 .cover-card.state-part-read .cover-title,
 .cover-card.state-read      .cover-title {
-  color: #fff;
+  color: var(--read-overlay-text);
   font-weight: 700;
 }
 .cover-card.state-part-read .cover-count,
 .cover-card.state-part-read .cover-year,
 .cover-card.state-read      .cover-count,
 .cover-card.state-read      .cover-year {
-  color: rgba(255, 255, 255, 0.82);
+  color: color-mix(in srgb, var(--read-overlay-text) 82%, transparent);
   font-weight: 600;
   font-size: 12px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
@@ -1020,7 +861,7 @@ select.filter-select:focus,
 .cover-card.state-read      .list-genres,
 .cover-card.state-read      .list-pub-writer,
 .cover-card.state-read      .list-summary {
-  color: rgba(255, 255, 255, 0.82);
+  color: color-mix(in srgb, var(--read-overlay-text) 82%, transparent);
 }
 
 /* List View only — invert the emphasis above so unread rows stand out and
@@ -1187,6 +1028,13 @@ select.filter-select:focus,
   --rc-meta: #c9b79f;
   --rc-unread: #0A5FFF;
   --rc-progress: #3FB877;
+  /* Fixed literal, not var(--text) — this card is fixed-dark regardless of
+     site theme (SPEC.md §20.20), and --text is theme-dependent. Value
+     matches --text's dark-theme resolution so nothing changes visually;
+     the bug this fixes only shows up in light theme, where --text resolves
+     near-black and the ribbon label on this always-dark card goes
+     unreadable. */
+  --rc-genre-text: #F2F4F7;
   background: linear-gradient(160deg, #1b2028 0%, #12161d 100%);
   border: none;
   /* Matte gap between the cover and the card's outer ring, matching the
@@ -1337,15 +1185,15 @@ select.filter-select:focus,
   justify-content: space-between;
   gap: 8px;
 }
-/* Off-white text (same --text token the nav bar uses), neutral dark fill —
-   the solid blue/green fill used to clash with the card's white border.
-   Read-state colour now lives only in the 2px bottom border. */
+/* Off-white text (fixed literal — see --rc-genre-text above), neutral dark
+   fill — the solid blue/green fill used to clash with the card's white
+   border. Read-state colour now lives only in the 2px bottom border. */
 .card-genre-ribbon {
   display: inline-block;
   padding: 3px 8px;
   border-radius: var(--radius-xs) 0 0 var(--radius-xs);
   background: rgba(0, 0, 0, 0.4);
-  color: var(--text);
+  color: var(--rc-genre-text);
   font-size: 10px;
   font-weight: 400;
   text-transform: uppercase;
@@ -2673,7 +2521,7 @@ select.filter-select:focus,
   color: var(--text-3);
   margin-bottom: 10px;
 }
-.admin-backup-error { color: #ff7070; margin-top: 4px; }
+.admin-backup-error { color: var(--danger-text); margin-top: 4px; }
 .admin-key-ok { color: var(--green); margin-top: 4px; }
 .admin-empty-hint {
   font-size: 12px;
@@ -2718,7 +2566,7 @@ select.filter-select:focus,
   transition: border-color 0.15s, color 0.15s;
   flex-shrink: 0;
 }
-.folder-remove-btn:hover { border-color: #e05050; color: #e05050; }
+.folder-remove-btn:hover { border-color: var(--danger); color: var(--danger); }
 
 .folder-add-row { display: flex; gap: 8px; }
 
@@ -2900,7 +2748,7 @@ select.filter-select:focus,
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
-.admin-toast--error { border-color: #e05050; color: #ff7070; }
+.admin-toast--error { border-color: var(--danger); color: var(--danger-text); }
 
 /* Multi-select bulk-action toolbar (Tier 4 Item 2) */
 .selection-toolbar {
@@ -3225,10 +3073,10 @@ select.filter-select:focus,
 .editor-error {
   margin: 0 20px;
   padding: 10px 12px;
-  background: color-mix(in srgb, #e85555 15%, var(--surface-2));
-  border: 1px solid #e85555;
+  background: color-mix(in srgb, var(--danger) 15%, var(--surface-2));
+  border: 1px solid var(--danger);
   border-radius: var(--radius);
-  color: #ffb3b3;
+  color: var(--danger-text);
   font-size: 13px;
 }
 /* Neutral variant — "a previous save is still finishing," not an actual

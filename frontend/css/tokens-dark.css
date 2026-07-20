@@ -1,0 +1,30 @@
+/* ComicVault — tokens-dark.css
+   Theme-dependent tokens at their dark (default) values. Loads before
+   tokens-light.css so light's :root[data-theme="light"] /
+   prefers-color-scheme overrides win the cascade when active.
+   Part of the CSS theme-token refactor — see
+   docs/v2.6/code-handoffs/css-theme-token-refactor-plan.md */
+
+:root {
+  --bg: #0D0E10;
+  --surface: #16181C;
+  --surface-2: #1F2228;
+  --surface-3: #2A2E36;
+  --accent: #0A5FFF;
+  --accent-hover: #2E72FF;
+  --accent-press: #0048D6;
+  --accent-tint: color-mix(in srgb, var(--accent) 16%, transparent);
+  --accent-text: #5C90FF;
+  --text: #F2F4F7;
+  --text-2: #9BA1AC;
+  --text-3: #5E6470;
+  --green: #3FB877;
+  --blue: #0A5FFF;
+  --danger: #E8625A;
+  --border: #2C3038;
+
+  /* .state-read / .state-part-read card overlay (style.css) — dark value
+     unchanged from the pre-refactor literal. */
+  --read-overlay: #000;
+  --read-overlay-text: #fff;
+}

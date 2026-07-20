@@ -48,6 +48,18 @@ v2.6 Item 1 in `docs/v2.6/comicvault-changes-v2.6.md`. The two items below
 (header unification, back-button fix) remain deliberately deferred until Item 1
 lands, not bundled into it — see that doc's "explicitly out of scope" note.
 
+**CSS component split — deferred 2026-07-20 (css-theme-token refactor session)**
+
+`style.css`'s theme-*variable* layer was split out into `tokens-base.css`/
+`tokens-dark.css`/`tokens-light.css` this session (see `DECISIONS.md` and
+`v2.6/progress.md` 2026-07-20 entry). The larger *component* split —
+`admin.css`, `editor.css`, `grid.css`, `series/issue.css` — was explicitly
+out of scope for that pass ("go from there," per the original plan doc,
+`v2.6/code-handoffs/css-theme-token-refactor-plan.md`). Section boundaries
+are already marked by existing `── Name ──` comment headers in `style.css`,
+so the split itself should be low-risk whenever it's picked up — not
+detailed further here.
+
 **v2.3 Item 14 — Site-wide: unify the main header across Series/Issue detail pages**
 (moved here 2026-06-28, originally scoped 2026-06-27)
 

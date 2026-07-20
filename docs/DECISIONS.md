@@ -4,6 +4,73 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### CSS theme-token file split: three files (base/dark/light), token-only pass, component split deferred
+
+**Decided:** 2026-07-20, CSS theme-token refactor session — executed
+`docs/v2.6/code-handoffs/css-theme-token-refactor-plan.md` (drafted 2026-07-17).
+
+**Why:** No doc previously governed CSS *file* architecture in this repo
+(`SPEC.md` documents theme *behaviour* — OS auto-match + Admin Appearance
+override — not file structure), and `style.css` had grown to one ~3900-line
+file loaded by all 6 pages with dark values, light overrides, and every
+component's layout CSS interleaved. Light-theme gaps kept surfacing while
+working other areas (admin, editor, series/issue) precisely because
+"light theme values" and "code that never had any" couldn't be cleanly told
+apart in one undifferentiated file. Splitting the token layer out first —
+before the larger page/component split (`admin.css`/`editor.css`/`grid.css`,
+deferred to `ROADMAP.md`) — makes that distinction structural instead of
+requiring a manual read each time.
+
+Cascade order is base → dark → light → style, loaded via 4 plain `<link>`
+tags per page (no `@import` chaining, no JS). This works because CSS custom
+property resolution is lazy (used-value time, not file-parse-order) —
+`tokens-base.css`'s semantic aliases (`--surface-card: var(--surface)`, etc.)
+correctly pick up whichever of dark/light's `--surface` is active regardless
+of which file *defines* the alias vs. what it points to, as long as all
+three token files load before `style.css` uses them.
+
+Two accompanying decisions, made mid-execution rather than pre-planned:
+
+1. **`.state-read`/`.state-part-read` got its planned token fix
+   (`--read-overlay`/`--read-overlay-text`) even after discovering it's
+   currently dead code** — every card builder in `app.js` emits
+   `.cover-card--redesign`, which nulls this exact styling and substitutes a
+   progress-bar/`% Read` label instead. Kept the fix anyway: it's what the
+   plan specified, it's harmless, and it's a live safety net if a
+   non-redesigned card path is ever reintroduced. Noted as dead code in
+   `v2.6/progress.md` rather than silently presenting it as a visible fix.
+
+2. **`.card-genre-ribbon`'s light-theme bug (found during step-6
+   verification, not in the original plan) was fixed as a fixed literal
+   (`--rc-genre-text`), not a themed token pair**, despite using the same
+   `--read-overlay`/`--read-overlay-text` mechanism being the more
+   "consistent" choice on the surface. The ribbon lives inside
+   `.cover-card--redesign`, which SPEC.md §20.20 requires to render
+   identically in both themes ("dark-only, fixed regardless of the site's
+   light/dark theme setting") — the bug was that it referenced the
+   theme-dependent `var(--text)` by mistake, not that it needed theme-aware
+   values. Theme-tokenizing it would have been the wrong fix for a component
+   the spec says must *not* be theme-split. Matches the pattern the codebase
+   already used one section over, for `.folder-result-path`
+   (`style.css` ~1354): "Redesigned card: fixed dark face, so use the same
+   off-white/cream meta colour... rather than the theme-dependent --text-3
+   grey."
+
+Also swept 5 scattered danger/error hex literals to `var(--danger)`/a new
+`--danger-text` alias (step 7 of the plan) — cross-checked against
+already-correct sibling patterns elsewhere in the file (e.g.
+`.pt-remove-btn:hover`, `.editor-error--notice`) to separate real oversights
+from two decorative fixed-color favourite-heart badges that are
+deliberately theme-independent (a physical-sticker effect on cover art, not
+a themed UI state) and correctly left untouched despite matching the same
+reddish-hex grep.
+
+**Found but not fixed, logged as BUG-032:** the 6 HTML page routes and the
+`/static` mount send no `Cache-Control` header, so browsers can serve a
+stale cached page on normal navigation. Pre-existing behaviour, unrelated to
+the CSS work itself, but this session's edits to all 6 HTML files made it
+visible for the first time. See `BUGS.md`.
+
 ### Desktop reader window resize: size target measured against live chrome overhead, not the raw cover-to-window ratio
 
 **Decided:** 2026-07-19, desktop reader cover-resize session.

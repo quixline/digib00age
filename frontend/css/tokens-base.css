@@ -1,0 +1,135 @@
+/* ComicVault — tokens-base.css
+   Theme-neutral design tokens: spacing, typography, radii, shadows, motion,
+   backdrop recipe, and semantic aliases. Values here are identical in both
+   dark and light theme — see tokens-dark.css / tokens-light.css for the
+   vars that actually differ by theme.
+   Part of the CSS theme-token refactor — see
+   docs/v2.6/code-handoffs/css-theme-token-refactor-plan.md */
+
+/* digib00age brand fonts (v2.6 Item 1 Phase A). First external network
+   dependency in this app — self-hosting the .woff2 files locally is a
+   possible fast-follow if that's ever a problem; not blocking this phase. */
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  --radius: 6px;
+  --radius-xs: 3px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+  --card-min: 120px;
+  --control-md: 30px; /* standard input/control height (Full Editor v2.6 Item 7) */
+
+  /* Semantic aliases matching the digib00age design reference verbatim, so
+     Phase B–D CSS can be ported without a second translation pass. Defined
+     here (not per-theme) because the aliases just reference other vars —
+     cascade doesn't care which file defines an alias vs. what it points to,
+     as long as all three token files load before style.css uses them. */
+  --surface-card: var(--surface);
+  --surface-raised: var(--surface-2);
+  --surface-sunken: var(--surface-3);
+  --text-primary: var(--text);
+  --text-secondary: var(--text-2);
+  --text-muted: var(--text-3);
+  --state-read: var(--green);
+  --state-progress: var(--green);
+  --state-reading: var(--blue);
+  --focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent);
+  --scrim: rgba(0, 0, 0, 0.55);
+
+  /* Lightened --danger for text sitting on a dark/tinted error background
+     (toasts, error banners) where the flat --danger value reads too dark —
+     several call sites had this hardcoded as a literal (e.g. #ff7070) that
+     never varied by theme; refactor step 7 replaced them with this shared
+     alias instead of repeating the color-mix formula at each site. */
+  --danger-text: color-mix(in srgb, var(--danger) 60%, white);
+
+  /* Spacing scale (4px base) */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --header-h: 56px; /* .site-header's real height — .app-sidebar's sticky
+    top-offset/height calc (Phase B) depends on this being defined at all,
+    not just correct; was referenced in 3 places but never actually added
+    to :root, so it silently resolved to nothing and broke sticky entirely. */
+  --sidebar-w: 180px; /* fallback before sizeSidebarToContent() (app.js)
+    measures the real longest-label width on load and overwrites this. */
+  --pagebg-blur: 30px;         /* .page-bg-blob cloud blur — tune to taste */
+  --pagebg-blob-opacity: 0.32; /* per-blob opacity; overlaps build up denser */
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Typography */
+  --font-sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-black: 800;
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-md: 17px;
+  --text-lg: 20px;
+  --text-xl: clamp(20px, 2.2vw, 26px);
+  --text-2xl: 30px;
+  --text-3xl: clamp(28px, 4vw, 44px);
+  --leading-tight: 1.15;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.7;
+  --tracking-tight: -0.03em;
+  --tracking-snug: -0.02em;
+  --tracking-normal: 0;
+  --tracking-label: 0.08em;
+
+  /* Shadows */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.55);
+  --shadow-toast: 0 4px 24px rgba(0, 0, 0, 0.5);
+
+  /* Backdrop recipe (v2.6 Item 1 Phase E) — series/issue detail cover
+     backdrops: image → blur → dark overlay → gradient fade. Same values
+     in both themes (Design's elevation.css doesn't override these for light). */
+  --blur-backdrop: 3px;
+  --backdrop-opacity: 0.28;
+  --backdrop-overlay: rgba(0, 0, 0, 0.45);
+
+  /* Motion */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 0.12s;
+  --dur: 0.18s;
+  --dur-slow: 0.28s;
+  --lift: translateY(-3px);
+
+  /* --on-accent, --favourite, and --accent-dim are never overridden by the
+     light theme — genuinely theme-neutral, so they live here rather than
+     being duplicated into both tokens-dark.css and tokens-light.css.
+     --accent-dim is kept as the pre-existing hover-state name (3 call
+     sites) and aliased to --accent-hover rather than renamed, to avoid an
+     unnecessary sweep of otherwise-unrelated CSS; it resolves to the
+     correct per-theme value automatically since --accent-hover itself is
+     theme-dependent (see tokens-dark.css / tokens-light.css). */
+  --on-accent: #FFFFFF;
+  --favourite: #F0C419;
+  --accent-dim: var(--accent-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0s;
+    --dur: 0s;
+    --dur-slow: 0s;
+    --lift: none;
+  }
+}

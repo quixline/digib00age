@@ -1,0 +1,64 @@
+/* ComicVault — tokens-light.css
+   Theme-dependent tokens at their light values, applied either by explicit
+   override (data-theme="light", set by the Admin Appearance setting) or by
+   following the OS preference when no override is stored.
+   Part of the CSS theme-token refactor — see
+   docs/v2.6/code-handoffs/css-theme-token-refactor-plan.md */
+
+/* Light theme (SPEC.md §20.17) — applied either by explicit override
+   (data-theme="light", set by the Admin Appearance setting) or by following
+   the OS preference when no override is stored (data-theme absent). The
+   override attribute is set by a render-blocking inline script in each
+   page's <head> so there's no dark-then-light flash on load.
+   Keep these two blocks' properties identical — same palette, different
+   trigger (OS preference vs. explicit Admin Appearance override). */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: #F4F6F9;
+    --surface: #FFFFFF;
+    --surface-2: #EDF0F4;
+    --surface-3: #E1E6EC;
+    --accent: #0A5FFF;
+    --accent-hover: #0048D6;
+    --accent-press: #0039AB;
+    --accent-tint: color-mix(in srgb, var(--accent) 12%, transparent);
+    --accent-text: #0048D6;
+    --text: #14161A;
+    --text-2: #565C66;
+    --text-3: #888E98;
+    --green: #2E9E60;
+    --blue: #0A5FFF;
+    --danger: #D24A42;
+    --border: #DCE0E6;
+
+    /* .state-read / .state-part-read card overlay (style.css) — dark
+       neutral (matches dark theme's --surface-3) rather than pure black,
+       so a "read" card reads as an intentional shaded chip on a light page
+       instead of looking like a broken black rectangle. Text stays white
+       in both themes (see --read-overlay-text) since the overlay itself
+       stays dark-ish regardless of site theme. */
+    --read-overlay: #2A2E36;
+    --read-overlay-text: #fff;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #F4F6F9;
+  --surface: #FFFFFF;
+  --surface-2: #EDF0F4;
+  --surface-3: #E1E6EC;
+  --accent: #0A5FFF;
+  --accent-hover: #0048D6;
+  --accent-press: #0039AB;
+  --accent-tint: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-text: #0048D6;
+  --text: #14161A;
+  --text-2: #565C66;
+  --text-3: #888E98;
+  --green: #2E9E60;
+  --blue: #0A5FFF;
+  --danger: #D24A42;
+  --border: #DCE0E6;
+
+  --read-overlay: #2A2E36;
+  --read-overlay-text: #fff;
+}
