@@ -4,6 +4,41 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Series Detail hero: dropped the rounded-card backdrop, unified with Issue Detail's full-bleed recipe
+
+**Decided:** 2026-07-20, follow-up bug session after the CSS theme-token split.
+
+**Why:** Tez reported the series page's cover backdrop "doesn't stretch,
+leaving a gap top and sides." Investigated live and confirmed the backdrop's
+own sizing math was correct (no actual box-model gap) — the perceived gap
+came from `.series-hero-wrap` clipping the backdrop to a rounded, inset card
+(`overflow:hidden; border-radius`) plus a flat 45% black overlay on top of an
+already-faint (opacity 0.28) image, so on covers with dark artwork near the
+crop line it read as empty space bounded by a visible card edge. Asked Tez
+which treatment to match; he pointed at the Issue Detail page's backdrop,
+which has no such card — it bleeds past `.container`'s side padding via
+negative margins and fades through a gradient instead of a flat overlay, and
+was never perceived as gappy.
+
+Rather than patch series's numbers in isolation, unified both pages onto one
+recipe: same bleed technique (`left/right: -30px`), same gradient fade
+(`var(--bg) 0% → transparent 30% → var(--bg) 100%`, replacing series's flat
+overlay), and the same opacity/blur values now sourced from one place
+(`--backdrop-opacity: 0.18`, `--blur-backdrop: 2px` in `tokens-base.css` —
+previously `0.28`/`3px` for series and separate hardcoded `0.18`/`2px`
+literals for issue, i.e. already drifted apart despite the tokens' own
+comment claiming to be the shared recipe for both). Series keeps its own
+height (content-driven via `.series-hero`'s padding) rather than adopting
+issue's fixed 440px, since its content differs.
+
+**Known pre-existing gap not addressed this session:** the `-30px` bleed
+offset is hardcoded to match `.container`'s default 30px side padding: the
+`max-width:640px` breakpoint drops that padding to 10px, so both pages'
+backdrops technically over-bleed by 20px on narrow viewports. Pre-existing
+on the issue page since 2026-07-17; now also true of series since it matches
+the same recipe. Not fixed here — out of scope for a backdrop-consistency
+bug fix, flag if it becomes a real complaint.
+
 ### CSS theme-token file split: three files (base/dark/light), token-only pass, component split deferred
 
 **Decided:** 2026-07-20, CSS theme-token refactor session — executed

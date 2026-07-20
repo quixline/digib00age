@@ -4837,3 +4837,35 @@ a CSS `transition` mid-flight (frames aren't ticked), making a computed style lo
 stale even though the underlying value is already correct — confirmed by disabling
 the transition and by taking a screenshot (which forces a repaint) showing the
 correct colour. Not an app bug, just a quirk of testing via an inactive tab.
+
+## Session — 2026-07-20 — Series Detail hero backdrop "doesn't stretch" (bug fix)
+
+Second bug from Tez's post-CSS-split pass: the series page's cover backdrop
+"doesn't stretch like it should, leaving a gap top and sides." Confirmed via
+Claude-in-Chrome that the backdrop's sizing math itself was correct — no real
+box-model gap — by temporarily maxing its opacity and stripping the blur/overlay
+live, which showed the image filling its rounded card edge-to-edge with clean
+corners. The actual cause: `.series-hero-wrap` clipped the backdrop to a rounded,
+inset card (unlike the Issue Detail page's backdrop, which bleeds past
+`.container`'s padding with no card), on top of a flat 45% black overlay over an
+already-faint (0.28 opacity) image — so on covers with dark art near the crop
+line, it read as empty space bounded by a visible card edge. Asked Tez which
+existing treatment to match; he pointed at Issue Detail's.
+
+**Fix:** unified the two pages onto one backdrop recipe instead of just patching
+series's numbers — see `docs/DECISIONS.md` for the full rationale (both were
+supposed to share tokens already, but had quietly drifted: series still used the
+0.28/3px/45%-overlay tokens, issue had its own separate hardcoded 0.18/2px
+literals with no overlay at all). `--backdrop-opacity`/`--blur-backdrop` in
+`tokens-base.css` now carry the single shared value (0.18/2px); `--backdrop-overlay`
+removed (no longer used by either page); both `.series-backdrop-img` and
+`.issue-backdrop-img` reference the same two tokens. Series's backdrop now bleeds
+past `.container`'s 30px side padding the same way issue's does, and uses the same
+top/bottom gradient fade instead of a flat overlay. Series keeps its own
+content-driven height rather than adopting issue's fixed 440px.
+
+**Verification:** live-tested both pages after a hard reload (dev server doesn't
+send Cache-Control — BUG-032). Series backdrop now bleeds edge-to-edge with no
+visible card boundary; issue page's backdrop rendered pixel-identical to before
+(same opacity/blur values, now just referenced via the shared token instead of a
+literal). No console errors on either page.

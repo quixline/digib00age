@@ -926,7 +926,7 @@ A **list/grid toggle** applies on all browse surfaces (Home, Series, Singles, Al
 
 ### 20.6 Series Detail Page (`/series/{id}`)
 
-- **Full-cover backdrop:** the first-issue cover fills the header background at **20–30% opacity**, with slight blur, a dark semi-transparent tone overlay (so bright covers don't harm text legibility), and an extra gradual fade at the bottom. Layer order: image → blur → dark tone overlay → bottom gradient → text.
+- **Full-cover backdrop:** the first-issue cover fills the header background, bleeding past the page's side padding edge-to-edge (no rounded card / inset margin). **18% opacity**, slight blur, top+bottom gradient fade to `--bg` (not a flat dark overlay). Layer order: image → blur → gradient fade → text. Same recipe (`--backdrop-opacity`/`--blur-backdrop` tokens) and bleed technique as the Issue Detail page's backdrop (20.8 below) — unified 2026-07-20 after the two had quietly drifted apart; see `docs/DECISIONS.md`.
 - **Header contents:** back button, mark-all-read button, title. Header ≈15% of a 10" tablet screen.
 - **Below header:** Publisher · Year, then genre tags, then # Issues, then the issue list.
 - **Issue list renders as a 2-column card grid** (added 2026-07-17, matching

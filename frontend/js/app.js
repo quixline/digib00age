@@ -2078,6 +2078,7 @@ function buildSeriesHeader(data) {
     bdImg.alt = '';
     bdImg.setAttribute('aria-hidden', 'true');
     backdrop.appendChild(bdImg);
+    backdrop.appendChild(el('div', 'series-backdrop-fade'));
     wrapper.appendChild(backdrop);
   }
 

@@ -97,12 +97,12 @@
   --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.55);
   --shadow-toast: 0 4px 24px rgba(0, 0, 0, 0.5);
 
-  /* Backdrop recipe (v2.6 Item 1 Phase E) — series/issue detail cover
-     backdrops: image → blur → dark overlay → gradient fade. Same values
-     in both themes (Design's elevation.css doesn't override these for light). */
-  --blur-backdrop: 3px;
-  --backdrop-opacity: 0.28;
-  --backdrop-overlay: rgba(0, 0, 0, 0.45);
+  /* Backdrop recipe (v2.6 Item 1 Phase E, values unified 2026-07-20) —
+     series/issue detail cover backdrops: image → blur → gradient fade.
+     Same values in both themes (Design's elevation.css doesn't override
+     these for light). */
+  --blur-backdrop: 2px;
+  --backdrop-opacity: 0.18;
 
   /* Motion */
   --ease: cubic-bezier(0.4, 0, 0.2, 1);

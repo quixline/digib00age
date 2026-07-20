@@ -1429,59 +1429,44 @@ select.filter-select:focus,
 /* ── Series page header with backdrop (Section 20.6) ────────────────────── */
 .series-hero-wrap {
   position: relative;
-  overflow: hidden;
-  border-radius: var(--radius-lg);
   margin: 18px 0 24px;
   min-height: 180px;
 }
 
-/* Blurred backdrop image — v2.6 Item 1 Phase E: was hardcoded to
-   opacity:1.5 (clamps to 1.0 — full strength, not the subtle wash this
-   comment always said it should be) and hardcoded blur/overlay values
-   that happened to already match Design's tokens by coincidence — now
-   references them directly. */
+/* Bleeds past .container's 30px side padding (2026-07-20 — was clipped to
+   a rounded card, reading as a gap around the image; now the same
+   full-bleed recipe as .issue-backdrop below, so the two pages' cover
+   backdrops read consistently instead of series looking boxed-in). */
 .series-backdrop {
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: -30px;
+  right: -30px;
   z-index: 0;
   overflow: hidden;
+  pointer-events: none;
 }
 .series-backdrop-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center top;
+  object-position: center 20%;
   opacity: var(--backdrop-opacity);
   filter: blur(var(--blur-backdrop));
-  transform: scale(1.08); /* prevent blur edges */
   display: block;
 }
-
-/* Dark tone overlay */
-.series-hero-wrap::before {
-  content: '';
+/* Same recipe as .issue-backdrop-fade below, for the same reason. */
+.series-backdrop-fade {
   position: absolute;
   inset: 0;
-  background: var(--backdrop-overlay);
-  z-index: 1;
+  background: linear-gradient(to bottom, var(--bg) 0%, transparent 30%, var(--bg) 100%);
 }
 
-/* Bottom gradient fade */
-.series-hero-wrap::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60%;
-  background: linear-gradient(to bottom, transparent, var(--bg));
-  z-index: 2;
-}
-
-/* Content sits above all layers */
+/* Content sits above the backdrop */
 .series-hero {
   position: relative;
-  z-index: 3;
+  z-index: 1;
   padding: 18px 22px 22px;
 }
 
@@ -1769,12 +1754,13 @@ select.filter-select:focus,
 
 /* ── Issue detail page ───────────────────────────────────────────────────── */
 
-/* Faint cover backdrop (v2.6 Item 1 Phase E) — taller and much fainter
-   than the Series page's, fading via a gradient mask rather than a flat
-   overlay so it reads as barely-there texture, not a focal element.
-   Starts just below the always-visible "← Back" button (static markup in
-   issue.html, not built here) rather than behind it — a deliberate
-   simplification, not worth restructuring static markup for a few px. */
+/* Faint cover backdrop (v2.6 Item 1 Phase E) — same image/blur/fade recipe
+   as the Series page's (unified 2026-07-20, see .series-backdrop above),
+   just a fixed 440px height instead of tracking the hero content's own
+   height. Starts just below the always-visible "← Back" button (static
+   markup in issue.html, not built here) rather than behind it — a
+   deliberate simplification, not worth restructuring static markup for a
+   few px. */
 #issueContent { position: relative; }
 /* Full-bleed to the sidebar/viewport edges (2026-07-17): breaks out of
    .container's 30px side padding via negative offsets equal to that
@@ -1796,8 +1782,8 @@ select.filter-select:focus,
   height: 100%;
   object-fit: cover;
   object-position: center 20%;
-  opacity: 0.18;
-  filter: blur(2px);
+  opacity: var(--backdrop-opacity);
+  filter: blur(var(--blur-backdrop));
   display: block;
 }
 /* Shorter top fade (2026-07-17) than the old 0–8% solid / 55% transparent
