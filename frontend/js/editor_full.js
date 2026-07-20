@@ -1181,7 +1181,8 @@ async function resolveMultiXml(keepFilename) {
   document.getElementById('feMultiXmlOverlay').hidden = true;
 
   if (!res.ok) {
-    showError('Could not resolve the multiple XML files.');
+    const body = await res.json().catch(() => null);
+    showError(body?.detail || 'Could not resolve the multiple XML files.');
     return;
   }
   const data = await res.json();

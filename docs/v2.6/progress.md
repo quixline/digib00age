@@ -4869,3 +4869,42 @@ send Cache-Control — BUG-032). Series backdrop now bleeds edge-to-edge with no
 visible card boundary; issue page's backdrop rendered pixel-identical to before
 (same opacity/blur values, now just referenced via the shared token instead of a
 literal). No console errors on either page.
+
+## Session — 2026-07-20 — Full Editor "Could not resolve the multiple XML files" (bug fix)
+
+Tez reported this error picking the ComicVault-tagged XML out of a multi-XML
+prompt for `Luna (2021).cbz`. Traced it before touching any code: not a bug in
+the multi-XML picker itself — `L:\Comic Archives\L\Singles\Luna (2021)\Luna
+(2021).cbz` has a genuinely corrupted page (`Luna (2021) (Digital)
+(XRA-Empire)/126.jpg` fails CRC-32, confirmed read-only against the real file
+via `zipfile.testzip()` — the file is otherwise untouched by this session).
+
+**Root cause:** every editor archive rewrite (`write_comicinfo_to_cbz`,
+`keep_single_xml`) rebuilds via a full `extractall()`. That throws
+`zipfile.BadZipFile` on the corrupt entry, which the `resolve-xml` router
+caught generically and wrapped into a bare 500; the frontend then showed a
+fixed generic string regardless of what the backend actually said — no hint
+that the archive itself was the problem, and the same failure would hit any
+other rebuild path (Basic Editor save, Full Editor batch process) hitting a
+corrupt file, not just this one flow.
+
+**Fix:** added `_extract_archive_or_raise()` in `backend/editor/archive_io.py`
+— wraps `extractall()`, catching `archive_formats.BAD_ARCHIVE_EXCEPTIONS` and
+raising a message that names the actual problem and suggests the fix ("Archive
+is corrupted and can't be rebuilt (Bad CRC-32 for file '...'). Try manually
+repacking the file's pages into a new .cbz to fix it."). Both
+`write_comicinfo_to_cbz` and `keep_single_xml` now go through it, so Basic
+Editor saves and Full Editor batch processing get the same clearer message,
+not just the multi-XML resolve flow. `resolveMultiXml()` in
+`frontend/js/editor_full.js` now shows the response's actual `detail` instead
+of a hardcoded string.
+
+**Verification:** reran `keep_single_xml` against a scratch copy of the real
+file — raised the new message correctly. Reproduced live in the running Full
+Editor (added the real file via the working-set API, opened the "Multiple
+ComicInfo.xml Found" modal, clicked "Keep this one" on the ComicTagger/Comic
+Vine-tagged candidate) and confirmed the improved message renders in the error
+banner after Tez restarted the tray app to pick up the backend change. Working
+set cleared back to empty afterward; real archive on `L:\` never written to —
+`keep_single_xml` fails during extraction, before any write to the original
+file.

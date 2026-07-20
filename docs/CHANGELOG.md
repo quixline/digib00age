@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-20** — Full Editor's multi-XML resolve now surfaces the real error
+  when the underlying archive is corrupted (bad CRC on rebuild) instead of a
+  generic "could not resolve" message — same fix also improves error messages
+  for Basic Editor saves and Full Editor batch processing on corrupt archives.
 - **2026-07-20** — Series Detail page: cover backdrop no longer clipped to a
   rounded, inset card (was reading as a gap top/sides on dark covers) — now
   bleeds edge-to-edge and shares one opacity/blur/fade recipe with the Issue

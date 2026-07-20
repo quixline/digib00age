@@ -4,11 +4,19 @@
 
 ### Unprocessed
 
-- [ ]  do the css refractoring that's been planned
+- [x] Full Editor - loaded Luna (2021).cbz - 2 comicinfo.xml files, choose the one from ComicVault - Error "Could not resolve the multiple XML files." - Was a bad CRC-32, corrupted file - added extra detail to message
+
+- [ ] fix alignment on all buttons
+
+- [ ] add link to series pill when on issue page - clicking Series from the issue page takes user to the series page for that issue
+
+- [ ] spend time on the light theme and make changes
+
+- [ ] add a dimmed/solorized theme
+
+- [ ] re-visit the Serch ComicVine - Selection Modal and function
 
 - [ ] design review - mobile reader UI - get a closer consistency to the web ui, drop the outer glow around cards but keep white border, the inner style and genre/info - add pinch zoom when reading, - change the app icon to the new one
-
-- [ ] series bg needs to fill area
 
 - [ ] **Scanner speedups:** — thumbnails are 53% of the 21.5 min, per-file commits 18%. Batching commits is the easy win (~4 min). Both need scoping; nothing's been attempted.
 
@@ -28,7 +36,19 @@
 
 ## Processed
 
+_20-07-2026_
+
+
+
+* [x] issue page - read state border around cover no longer changes on read state change.
+
+* [x] series bg needs to fill area
+
+
+
 _19-07-2026_
+
+* [x] do the css refractoring that's been planned
 
 * [x] open web reader with page dimensions
 

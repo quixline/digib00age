@@ -80,6 +80,21 @@ def read_xml_and_page_count(archive_path: str) -> tuple[Optional[str], int]:
         return None, 0
 
 
+def _extract_archive_or_raise(archive, extract_dir: str) -> None:
+    """extractall(), turning a corrupt-entry failure (bad CRC, truncated RAR,
+    etc.) into a message that actually says so — every editor rewrite
+    (write_comicinfo_to_cbz, keep_single_xml) goes through this, and without
+    it a bare BadZipFile just surfaces as a generic 'could not save/resolve'
+    string with no hint that the archive itself is the problem."""
+    try:
+        archive.extractall(extract_dir)
+    except archive_formats.BAD_ARCHIVE_EXCEPTIONS as exc:
+        raise RuntimeError(
+            f"Archive is corrupted and can't be rebuilt ({exc}). Try manually "
+            "repacking the file's pages into a new .cbz to fix it."
+        ) from exc
+
+
 def flatten_and_zip(extract_dir: str, target_dir: str) -> str:
     """
     Flatten extract_dir (archive members may be nested; the rebuilt zip
@@ -160,7 +175,7 @@ def write_comicinfo_to_cbz(archive_path: str, xml_content: str) -> str:
     extract_dir = tempfile.mkdtemp(prefix="cv_editor_unpack_")
     try:
         with archive_formats._opener(archive_path) as archive:
-            archive.extractall(extract_dir)
+            _extract_archive_or_raise(archive, extract_dir)
 
         with open(
             os.path.join(extract_dir, "ComicInfo.xml"), "w", encoding="utf-8"
@@ -186,7 +201,7 @@ def keep_single_xml(archive_path: str, keep_filename: str) -> str:
     extract_dir = tempfile.mkdtemp(prefix="cv_editor_unpack_")
     try:
         with archive_formats._opener(archive_path) as archive:
-            archive.extractall(extract_dir)
+            _extract_archive_or_raise(archive, extract_dir)
 
         keep_path = os.path.join(extract_dir, keep_filename)
         if not os.path.isfile(keep_path):
