@@ -4908,3 +4908,81 @@ banner after Tez restarted the tray app to pick up the backend change. Working
 set cleared back to empty afterward; real archive on `L:\` never written to —
 `keep_single_xml` fails during extraction, before any write to the original
 file.
+
+## Session — 2026-07-21 — Cosmetic pill/pill-adjacent UI pass
+
+A run of small, cosmetic-threshold UI fixes (CLAUDE.md §5 — spacing/alignment/
+color only, no `DECISIONS.md` entries needed), plus one real live-update bug
+in the multi-select bulk toolbar. All CSS changes in `frontend/css/style.css`
+unless noted; verified live via Claude-in-Chrome against the running tray-app
+server, force-bypassing the browser's stylesheet/script cache each time since
+the dev server doesn't send strong cache-busting headers (BUG-032, noted in
+the prior session).
+
+**Off-center pill text.** `.card-genre-ribbon` (the DRAMA/HORROR/etc. ribbon on
+every cover card, grid + strip + compact tiers) had symmetric padding but an
+asymmetric `border-bottom: 2px` read-state indicator, pushing its text ~2px
+above true center — measured via `getBoundingClientRect()` text-vs-box gaps
+(4px top / 6px bottom), fixed by rebalancing padding (`4px 8px 2px`, compact
+tier `3px 6px 1px`) so the border is absorbed evenly (now 5px/5px). Full
+Editor's `.btn-primary` ("Clear Queue"/"Process All") was missing
+`justify-content: center` — invisible everywhere it sizes to its own content,
+but inside `.fe-queue-actions` those buttons get `flex: 1` (stretched to fill
+the row), so the text defaulted to the left edge once the button was wider
+than its label. `.genre-tag`/`.issue-num-badge`/`.format-badge`/`.bw-badge`
+also picked up `display: inline-flex; align-items: center` for robustness,
+though their original sub-pixel (~0.5px) offset was font-metric rounding, not
+a real bug.
+
+**Rating-control pill.** Issue Detail's star-rating row (`.rating-control`)
+had no background — added the same pill treatment as the "Mark as Read"/"Add
+to Favorites" buttons above it (`background: var(--surface-2)`, `border`,
+`border-radius: 20px`), then matched its height exactly to those buttons
+(37.5px, via `align-items: center` + an explicit `height` instead of guessing
+padding) rather than eyeballing it.
+
+**Black-on-blue text.** `.btn-primary`, `.format-badge`, and
+`.page-btn--current` all had literal `color: #000` over `background:
+var(--accent)` (blue in both themes) — illegible-ish black-on-blue. Switched
+all three to the existing `--on-accent` token (white in both themes, already
+used by the "Clear Filter" pill and others) instead of hardcoding a color.
+
+**Card/strip spacing.** `#coverGrid`/`#folderGrid` (grid view, Home/All/
+Singles/Series/Folder View) gap bumped 19px → 22px → 24px across two requests
+(+3px, then +5px more for consistency with the strip fix below). Home page's
+horizontal strips (`.continue-strip`, Recently Added/Random Unread/genre
+rows) gap bumped 19px → 24px (+5px) — this was the real fix for a visual bug
+Tez tracked down himself (resizing his browser revealed it was the next,
+mostly-off-screen card's own 1px border reading as a stray line right where
+the hover-reveal scroll arrow sits; more gap pushes that boundary into empty
+space instead of mid-card). `.cover-grid`'s own base rule (14px) turned out to
+be dead code for both grids (an ID-selector override always wins), left
+unchanged rather than edited pointlessly.
+
+**Bulk Flag for Review — real live-update bug, not cosmetic.**
+`applyFlagReviewToDom()` (`frontend/js/app.js`) toggled the
+`.is-flagged-review` class on selection-toolbar bulk-flag, matching the
+existing Mark Read/Favorite pattern — but the redesigned cover-card's flag
+icon is a real DOM node (`buildFlagBadge()`), only ever inserted at initial
+card-render time, so the class changed invisibly and the flag icon itself
+never appeared/disappeared until a full reload rebuilt the card. Fixed by
+having `applyFlagReviewToDom()` add/remove the actual `.card-flag-badge`
+element on the card's `.cover-img-wrap` alongside the class toggle. Series
+Detail's issue-row list (which only ever used the class, no badge element)
+was already correct. Verified both directions (flag/unflag) live via the
+selection toolbar on the "All" surface.
+
+**Format pill href (Issue Detail).** The format badge (e.g. "Series",
+"Graphic Novel") was a plain `<span>`; now an `<a>` with dual behaviour
+matching what Tez sketched from a real example ("Blueberry #1 of 3", format
+literally "Series", `<Count>` 3): if `format === 'Series'` and `count > 1`,
+links to `/series/{id}` (same `/series/{issue_id}`-resolves-via-any-member-
+issue route `buildIssueNav()`'s own series link already relies on); everything
+else (any other format, or a "Series"-format issue with no known siblings)
+falls back to the same fieldview filter the genre pills already use
+(`/?surface=fieldview&field=format&value=...` — confirmed `format` is already
+a backend-supported `/library` filter field alongside `genre`/`writer`/
+`artist`/etc., so no backend change was needed). Verified end-to-end against
+real library data: "Blueberry" #1 (format Series, count 3) → lands on its
+3-issue series page; "The Swede" (format Graphic Novel) → lands on the
+format-filtered fieldview.

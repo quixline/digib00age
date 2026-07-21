@@ -489,7 +489,19 @@ function _patchFavoritesInCaches(id, value) {
 function applyFlagReviewToDom(ids, value) {
   for (const id of ids) {
     const node = document.querySelector(`[data-issue-id="${id}"]`);
-    if (node) node.classList.toggle('is-flagged-review', value);
+    if (node) {
+      node.classList.toggle('is-flagged-review', value);
+      // The redesigned cover-card's flag icon is a real DOM node
+      // (buildFlagBadge()), only built into the card at initial render —
+      // unlike the class toggle above, it won't appear/disappear on its own,
+      // so mirror the class change onto the badge element itself.
+      const wrap = node.querySelector('.cover-img-wrap');
+      if (wrap) {
+        const existingBadge = wrap.querySelector('.card-flag-badge');
+        if (value && !existingBadge) wrap.appendChild(buildFlagBadge());
+        else if (!value && existingBadge) existingBadge.remove();
+      }
+    }
     _patchFlagReviewInCaches(id, value);
   }
   if (!value && activeFlaggedReview) renderBrowse();
@@ -2485,7 +2497,15 @@ function buildIssueDetail(data) {
     badges.appendChild(el('span', 'issue-num-badge', numText));
   }
   if (data.format) {
-    badges.appendChild(el('span', 'format-badge', data.format));
+    const formatBadge = el('a', 'format-badge', data.format);
+    // "Series"-format issues that are actually part of a multi-issue series
+    // go to that series' own page; everything else (single-issue formats,
+    // or a lone "Series"-format issue with no siblings) falls back to the
+    // same fieldview filter the genre tags below use.
+    formatBadge.href = (data.format === 'Series' && data.count > 1)
+      ? `/series/${data.id}`
+      : `/?surface=fieldview&field=format&value=${encodeURIComponent(data.format)}`;
+    badges.appendChild(formatBadge);
   }
   if (data.black_and_white) {
     badges.appendChild(el('span', 'bw-badge', 'B&W'));

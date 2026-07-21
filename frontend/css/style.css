@@ -252,7 +252,7 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
 .section-label--link:hover { color: var(--accent); text-decoration: underline; }
 .continue-strip {
   display: flex;
-  gap: 19px;
+  gap: 24px;
   overflow-x: auto;
   padding: 0 8px 10px;
   margin: 0 -8px;
@@ -1190,7 +1190,7 @@ select.filter-select:focus,
    border. Read-state colour now lives only in the 2px bottom border. */
 .card-genre-ribbon {
   display: inline-block;
-  padding: 3px 8px;
+  padding: 4px 8px 2px;
   border-radius: var(--radius-xs) 0 0 var(--radius-xs);
   background: rgba(0, 0, 0, 0.4);
   color: var(--rc-genre-text);
@@ -1223,7 +1223,7 @@ select.filter-select:focus,
    card width (the row-pairing above already keeps year+ribbon on one line
    at every size; this just trims padding/font so that line stays tidy). */
 :root[data-card-tier="compact"] .card-genre-ribbon {
-  padding: 2px 6px;
+  padding: 3px 6px 1px;
   font-size: 8px;
 }
 
@@ -1265,11 +1265,11 @@ select.filter-select:focus,
    :not(.list-view) guards list-view's own tighter 6px row gap
    (.cover-grid.list-view, style.css ~769) from being overridden — an ID
    selector would otherwise beat it regardless of source order. */
-#coverGrid:not(.list-view) { gap: 19px; }
+#coverGrid:not(.list-view) { gap: 24px; }
 /* Folder View extension (2026-07-15) — #folderGrid shares the .cover-grid
    class but has its own ID, so it didn't inherit the rule above; same
    treatment now that Folder View cards carry .cover-card--redesign too. */
-#folderGrid:not(.list-view) { gap: 19px; }
+#folderGrid:not(.list-view) { gap: 24px; }
 
 /* Home Strip extension (2026-07-15) — strip cards are flex-pinned to
    var(--card-min) (90-120px), narrower than the main grid's cards, which
@@ -1512,6 +1512,8 @@ select.filter-select:focus,
   margin-bottom: 14px;
 }
 .genre-tag {
+  display: inline-flex;
+  align-items: center;
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -1540,8 +1542,9 @@ select.filter-select:focus,
 .btn-primary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   background: var(--accent);
-  color: #000;
+  color: var(--on-accent);
   font-size: 13px;
   font-weight: 700;
   padding: 3px 30px;
@@ -1549,7 +1552,7 @@ select.filter-select:focus,
   transition: background 0.15s;
   white-space: nowrap;
 }
-.btn-primary:hover { background: var(--accent-dim); color: #000; }
+.btn-primary:hover { background: var(--accent-dim); color: var(--on-accent); }
 .btn-primary:disabled { opacity: 0.6; cursor: default; }
 
 /* ── Issue list ──────────────────────────────────────────────────────────── */
@@ -2038,9 +2041,14 @@ select.filter-select:focus,
    centered with blank margin either side at the old smaller star size. */
 .rating-control {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 4px 0;
+  height: 37.5px;
+  padding: 0 18px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
 }
 .rating-control .rating-star {
   font-size: 30px;
@@ -2107,6 +2115,8 @@ select.filter-select:focus,
   margin-bottom: 10px;
 }
 .issue-num-badge {
+  display: inline-flex;
+  align-items: center;
   background: var(--surface-3);
   color: var(--text-2);
   font-size: 12px;
@@ -2115,14 +2125,18 @@ select.filter-select:focus,
   border-radius: 12px;
 }
 .format-badge {
+  display: inline-flex;
+  align-items: center;
   background: var(--accent);
-  color: #000;
+  color: var(--on-accent);
   font-size: 11px;
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 12px;
 }
 .bw-badge {
+  display: inline-flex;
+  align-items: center;
   background: var(--surface-3);
   color: var(--text-2);
   font-size: 11px;
@@ -2834,7 +2848,7 @@ select.filter-select:focus,
 .page-btn:disabled { opacity: 0.35; cursor: default; }
 .page-btn--current {
   background: var(--accent);
-  color: #000;
+  color: var(--on-accent);
   font-weight: 600;
 }
 .page-btn--current:hover { background: var(--accent); }

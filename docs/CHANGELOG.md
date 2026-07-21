@@ -13,6 +13,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-21** — UI pass: fixed off-center pill text (card genre ribbon,
+  Full Editor queue buttons), added pill background to the issue-detail rating
+  stars, white-on-blue text on accent-colored pills, +3px/+5px card gaps on
+  library grids and home strips, bulk Flag for Review now updates the card's
+  flag badge live (no refresh), and the issue-detail Format pill now links to
+  the series page (multi-issue "Series" format) or the genre-style fieldview
+  filter (everything else).
 - **2026-07-20** — Full Editor's multi-XML resolve now surfaces the real error
   when the underlying archive is corrupted (bad CRC on rebuild) instead of a
   generic "could not resolve" message — same fix also improves error messages

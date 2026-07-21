@@ -4,6 +4,26 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Issue Detail Format pill link: fall back to the fieldview filter for a "Series"-format issue with no known siblings, rather than always linking to `/series/{id}`
+
+**Decided:** 2026-07-21, adding an href to the Format pill on `/issue/{id}`.
+
+**Why:** Tez specified two cases directly — format is literally "Series" *and*
+there's more than one issue → link to the series page; anything else → the
+same fieldview filter the Genre pills already use. He didn't say what should
+happen when format is "Series" but `Count` is 1 or absent (common — many
+scanned issues have no `<Count>` in their XML at all). Chose to fold that
+case into the fallback (fieldview filter on `format=Series`) rather than
+linking to `/series/{id}` regardless: without a known issue count there's no
+way to tell "genuinely a lone issue of an ongoing series" from "the XML just
+never recorded a count", and the fieldview filter is a safe default either
+way (it still surfaces every other "Series"-format issue, series page or
+not). If this reads wrong in practice — e.g. Tez expects any "Series"-format
+issue to always go to its series page — it's a one-line condition change
+(`data.format === 'Series'` alone, dropping the `count > 1` check).
+**Where:** `frontend/js/app.js` (issue-detail badge-row `format-badge`
+construction), `SPEC.md` §20.8.
+
 ### Series Detail hero: dropped the rounded-card backdrop, unified with Issue Detail's full-bleed recipe
 
 **Decided:** 2026-07-20, follow-up bug session after the CSS theme-token split.

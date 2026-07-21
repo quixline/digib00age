@@ -961,6 +961,14 @@ Replaces the credits/fields list in Section 11. **Trim to "subtract not add"** �
 
 **Confirmed:** Penciller = Artist; **Inker is dropped** (not "Artist"). Language is **added** to the issue-page display (it is already a DB column but was not being shown).
 
+**Format pill link (added 2026-07-21):** the Format badge (e.g. "Series",
+"Graphic Novel") links out, same as the Genre pills below it. If the format
+is literally "Series" **and** the issue's `Count` is more than 1 (a real
+multi-issue series), it links to that series' own page (`/series/{id}`).
+Otherwise — any other format value, or a "Series"-format issue with no known
+siblings — it falls back to the same fieldview filter the Genre pills use
+(`?surface=fieldview&field=format&value=...`).
+
 **Toolbar:** the fixed top menu (20.2) appears on all pages **except** `/issue/{id}`.
 
 ### 20.9 2000 AD Section (NEW) — REMOVED 2026-06-22, see CUSTOM_TABS_SPEC.md §9
