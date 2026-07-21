@@ -481,7 +481,7 @@ select.filter-select:focus,
   max-height: 320px;
   overflow-x: hidden;
   overflow-y: auto;
-  background: var(--surface-card);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-pop);
@@ -715,7 +715,7 @@ select.filter-select:focus,
 }
 
 .cover-card {
-  background: var(--surface);
+  background: var(--surface-card);
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--border);
@@ -809,7 +809,7 @@ select.filter-select:focus,
 /* Read-state card colours */
 
 /* Fully read — flat dark-green tint, same as before */
-.cover-card.state-read { background: color-mix(in srgb, var(--state-read) 50%, var(--surface)); }
+.cover-card.state-read { background: color-mix(in srgb, var(--state-read) 50%, var(--surface-card)); }
 
 /* Partially read — dark overlay base with green gradient rising from the
    bottom. Overlay colour is themed (--read-overlay: pure black in dark,
@@ -1296,7 +1296,7 @@ select.filter-select:focus,
 }
 
 .folder-card {
-  background: var(--surface);
+  background: var(--surface-card);
   border: none;
   box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.5);
   border-radius: var(--radius-lg);
@@ -1368,7 +1368,7 @@ select.filter-select:focus,
   align-items: center;
   gap: 12px;
   padding: 9px 10px;
-  background: var(--surface);
+  background: var(--surface-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   margin-bottom: 6px;
@@ -1589,7 +1589,7 @@ select.filter-select:focus,
   grid-template-columns: 115px 1fr auto;
   align-items: stretch;
   gap: 0;
-  background: var(--surface);
+  background: var(--surface-card);
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--border);
@@ -2371,7 +2371,7 @@ select.filter-select:focus,
    is ever reintroduced. Applies to every .stat-card (Library Stats row +
    all six Scan section cards) uniformly. */
 .stat-card {
-  background: var(--surface);
+  background: var(--surface-card);
   border: 1px solid transparent;
   border-radius: var(--radius-lg);
   padding: 18px 16px 14px;
@@ -2471,7 +2471,7 @@ select.filter-select:focus,
   min-height: 64px;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--surface-card);
   color: var(--text);
   font-size: 13px;
   font-weight: 700;
@@ -2504,7 +2504,7 @@ select.filter-select:focus,
 
 /* Admin card — general panel */
 .admin-card {
-  background: var(--surface);
+  background: var(--surface-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 18px 16px;
@@ -3150,7 +3150,7 @@ select.filter-select:focus,
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--surface-card);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -3663,7 +3663,7 @@ select.fe-genre-add:focus { outline: none; }
   align-items: center;
   height: 32px;
   padding: 0 16px;
-  background: var(--surface-card);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   flex-shrink: 0;

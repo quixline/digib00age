@@ -31,6 +31,10 @@
     --danger: #D24A42;
     --border: #DCE0E6;
 
+    /* Card background, split from --surface (see tokens-dark.css) — starts
+       identical to --surface so this split is a no-op until tuned. */
+    --surface-card: var(--surface);
+
     /* .state-read / .state-part-read card overlay (style.css) — dark
        neutral (matches dark theme's --surface-3) rather than pure black,
        so a "read" card reads as an intentional shaded chip on a light page
@@ -42,8 +46,8 @@
   }
 }
 :root[data-theme="light"] {
-  --bg: #F4F6F9;
-  --surface: #FFFFFF;
+  --bg: #d2edf5;
+  --surface: #b0d7e3;
   --surface-2: #EDF0F4;
   --surface-3: #E1E6EC;
   --accent: #0A5FFF;
@@ -58,6 +62,11 @@
   --blue: #0A5FFF;
   --danger: #D24A42;
   --border: #DCE0E6;
+
+  /* Card background — edit this independently of --surface to change
+     comic/folder/stat/admin card color without touching header/sidebar/
+     panels or dark theme. */
+  --surface-card: var(--surface);
 
   --read-overlay: #2A2E36;
   --read-overlay-text: #fff;

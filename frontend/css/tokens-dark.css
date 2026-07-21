@@ -23,6 +23,12 @@
   --danger: #E8625A;
   --border: #2C3038;
 
+  /* Card background (cover/folder/stat/admin cards, result/issue rows) —
+     split from --surface so light theme can tune cards independently of
+     general chrome. Dark stays an alias to --surface, unchanged from before
+     this split. */
+  --surface-card: var(--surface);
+
   /* .state-read / .state-part-read card overlay (style.css) — dark value
      unchanged from the pre-refactor literal. */
   --read-overlay: #000;

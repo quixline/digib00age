@@ -24,8 +24,10 @@
      Phase B–D CSS can be ported without a second translation pass. Defined
      here (not per-theme) because the aliases just reference other vars —
      cascade doesn't care which file defines an alias vs. what it points to,
-     as long as all three token files load before style.css uses them. */
-  --surface-card: var(--surface);
+     as long as all three token files load before style.css uses them.
+     --surface-card is NOT here — it's a real per-theme token (see
+     tokens-dark.css / tokens-light.css) so card backgrounds can be tuned
+     independently of --surface (headers/sidebar/panels) per theme. */
   --surface-raised: var(--surface-2);
   --surface-sunken: var(--surface-3);
   --text-primary: var(--text);

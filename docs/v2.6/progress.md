@@ -4986,3 +4986,45 @@ a backend-supported `/library` filter field alongside `genre`/`writer`/
 real library data: "Blueberry" #1 (format Series, count 3) → lands on its
 3-issue series page; "The Swede" (format Graphic Novel) → lands on the
 format-filtered fieldview.
+
+## Session — 2026-07-21 — Split card background from general area background (light theme)
+
+Tez wanted to tune the background colour of "cards" independently of general
+chrome (header/sidebar/panels) in light theme, without touching dark. Root
+cause: `--bg` and `--surface` were already correctly split per-theme across
+`tokens-dark.css`/`tokens-light.css` (cosmetic threshold, CLAUDE.md §5 — no
+`DECISIONS.md` entry needed), but cards and general areas both read the
+literal same token, `--surface` — there was only one bucket where there
+needed to be two. `--surface-card` already existed as a name but was a
+theme-neutral alias in `tokens-base.css` (`var(--surface)`), wired to
+`.fd-panel`/`.fe-panel` (dropdown/editor panels, not content cards) rather
+than to any actual card component.
+
+Promoted `--surface-card` to a real per-theme token, defined in
+`tokens-dark.css` (`var(--surface)`, keeping dark pixel-identical) and both
+light blocks in `tokens-light.css` (also starting as `var(--surface)`, so the
+split itself is a no-op until Tez tunes it). Repointed in `style.css`:
+`.cover-card` (+ its `.state-read` colour-mix), `.folder-card`, `.result-row`,
+`.issue-row`, `.stat-card`, `.admin-nav-card`, `.admin-card` now read
+`--surface-card`; `.fd-panel`, `.fe-panel`, and `.fe-statusbar` (missed in the
+first pass, caught during verification) moved back to plain `--surface` since
+they're chrome, not cards. `.fe-thumb` (editor page-thumbnail tiles) was
+already on `--surface-card` and stayed there.
+
+Verified live via Claude-in-Chrome against the running tray-app server:
+confirmed `--surface-card` resolves correctly on Series Detail issue rows and
+Admin stat/admin cards, confirmed header/sidebar stay on `--surface`, and
+confirmed dark theme's token values are untouched. Tez confirmed working as
+expected.
+
+**Scope note surfaced during verification, not addressed this session:** the
+actual comic-cover cards on the Home page and main library grid
+(`.cover-card--redesign`) don't use either token — they have a hardcoded
+fixed-dark gradient (`style.css` ~line 1038), documented as deliberate
+per SPEC.md §20.20 ("looks the same in light or dark ... like a physical
+card"). So this split only reaches Series Detail issue rows, Folder View
+tiles, search results, and Admin's stat/nav/content cards — not the Home
+page or Folder View's `.cover-card--redesign` covers themselves. Tez's stated
+plan: get the theme split working on the main library pages/elements first,
+then apply that same pattern outward to the rest — Home Page and Folder View
+cards are flagged to revisit as that next step, not forgotten.
