@@ -13,6 +13,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-21** — Added a Delete action to the multi-select bottom toolbar:
+  permanent DB+disk delete with a pill-button confirm modal (no DB-only tier).
+  → `progress.md` "Bulk Delete added to multi-select toolbar (2026-07-21)"
 - **2026-07-21** — Card backgrounds (`--surface-card`) split from general area
   backgrounds (`--surface`) as real per-theme tokens, so light theme can tune
   card colour independently of header/sidebar/panels without touching dark.

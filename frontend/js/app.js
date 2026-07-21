@@ -338,6 +338,11 @@ function ensureSelectionToolbar() {
   bar.appendChild(actions);
 
   const endWrap    = el('div', 'selection-toolbar-end');
+  const deleteBtn  = el('button', 'selection-action-btn selection-action-btn--danger', '🗑 Delete');
+  deleteBtn.id     = 'selDelete';
+  deleteBtn.type   = 'button';
+  deleteBtn.addEventListener('click', () => openDeleteConfirmModal());
+  endWrap.appendChild(deleteBtn);
   const deselectBtn = el('button', 'selection-action-btn', 'Deselect');
   deselectBtn.id     = 'selDeselect';
   deselectBtn.type   = 'button';
@@ -366,6 +371,60 @@ function hideSelectionToolbar() {
 function updateSelectionToolbar() {
   const countEl = document.getElementById('selectionCount');
   if (countEl) countEl.textContent = `${selectedIds.size} selected`;
+}
+
+// Permanent delete confirmation — the app's first custom-modal destructive
+// confirmation (Admin's Danger Zone actions all use native confirm()
+// instead). Built once and appended to document.body, same pattern as
+// ensureSelectionToolbar() above, since none of this page's templates carry
+// static .editor-overlay markup to hook into.
+function ensureDeleteConfirmModal() {
+  let overlay = document.getElementById('deleteConfirmOverlay');
+  if (overlay) return overlay;
+
+  overlay = el('div', 'editor-overlay');
+  overlay.id = 'deleteConfirmOverlay';
+  overlay.hidden = true;
+
+  const modal = el('div', 'editor-modal login-modal');
+
+  const header = el('div', 'editor-modal-header');
+  header.appendChild(el('span', 'editor-modal-title', 'Delete'));
+  const closeBtn = el('button', 'editor-close-btn', '×');
+  closeBtn.type = 'button';
+  closeBtn.addEventListener('click', () => { overlay.hidden = true; });
+  header.appendChild(closeBtn);
+  modal.appendChild(header);
+
+  const msg = el('p', 'editor-field',
+    'Are you sure you want to proceed, all data and the files will be deleted, no going back.');
+  modal.appendChild(msg);
+
+  const actions = el('div', 'editor-actions');
+  const cancelBtn = el('button', 'btn-status-toggle', 'Cancel');
+  cancelBtn.type = 'button';
+  cancelBtn.addEventListener('click', () => { overlay.hidden = true; });
+  const okBtn = el('button', 'btn-danger', 'OK');
+  okBtn.type = 'button';
+  okBtn.addEventListener('click', async () => {
+    overlay.hidden = true;
+    await runBulkDelete();
+  });
+  actions.append(cancelBtn, okBtn);
+  modal.appendChild(actions);
+
+  overlay.appendChild(modal);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.hidden = true;
+  });
+
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function openDeleteConfirmModal() {
+  if (selectedIds.size === 0) return;
+  ensureDeleteConfirmModal().hidden = false;
 }
 
 // Expands any selected series-aggregate entries into every issue id under
@@ -419,6 +478,34 @@ async function runBulkAction(path, extraBody, applyFn) {
     if (applyFn) applyFn(originalIds);
   } catch (_) {
     // Best-effort — a reload reflects true server state if this failed silently.
+  }
+}
+
+// Delete is destructive and permanent, so unlike runBulkAction() above this
+// doesn't swallow failures silently — a failed request must not be reported
+// to the user as a successful delete, and a partial on-disk failure
+// (file_errors) needs its own toast rather than a plain success message.
+async function runBulkDelete() {
+  const originalIds = Array.from(selectedIds.keys());
+  if (!originalIds.length) return;
+  try {
+    const issueIds = await resolveBulkIssueIds();
+    const res = await fetch(`${API}/progress/bulk/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ issue_ids: issueIds }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    removeIssuesFromDom(originalIds);
+    exitSelectionMode();
+    if (data.file_errors && data.file_errors.length) {
+      showLibraryToast(`Deleted, but ${data.file_errors.length} file(s) could not be removed from disk`, true);
+    } else {
+      showLibraryToast('Deleted');
+    }
+  } catch (_) {
+    showLibraryToast('Delete failed', true);
   }
 }
 
@@ -539,6 +626,24 @@ function _patchRatingInCaches(id, rating) {
   for (const pool of pools) {
     const lib = (pool || []).find(s => s.series_anchor_id === id);
     if (lib) lib.personal_rating = rating;
+  }
+}
+
+// Bulk delete — unlike the patch functions above, the card/row is gone for
+// good, so this removes the DOM node and cache entries outright rather than
+// flipping a field.
+function removeIssuesFromDom(ids) {
+  for (const id of ids) {
+    const node = document.querySelector(`[data-issue-id="${id}"]`);
+    if (node) node.remove();
+  }
+  const pools = [allLibrary, ...Object.values(tabLibraryCache),
+    ...Object.values(viewLibraryCache), ...Object.values(searchLibraryCache)];
+  for (const pool of pools) {
+    if (!pool) continue;
+    for (let i = pool.length - 1; i >= 0; i--) {
+      if (ids.includes(pool[i].series_anchor_id)) pool.splice(i, 1);
+    }
   }
 }
 

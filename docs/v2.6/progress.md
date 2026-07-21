@@ -5028,3 +5028,40 @@ page or Folder View's `.cover-card--redesign` covers themselves. Tez's stated
 plan: get the theme split working on the main library pages/elements first,
 then apply that same pattern outward to the rest — Home Page and Folder View
 cards are flagged to revisit as that next step, not forgotten.
+
+## Bulk Delete added to multi-select toolbar (2026-07-21)
+
+Added a **Delete** action to the bottom multi-select toolbar (Mark Read/Unread,
+Favorite, Flag for Review, Rate, now also Delete). Original request specified
+two delete tiers (DB-only vs. DB+disk); flagged during planning that a DB-only
+delete would be silently undone by the scanner's "flag missing, don't delete"
+rescan behaviour, so Tez collapsed it to one operation: permanent delete of
+the DB row (with cascades) and the comic file on disk together, no
+recycle-bin softening. See `DECISIONS.md` for the full rationale.
+
+Built:
+- `POST /progress/bulk/delete` (`backend/routers/progress.py`) — reuses the
+  existing `BulkIssueIds` schema, follows the file's established bulk-endpoint
+  pattern. Per-issue: unlinks the comic file (`missing_ok=True`, `OSError`
+  caught and reported via a `file_errors` list rather than blocking the row
+  delete), unlinks the cached thumbnail (`{id}.jpg`, best-effort), then
+  `db.delete(issue)` (ORM delete so `cascade="all, delete-orphan"` fires for
+  genres/progress/credits) and a single commit at the end.
+- `frontend/js/app.js`: new `🗑 Delete` button in `.selection-toolbar-end`
+  (danger-styled, `selection-action-btn--danger`), `ensureDeleteConfirmModal()`
+  (the app's first destructive action to use a real pill-button modal instead
+  of native `confirm()` — reuses the existing `.editor-overlay`/`.editor-modal
+  .login-modal`/`.editor-actions` skeleton), `runBulkDelete()` (POSTs, then on
+  success calls the new `removeIssuesFromDom()` and `exitSelectionMode()`; on
+  failure shows a "Delete failed" toast and leaves selection state untouched
+  rather than silently pretending success).
+- `frontend/css/style.css`: `.btn-danger` (red pill, sibling of `.btn-primary`)
+  and `.selection-action-btn--danger:hover`.
+
+Verified live via Claude-in-Chrome against the running tray-app server:
+toolbar button renders correctly, modal copy/styling matches spec exactly,
+Cancel correctly no-ops (no request fired, selection preserved), and — before
+the server had picked up the new route — clicking OK exercised the failure
+path cleanly (404 → "Delete failed" toast, card/selection untouched, no
+console errors). Tez then restarted the server and ran the actual delete
+himself against real data; confirmed fully working.

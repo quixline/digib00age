@@ -1064,6 +1064,21 @@ explicitly — don't assume multi-select should "just work" on a new card type w
 deciding what a bulk action means for it first (1:1 passthrough, or an expansion like
 Series cards', or genuinely excluded).
 
+**Delete** (added 2026-07-21) joins the toolbar alongside Read/Unread/Favorite/Flag/
+Rate, using the same `resolveBulkIssueIds()` series-expansion — deleting a selected
+series card deletes every issue in it. Unlike the other actions it isn't a toggle (no
+on/off state to read), so clicking it always opens a confirmation modal regardless of
+any other filter/selection state active at the time. Confirming performs a single,
+permanent operation: the DB row (with cascades) *and* the comic file on disk are both
+deleted — `POST /progress/bulk/delete` (`backend/routers/progress.py`). There is no
+DB-only tier; see `DECISIONS.md` for why that was dropped. The confirmation modal
+(`ensureDeleteConfirmModal()`, `app.js`) is the app's first destructive action to use a
+real pill-button modal rather than a native `confirm()` (cf. Admin's Danger Zone,
+`ADMIN_SPEC.md` §"Danger Zone"). Known limitation: deleting a selected series card
+only patches the DOM/caches of the tab the action was run from — a series-detail page
+for the same series open in another tab won't live-update, same pre-existing reach
+limit every other bulk action already has.
+
 Favorites has **no dedicated browse surface yet** — a favorite badge renders on
 eligible cards/rows when set, and the issue detail page shows favorite state + a 1–5
 star rating, but there's no "Favorites" tab. See `ROADMAP.md` for that as a deferred

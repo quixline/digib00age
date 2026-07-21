@@ -6,12 +6,14 @@ POST /api/progress/{issue_id}   Update reading status and current page
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
+from backend.config import THUMBNAIL_DIR
 from backend.database import get_db
 from backend.models import Issue, ReadingProgress
 
@@ -207,6 +209,30 @@ def bulk_set_rating(body: BulkRating, db: Session = Depends(get_db)):
         issue.personal_rating = body.rating
     db.commit()
     return {"updated": [i.id for i in issues]}
+
+
+@router.post("/progress/bulk/delete")
+def bulk_delete(body: BulkIssueIds, db: Session = Depends(get_db)):
+    """Permanently deletes the DB row AND the comic file on disk for each
+    given issue. A failed file unlink (locked file, permissions) does not
+    block the DB delete — it's reported back via file_errors instead."""
+    issues = db.query(Issue).filter(Issue.id.in_(body.issue_ids)).all()
+    deleted_ids = []
+    file_errors = []
+    for issue in issues:
+        try:
+            Path(issue.file_path).unlink(missing_ok=True)
+        except OSError as e:
+            file_errors.append({"issue_id": issue.id, "error": str(e)})
+        thumb = THUMBNAIL_DIR / f"{issue.id}.jpg"
+        try:
+            thumb.unlink(missing_ok=True)
+        except OSError:
+            pass
+        db.delete(issue)  # cascades to genres/progress/credits (models.py)
+        deleted_ids.append(issue.id)
+    db.commit()
+    return {"deleted": deleted_ids, "file_errors": file_errors}
 
 
 # ---------------------------------------------------------------------------

@@ -1554,6 +1554,20 @@ select.filter-select:focus,
 }
 .btn-primary:hover { background: var(--accent-dim); color: var(--on-accent); }
 .btn-primary:disabled { opacity: 0.6; cursor: default; }
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--danger);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 30px;
+  border-radius: 20px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.btn-danger:hover { background: color-mix(in srgb, var(--danger) 85%, black); }
 
 /* ── Issue list ──────────────────────────────────────────────────────────── */
 /* 2-column card grid, matching the List View redesign's .cover-grid.list-view
@@ -2790,6 +2804,7 @@ select.filter-select:focus,
   transition: all 0.15s;
 }
 .selection-action-btn:hover { border-color: var(--accent); color: var(--text); }
+.selection-action-btn--danger:hover { border-color: var(--danger); color: var(--danger); }
 .selection-rate {
   display: flex;
   align-items: center;

@@ -4,6 +4,31 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Bulk Delete: one permanent DB+disk operation, no DB-only tier; first custom-modal destructive confirmation
+
+**Decided:** 2026-07-21, adding a Delete action to the multi-select bottom toolbar.
+
+**Why:** The original request specified two delete tiers — DB-only ("remove from
+library, leave file untouched") and DB+disk (permanent). While scoping this, I
+flagged that DB-only wouldn't actually stick: the scanner's own invariant is "flag
+missing, don't delete" (`SPEC.md` §"Incremental rescan", lines ~239-245, ~673-674) —
+a file left untouched on disk gets silently re-imported as a new issue on the next
+library rescan, undoing the DB-only delete with no trace it ever happened. Tez agreed
+this wasn't worth shipping as a half-safeguard and collapsed the feature to a single
+operation: delete the DB row (with cascades) and the file on disk, together,
+permanently, no recycle-bin/send2trash softening. Also decided against gating this
+behind a "delete files?" checkbox pair (mutually-exclusive, grey-out-the-other UI)
+since there's only one operation now — just a single confirm modal.
+Separately: this is the app's first destructive action to use a real custom
+pill-button modal instead of the native `confirm()` every other Danger Zone action
+uses (`ADMIN_SPEC.md` §"Danger Zone", ~lines 490-494 — even ADMIN_SPEC's own wording
+once said "modal" and the actual build used `confirm()` anyway). Tez explicitly asked
+for a proper modal here, matching the rest of the app's UI language, so
+`ensureDeleteConfirmModal()` was built fresh rather than reusing that shortcut.
+**Where:** `backend/routers/progress.py` (`POST /progress/bulk/delete`),
+`frontend/js/app.js` (`ensureDeleteConfirmModal()`, `runBulkDelete()`,
+`removeIssuesFromDom()`), `SPEC.md` §20.15.
+
 ### Issue Detail Format pill link: fall back to the fieldview filter for a "Series"-format issue with no known siblings, rather than always linking to `/series/{id}`
 
 **Decided:** 2026-07-21, adding an href to the Format pill on `/issue/{id}`.
