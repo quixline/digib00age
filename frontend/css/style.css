@@ -2044,7 +2044,16 @@ select.filter-select:focus,
 }
 
 /* ── Back nav ────────────────────────────────────────────────────────────── */
+/* position/z-index: .back-nav has no background of its own — the flat
+   page-bg strip behind it was because .issue-backdrop (below) only starts
+   at #issueContent's top, right after this row, leaving a visible seam
+   where the row above shows plain --bg with no image. Keeping .back-nav in
+   normal flow (no offset) but lifting it into its own stacking context lets
+   .issue-backdrop extend up underneath it (see .issue-backdrop's negative
+   top below) without the extended image covering the Back button. */
 .back-nav {
+  position: relative;
+  z-index: 1;
   padding: 14px 0 0;
 }
 
@@ -2536,10 +2545,16 @@ select.filter-select:focus,
    sitting inset with visible margin either side. */
 .issue-backdrop {
   position: absolute;
-  top: 0;
+  /* Extends 40px above #issueContent's own top — .back-nav's rendered row
+     height — so the image reaches up behind the Back button instead of
+     stopping right below it and leaving a flat-bg seam there. height grows
+     by the same 40px so the bottom edge (and everything below it) doesn't
+     shift. .back-nav's own z-index (above) keeps the Back button legible
+     over the extended image. */
+  top: -40px;
   left: calc(var(--container-pad-x) * -1);
   right: calc(var(--container-pad-x) * -1);
-  height: 440px;
+  height: 480px;
   overflow: hidden;
   z-index: 0;
   pointer-events: none;

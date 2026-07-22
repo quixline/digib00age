@@ -5349,3 +5349,35 @@ tested on both the Series page's shorter strip and the Issue page's taller
 440px one. Still a single shared anchor point across the whole library, not
 a per-cover fit — flagged in `docs/SPEC.md` §20.6 as a best-effort default,
 not a guarantee for every cover's layout.
+
+## Session — 2026-07-22 — Issue page: close the flat-bg seam above the backdrop, behind the Back button
+
+Tez asked to make `.back-nav`'s background 100% transparent on the issue
+page. Checked computed style live via Claude-in-Chrome first — `.back-nav`
+already has no `background` rule and computes to `rgba(0, 0, 0, 0)`, so
+there was nothing to toggle there directly. The actual visible effect (a
+flat, solid-`--bg`-coloured strip behind the "← Back" button, reading as a
+seam above where the backdrop image starts) comes from `.issue-backdrop`
+only starting at `#issueContent`'s top — right below `.back-nav`, which
+sits in normal document flow above it. Nothing was ever painting a
+background there; that flat strip was just the plain page background
+showing through because the backdrop image doesn't reach that high.
+
+**Fix:** extended `.issue-backdrop` upward by `.back-nav`'s rendered row
+height (40px) — `top: -40px` (was `0`), `height: 480px` (was `440px`, so the
+bottom edge and everything below stay put) — so the image now reaches up
+behind the Back button instead of stopping below it. Gave `.back-nav`
+`position: relative; z-index: 1` (no offset, so its own layout doesn't move)
+so it keeps painting above the now-overlapping backdrop instead of getting
+covered by it. Same pattern the Series page's hero already uses (back
+button floats over its backdrop) — the Issue page just hadn't had it
+extended far enough up to cover its own back-nav row.
+
+**Verification:** live-tested via Claude-in-Chrome on `/issue/5462` in both
+light and dark theme — the flat strip is gone, the backdrop image now runs
+continuously from right under the site header down through the Back
+button's row, and the button stays fully legible (it has its own opaque
+fill, unaffected by what's behind it). No responsive `.back-nav` override
+exists at any breakpoint, so the fixed 40px/480px pairing holds at all
+widths — only the existing left/right bleed varies by breakpoint
+(`--container-pad-x`), untouched by this change.

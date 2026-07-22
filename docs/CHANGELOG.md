@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-22** — Issue page: closed the flat-bg seam between the Back
+  button row and the backdrop image below it (backdrop now extends up
+  behind the Back button instead of stopping just below it).
+  → `progress.md` "Issue page: close the flat-bg seam above the backdrop, behind the Back button (2026-07-22)"
 - **2026-07-22** — Series/Issue backdrop crop moved from `center 20%` to
   `center 10%` — 20% was cropping into cover title-logo text, sometimes
   hiding the top title line entirely.
