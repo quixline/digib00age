@@ -14,6 +14,7 @@ comictalker plugin split this module depends on (confirmed 2026-07-03).
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -105,6 +106,19 @@ class IssueResultDTO:
     cover_url: str
 
 
+def _issue_number_sort_key(number: str) -> tuple:
+    """Natural sort key for issue numbers ("2" < "11" < "11A" < "Annual 1").
+    ComicVine returns issues in whatever order its own API paginates them,
+    not numeric issue order (Select Issue modal, EDITOR_SPEC.md 9.6) -- and
+    the Select Series modal's Ok fast-path (9.6/9.7) assumes the first
+    result in this list is issue #1, so both display order and that
+    fast-path depend on sorting here rather than trusting API order."""
+    m = re.match(r"^(\d+(?:\.\d+)?)", (number or "").strip())
+    if m:
+        return (0, float(m.group(1)), number[m.end():].strip().lower())
+    return (1, 0.0, (number or "").strip().lower())
+
+
 def list_issues_for_series(series_id: str) -> list[IssueResultDTO]:
     talker = get_talker()
     issues: list[GenericMetadata] = talker.fetch_issues_in_series(series_id, on_rate_limit=None)
@@ -121,6 +135,7 @@ def list_issues_for_series(series_id: str) -> list[IssueResultDTO]:
                 cover_url=(md._cover_image.URL if md._cover_image else ""),
             )
         )
+    out.sort(key=lambda r: _issue_number_sort_key(r.number))
     return out
 
 

@@ -766,6 +766,13 @@ Search Online again. There is no separate re-search input inside the modal.
 `images/series-page-search-issue-list.PNG`):
 
 - Issue list: Issue # / Date / Title.
+- **Fixed 2026-07-23:** backend (`ct_bridge.list_issues_for_series`) natural-sorts
+  the list by issue number before returning it — ComicVine's own API paginates
+  issues in an unspecified order, not numeric order, which the modal used to
+  display as-is. Sort key parses a leading numeric portion for numeric
+  ordering ("2" < "11" < "11A"); non-numeric-prefixed values (e.g. "Annual 1")
+  sort after all numeric ones. This also fixes the Select Series modal's **Ok**
+  fast-path (§9.6 above), which assumes `results[0]` is issue #1.
 - Cover preview and description, both update on row selection.
 - Confirm applies the selected issue's metadata to the form.
 

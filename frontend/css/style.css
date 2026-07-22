@@ -3490,6 +3490,10 @@ select.filter-select:focus,
   max-width: 75%;
 }
 
+.admin-content-block[data-subitem="converter"] {
+  max-width: 900px;
+}
+
 /* Admin card — general panel */
 .admin-card {
   background: var(--surface-card);
@@ -3587,6 +3591,43 @@ select.filter-select:focus,
   margin-top: 22px;
   padding-top: 18px;
   border-top: 1px solid var(--border);
+}
+
+/* Converter: Archives & Images (§11.2/§11.3) side by side instead of stacked */
+.admin-subsection-row {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+}
+
+.admin-subsection-row > .admin-subsection {
+  flex: 1;
+  min-width: 0;
+  margin-top: 22px;
+  padding-top: 0;
+  border-top: none;
+}
+
+.admin-subsection-row > .admin-subsection + .admin-subsection {
+  padding-left: 28px;
+  border-left: 1px solid var(--border);
+}
+
+@media (max-width: 900px) {
+  .admin-subsection-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .admin-subsection-row > .admin-subsection {
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+
+  .admin-subsection-row > .admin-subsection + .admin-subsection {
+    padding-left: 0;
+    border-left: none;
+  }
 }
 
 .admin-subsection-heading {

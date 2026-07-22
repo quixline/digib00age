@@ -5485,3 +5485,53 @@ the cover's actual top-left corner flush against the frame's padding
 `0,0` instead of doing nothing/jumping. Dragged to the opposite corner
 and confirmed the bottom edge (page footer text) is likewise fully
 reachable.
+
+## Session — 2026-07-23 — Full Editor Select Issue list: fixed sort order
+
+Tez reported the Select Issue step of the Search Online / CT match modal
+(EDITOR_SPEC.md §9.6) listing issues out of numeric order (e.g. 11, 15, 19,
+20, 23, 27, 30, 60, 45, 77, 82, 98 — screenshot
+`comic-search-modal-issues-list-wrong-order.PNG`).
+
+**Cause:** `ct_bridge.list_issues_for_series()` returned issues in whatever
+order ComicVine's own API paginates them — not numeric issue order — and
+the frontend (`renderSoIssueTable` in `editor_full.js`) rendered that order
+as-is with no client-side sort.
+
+**Fix:** added `_issue_number_sort_key()` in `backend/ct_bridge.py` — a
+natural sort key that parses a leading numeric portion from the issue
+number string for numeric ordering, falling back to lexicographic order
+for non-numeric-prefixed values (e.g. "Annual 1"), which always sort after
+the numeric ones. Applied via `out.sort(...)` before `list_issues_for_series`
+returns. This also fixes a latent bug in the Select Series modal's **Ok**
+button fast-path (`soOkBtnClick`), which assumes `data.results[0]` is issue
+#1 — an assumption that only holds once the list is actually sorted.
+
+**Verification:** confirmed live by Tez against a real series search
+(server restarted first — `backend/main.py` runs `reload=False`, so the
+static-file frontend picks up changes immediately but backend Python
+changes need a manual restart). EDITOR_SPEC.md §9.6 updated to document
+the sort behaviour, since the Ok fast-path's correctness now depends on it.
+
+## Session — 2026-07-23 — Admin Converter page: Convert Archives / Convert Images side by side
+
+Cosmetic layout change (Section 5 threshold — position/sizing within an
+existing layout, no DECISIONS.md entry or build-queue item needed):
+Processing Tools → Converter: Archives & Images used to stack the Convert
+Archives and Convert Images subsections vertically; Tez asked for them side
+by side instead.
+
+**Change:** wrapped both `.admin-subsection` blocks in `frontend/admin.html`
+in a new `.admin-subsection-row` flex container. Widened the
+`.admin-content-block[data-subitem="converter"]` max-width to 900px (from
+the shared 640px cap) so the two columns have room, matching the existing
+`filename-editor` override pattern. The row's `.admin-subsection` children
+drop their usual top-border/margin-top divider (not needed side by side) in
+favour of a vertical border between them; a `max-width: 900px` media query
+reverts to the original stacked layout with the top-border divider restored,
+same breakpoint convention already used elsewhere in `style.css`.
+
+**Verification:** live-tested via Claude-in-Chrome against the real Admin
+page (`/admin` → Processing Tools → Converter: Archives & Images) — both
+sections render side by side with a vertical divider, full contents
+(including the progress bars) visible without overflow or clipping.
