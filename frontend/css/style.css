@@ -1810,9 +1810,12 @@ select.filter-select:focus,
    app.js) — reuses .card-rating-row's star styling but sits in .list-meta as
    its own last row, so it needs re-enabling against the blanket hide above.
    Two classes beats the single-class hide rule's specificity regardless of
-   source order. */
+   source order. align-self: flex-start overrides .list-meta's default flex
+   stretch — without it the row (and its light-theme pill background) stretch
+   to the full row width instead of hugging the stars. */
 .cover-grid.list-view .card-rating-row.list-rating-row {
   display: flex;
+  align-self: flex-start;
   margin-top: 3px;
 }
 
