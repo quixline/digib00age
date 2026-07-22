@@ -5535,3 +5535,20 @@ same breakpoint convention already used elsewhere in `style.css`.
 page (`/admin` → Processing Tools → Converter: Archives & Images) — both
 sections render side by side with a vertical divider, full contents
 (including the progress bars) visible without overflow or clipping.
+
+## Session — 2026-07-23 — Convert Images: Lossless checkbox and Quality slider on one row
+
+Follow-up cosmetic tweak to the same Converter page, same session: Tez asked
+for the Lossless checkbox and the Quality label/slider/value to sit on one
+row instead of stacked.
+
+**Change:** the shared `.pt-rename-batch-options` class (also used by the
+Filename Editor's "Batch Rename Options" block, which needs to stay
+stacked) couldn't be changed globally, so added a scoped modifier class
+`.pt-rename-batch-options--row` (`flex-direction: row; align-items: center;
+flex-wrap: wrap`) and applied it only to Convert Images' container in
+`admin.html`.
+
+**Verification:** live-tested via Claude-in-Chrome — Lossless and Quality
+now render on one row, matching the "From CBR / From PDF" row style already
+used in Convert Archives.

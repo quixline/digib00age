@@ -13,6 +13,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-23** — Convert Images: Lossless checkbox and Quality slider now
+  sit on one row. → `progress.md` "Convert Images: Lossless checkbox and
+  Quality slider on one row"
 - **2026-07-23** — Admin Converter page: Convert Archives / Convert Images
   sections now sit side by side instead of stacked. → `progress.md` "Admin
   Converter page: Convert Archives / Convert Images side by side"

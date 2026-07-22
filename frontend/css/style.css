@@ -5698,6 +5698,13 @@ select.fe-genre-add:focus {
   flex-wrap: wrap;
 }
 
+/* Convert Images (§11.3): Lossless checkbox and Quality slider on one row */
+.pt-rename-batch-options--row {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .pt-preview-heading {
   display: flex;
   align-items: baseline;
