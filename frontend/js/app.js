@@ -755,18 +755,26 @@ let seriesCurrentPage = 1;
 let seriesPageData    = null; // full /series/{id} response, cached for client-side paging
 
 // Card size control (library view) — percent labels are presets, not literal
-// scale factors; 25% matches the original fixed --card-min (120px) so the
-// default look is unchanged until a user picks a different size.
-const CARD_SIZE_PX = { '10': '90px', '25': '120px', '50': '160px', '75': '190px', '100': '220px' };
-let cardSize = localStorage.getItem('cv_card_size') || '25';
+// scale factors; 50% matches the original fixed --card-min (160px) so the
+// default look is unchanged until a user picks a different size. Options
+// below 30% were removed — fixed-pixel card overlays (flag/read badges,
+// select dot, progress pill) don't scale down and got squashed at 10-25%.
+const CARD_SIZE_PX = {
+  '30': '136px', '40': '148px', '50': '160px', '60': '172px',
+  '70': '184px', '80': '196px', '90': '208px', '100': '220px',
+};
+// A value saved before the 10%/25%/75% options were removed no longer maps
+// to anything — fall back to the default rather than leaving it unresolved.
+const _savedCardSize = localStorage.getItem('cv_card_size');
+let cardSize = CARD_SIZE_PX[_savedCardSize] ? _savedCardSize : '30';
 
 // Card sizes below this get the simplified (compact) redesigned-card bezel —
 // the full ornate frame doesn't read at the smaller presets. See style.css
 // [data-card-tier="compact"].
-const COMPACT_CARD_SIZES = new Set(['10', '25']);
+const COMPACT_CARD_SIZES = new Set(['30', '40']);
 
 function applyCardSize(size) {
-  document.documentElement.style.setProperty('--card-min', CARD_SIZE_PX[size] || CARD_SIZE_PX['25']);
+  document.documentElement.style.setProperty('--card-min', CARD_SIZE_PX[size] || CARD_SIZE_PX['30']);
   document.documentElement.setAttribute('data-card-tier', COMPACT_CARD_SIZES.has(size) ? 'compact' : 'detailed');
 }
 

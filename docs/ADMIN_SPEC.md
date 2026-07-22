@@ -199,20 +199,25 @@ These settings are saved to `config.json` and read by the scanner/tray app.
 
 Global page-size selector: **50 / 100 / 200 / 500**, default 50. Set-and-forget —
 persists via `localStorage`. Applies to all browse surfaces (Series, Singles, All,
-search results). Home page strips are exempt (fixed at 15 covers per strip).
+search results). Home page strips are exempt (fixed at 25 covers per strip).
 
 Per `SPEC.md` §20.13: the pagination control lives on the Admin page, not the browse
 toolbar; Admin can be opened in its own tab for a quick change.
 
-### Card Size *(built — v2.1 Tier 3, 2026-06-22; missing from this doc until backfilled 2026-06-27)*
+### Card Size *(built — v2.1 Tier 3, 2026-06-22; missing from this doc until backfilled 2026-06-27; range changed 2026-07-22)*
 
 A second control in the same Admin area, directly below "Results per page" (same
-`.admin-card--spaced` styling). Dropdown: **10% / 25% / 50% / 75% / 100%**
-(75% added — V2.3 Item 13, 2026-06-27), persisted via `localStorage`
-(`cv_card_size`), driving a `--card-min` CSS variable consumed by `.cover-grid`'s
-`grid-template-columns`. `CARD_SIZE_PX` (`frontend/js/app.js`) maps each preset to
-a pixel value — 75% sits at `190px`, the midpoint between 50%'s `160px` and 100%'s
-`220px`.
+`.admin-card--spaced` styling). Dropdown: **30% / 40% / 50% / 60% / 70% / 80% /
+90% / 100%** (10%/25%/75% removed and the floor raised to 30% — 2026-07-22;
+fixed-pixel card overlays added since v2.1 — flag badge, read badge, select dot,
+progress pill — don't scale down and were getting squashed at 120px/90px card
+widths), persisted via `localStorage` (`cv_card_size`), driving a `--card-min`
+CSS variable consumed by `.cover-grid`'s `grid-template-columns`.
+`CARD_SIZE_PX` (`frontend/js/app.js`) maps each preset to a pixel value, `136px`
+(30%) through `220px` (100%), preserving the existing `160px`/`220px` anchors at
+50%/100% so previously-saved settings at those values look unchanged. A saved
+`cv_card_size` value from a removed option (10/25/75) is treated as unset and
+falls back to 30%, on both the Admin dropdown and the live grid.
 
 **Scope is global** — every cover-grid site-wide resizes together: Series/Singles/
 All/search results, Home strips, and — at the time this was built — the 2000 AD

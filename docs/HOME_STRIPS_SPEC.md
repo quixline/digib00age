@@ -51,7 +51,7 @@ top when present" rule takes precedence over its stored `position` (see Section 
     (`CUSTOM_TABS_SPEC.md`), reused here rather than reimplemented.
 - No combining criteria within one strip (e.g. no "Genre=Horror AND Decade=1990s") —
   keep each strip to one filter dimension or one folder.
-- Each strip shows **15 covers max**, same as existing strips, with a clickable heading
+- Each strip shows **25 covers max**, same as existing strips, with a clickable heading
   → full listing page, same as existing strips.
 
 ---
@@ -130,14 +130,14 @@ resolve under a configured library root (warn, don't block, if outside).
   per SPEC.md's `backend/routers/home.py`; extend it). Returns all `visible` strips
   (non-Continue-Reading defaults always included) in `position` order, with Continue
   Reading rendered first whenever it has any matching issues (per 4.4), each resolved
-  to up to 15 covers:
+  to up to 25 covers:
   - `builtin` → existing per-strip logic, unchanged
-  - `field` + `random` → 15 random matching issues, computed fresh on every request
+  - `field` + `random` → 25 random matching issues, computed fresh on every request
     (cadence = every visit, confirmed — no session caching needed, this simplifies
     the implementation versus the existing once-per-session Random Genre behaviour)
-  - `field` + `fixed` → 15 matching issues ordered by `sort_field`, same every request
-  - `folder` + `random` → 15 random issues under that folder path, fresh every request
-  - `folder` + `fixed` → 15 issues under that folder path, ordered by `sort_field`
+  - `field` + `fixed` → 25 matching issues ordered by `sort_field`, same every request
+  - `folder` + `random` → 25 random issues under that folder path, fresh every request
+  - `folder` + `fixed` → 25 issues under that folder path, ordered by `sort_field`
 
 ### 4.4 Default-row visibility and pin behaviour
 

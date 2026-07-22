@@ -4,6 +4,26 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Card Size range shift: preserve 50%/100% pixel anchors, treat stale saved values as unset
+
+**Decided:** 2026-07-22, when replacing the 10/25/50/75/100% Card Size options
+with 30/40/50/60/70/80/90/100%.
+
+**Why:** Two calls that weren't dictated by the request itself. First, kept
+`CARD_SIZE_PX['50']` (160px) and `['100']` (220px) numerically unchanged and
+interpolated the new in-between steps at the same ~12px/10% rate the old map
+used between 50-100%, rather than picking a fresh scale — anyone with `50` or
+`100` already saved sees zero visual change. Second, a `cv_card_size` value
+saved before this change (`10`/`25`/`75`) no longer matches any option; rather
+than leave it passed through unchecked (which left the Admin dropdown
+rendering blank, caught in manual testing, even though the grid itself still
+rendered correctly via an existing internal fallback), both `app.js` and
+`admin.js` now validate the stored value against the live option set and fall
+back to `30` if it doesn't match.
+
+**Where:** `frontend/js/app.js` (`CARD_SIZE_PX`, `cardSize` init),
+`frontend/js/admin.js` (`initCardSize()`).
+
 ### Backdrop/cloud-field opacity-blur tokens: split per-theme after all, reversing the original "same in both themes" call
 
 **Decided:** 2026-07-22, splitting `--backdrop-opacity`/`--blur-backdrop`

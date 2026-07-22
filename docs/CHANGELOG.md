@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-22** — Card Size options raised to 30-100% (10% steps, replacing
+  10/25/75%) to stop badge/pill overlays squashing at small sizes; Home strips
+  now hold 25 cards instead of 15.
+  → `progress.md` "Card size floor raised to 30%; Home strips hold 25 cards (2026-07-22)"
 - **2026-07-22** — Light theme: split the Series/Issue Detail cover backdrop
   and the Home/Browse/Folder View cover "cloud field" background into their
   own light-theme tokens, tunable without touching dark.

@@ -5204,3 +5204,52 @@ source for these) is untouched.
 Verified live in both themes on the Issue Detail page and Home: light now
 shows a clearly visible backdrop/cloud field; dark is pixel-identical to
 before.
+
+## Card size floor raised to 30%; Home strips hold 25 cards (2026-07-22)
+
+Two related tweaks: fixed-pixel card overlays added since the redesign (flag
+badge, read badge, select dot, progress pill) don't scale down, and were
+getting squashed/overlapping at the two smallest Card Size options (10% =
+90px, 25% = 120px min-width). Tez asked to drop those and shift the whole
+range up to 10%-per-step: **30/40/50/60/70/80/90/100%**.
+
+`frontend/js/app.js`: `CARD_SIZE_PX` now maps `30`→`136px` through
+`100`→`220px`, keeping the existing `50`→`160px`/`100`→`220px` anchors
+unchanged so previously-saved settings at those values look identical.
+`COMPACT_CARD_SIZES` (the reduced-bezel tier) shifted to the new smallest two
+options (`30`/`40`), same relative position as before. `frontend/admin.html`'s
+`cardSizeSelect` dropdown and `frontend/js/admin.js`'s `initCardSize()`
+updated to match.
+
+Caught in manual testing: a `cv_card_size` value saved before this change
+(e.g. `25`) no longer matches any option, so the Admin dropdown rendered
+blank instead of a valid selection (the underlying grid still rendered
+correctly via `app.js`'s internal `CARD_SIZE_PX[size] || CARD_SIZE_PX['30']`
+fallback — only the dropdown's displayed value was wrong). Fixed by
+validating the stored value against the live option set in both `app.js` and
+`admin.js`, falling back to `30` when it doesn't match, rather than passing
+through a stale value unchecked.
+
+Home strips share the same `--card-min` mechanism as the main grid (confirmed
+via `frontend/index.html` — Home is just the strips container, no separate
+grid), so the size-range change applies there automatically with no extra
+code.
+
+Separately, bumped `STRIP_SIZE` in `backend/routers/home.py` from 15 to 25 —
+a single constant driving every strip type (builtin SQL-`LIMIT` strips and
+admin-added field/folder strips, which already over-fetch and slice in
+Python). No frontend change needed; the strip renderer draws whatever length
+array the API returns and the existing arrow-scroll already handles more
+cards.
+
+Verified live: `GET /api/home/strips` now returns up to 25 items per strip
+(confirmed Recently Added and Random Unread both hit the new cap after a
+backend restart — Tez restarted the tray-app-owned server since there's no
+backend hot-reload). Admin → Card Size dropdown shows only the eight new
+options and correctly falls back to 30% instead of rendering blank. At 30%,
+flag/read badges and the progress pill no longer crowd each other on the
+Series/Singles/All grid. No console errors on reload.
+
+Narrow-viewport `@media` overrides in `style.css` (90px/100px at ≤400px/
+≤640px, independent of this setting) were explicitly left untouched — out of
+scope for this change, flagged as a possible follow-up.

@@ -18,7 +18,7 @@ from backend.path_utils import cover_url, is_under, matches_field
 
 router = APIRouter(tags=["home"])
 
-STRIP_SIZE = 15
+STRIP_SIZE = 25
 
 
 @router.get("/ping")

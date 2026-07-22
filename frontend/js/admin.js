@@ -795,7 +795,11 @@ function initPagination() {
 // ── Card size ─────────────────────────────────────────────────────────────────
 function initCardSize() {
   const sel   = document.getElementById('cardSizeSelect');
-  const saved = localStorage.getItem('cv_card_size') || '25';
+  const stored = localStorage.getItem('cv_card_size');
+  // A value saved before the 10%/25%/75% options were removed won't match
+  // any <option> here — fall back to the default rather than leaving the
+  // select blank.
+  const saved = sel.querySelector(`option[value="${stored}"]`) ? stored : '30';
   sel.value   = saved;
   sel.addEventListener('change', () => {
     localStorage.setItem('cv_card_size', sel.value);
