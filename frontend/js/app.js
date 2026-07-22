@@ -50,8 +50,19 @@ function buildGenreRibbon(genres) {
 // still uses for Folder View/Series rows.
 function buildFlagBadge() {
   const badge = el('span', 'card-flag-badge');
-  badge.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>';
+  badge.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15" fill="none"/></svg>';
   return badge;
+}
+
+// Read-state badge (redesigned CoverCard only) — always-visible dot, top-right
+// corner (the corner the old top-right unread-count pill used to own before
+// the redesign dropped it — see buildCoverCard). Reuses the select-dot's
+// circle shape/size for a consistent card vocabulary, filled with the same
+// green used elsewhere for the read state (progress bar, genre-ribbon
+// border). Grid, list view, and Home strips all share this markup — only
+// list-view's own CSS decides whether the badge is visible there.
+function buildReadBadge() {
+  return el('span', 'card-read-badge');
 }
 
 function debounce(fn, ms) {
@@ -517,6 +528,17 @@ function applyReadStateToDom(ids, status) {
     if (node) {
       node.classList.remove('state-read', 'state-reading', 'state-unread', 'state-part-read');
       node.classList.add(status === 'read' ? 'state-read' : 'state-unread');
+      // The redesigned cover-card's read badge is a real DOM node
+      // (buildReadBadge()), only built into the card at initial render —
+      // unlike the class toggle above, it won't appear/disappear on its own,
+      // so mirror the class change onto the badge element itself (same
+      // pattern as applyFlagReviewToDom's card-flag-badge).
+      const wrap = node.querySelector('.cover-img-wrap');
+      if (wrap) {
+        const existingBadge = wrap.querySelector('.card-read-badge');
+        if (status === 'read' && !existingBadge) wrap.appendChild(buildReadBadge());
+        else if (status !== 'read' && existingBadge) existingBadge.remove();
+      }
     }
     // Singles cards in the browse grid: series_anchor_id IS the issue id —
     // patch the cached aggregate counts so the status-pill filter stays correct.
@@ -1208,6 +1230,7 @@ function buildStripCard(item) {
   img.onerror = () => { wrap.innerHTML = '<div class="cover-placeholder">📖</div>'; };
   wrap.appendChild(img);
   if (item.flagged_for_review) wrap.appendChild(buildFlagBadge());
+  if (state === 'state-read') wrap.appendChild(buildReadBadge());
 
   // Part-read/read progress pill — same math as before, new track/fill visual.
   if ((state === 'state-part-read' || state === 'state-read') && item.page_count > 0) {
@@ -1698,8 +1721,9 @@ function buildCoverCard(s) {
   wrap.appendChild(img);
   wrap.appendChild(buildSelectDot(s.series_anchor_id, selectKind));
   if (s.flagged_for_review) wrap.appendChild(buildFlagBadge());
+  if (state === 'state-read') wrap.appendChild(buildReadBadge());
 
-  // Unread-count pill dropped — redesign has no top-right cover badge.
+  // Unread-count pill dropped in favour of the read-state badge above.
 
   // Part-read/read progress bar — a floating pill overlay inset from the
   // cover edges (clear of the select-dot/flag-badge corners below), not a
@@ -2076,6 +2100,7 @@ function buildFolderFileCard(issue) {
   wrap.appendChild(img);
   wrap.appendChild(buildSelectDot(issue.id));
   if (issue.flagged_for_review) wrap.appendChild(buildFlagBadge());
+  if (state === 'state-read') wrap.appendChild(buildReadBadge());
 
   if ((state === 'state-part-read' || state === 'state-read') && issue.page_count > 0) {
     const pct = Math.min(100, Math.round((issue.current_page / issue.page_count) * 100));
@@ -2528,6 +2553,11 @@ function buildIssueDetail(data) {
   favoriteBadge.hidden = !data.favorites;
   frameInner.appendChild(favoriteBadge);
 
+  const flagBadge = el('span', 'cc-flag-badge');
+  flagBadge.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15" fill="none"/></svg>';
+  flagBadge.hidden = !data.flagged_for_review;
+  frameInner.appendChild(flagBadge);
+
   frameMat.appendChild(frameInner);
   frameOuter.appendChild(frameMat);
   coverLink.appendChild(frameOuter);
@@ -2584,7 +2614,7 @@ function buildIssueDetail(data) {
   editXmlBtn.type = 'button';
   editXmlBtn.onclick = () => openEditorModal(data.id, () => initIssue());
   secondaryRow.appendChild(editXmlBtn);
-  secondaryRow.appendChild(buildFlagReviewToggle(data));
+  secondaryRow.appendChild(buildFlagReviewToggle(data, flagBadge));
   actions.appendChild(secondaryRow);
 
   coverCol.appendChild(actions);
@@ -2770,12 +2800,13 @@ function buildFavoriteToggle(data, badgeEl) {
 // Single-issue toggle for /issue/{id} — mirrors buildStatusToggle's style
 // (dedicated single-issue endpoints), not buildFavoriteToggle's
 // bulk-with-one-id style; both patterns already coexist on this page.
-function buildFlagReviewToggle(data) {
+function buildFlagReviewToggle(data, badgeEl) {
   const btn = el('button', 'btn-flag-review-toggle');
 
   function sync() {
-    btn.textContent = data.flagged_for_review ? 'Flagged for Review' : 'Flag for Review';
+    btn.textContent = data.flagged_for_review ? 'Flagged' : 'Flag for Review';
     btn.classList.toggle('is-flagged-review', !!data.flagged_for_review);
+    if (badgeEl) badgeEl.hidden = !data.flagged_for_review;
   }
   sync();
 

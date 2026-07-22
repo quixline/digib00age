@@ -304,8 +304,8 @@ function renderScanSection(scanState, missingCount, logStatus) {
     <div class="stat-label">Missing Records</div>
     <div class="stat-value stat-value--md" id="missingCountVal">${mc.toLocaleString()}</div>
     <button class="btn-admin-action" id="cleanupBtn"${mc === 0 ? ' disabled' : ''}>Clean Up</button>
-    <button class="btn-admin-action log-btn" data-log="missing">Logs</button>
     <div class="scan-status-text" id="cleanupResult"></div>
+    <button class="btn-admin-action log-btn" data-log="missing">Logs</button>
   `;
   grid.appendChild(missingCard);
   document.getElementById('cleanupBtn').addEventListener('click', doCleanup);

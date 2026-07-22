@@ -4,6 +4,29 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Backdrop/cloud-field opacity-blur tokens: split per-theme after all, reversing the original "same in both themes" call
+
+**Decided:** 2026-07-22, splitting `--backdrop-opacity`/`--blur-backdrop`
+(Series/Issue Detail cover backdrop) and `--pagebg-blob-opacity`/
+`--pagebg-blur` (Home/Browse/Folder View cover cloud field) into light-theme-
+only overrides in `tokens-light.css`.
+
+**Why:** Both token pairs lived only in `tokens-base.css`, with an explicit
+comment recording a deliberate original choice: "Same values in both themes
+(Design's elevation.css doesn't override these for light)." That held up
+fine when the values were only ever tuned against dark. Tez reported the
+same low-opacity/light-blur values that read well against dark's dark
+background were close to invisible against light theme's paler `--bg`/
+`--surface`, and wanted independent control per theme rather than one
+compromise value. Followed the existing `tokens-light.css` override pattern
+(explicit `:root[data-theme="light"]` block + matching `@media
+(prefers-color-scheme: light)` block) instead of inventing a new mechanism.
+Dark theme keeps reading the original `tokens-base.css` values untouched.
+
+**Where:** `frontend/css/tokens-light.css`, `frontend/css/tokens-base.css`
+(comment updated to point at the light override rather than claiming both
+themes share the value).
+
 ### Bulk Delete: one permanent DB+disk operation, no DB-only tier; first custom-modal destructive confirmation
 
 **Decided:** 2026-07-21, adding a Delete action to the multi-select bottom toolbar.

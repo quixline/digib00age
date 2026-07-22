@@ -926,7 +926,7 @@ A **list/grid toggle** applies on all browse surfaces (Home, Series, Singles, Al
 
 ### 20.6 Series Detail Page (`/series/{id}`)
 
-- **Full-cover backdrop:** the first-issue cover fills the header background, bleeding past the page's side padding edge-to-edge (no rounded card / inset margin). **18% opacity**, slight blur, top+bottom gradient fade to `--bg` (not a flat dark overlay). Layer order: image → blur → gradient fade → text. Same recipe (`--backdrop-opacity`/`--blur-backdrop` tokens) and bleed technique as the Issue Detail page's backdrop (20.8 below) — unified 2026-07-20 after the two had quietly drifted apart; see `docs/DECISIONS.md`.
+- **Full-cover backdrop:** the first-issue cover fills the header background, bleeding past the page's side padding edge-to-edge (no rounded card / inset margin). **18% opacity / 2px blur in dark theme, 50% opacity / 3px blur in light theme** (split per-theme 2026-07-22 — the dark-tuned value read as near-invisible against light's paler `--bg`/`--surface`; see `docs/DECISIONS.md`), slight blur, top+bottom gradient fade to `--bg` (not a flat dark overlay). Layer order: image → blur → gradient fade → text. Same recipe (`--backdrop-opacity`/`--blur-backdrop` tokens, dark theme's values live in `tokens-base.css`, light theme's override in `tokens-light.css`) and bleed technique as the Issue Detail page's backdrop (20.8 below) — unified 2026-07-20 after the two had quietly drifted apart; see `docs/DECISIONS.md`.
 - **Header contents:** back button, mark-all-read button, title. Header ≈15% of a 10" tablet screen.
 - **Below header:** Publisher · Year, then genre tags, then # Issues, then the issue list.
 - **Issue list renders as a 2-column card grid** (added 2026-07-17, matching
@@ -1193,13 +1193,17 @@ these surfaces.
     ±10% random jitter, and scaled via `--s` (0.9–1.4× random) — so blobs
     reliably spread across the whole area (zoned randomness) while still
     varying every surface-entry.
-  - `opacity: var(--pagebg-blob-opacity)` (0.32) so overlapping blobs build
-    up into a denser field where they meet; `filter: blur(var(--pagebg-blur))
-    saturate(0.9)` (30px blur) — colour is let through more than the
-    original (`saturate(0.6) sepia(0.15)` grey-mute dropped) since the
-    point of the effect is "colourful blurred clouds," confirmed with Tez.
+  - `opacity: var(--pagebg-blob-opacity)` so overlapping blobs build up into
+    a denser field where they meet; `filter: blur(var(--pagebg-blur))
+    saturate(0.9)` — colour is let through more than the original
+    (`saturate(0.6) sepia(0.15)` grey-mute dropped) since the point of the
+    effect is "colourful blurred clouds," confirmed with Tez.
   - `--pagebg-blur` and `--pagebg-blob-opacity` are `:root` tokens, tunable
-    without touching the rule itself.
+    without touching the rule itself. **Split per-theme 2026-07-22**
+    (`docs/DECISIONS.md`): dark theme keeps the original `0.32` opacity /
+    `30px` blur (`tokens-base.css`); light theme overrides to `0.5` opacity /
+    `32px` blur (`tokens-light.css`) — the dark-tuned values read as almost
+    invisible against light's paler `--bg`/`--surface`.
 - **Why real covers, not a generated gradient:** considered during this
   rework — see `DECISIONS.md`.
 - **Where:** `frontend/index.html` (`.page-bg` markup, now an empty
@@ -1284,10 +1288,13 @@ colour shows on these cards.
 0.6)` circle, no border — supersedes §20.17/§20.18's black-border/gold-ring
 favourite treatment for these three surfaces. No separate card-level ring.
 
-**Flag-for-review badge:** a real inline SVG flag icon (same stroke style as the
-sidebar nav — `stroke="currentColor"`, stroke-width 2, rounded caps/joins),
-replacing the old emoji tag. Circle background matches the favourite badge. No red
-border on flagged cards.
+**Flag-for-review badge:** a real inline SVG flag icon, replacing the old emoji tag.
+Solid `var(--danger)` (red) fill (changed 2026-07-22 from a `stroke="currentColor"`
+outline-only glyph) on a `rgba(255, 255, 255, 0.6)` circle — same circle opacity as
+the favourite badge, though coloured differently (red icon vs. the favourite
+badge's black heart). The Issue Detail page's own cover overlay (`.cc-flag-badge`,
+bottom-right — see §20.8) uses the same red-fill SVG and the same 0.6 circle
+opacity, unified with this one 2026-07-22. No red border on flagged cards.
 
 **Progress bar:** an inset floating pill (`.card-progress-track`/`.card-progress-
 fill`), not flush with the cover edge. Singles/individual-issue cards use the

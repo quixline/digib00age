@@ -62,7 +62,9 @@
     to :root, so it silently resolved to nothing and broke sticky entirely. */
   --sidebar-w: 180px; /* fallback before sizeSidebarToContent() (app.js)
     measures the real longest-label width on load and overwrites this. */
-  --pagebg-blur: 30px;         /* .page-bg-blob cloud blur — tune to taste */
+  --pagebg-blur: 30px;         /* .page-bg-blob cloud blur — dark theme's value;
+    light theme overrides both these in tokens-light.css (2026-07-22 — was
+    near-invisible against light's paler --bg/--surface at this value) */
   --pagebg-blob-opacity: 0.32; /* per-blob opacity; overlaps build up denser */
   --space-12: 48px;
   --space-16: 64px;
@@ -101,8 +103,9 @@
 
   /* Backdrop recipe (v2.6 Item 1 Phase E, values unified 2026-07-20) —
      series/issue detail cover backdrops: image → blur → gradient fade.
-     Same values in both themes (Design's elevation.css doesn't override
-     these for light). */
+     Dark theme's values — light theme overrides both in tokens-light.css
+     (2026-07-22 — this opacity read as near-invisible against light's
+     paler --bg/--surface). */
   --blur-backdrop: 2px;
   --backdrop-opacity: 0.18;
 

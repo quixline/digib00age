@@ -7,9 +7,19 @@
    --border) live in tokens-dark.css / tokens-light.css. */
 
 /* ── Reset ───────────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 /* Ensure hidden attribute wins over any author display values */
-[hidden] { display: none !important; }
+[hidden] {
+  display: none !important;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -18,10 +28,28 @@ body {
   line-height: 1.5;
   min-height: 100vh;
 }
-a { color: inherit; text-decoration: none; }
-button { cursor: pointer; font: inherit; border: none; background: none; color: inherit; }
-img { display: block; max-width: 100%; }
-ul { list-style: none; }
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+  font: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+ul {
+  list-style: none;
+}
 
 /* ── Site-wide scrollbars (2026-07-15) ───────────────────────────────────────
    Promotes the filter-dropdown (.fd-panel) scrollbar treatment to every scroll
@@ -34,10 +62,24 @@ ul { list-style: none; }
   scrollbar-width: thin;
   scrollbar-color: var(--surface-3) transparent;
 }
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: var(--radius-pill); }
-::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 /* Full-width, site-wide (INBOX 2026-07-15): dropped the 1440px cap so
@@ -68,8 +110,17 @@ ul { list-style: none; }
    and with equal z-index siblings paint in DOM order, so #browseView/
    #folderView (later in index.html) would otherwise paint over the menu bar
    regardless of .fd-panel's own z-index. */
-#homeView, #browseView, #folderView { position: relative; z-index: 1; }
-.menu-bar { position: relative; z-index: 2; }
+#homeView,
+#browseView,
+#folderView {
+  position: relative;
+  z-index: 1;
+}
+
+.menu-bar {
+  position: relative;
+  z-index: 2;
+}
 
 .page-bg {
   position: fixed;
@@ -82,7 +133,11 @@ ul { list-style: none; }
   pointer-events: none;
   transition: left var(--dur) var(--ease);
 }
-body.sidebar-collapsed .page-bg { left: 60px; }
+
+body.sidebar-collapsed .page-bg {
+  left: 60px;
+}
+
 /* Multi-cover "cloud field" (2026-07-15): app.js appends up to 4 of these,
    one per shuffled quadrant anchor, each positioned via inline --x/--y/--s
    custom props. A soft circular mask turns each cover into a cloud rather
@@ -101,7 +156,7 @@ body.sidebar-collapsed .page-bg { left: 60px; }
   opacity: var(--pagebg-blob-opacity);
   filter: blur(var(--pagebg-blur)) saturate(0.9);
   -webkit-mask-image: radial-gradient(circle at center, #000 0%, transparent 68%);
-          mask-image: radial-gradient(circle at center, #000 0%, transparent 68%);
+  mask-image: radial-gradient(circle at center, #000 0%, transparent 68%);
   display: block;
 }
 
@@ -125,6 +180,7 @@ body.sidebar-collapsed .page-bg { left: 60px; }
   display: flex;
   align-items: center;
 }
+
 .site-header .inner {
   flex: 1 1 0%;
   min-width: 0;
@@ -137,19 +193,39 @@ body.sidebar-collapsed .page-bg { left: 60px; }
      centred bar. 30px sides aligns the logo/settings with the content gutter. */
   padding: 0 30px;
 }
+
 .site-logo {
   display: flex;
   align-items: center;
   white-space: nowrap;
   flex-shrink: 0;
 }
-.site-logo-img { height: 26px; display: block; }
-.site-logo-img--light { display: none; }
-:root[data-theme="light"] .site-logo-img--dark { display: none; }
-:root[data-theme="light"] .site-logo-img--light { display: block; }
+
+.site-logo-img {
+  height: 26px;
+  display: block;
+}
+
+.site-logo-img--light {
+  display: none;
+}
+
+:root[data-theme="light"] .site-logo-img--dark {
+  display: none;
+}
+
+:root[data-theme="light"] .site-logo-img--light {
+  display: block;
+}
+
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme]) .site-logo-img--dark { display: none; }
-  :root:not([data-theme]) .site-logo-img--light { display: block; }
+  :root:not([data-theme]) .site-logo-img--dark {
+    display: none;
+  }
+
+  :root:not([data-theme]) .site-logo-img--light {
+    display: block;
+  }
 }
 
 /* ── Sidebar toggle (pinned in header, left of the logo) ─────────────────────
@@ -165,12 +241,18 @@ body.sidebar-collapsed .page-bg { left: 60px; }
   align-items: center;
   justify-content: center;
 }
+
 .sidebar-header-spacer {
-  width: calc(var(--sidebar-w) - 60px); /* expanded sidebar width − 60px rail */
+  width: calc(var(--sidebar-w) - 60px);
+  /* expanded sidebar width − 60px rail */
   flex-shrink: 0;
   transition: width var(--dur) var(--ease);
 }
-body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
+
+body.sidebar-collapsed .sidebar-header-spacer {
+  width: 0;
+}
+
 .sidebar-toggle-btn {
   flex-shrink: 0;
   display: flex;
@@ -183,7 +265,11 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
   font-size: 16px;
   transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
-.sidebar-toggle-btn:hover { color: var(--accent); background: var(--surface-2); }
+
+.sidebar-toggle-btn:hover {
+  color: var(--accent);
+  background: var(--surface-2);
+}
 
 /* Settings gear — pushed to the far right of the header */
 .settings-btn {
@@ -198,6 +284,7 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
   color: var(--text-3);
   transition: color 0.15s, background 0.15s;
 }
+
 .settings-btn:hover {
   color: var(--accent);
   background: var(--surface-2);
@@ -209,6 +296,7 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
   flex: 1;
   max-width: 340px;
 }
+
 .search-input {
   width: 100%;
   background: var(--surface-2);
@@ -221,11 +309,25 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
   transition: border-color 0.2s;
   -webkit-appearance: none;
 }
-.search-input:focus { border-color: var(--accent); }
-.search-input::placeholder { color: var(--text-3); }
+
+.search-input:focus {
+  border-color: var(--accent);
+}
+
+.search-input::placeholder {
+  color: var(--text-3);
+}
+
 /* Hide native browser cancel button on search inputs — we have our own */
-.search-input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
-.search-input::-webkit-search-decoration { -webkit-appearance: none; }
+.search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  display: none;
+}
+
+.search-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
 .search-clear {
   position: absolute;
   right: 12px;
@@ -237,7 +339,10 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
   display: none;
   padding: 4px;
 }
-.search-clear:hover { color: var(--text-2); }
+
+.search-clear:hover {
+  color: var(--text-2);
+}
 
 /* ── Home strips ──────────────────────────────────────────────────────────── */
 .section-label {
@@ -248,8 +353,17 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
   color: var(--text-3);
   margin-bottom: 10px;
 }
-.section-label--link { display: inline-block; cursor: pointer; }
-.section-label--link:hover { color: var(--accent); text-decoration: underline; }
+
+.section-label--link {
+  display: inline-block;
+  cursor: pointer;
+}
+
+.section-label--link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 .continue-strip {
   display: flex;
   gap: 24px;
@@ -259,8 +373,15 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
   scrollbar-width: thin;
   scrollbar-color: var(--surface-3) transparent;
 }
-.continue-strip::-webkit-scrollbar { height: 4px; }
-.continue-strip::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 2px; }
+
+.continue-strip::-webkit-scrollbar {
+  height: 4px;
+}
+
+.continue-strip::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 2px;
+}
 
 /* ── App sidebar (v2.6 Item 1 Phase B) ───────────────────────────────────────
    Replaces the old top .surface-nav tab bar and the .status-pills row (the
@@ -272,10 +393,12 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
   display: flex;
   align-items: flex-start;
 }
+
 .app-content {
   flex: 1 1 0%;
   min-width: 0;
 }
+
 .app-sidebar {
   position: sticky;
   top: var(--header-h);
@@ -290,19 +413,31 @@ body.sidebar-collapsed .sidebar-header-spacer { width: 0; }
   padding: var(--space-4) var(--space-2);
   transition: width var(--dur) var(--ease);
 }
-body.sidebar-collapsed .app-sidebar { width: 60px; }
 
-.app-sidebar-section { display: flex; flex-direction: column; gap: 2px; }
+body.sidebar-collapsed .app-sidebar {
+  width: 60px;
+}
+
+.app-sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .app-sidebar-divider {
   height: 1px;
   background: var(--border);
   margin: var(--space-3) var(--space-2);
 }
+
 .app-sidebar-section-label {
   padding: 0 var(--space-2);
   margin-bottom: var(--space-1);
 }
-body.sidebar-collapsed .app-sidebar-section-label { display: none; }
+
+body.sidebar-collapsed .app-sidebar-section-label {
+  display: none;
+}
 
 .app-sidebar-item {
   display: flex;
@@ -317,10 +452,25 @@ body.sidebar-collapsed .app-sidebar-section-label { display: none; }
   white-space: nowrap;
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
-.app-sidebar-item:hover { background: var(--surface-2); color: var(--text); }
-.app-sidebar-item.active { background: var(--accent-tint); color: var(--accent-text); }
-body.sidebar-collapsed .app-sidebar-item { justify-content: center; padding: var(--space-2) 0; }
-body.sidebar-collapsed .app-sidebar-item-label { display: none; }
+
+.app-sidebar-item:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.app-sidebar-item.active {
+  background: var(--accent-tint);
+  color: var(--accent-text);
+}
+
+body.sidebar-collapsed .app-sidebar-item {
+  justify-content: center;
+  padding: var(--space-2) 0;
+}
+
+body.sidebar-collapsed .app-sidebar-item-label {
+  display: none;
+}
 
 .app-sidebar-icon {
   flex-shrink: 0;
@@ -331,9 +481,18 @@ body.sidebar-collapsed .app-sidebar-item-label { display: none; }
   justify-content: center;
   color: var(--text-3);
 }
+
 .app-sidebar-item.active .app-sidebar-icon,
-.app-sidebar-item:hover .app-sidebar-icon { color: inherit; }
-.app-sidebar-glyph { flex-shrink: 0; width: 22px; text-align: center; font-size: var(--text-base); }
+.app-sidebar-item:hover .app-sidebar-icon {
+  color: inherit;
+}
+
+.app-sidebar-glyph {
+  flex-shrink: 0;
+  width: 22px;
+  text-align: center;
+  font-size: var(--text-base);
+}
 
 /* Libraries items: plain text label only when expanded (no marker of any
    kind — confirmed against the live Design canvas, not just the handoff
@@ -353,7 +512,10 @@ body.sidebar-collapsed .app-sidebar-item-label { display: none; }
   font-size: var(--text-2xs);
   font-weight: var(--weight-bold);
 }
-body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
+
+body.sidebar-collapsed .app-sidebar-lib-badge {
+  display: flex;
+}
 
 /* ── Unified menu bar (MENU_BAR_SPEC.md) — shared across Flat View and
    Folder View; sits above whichever surface is active. ───────────────────── */
@@ -361,6 +523,7 @@ body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
   border-bottom: 1px solid var(--border);
   margin-bottom: 12px;
 }
+
 .menu-bar-inner {
   display: flex;
   align-items: center;
@@ -372,7 +535,9 @@ body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
 
 /* v2.6 Item 1 Phase D — borderless/minimal treatment (Design's .ds-mb-btn),
    matches Design's IconToggle used for sort-direction/favourites/view. */
-.sort-dir-btn, .view-toggle-btn, .fav-filter-btn {
+.sort-dir-btn,
+.view-toggle-btn,
+.fav-filter-btn {
   background: none;
   border: none;
   color: var(--text-2);
@@ -383,8 +548,16 @@ body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
   transition: color var(--dur) var(--ease);
   white-space: nowrap;
 }
-.sort-dir-btn:hover, .view-toggle-btn:hover, .fav-filter-btn:hover { color: var(--text); }
-.fav-filter-btn.active { color: var(--accent); }
+
+.sort-dir-btn:hover,
+.view-toggle-btn:hover,
+.fav-filter-btn:hover {
+  color: var(--text);
+}
+
+.fav-filter-btn.active {
+  color: var(--accent);
+}
 
 /* Divider between the sort/favourites cluster and the filter dropdowns
    (Design's BrowseScreen — one vertical hairline in that position). */
@@ -397,7 +570,9 @@ body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
 }
 
 /* Grouping dropdown — slightly wider to fit "No grouping" */
-.group-by-select { max-width: 150px; }
+.group-by-select {
+  max-width: 150px;
+}
 
 /* Secondary filters group — inline within .menu-bar, Flat browse only */
 .browse-filters {
@@ -427,7 +602,8 @@ body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
 /* Filter dropdowns — inline in the bar. v2.6 Item 1 Phase D — borderless/
    minimal treatment (Design's .ds-filter). .fd-trigger (the custom-panel
    trigger button filterDropdown.js builds) shares this exact look. */
-.filter-select, .fd-trigger {
+.filter-select,
+.fd-trigger {
   background: none;
   border: none;
   border-radius: 0;
@@ -440,11 +616,21 @@ body.sidebar-collapsed .app-sidebar-lib-badge { display: flex; }
   transition: color var(--dur) var(--ease);
   max-width: 115px;
 }
-.filter-select:hover, .fd-trigger:hover { color: var(--text); }
+
+.filter-select:hover,
+.fd-trigger:hover {
+  color: var(--text);
+}
+
 select.filter-select:focus,
 .filter-select.active,
-.fd-trigger.active { color: var(--accent); }
-.filter-select option { background: var(--surface-2); }
+.fd-trigger.active {
+  color: var(--accent);
+}
+
+.filter-select option {
+  background: var(--surface-2);
+}
 
 /* Trigger text needs its own overflow handling — a <select> truncates
    automatically, a <button> with plain text content doesn't. */
@@ -460,7 +646,11 @@ select.filter-select:focus,
    the (unstylable) native <select> popup. filterDropdown.js builds this
    structure on top of each .filter-select in #menuBar; the real <select>
    stays in the DOM as the source of truth, just visually hidden. */
-.fd-wrap { position: relative; display: inline-flex; }
+.fd-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .fd-wrap .fd-native {
   position: absolute;
   top: 0;
@@ -470,6 +660,7 @@ select.filter-select:focus,
   opacity: 0;
   pointer-events: none;
 }
+
 .fd-panel {
   position: absolute;
   top: calc(100% + 4px);
@@ -492,10 +683,24 @@ select.filter-select:focus,
   scrollbar-width: thin;
   scrollbar-color: var(--surface-3) transparent;
 }
-.fd-panel::-webkit-scrollbar { width: 8px; }
-.fd-panel::-webkit-scrollbar-track { background: transparent; }
-.fd-panel::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: var(--radius-pill); }
-.fd-panel::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+.fd-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.fd-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fd-panel::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: var(--radius-pill);
+}
+
+.fd-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--text-3);
+}
+
 .fd-opt {
   padding: 7px 10px;
   border-radius: var(--radius-xs);
@@ -504,10 +709,29 @@ select.filter-select:focus,
   white-space: nowrap;
   cursor: pointer;
 }
-.fd-opt:hover { background: var(--surface-raised); color: var(--text); }
-.fd-opt.selected { background: var(--accent-tint); color: var(--accent-text); font-weight: 700; }
-.fd-opt.selected:hover { background: var(--accent-tint); color: var(--accent-text); }
-.fd-opt-disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+
+.fd-opt:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.fd-opt.selected {
+  background: var(--accent-tint);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+.fd-opt.selected:hover {
+  background: var(--accent-tint);
+  color: var(--accent-text);
+}
+
+.fd-opt-disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
 /* Solid accent + on-accent text — same "active" look as the collapsed
    sidebar's single-letter Library badges (.app-sidebar-lib-badge). Shared
    by the dropdown-filter Clear button (.filter-clear, hidden by default —
@@ -515,8 +739,12 @@ select.filter-select:focus,
    (.fieldview-banner-clear, always shown when appended) so both "you're
    filtered, here's how to clear it" affordances look identical regardless
    of which one put you there. */
-.filter-clear { display: none; }
-.filter-clear, .fieldview-banner-clear {
+.filter-clear {
+  display: none;
+}
+
+.filter-clear,
+.fieldview-banner-clear {
   font-size: 12px;
   font-weight: 600;
   color: var(--on-accent);
@@ -529,12 +757,24 @@ select.filter-select:focus,
   text-decoration: none;
   transition: background var(--dur) var(--ease);
 }
-.fieldview-banner-clear { display: inline-block; }
-.filter-clear:hover, .fieldview-banner-clear:hover { background: var(--accent-hover); }
+
+.fieldview-banner-clear {
+  display: inline-block;
+}
+
+.filter-clear:hover,
+.fieldview-banner-clear:hover {
+  background: var(--accent-hover);
+}
 
 /* ── Home strips ─────────────────────────────────────────────────────────── */
-.home-strip { padding: 18px 0 4px; }
-.home-strip + .home-strip { padding-top: 8px; }
+.home-strip {
+  padding: 18px 0 4px;
+}
+
+.home-strip+.home-strip {
+  padding-top: 8px;
+}
 
 /* cover-card inside a horizontal strip — pin width, prevent shrink */
 .continue-strip .cover-card.strip-card {
@@ -543,7 +783,9 @@ select.filter-select:focus,
 }
 
 /* ≈5 mm gap between the strip label and the first card row */
-.home-strip .section-label { margin-bottom: 14px; }
+.home-strip .section-label {
+  margin-bottom: 14px;
+}
 
 /* Strip scroll track — anchors the arrow buttons. Bled out to the true page
    edge (negative margin cancelling .container's gutter, padding added back
@@ -560,10 +802,14 @@ select.filter-select:focus,
 
 /* Hide scrollbar inside a strip track; arrows replace it */
 .strip-track .continue-strip {
-  padding-top: 8px;     /* headroom so hover lift isn't clipped */
+  padding-top: 8px;
+  /* headroom so hover lift isn't clipped */
   scrollbar-width: none;
 }
-.strip-track .continue-strip::-webkit-scrollbar { display: none; }
+
+.strip-track .continue-strip::-webkit-scrollbar {
+  display: none;
+}
 
 /* Arrow buttons — appear on strip hover, hidden at scroll edges */
 .strip-arrow {
@@ -585,16 +831,19 @@ select.filter-select:focus,
   cursor: pointer;
   padding: 0;
 }
+
 .strip-arrow--left {
   left: 0;
   background: linear-gradient(to right, var(--bg) 40%, transparent);
   padding-right: 14px;
 }
+
 .strip-arrow--right {
   right: 0;
   background: linear-gradient(to left, var(--bg) 40%, transparent);
   padding-left: 14px;
 }
+
 .home-strip:hover .strip-arrow:not(.at-edge) {
   opacity: 1;
   pointer-events: auto;
@@ -614,25 +863,36 @@ select.filter-select:focus,
   column-gap: 50px;
   row-gap: 25px;
 }
+
 /* Narrow window — not enough room for two readable columns, collapse to one.
    1100px is a starting point sized for the 115px thumbnail + genre/pub/summary
    text; hand-tune if it collapses too early/late in practice. */
 @media (max-width: 1100px) {
-  .cover-grid.list-view { grid-template-columns: 1fr; }
+  .cover-grid.list-view {
+    grid-template-columns: 1fr;
+  }
 }
+
 .cover-grid.list-view .cover-card {
   flex-direction: row;
   align-items: stretch;
   height: auto;
   padding-top: 10px;
 }
+
 .cover-grid.list-view .cover-img-wrap {
   width: 115px;
   aspect-ratio: 2 / 3;
   flex-shrink: 0;
   border-radius: var(--radius) 0 0 var(--radius);
 }
-.cover-grid.list-view .cover-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+.cover-grid.list-view .cover-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .cover-grid.list-view .cover-info {
   flex: 1;
   flex-direction: column;
@@ -641,16 +901,26 @@ select.filter-select:focus,
   padding: 9px 12px;
   min-width: 0;
 }
+
 .cover-grid.list-view .cover-title {
   -webkit-line-clamp: 1;
   font-size: 14px;
   font-weight: 700;
 }
-.cover-grid.list-view .cover-count { font-size: 12px; }
-.cover-grid.list-view .cover-year  { font-size: 12px; }
+
+.cover-grid.list-view .cover-count {
+  font-size: 12px;
+}
+
+.cover-grid.list-view .cover-year {
+  font-size: 12px;
+}
 
 /* List-only metadata — hidden in grid, shown in list */
-.list-meta { display: none; }
+.list-meta {
+  display: none;
+}
+
 .cover-grid.list-view .list-meta {
   display: flex;
   flex-direction: column;
@@ -659,6 +929,7 @@ select.filter-select:focus,
   min-width: 0;
   width: 100%;
 }
+
 .list-genres {
   font-size: 12px;
   color: var(--text-2);
@@ -666,6 +937,7 @@ select.filter-select:focus,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 /* Per-genre links inside .list-genres — deliberately not the .genre-tag pill
    style (style.css ~1600), which is too heavy for a compact single-line row.
    Inherits the row's font-size/color, just adds an underline-on-hover cue. */
@@ -673,10 +945,12 @@ select.filter-select:focus,
   color: inherit;
   text-decoration: none;
 }
+
 .list-genre-tag:hover {
   text-decoration: underline;
   color: var(--accent);
 }
+
 .list-pub-writer {
   font-size: 12px;
   color: var(--text-3);
@@ -684,6 +958,7 @@ select.filter-select:focus,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .list-summary {
   font-size: 12px;
   color: var(--text-3);
@@ -694,6 +969,7 @@ select.filter-select:focus,
   line-height: 1.4;
   margin-top: 1px;
 }
+
 .list-progress-text {
   font-size: 11px;
   color: var(--blue);
@@ -724,7 +1000,11 @@ select.filter-select:focus,
   cursor: pointer;
   transition: transform 0.2s, border-color 0.2s;
 }
-.cover-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+
+.cover-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
 
 /* Multi-select (single-issue cards only — see Tier 4 Item 2) */
 .cover-card.selected,
@@ -732,7 +1012,10 @@ select.filter-select:focus,
   border-color: var(--accent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
 }
-.cover-card.selected { transform: translateY(-3px); }
+
+.cover-card.selected {
+  transform: translateY(-3px);
+}
 
 /* Favorite badge — small heart, opposite corner from the unread badge.
    Red heart on white bg, 1px solid black border, for visibility against
@@ -756,7 +1039,10 @@ select.filter-select:focus,
   background: #fff;
   z-index: 1;
 }
-.issue-row.is-favorite .issue-thumb { position: relative; }
+
+.issue-row.is-favorite .issue-thumb {
+  position: relative;
+}
 
 /* Favourited card border — thin gold ring around the whole card outline,
    coexisting with (not replacing) the read-state background/gradient above.
@@ -788,12 +1074,16 @@ select.filter-select:focus,
   background: #fff;
   z-index: 1;
 }
-.issue-row.is-flagged-review .issue-thumb { position: relative; }
+
+.issue-row.is-flagged-review .issue-thumb {
+  position: relative;
+}
 
 .cover-card.is-flagged-review,
 .issue-row.is-flagged-review {
   box-shadow: 0 0 0 1px var(--danger);
 }
+
 .cover-card.is-favorite.is-flagged-review,
 .issue-row.is-favorite.is-flagged-review {
   box-shadow: 0 0 0 1px var(--favourite), 0 0 0 3px var(--danger);
@@ -809,7 +1099,9 @@ select.filter-select:focus,
 /* Read-state card colours */
 
 /* Fully read — flat dark-green tint, same as before */
-.cover-card.state-read { background: color-mix(in srgb, var(--state-read) 50%, var(--surface-card)); }
+.cover-card.state-read {
+  background: color-mix(in srgb, var(--state-read) 50%, var(--surface-card));
+}
 
 /* Partially read — dark overlay base with green gradient rising from the
    bottom. Overlay colour is themed (--read-overlay: pure black in dark,
@@ -820,6 +1112,7 @@ select.filter-select:focus,
   background: var(--read-overlay);
   border-color: rgba(76, 175, 118, 0.35);
 }
+
 /* Feather the bottom of the cover image into the overlay so the transition is seamless */
 .cover-card.state-part-read .cover-img-wrap::after {
   content: '';
@@ -831,6 +1124,7 @@ select.filter-select:focus,
   background: linear-gradient(to bottom, transparent, var(--read-overlay));
   pointer-events: none;
 }
+
 /* Info area: overlay colour at top (directly below thumbnail) → subtle green at the card bottom */
 .cover-card.state-part-read .cover-info {
   background: linear-gradient(to bottom, var(--read-overlay) 0%, rgba(76, 175, 118, 0.30) 100%);
@@ -842,56 +1136,62 @@ select.filter-select:focus,
    for consistency with --read-overlay rather than because the value
    changes by theme. */
 .cover-card.state-part-read .cover-title,
-.cover-card.state-read      .cover-title {
+.cover-card.state-read .cover-title {
   color: var(--read-overlay-text);
   font-weight: 700;
 }
+
 .cover-card.state-part-read .cover-count,
 .cover-card.state-part-read .cover-year,
-.cover-card.state-read      .cover-count,
-.cover-card.state-read      .cover-year {
+.cover-card.state-read .cover-count,
+.cover-card.state-read .cover-year {
   color: color-mix(in srgb, var(--read-overlay-text) 82%, transparent);
   font-weight: 600;
   font-size: 12px;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
+
 .cover-card.state-part-read .list-genres,
 .cover-card.state-part-read .list-pub-writer,
 .cover-card.state-part-read .list-summary,
-.cover-card.state-read      .list-genres,
-.cover-card.state-read      .list-pub-writer,
-.cover-card.state-read      .list-summary {
+.cover-card.state-read .list-genres,
+.cover-card.state-read .list-pub-writer,
+.cover-card.state-read .list-summary {
   color: color-mix(in srgb, var(--read-overlay-text) 82%, transparent);
 }
 
 /* List View only — invert the emphasis above so unread rows stand out and
    read/part-read rows go quiet. Grid View keeps the bright/bold read styling
    above untouched; these rules only apply once .list-view is on the grid. */
-.cover-grid.list-view .cover-card.state-read      .cover-title,
+.cover-grid.list-view .cover-card.state-read .cover-title,
 .cover-grid.list-view .cover-card.state-part-read .cover-title {
   color: rgba(255, 255, 255, 0.55);
   font-weight: 500;
 }
-.cover-grid.list-view .cover-card.state-read      .cover-count,
-.cover-grid.list-view .cover-card.state-read      .cover-year,
+
+.cover-grid.list-view .cover-card.state-read .cover-count,
+.cover-grid.list-view .cover-card.state-read .cover-year,
 .cover-grid.list-view .cover-card.state-part-read .cover-count,
 .cover-grid.list-view .cover-card.state-part-read .cover-year {
   color: rgba(255, 255, 255, 0.55);
   font-weight: 400;
   text-shadow: none;
 }
-.cover-grid.list-view .cover-card.state-read      .list-genres,
-.cover-grid.list-view .cover-card.state-read      .list-pub-writer,
-.cover-grid.list-view .cover-card.state-read      .list-summary,
+
+.cover-grid.list-view .cover-card.state-read .list-genres,
+.cover-grid.list-view .cover-card.state-read .list-pub-writer,
+.cover-grid.list-view .cover-card.state-read .list-summary,
 .cover-grid.list-view .cover-card.state-part-read .list-genres,
 .cover-grid.list-view .cover-card.state-part-read .list-pub-writer,
 .cover-grid.list-view .cover-card.state-part-read .list-summary {
   color: rgba(255, 255, 255, 0.5);
 }
+
 .cover-grid.list-view .cover-card:not(.state-read):not(.state-part-read) .cover-count,
 .cover-grid.list-view .cover-card:not(.state-read):not(.state-part-read) .cover-year {
   font-weight: 600;
 }
+
 .cover-grid.list-view .cover-card:not(.state-read):not(.state-part-read) .list-summary {
   color: rgba(201 201 201);
 }
@@ -902,11 +1202,13 @@ select.filter-select:focus,
   background: var(--surface-2);
   overflow: hidden;
 }
+
 .cover-img-wrap img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
+
 .cover-placeholder {
   width: 100%;
   height: 100%;
@@ -916,6 +1218,7 @@ select.filter-select:focus,
   font-size: 36px;
   color: var(--text-3);
 }
+
 .unread-badge {
   position: absolute;
   top: 6px;
@@ -962,12 +1265,17 @@ select.filter-select:focus,
   cursor: pointer;
   transition: opacity var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
+
 .cover-card:hover .select-dot,
-.cover-card.selected .select-dot { opacity: 1; }
+.cover-card.selected .select-dot {
+  opacity: 1;
+}
+
 .cover-card.selected .select-dot {
   background: #333;
   border-color: #333;
 }
+
 .cover-card.selected .select-dot::after {
   content: '✓';
   font-size: 10px;
@@ -975,7 +1283,30 @@ select.filter-select:focus,
   line-height: 1;
   color: var(--favourite);
 }
-.cover-grid.list-view .select-dot { display: none; }
+
+.cover-grid.list-view .select-dot {
+  display: none;
+}
+
+/* Read-state badge — top-right corner (the corner the redesign's dropped
+   unread-count pill used to own, see buildCoverCard). Unlike .select-dot,
+   this is a status indicator, not a hover affordance: always visible once a
+   card is state-read, in both Grid and List view and on Home strips.
+   Same circle geometry as .select-dot for a consistent card vocabulary,
+   filled with --rc-progress — the same green already used for this card's
+   progress-bar fill and genre-ribbon border on read/part-read cards. */
+.card-read-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  background: var(--rc-progress);
+  z-index: 3;
+  pointer-events: none;
+}
 
 .cover-info {
   padding: 10px;
@@ -984,6 +1315,7 @@ select.filter-select:focus,
   flex-direction: column;
   gap: 3px;
 }
+
 .cover-title {
   font-size: 12px;
   font-weight: 600;
@@ -993,11 +1325,13 @@ select.filter-select:focus,
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
 .cover-count {
   font-size: 11px;
   color: var(--text-3);
   margin-top: auto;
 }
+
 .cover-year {
   font-size: 11px;
   color: var(--text-3);
@@ -1043,9 +1377,16 @@ select.filter-select:focus,
      text aligns with the cover's inset edges rather than double-indenting. */
   padding: 5px 5px 7px;
 }
-.cover-card.cover-card--redesign .cover-title { color: var(--rc-title); }
+
+.cover-card.cover-card--redesign .cover-title {
+  color: var(--rc-title);
+}
+
 .cover-card.cover-card--redesign .cover-count,
-.cover-card.cover-card--redesign .cover-year { color: var(--rc-meta); }
+.cover-card.cover-card--redesign .cover-year {
+  color: var(--rc-meta);
+}
+
 .cover-card--redesign .cover-img-wrap {
   border-radius: var(--radius);
 }
@@ -1056,9 +1397,10 @@ select.filter-select:focus,
    and (2) the black cover-bottom "feather" pseudo-element, which sits at
    the same bottom edge as .card-progress-bar and was painting over it. */
 .cover-card.cover-card--redesign.state-part-read .cover-info,
-.cover-card.cover-card--redesign.state-read      .cover-info {
+.cover-card.cover-card--redesign.state-read .cover-info {
   background: none;
 }
+
 .cover-card.cover-card--redesign.state-part-read .cover-img-wrap::after {
   content: none;
 }
@@ -1089,6 +1431,7 @@ select.filter-select:focus,
 .cover-card.cover-card--redesign {
   box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.5);
 }
+
 /* No red border for flagged-for-review cards either — same uniform glow
    ring as every other card at rest, explicit override so it beats the
    base rule (style.css ~930) and its even-more-specific .is-favorite combo
@@ -1113,6 +1456,7 @@ select.filter-select:focus,
   background: rgba(0, 0, 0, 0.55);
   overflow: hidden;
 }
+
 .card-progress-fill {
   height: 100%;
   border-radius: var(--radius-pill);
@@ -1130,6 +1474,7 @@ select.filter-select:focus,
 .cover-card--redesign.is-flagged-review .cover-img-wrap::after {
   content: none;
 }
+
 .card-flag-badge {
   position: absolute;
   bottom: 6px;
@@ -1141,10 +1486,13 @@ select.filter-select:focus,
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.6);
-  color: rgba(0, 0, 0, 0.75);
+  color: var(--danger);
   z-index: 1;
 }
-.card-flag-badge svg { display: block; }
+
+.card-flag-badge svg {
+  display: block;
+}
 
 /* Favourite: no separate border treatment (2026-07-15 "rewind" fine-tune)
    — the heart badge on the cover is the only favourite signal now, same
@@ -1171,20 +1519,23 @@ select.filter-select:focus,
   gap: 5px;
   padding: 10px 0 0;
 }
+
 /* Anchor both meta rows to the bottom of the info block instead of letting
    them trail directly under the title — a 2-line-wrapping title otherwise
    pushes them further down than a 1-line title's, so cards in the same grid
    row (stretched to equal height) show the ribbon/count at different
    heights (2026-07-15 fine-tune). Title keeps whatever height it needs. */
-.cover-card--redesign .cover-title + .cover-meta-row {
+.cover-card--redesign .cover-title+.cover-meta-row {
   margin-top: auto;
 }
+
 .cover-card--redesign .cover-meta-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
 }
+
 /* Off-white text (fixed literal — see --rc-genre-text above), neutral dark
    fill — the solid blue/green fill used to clash with the card's white
    border. Read-state colour now lives only in the 2px bottom border. */
@@ -1202,21 +1553,48 @@ select.filter-select:focus,
   border-bottom: 2px solid var(--rc-unread);
   text-decoration: none;
 }
+
 .card-genre-ribbon:hover {
   color: var(--accent);
 }
+
 .cover-card--redesign.state-part-read .card-genre-ribbon,
-.cover-card--redesign.state-read      .card-genre-ribbon {
+.cover-card--redesign.state-read .card-genre-ribbon {
   border-bottom-color: var(--rc-progress);
 }
+
 .card-rating-row {
   display: flex;
   gap: 2px;
 }
+
 .card-rating-row .rating-star {
   font-size: 11px;
   line-height: 1;
   color: var(--favourite);
+}
+
+/* Light theme only — the gold star glyphs have little contrast against the
+   light card surface behind them. A per-star outline/blur reads as too
+   fussy at this glyph size (11px); instead give the whole row one dark
+   pill-shaped backdrop. .card-rating-row only ever contains as many star
+   nodes as the rating value (buildRatingRow), so the row's own width
+   already tracks the star count — border-radius: 999px on that box reads
+   as a tight circle around a single star and stretches into a full pill
+   once enough stars widen the row, with no separate per-star shapes to
+   merge. */
+:root[data-theme="light"] .card-rating-row {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 999px;
+  padding: 2px 6px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .card-rating-row {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 999px;
+    padding: 2px 6px;
+  }
 }
 
 /* Compact tier — smaller ribbon so it doesn't crowd the year at 90-120px
@@ -1234,15 +1612,102 @@ select.filter-select:focus,
 .cover-card--redesign {
   transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
+
 .cover-card--redesign:hover {
   transform: translateY(-3px);
   border-color: transparent;
 }
+
 .cover-card.cover-card--redesign:hover {
   box-shadow:
     0 0 4px 2px rgba(255, 255, 255, 0.85),
     0 5px 26px rgba(0, 0, 0, 0);
 }
+
+/* Light Mode overrides for redesigned library cards */
+:root[data-theme="light"] .cover-card.cover-card--redesign {
+  background: var(--surface-card) !important;
+  border: 1px solid #96b7d1 !important;
+  box-shadow: 0 0 0 1px #454566 !important;
+  --rc-title: var(--text);
+  --rc-meta: var(--text-2);
+}
+
+:root[data-theme="light"] .cover-card.cover-card--redesign:hover {
+  transform: translateY(-3px);
+  border: 1px solid #454566 !important;
+  box-shadow: 0 0 10px 2px rgba(69, 69, 102, 0.75), 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .cover-card.cover-card--redesign {
+    background: var(--surface-card) !important;
+    border: 1px solid #96b7d1 !important;
+    box-shadow: 0 0 0 1px #454566 !important;
+    --rc-title: var(--text);
+    --rc-meta: var(--text-2);
+  }
+
+  :root:not([data-theme]) .cover-card.cover-card--redesign:hover {
+    transform: translateY(-3px);
+    border: 1px solid #96b7d1 !important;
+    box-shadow: 0 0 10px 2px rgba(69, 69, 102, 0.75), 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+  }
+}
+
+/* Light theme year/count text — Unread/Read only, Reading left untouched.
+   The shared rule above (~line 1144) colours this text off --read-overlay-text
+   (fixed white, for the always-dark redesign background) with a text-shadow
+   to keep it legible against a variable overlay; on a light-theme white card
+   that shadow just reads as a black blur behind faint text. Flat black at two
+   opacities reads cleanly on the white card instead, so the shadow is dropped
+   for state-read. list-view is excluded — it already sets its own inverted
+   (light-on-dark) colours for these classes at higher specificity. */
+:root[data-theme="light"] .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-unread .cover-count,
+:root[data-theme="light"] .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-unread .cover-year,
+:root[data-theme="light"] .continue-strip .cover-card.cover-card--redesign.state-unread .cover-count,
+:root[data-theme="light"] .continue-strip .cover-card.cover-card--redesign.state-unread .cover-year {
+  color: rgba(0, 0, 0, 0.95);
+}
+
+:root[data-theme="light"] .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-read .cover-count,
+:root[data-theme="light"] .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-read .cover-year,
+:root[data-theme="light"] .continue-strip .cover-card.cover-card--redesign.state-read .cover-count,
+:root[data-theme="light"] .continue-strip .cover-card.cover-card--redesign.state-read .cover-year {
+  color: rgba(0, 0, 0, 0.65);
+  text-shadow: none;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-unread .cover-count,
+  :root:not([data-theme]) .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-unread .cover-year,
+  :root:not([data-theme]) .continue-strip .cover-card.cover-card--redesign.state-unread .cover-count,
+  :root:not([data-theme]) .continue-strip .cover-card.cover-card--redesign.state-unread .cover-year {
+    color: rgba(0, 0, 0, 0.95);
+  }
+
+  :root:not([data-theme]) .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-read .cover-count,
+  :root:not([data-theme]) .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-read .cover-year,
+  :root:not([data-theme]) .continue-strip .cover-card.cover-card--redesign.state-read .cover-count,
+  :root:not([data-theme]) .continue-strip .cover-card.cover-card--redesign.state-read .cover-year {
+    color: rgba(0, 0, 0, 0.65);
+    text-shadow: none;
+  }
+}
+
+/* Read-state font-size/weight bump (shared rule ~line 1144, 11px→12px and
+   400→600) is a theme-independent sizing bug, not a colour one — reset it
+   here for both themes so Read cards don't render bigger/bolder text than
+   Unread cards. list-view excluded, same reason as the light-theme block
+   above (its own higher-specificity rules already set list-view's sizing). */
+.cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-read .cover-count,
+.cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-read .cover-year,
+.continue-strip .cover-card.cover-card--redesign.state-read .cover-count,
+.continue-strip .cover-card.cover-card--redesign.state-read .cover-year {
+  font-size: 11px;
+  font-weight: 400;
+}
+
 .cover-card.cover-card--redesign.selected {
   box-shadow:
     0 0 0 2px var(--favourite),
@@ -1254,22 +1719,41 @@ select.filter-select:focus,
    entirely so list rows keep their plain pre-redesign look (year/count text
    only), regardless of specificity. */
 .cover-grid.list-view .card-genre-ribbon,
-.cover-grid.list-view .card-rating-row { display: none; }
-.cover-grid.list-view .cover-title + .cover-meta-row { margin-top: 0; }
-.cover-grid.list-view .cover-card.cover-card--redesign { padding: 6; }
-.cover-grid.list-view .cover-card--redesign .cover-info { padding: 9px 12px; }
-.cover-grid.list-view .cover-card--redesign .cover-img-wrap { border-radius: var(--radius) 0 0 var(--radius); }
+.cover-grid.list-view .card-rating-row {
+  display: none;
+}
+
+.cover-grid.list-view .cover-title+.cover-meta-row {
+  margin-top: 0;
+}
+
+.cover-grid.list-view .cover-card.cover-card--redesign {
+  padding: 6;
+}
+
+.cover-grid.list-view .cover-card--redesign .cover-info {
+  padding: 9px 12px;
+}
+
+.cover-grid.list-view .cover-card--redesign .cover-img-wrap {
+  border-radius: var(--radius) 0 0 var(--radius);
+}
 
 /* Extra breathing room between cards, requested alongside the border
    simplification above — scoped to the main library grid (#coverGrid) only.
    :not(.list-view) guards list-view's own tighter 6px row gap
    (.cover-grid.list-view, style.css ~769) from being overridden — an ID
    selector would otherwise beat it regardless of source order. */
-#coverGrid:not(.list-view) { gap: 24px; }
+#coverGrid:not(.list-view) {
+  gap: 24px;
+}
+
 /* Folder View extension (2026-07-15) — #folderGrid shares the .cover-grid
    class but has its own ID, so it didn't inherit the rule above; same
    treatment now that Folder View cards carry .cover-card--redesign too. */
-#folderGrid:not(.list-view) { gap: 24px; }
+#folderGrid:not(.list-view) {
+  gap: 24px;
+}
 
 /* Home Strip extension (2026-07-15) — strip cards are flex-pinned to
    var(--card-min) (90-120px), narrower than the main grid's cards, which
@@ -1309,18 +1793,27 @@ select.filter-select:focus,
   justify-content: center;
   aspect-ratio: 2 / 3;
 }
+
 .folder-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 0 4px 2px rgba(255, 255, 255, 0.85), 0 5px 26px rgba(0, 0, 0, 0);
 }
-.folder-card-icon { font-size: 32px; }
+
+.folder-card-icon {
+  font-size: 32px;
+}
+
 .folder-card-name {
   font-size: 14px;
   font-weight: 700;
   color: var(--text);
   word-break: break-word;
 }
-.folder-card-count { font-size: 12px; color: var(--text-3); }
+
+.folder-card-count {
+  font-size: 12px;
+  color: var(--text-3);
+}
 
 /* Folder card with a representative cover image (CUSTOM_TABS_SPEC.md §9.2):
    switch from the centered icon layout to an image-on-top, info-below
@@ -1331,9 +1824,11 @@ select.filter-select:focus,
   overflow: hidden;
   aspect-ratio: auto;
 }
+
 .folder-card.has-cover .cover-img-wrap {
   border-radius: var(--radius);
 }
+
 .folder-card-info {
   padding: 10px;
   display: flex;
@@ -1348,6 +1843,7 @@ select.filter-select:focus,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 /* Redesigned card: fixed dark face, so use the same off-white/cream meta
    colour as the rest of the info block rather than the theme-dependent
    --text-3 grey, plus a little top margin since it trails the meta rows. */
@@ -1357,12 +1853,16 @@ select.filter-select:focus,
 }
 
 /* ── Search results ──────────────────────────────────────────────────────── */
-.search-section { padding-bottom: 48px; }
+.search-section {
+  padding-bottom: 48px;
+}
+
 .search-header {
   font-size: 14px;
   color: var(--text-2);
   padding: 4px 0 14px;
 }
+
 .result-row {
   display: flex;
   align-items: center;
@@ -1374,7 +1874,11 @@ select.filter-select:focus,
   margin-bottom: 6px;
   transition: border-color 0.15s;
 }
-.result-row:hover { border-color: var(--accent); }
+
+.result-row:hover {
+  border-color: var(--accent);
+}
+
 .result-thumb {
   width: 38px;
   height: 57px;
@@ -1383,7 +1887,12 @@ select.filter-select:focus,
   flex-shrink: 0;
   background: var(--surface-2);
 }
-.result-info { flex: 1; min-width: 0; }
+
+.result-info {
+  flex: 1;
+  min-width: 0;
+}
+
 .result-series {
   font-size: 13px;
   font-weight: 600;
@@ -1391,7 +1900,12 @@ select.filter-select:focus,
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.result-meta { font-size: 12px; color: var(--text-2); }
+
+.result-meta {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
 .status-pip {
   width: 10px;
   height: 10px;
@@ -1399,8 +1913,16 @@ select.filter-select:focus,
   border: 2px solid var(--text-3);
   flex-shrink: 0;
 }
-.status-pip.reading { background: var(--blue); border-color: var(--blue); }
-.status-pip.read { background: var(--green); border-color: var(--green); }
+
+.status-pip.reading {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.status-pip.read {
+  background: var(--green);
+  border-color: var(--green);
+}
 
 /* ── Loading / empty states ──────────────────────────────────────────────── */
 .loading-state,
@@ -1411,11 +1933,25 @@ select.filter-select:focus,
   color: var(--text-2);
   font-size: 14px;
 }
-.empty-icon { font-size: 48px; margin-bottom: 12px; }
-.empty-logo { display: block; height: 56px; width: auto; margin: 0 auto 12px; opacity: 0.7; }
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.empty-logo {
+  display: block;
+  height: 56px;
+  width: auto;
+  margin: 0 auto 12px;
+  opacity: 0.7;
+}
 
 /* ── Back nav ────────────────────────────────────────────────────────────── */
-.back-nav { padding: 14px 0 0; }
+.back-nav {
+  padding: 14px 0 0;
+}
+
 .back-link {
   font-size: 14px;
   color: var(--text-2);
@@ -1424,7 +1960,10 @@ select.filter-select:focus,
   gap: 4px;
   transition: color 0.15s;
 }
-.back-link:hover { color: var(--accent); }
+
+.back-link:hover {
+  color: var(--accent);
+}
 
 /* ── Series page header with backdrop (Section 20.6) ────────────────────── */
 .series-hero-wrap {
@@ -1447,6 +1986,7 @@ select.filter-select:focus,
   overflow: hidden;
   pointer-events: none;
 }
+
 .series-backdrop-img {
   width: 100%;
   height: 100%;
@@ -1456,6 +1996,7 @@ select.filter-select:focus,
   filter: blur(var(--blur-backdrop));
   display: block;
 }
+
 /* Same recipe as .issue-backdrop-fade below, for the same reason. */
 .series-backdrop-fade {
   position: absolute;
@@ -1476,6 +2017,7 @@ select.filter-select:focus,
   justify-content: space-between;
   margin-bottom: 14px;
 }
+
 .series-back {
   font-size: 14px;
   color: var(--text-2);
@@ -1484,8 +2026,15 @@ select.filter-select:focus,
   gap: 4px;
   transition: color 0.15s;
 }
-.series-back:hover { color: var(--accent); }
-.series-mark-btn { font-size: 12px; padding: 6px 14px; }
+
+.series-back:hover {
+  color: var(--accent);
+}
+
+.series-mark-btn {
+  font-size: 12px;
+  padding: 6px 14px;
+}
 
 /* Series page text elements (used inside .series-hero) */
 .series-name {
@@ -1495,22 +2044,26 @@ select.filter-select:focus,
   margin-bottom: 6px;
   line-height: 1.2;
 }
+
 .series-pub {
   font-size: 14px;
   color: var(--text-2);
   margin-bottom: 12px;
 }
+
 .series-stats {
   font-size: 13px;
   color: var(--text-2);
   margin-top: 10px;
 }
+
 .genre-tags {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
   margin-bottom: 14px;
 }
+
 .genre-tag {
   display: inline-flex;
   align-items: center;
@@ -1524,10 +2077,12 @@ select.filter-select:focus,
   text-decoration: none;
   transition: border-color 0.12s, color 0.12s;
 }
+
 .genre-tag:hover {
   border-color: var(--accent);
   color: var(--accent);
 }
+
 /* BUG-015 — fieldview filter banner. Sits inline in .menu-bar-trailing,
    before the count (moved 2026-07-09 to drop the duplicate title count that
    used to open this banner's own text — the trailing count already shows
@@ -1538,7 +2093,11 @@ select.filter-select:focus,
   white-space: nowrap;
   margin: 0;
 }
-.fieldview-banner .fieldview-banner-clear { margin-left: 8px; }
+
+.fieldview-banner .fieldview-banner-clear {
+  margin-left: 8px;
+}
+
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -1552,8 +2111,17 @@ select.filter-select:focus,
   transition: background 0.15s;
   white-space: nowrap;
 }
-.btn-primary:hover { background: var(--accent-dim); color: var(--on-accent); }
-.btn-primary:disabled { opacity: 0.6; cursor: default; }
+
+.btn-primary:hover {
+  background: var(--accent-dim);
+  color: var(--on-accent);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .btn-danger {
   display: inline-flex;
   align-items: center;
@@ -1567,13 +2135,19 @@ select.filter-select:focus,
   transition: background 0.15s;
   white-space: nowrap;
 }
-.btn-danger:hover { background: color-mix(in srgb, var(--danger) 85%, black); }
+
+.btn-danger:hover {
+  background: color-mix(in srgb, var(--danger) 85%, black);
+}
 
 /* ── Issue list ──────────────────────────────────────────────────────────── */
 /* 2-column card grid, matching the List View redesign's .cover-grid.list-view
    (style.css ~769) — each issue gets its own formatted card instead of a
    plain full-width row. */
-.issue-list { padding-bottom: 48px; }
+.issue-list {
+  padding-bottom: 48px;
+}
+
 .arc-group {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1581,9 +2155,13 @@ select.filter-select:focus,
   row-gap: 25px;
   margin-bottom: 22px;
 }
+
 @media (max-width: 1100px) {
-  .arc-group { grid-template-columns: 1fr; }
+  .arc-group {
+    grid-template-columns: 1fr;
+  }
 }
+
 .arc-label {
   grid-column: 1 / -1;
   font-size: 11px;
@@ -1595,6 +2173,7 @@ select.filter-select:focus,
   border-bottom: 1px solid var(--border);
   margin-bottom: 4px;
 }
+
 /* Card frame — each issue its own card, 2-up in .arc-group. Permanent white
    glow ring at rest, drop shadow + lift on hover — same treatment as the
    List View redesign's .cover-card--redesign (style.css ~1231, ~1379). */
@@ -1611,23 +2190,37 @@ select.filter-select:focus,
   box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.5);
   transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
 }
+
 .issue-row:hover {
   transform: translateY(-3px);
   border-color: transparent;
   border-left-color: transparent;
   box-shadow: 0 0 4px 2px rgba(255, 255, 255, 0.85), 0 5px 26px rgba(0, 0, 0, 0.45);
 }
+
 .issue-row.missing,
-.cover-card.missing { opacity: 0.38; pointer-events: none; }
+.cover-card.missing {
+  opacity: 0.38;
+  pointer-events: none;
+}
 
 /* Read-state colours — left border carries the state; status button also reflects it */
-.issue-row.state-read { border-left-color: var(--green); }
-.issue-row.state-read:hover { border-left-color: var(--green); }
+.issue-row.state-read {
+  border-left-color: var(--green);
+}
+
+.issue-row.state-read:hover {
+  border-left-color: var(--green);
+}
+
 .issue-row.state-reading {
   background: color-mix(in srgb, var(--blue) 8%, var(--surface));
   border-left-color: var(--blue);
 }
-.issue-row.state-reading:hover { border-left-color: var(--blue); }
+
+.issue-row.state-reading:hover {
+  border-left-color: var(--blue);
+}
 
 /* Thumbnail — flush against the card edge; .issue-row's own overflow:hidden
    clips it to the card's corner radius, so no radius needed here. */
@@ -1638,6 +2231,7 @@ select.filter-select:focus,
   background: var(--surface-2);
   flex-shrink: 0;
 }
+
 .issue-thumb img {
   width: 100%;
   height: 100%;
@@ -1652,6 +2246,7 @@ select.filter-select:focus,
   flex-direction: column;
   gap: 1px;
 }
+
 .issue-title {
   font-size: 14px;
   font-weight: 700;
@@ -1659,16 +2254,19 @@ select.filter-select:focus,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .issue-num {
   font-weight: 700;
   color: var(--accent);
   margin-right: 6px;
 }
+
 .issue-sub {
   font-size: 12px;
   color: var(--text-3);
   margin-top: 2px;
 }
+
 /* Genre tags — same compact underline-on-hover treatment as List View's
    .list-genres/.list-genre-tag (style.css ~819-836). */
 .issue-genres {
@@ -1679,14 +2277,17 @@ select.filter-select:focus,
   text-overflow: ellipsis;
   margin-top: 1px;
 }
+
 .issue-genre-tag {
   color: inherit;
   text-decoration: none;
 }
+
 .issue-genre-tag:hover {
   text-decoration: underline;
   color: var(--accent);
 }
+
 .issue-summary {
   font-size: 12px;
   color: var(--text-3);
@@ -1706,6 +2307,7 @@ select.filter-select:focus,
   color: rgba(255, 255, 255, 0.55);
   font-weight: 500;
 }
+
 .issue-row.state-read .issue-sub,
 .issue-row.state-read .issue-genres,
 .issue-row.state-read .issue-summary,
@@ -1714,6 +2316,7 @@ select.filter-select:focus,
 .issue-row.state-reading .issue-summary {
   color: rgba(255, 255, 255, 0.5);
 }
+
 .issue-progress-track {
   height: 2px;
   background: var(--surface-3);
@@ -1721,12 +2324,14 @@ select.filter-select:focus,
   margin-top: 6px;
   overflow: hidden;
 }
+
 .issue-progress-fill {
   height: 100%;
   background: var(--blue);
   border-radius: 2px;
   min-width: 3px;
 }
+
 .status-btn {
   width: 28px;
   height: 28px;
@@ -1741,32 +2346,73 @@ select.filter-select:focus,
   flex-shrink: 0;
   transition: all 0.15s;
 }
-.status-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.status-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .status-btn.reading {
   border-color: var(--blue);
   color: var(--blue);
 }
+
 .status-btn.read {
   border-color: var(--green);
   background: var(--green);
   color: #000;
 }
-.issue-row .status-btn { align-self: center; margin: 0 14px; }
+
+.issue-row .status-btn {
+  align-self: center;
+  margin: 0 14px;
+}
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
-  :root { --card-min: 100px; }
-  .container { padding: 5px 10px 0; }
-  .strip-track { margin-left: -10px; margin-right: -10px; padding-left: 10px; padding-right: 10px; }
-  .series-header { flex-direction: column; gap: 16px; }
-  .series-cover-wrap { width: 120px; }
-  .filter-selects { gap: 6px; }
-  .filter-select { max-width: 120px; font-size: 12px; }
-  .tab-btn { padding: 4px 10px; font-size: 12px; }
+  :root {
+    --card-min: 100px;
+  }
+
+  .container {
+    padding: 5px 10px 0;
+  }
+
+  .strip-track {
+    margin-left: -10px;
+    margin-right: -10px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .series-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .series-cover-wrap {
+    width: 120px;
+  }
+
+  .filter-selects {
+    gap: 6px;
+  }
+
+  .filter-select {
+    max-width: 120px;
+    font-size: 12px;
+  }
+
+  .tab-btn {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
 }
 
 @media (max-width: 400px) {
-  :root { --card-min: 90px; }
+  :root {
+    --card-min: 90px;
+  }
 }
 
 /* ── Issue detail page ───────────────────────────────────────────────────── */
@@ -1778,7 +2424,10 @@ select.filter-select:focus,
    markup in issue.html, not built here) rather than behind it — a
    deliberate simplification, not worth restructuring static markup for a
    few px. */
-#issueContent { position: relative; }
+#issueContent {
+  position: relative;
+}
+
 /* Full-bleed to the sidebar/viewport edges (2026-07-17): breaks out of
    .container's 30px side padding via negative offsets equal to that
    padding, same idea as .page-bg's full-content-width treatment above,
@@ -1794,6 +2443,7 @@ select.filter-select:focus,
   z-index: 0;
   pointer-events: none;
 }
+
 .issue-backdrop-img {
   width: 100%;
   height: 100%;
@@ -1803,6 +2453,7 @@ select.filter-select:focus,
   filter: blur(var(--blur-backdrop));
   display: block;
 }
+
 /* Shorter top fade (2026-07-17) than the old 0–8% solid / 55% transparent
    recipe — reaches full transparency by 30% instead of 55%, so more of the
    image reads through near the top; opacity above is unchanged. */
@@ -1811,6 +2462,7 @@ select.filter-select:focus,
   inset: 0;
   background: linear-gradient(to bottom, var(--bg) 0%, transparent 30%, var(--bg) 100%);
 }
+
 .issue-content {
   position: relative;
   z-index: 1;
@@ -1823,8 +2475,16 @@ select.filter-select:focus,
   padding: 24px 0 32px;
   align-items: start;
 }
-.issue-cover-col { display: flex; flex-direction: column; gap: 14px; }
-.issue-cover-link { display: block; }
+
+.issue-cover-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.issue-cover-link {
+  display: block;
+}
 
 /* Collector-card frame (2026-07-17, "new issue cover card" design) — a
    graded-card slab: metallic outer bezel, colour-coded mat (state ring,
@@ -1834,13 +2494,17 @@ select.filter-select:focus,
    can each paint their own background — box-shadow alone can't fill with
    a gradient. No hover interaction — static, matching the rest of the
    page's non-hover cards. */
-.issue-cover-link--redesign { display: block; border-radius: 18px; }
+.issue-cover-link--redesign {
+  display: block;
+  border-radius: 18px;
+}
 
 .cc-frame-outer {
   position: relative;
   border-radius: 18px;
   padding: 11px;
   box-sizing: border-box;
+  aspect-ratio: 2 / 3;
   background: linear-gradient(148deg, #eef1f3 0%, #9aa0a8 8%, #6a7078 18%, #b7bcc3 30%, #545961 42%, #c4c9cf 54%, #6a7078 66%, #adb2b9 78%, #4a4f56 90%, #d8dce0 100%);
   box-shadow:
     0 2px 1px rgba(255, 255, 255, 0.35) inset,
@@ -1849,6 +2513,7 @@ select.filter-select:focus,
     0 20px 36px -14px rgba(0, 0, 0, 0.6),
     0 0 0 1px rgba(0, 0, 0, 0.4);
 }
+
 .cc-frame-outer::before {
   content: '';
   position: absolute;
@@ -1859,6 +2524,7 @@ select.filter-select:focus,
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
+
 .cc-frame-outer::after {
   content: '';
   position: absolute;
@@ -1873,6 +2539,7 @@ select.filter-select:focus,
    overrides for unread. */
 .cc-frame-mat {
   position: relative;
+  height: 100%;
   border-radius: 12px;
   padding: 3px;
   box-sizing: border-box;
@@ -1882,12 +2549,14 @@ select.filter-select:focus,
     0 -1px 2px rgba(255, 255, 255, 0.15) inset,
     0 0 0 1px rgba(0, 0, 0, 0.45);
 }
+
 .issue-cover-link--redesign.state-unread .cc-frame-mat {
   background: linear-gradient(160deg, #2761c9, #1a439c 45%, #0f2c6e 100%);
 }
 
 .cc-frame-inner {
   position: relative;
+  height: 100%;
   border-radius: 8px;
   padding: 5px;
   box-sizing: border-box;
@@ -1898,12 +2567,14 @@ select.filter-select:focus,
     0 0 0 1px rgba(0, 0, 0, 0.4),
     0 0 16px 3px rgba(63, 184, 119, 0.4) inset;
 }
+
 .issue-cover-link--redesign.state-unread .cc-frame-inner {
   box-shadow:
     0 3px 6px rgba(0, 0, 0, 0.55) inset,
     0 0 0 1px rgba(0, 0, 0, 0.4),
     0 0 16px 3px rgba(10, 95, 255, 0.4) inset;
 }
+
 .cc-frame-inner::before {
   content: '';
   position: absolute;
@@ -1914,6 +2585,7 @@ select.filter-select:focus,
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='l'><feTurbulence type='fractalNoise' baseFrequency='0.6 0.7' numOctaves='4' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23l)'/></svg>");
 }
+
 .cc-frame-inner::after {
   content: '';
   position: absolute;
@@ -1934,9 +2606,11 @@ select.filter-select:focus,
    carries the actual clipping/border/radius. */
 .cc-cover-glow {
   position: relative;
+  height: 100%;
   border-radius: 9px;
   box-shadow: -2px -2px 6px rgba(255, 255, 255, 0.07), 8px 10px 18px 2px rgba(0, 0, 0, 0.85);
 }
+
 .cc-cover-glow::before {
   content: '';
   position: absolute;
@@ -1952,7 +2626,7 @@ select.filter-select:focus,
   position: relative;
   z-index: 1;
   width: 100%;
-  aspect-ratio: 2 / 3;
+  height: 100%;
   object-fit: cover;
   display: block;
   overflow: hidden;
@@ -1985,6 +2659,30 @@ select.filter-select:focus,
   pointer-events: none;
 }
 
+/* Flag-for-review badge overlaid on the art, bottom-right (top-left is the
+   Read state indicator's corner). Toggled via [hidden] from
+   buildFlagReviewToggle's sync(), not a CSS state class. */
+.cc-flag-badge {
+  position: absolute;
+  z-index: 2;
+  bottom: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(60, 64, 72, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  color: var(--danger);
+  pointer-events: none;
+}
+
+.cc-flag-badge svg {
+  display: block;
+}
+
 /* Progress bar — under the cover, not overlaid, with a visible track so a
    partial fill still reads clearly at a glance. */
 .issue-progress-track {
@@ -1993,16 +2691,19 @@ select.filter-select:focus,
   background: #1b1e24;
   overflow: hidden;
 }
+
 .issue-progress-fill {
   height: 100%;
   background: #3FB877;
   border-radius: var(--radius-pill);
 }
+
 .issue-actions {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
+
 .btn-read-action {
   display: block;
   text-align: center;
@@ -2015,7 +2716,12 @@ select.filter-select:focus,
   border: 1px solid var(--accent);
   transition: all 0.15s;
 }
-.btn-read-action:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+.btn-read-action:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
 .btn-status-toggle {
   display: block;
   text-align: center;
@@ -2028,11 +2734,17 @@ select.filter-select:focus,
   border: 1px solid var(--border);
   transition: all 0.15s;
 }
-.btn-status-toggle:hover { border-color: var(--accent); color: var(--text); }
+
+.btn-status-toggle:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
 .btn-status-toggle.is-read {
   border-color: var(--green);
   color: var(--green);
 }
+
 .btn-favorite-toggle {
   display: block;
   text-align: center;
@@ -2045,11 +2757,30 @@ select.filter-select:focus,
   border: 1px solid var(--border);
   transition: all 0.15s;
 }
-.btn-favorite-toggle:hover { border-color: var(--favourite); color: var(--text); }
+
+.btn-favorite-toggle:hover {
+  border-color: var(--favourite);
+  color: var(--text);
+}
+
 .btn-favorite-toggle.is-favorite {
   border-color: var(--favourite);
   color: var(--favourite);
 }
+
+/* Light theme: gold text on the light surface reads low-contrast, so keep
+   the label at its normal (unfavourited) colour and let the border alone
+   carry the favourited state. */
+:root[data-theme="light"] .btn-favorite-toggle.is-favorite {
+  color: var(--text-2);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .btn-favorite-toggle.is-favorite {
+    color: var(--text-2);
+  }
+}
+
 /* SPEC.md §20.17 — larger stars + space-between (no fixed gap) so the row
    fills the same width as the button column below it, instead of sitting
    centered with blank margin either side at the old smaller star size. */
@@ -2064,19 +2795,28 @@ select.filter-select:focus,
   border: 1px solid var(--border);
   border-radius: 20px;
 }
+
 .rating-control .rating-star {
   font-size: 30px;
   line-height: 1;
   color: var(--surface-3);
   transition: color 0.15s, transform 0.1s;
 }
-.rating-control .rating-star:hover { transform: scale(1.15); }
-.rating-control .rating-star.is-filled { color: var(--favourite); }
+
+.rating-control .rating-star:hover {
+  transform: scale(1.15);
+}
+
+.rating-control .rating-star.is-filled {
+  color: var(--favourite);
+}
+
 /* Edit XML + Flag for Review share a row, equal width (2026-07-17). */
 .issue-actions-row {
   display: flex;
   gap: 8px;
 }
+
 .btn-edit-xml {
   display: block;
   flex: 1;
@@ -2091,7 +2831,11 @@ select.filter-select:focus,
   border: 1px solid var(--border);
   transition: all 0.15s;
 }
-.btn-edit-xml:hover { border-color: var(--accent); color: var(--text); }
+
+.btn-edit-xml:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
 
 .btn-flag-review-toggle {
   display: block;
@@ -2107,13 +2851,21 @@ select.filter-select:focus,
   border: 1px solid var(--border);
   transition: all 0.15s;
 }
-.btn-flag-review-toggle:hover { border-color: var(--danger); color: var(--text); }
+
+.btn-flag-review-toggle:hover {
+  border-color: var(--danger);
+  color: var(--text);
+}
+
 .btn-flag-review-toggle.is-flagged-review {
   border-color: var(--danger);
   color: var(--danger);
 }
 
-.issue-meta-col { min-width: 0; }
+.issue-meta-col {
+  min-width: 0;
+}
+
 .issue-series-title {
   font-size: clamp(18px, 2.5vw, 26px);
   font-weight: 800;
@@ -2121,6 +2873,7 @@ select.filter-select:focus,
   line-height: 1.2;
   margin-bottom: 10px;
 }
+
 .badge-row {
   display: flex;
   gap: 6px;
@@ -2128,6 +2881,7 @@ select.filter-select:focus,
   align-items: center;
   margin-bottom: 10px;
 }
+
 .issue-num-badge {
   display: inline-flex;
   align-items: center;
@@ -2138,6 +2892,7 @@ select.filter-select:focus,
   padding: 3px 10px;
   border-radius: 12px;
 }
+
 .format-badge {
   display: inline-flex;
   align-items: center;
@@ -2148,6 +2903,7 @@ select.filter-select:focus,
   padding: 3px 10px;
   border-radius: 12px;
 }
+
 .bw-badge {
   display: inline-flex;
   align-items: center;
@@ -2159,6 +2915,7 @@ select.filter-select:focus,
   border-radius: 12px;
   border: 1px solid var(--border);
 }
+
 .issue-pub-info {
   font-size: 13px;
   color: var(--text-2);
@@ -2170,6 +2927,7 @@ select.filter-select:focus,
   padding-top: 16px;
   border-top: 1px solid var(--border);
 }
+
 .meta-label {
   font-size: 11px;
   font-weight: 700;
@@ -2178,6 +2936,7 @@ select.filter-select:focus,
   color: var(--text-3);
   margin-bottom: 8px;
 }
+
 .summary-text {
   font-size: 14px;
   color: var(--text-2);
@@ -2185,6 +2944,7 @@ select.filter-select:focus,
   max-width: 640px;
   white-space: pre-line;
 }
+
 .meta-value {
   font-size: 14px;
   color: var(--text-2);
@@ -2196,21 +2956,25 @@ select.filter-select:focus,
   gap: 4px 16px;
   align-items: baseline;
 }
+
 .credit-label {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-3);
   white-space: nowrap;
 }
+
 .credit-value {
   font-size: 13px;
   color: var(--text-2);
 }
+
 .credit-link {
   color: var(--text-2);
   text-decoration: none;
   border-bottom: 1px dotted var(--text-3);
 }
+
 .credit-link:hover {
   color: var(--accent);
   border-bottom-color: var(--accent);
@@ -2221,6 +2985,7 @@ select.filter-select:focus,
   gap: 6px;
   flex-wrap: wrap;
 }
+
 .csv-tag {
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -2248,6 +3013,7 @@ select.filter-select:focus,
   border-top: 1px solid var(--border);
   margin-top: 8px;
 }
+
 .nav-issue-btn {
   font-size: 13px;
   font-weight: 600;
@@ -2259,9 +3025,21 @@ select.filter-select:focus,
   transition: border-color 0.15s, color 0.15s;
   display: inline-block;
 }
-.nav-issue-btn:hover { border-color: var(--accent); color: var(--accent); }
-.nav-prev { text-align: left; }
-.nav-next { text-align: right; justify-self: end; }
+
+.nav-issue-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.nav-prev {
+  text-align: left;
+}
+
+.nav-next {
+  text-align: right;
+  justify-self: end;
+}
+
 .nav-series-link {
   font-size: 12px;
   color: var(--text-3);
@@ -2271,31 +3049,42 @@ select.filter-select:focus,
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.nav-series-link:hover { color: var(--accent); }
-.nav-placeholder { display: block; }
+
+.nav-series-link:hover {
+  color: var(--accent);
+}
+
+.nav-placeholder {
+  display: block;
+}
 
 @media (max-width: 640px) {
   .issue-layout {
     grid-template-columns: 1fr;
   }
+
   .issue-cover-col {
     flex-direction: row;
     align-items: flex-start;
     gap: 16px;
   }
+
   .issue-cover-link--redesign {
     width: 150px;
     flex-shrink: 0;
   }
+
   .issue-actions {
     flex: 1;
     justify-content: flex-start;
     padding-top: 4px;
   }
+
   .issue-nav {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto auto;
   }
+
   .nav-series-link {
     grid-column: 1 / -1;
     order: -1;
@@ -2306,7 +3095,10 @@ select.filter-select:focus,
 }
 
 /* ── Admin page ──────────────────────────────────────────────────────────── */
-.admin-main { padding-top: 24px; padding-bottom: 60px; }
+.admin-main {
+  padding-top: 24px;
+  padding-bottom: 60px;
+}
 
 .admin-page-label {
   font-size: 13px;
@@ -2356,11 +3148,26 @@ select.filter-select:focus,
   transition: border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
-.btn-admin-action:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
-.btn-admin-action:disabled { opacity: 0.38; cursor: default; }
+
+.btn-admin-action:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.btn-admin-action:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.log-btn {
+  margin-top: auto;
+}
 
 /* Admin section */
-.admin-section { margin-bottom: 36px; }
+.admin-section {
+  margin-bottom: 36px;
+}
+
 .admin-section-heading {
   font-size: 11px;
   font-weight: 700;
@@ -2405,13 +3212,18 @@ select.filter-select:focus,
   letter-spacing: -0.03em;
   line-height: 1;
 }
-.stat-value--md { font-size: 18px; line-height: 1.2; }
+
+.stat-value--md {
+  font-size: 18px;
+  line-height: 1.2;
+}
 
 .stat-sub {
   font-size: 17px;
   font-weight: 700;
   color: var(--accent-dim);
 }
+
 .stat-label {
   font-size: 11px;
   font-weight: 600;
@@ -2420,7 +3232,11 @@ select.filter-select:focus,
   color: var(--text-3);
   margin-top: 6px;
 }
-.stat-label:first-child { margin-top: 0; }
+
+.stat-label:first-child {
+  margin-top: 0;
+}
+
 .stat-unit {
   display: inline-block;
   font-size: 11px;
@@ -2433,8 +3249,14 @@ select.filter-select:focus,
 }
 
 /* Scan Now card */
-.scan-now-card { gap: 12px; }
-.scan-progress { width: 100%; }
+.scan-now-card {
+  gap: 12px;
+}
+
+.scan-progress {
+  width: 100%;
+}
+
 .scan-bar-wrap {
   height: 4px;
   background: var(--surface-3);
@@ -2442,6 +3264,7 @@ select.filter-select:focus,
   overflow: hidden;
   margin-bottom: 7px;
 }
+
 .scan-bar {
   height: 100%;
   background: var(--accent);
@@ -2449,6 +3272,7 @@ select.filter-select:focus,
   width: 0%;
   transition: width 0.4s;
 }
+
 .scan-status-text {
   font-size: 11px;
   color: var(--text-2);
@@ -2467,15 +3291,30 @@ select.filter-select:focus,
   color: var(--text-3);
   margin-bottom: 12px;
 }
+
 .admin-nav-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 12px;
   margin-bottom: 12px;
 }
-.admin-nav-grid--sm { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-bottom: 24px; }
-.admin-subitem-row { display: flex; align-items: stretch; gap: 8px; }
-.admin-subitem-row .admin-nav-grid--sm { flex: 1 1 auto; }
+
+.admin-nav-grid--sm {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.admin-subitem-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.admin-subitem-row .admin-nav-grid--sm {
+  flex: 1 1 auto;
+}
+
 .admin-nav-card {
   display: flex;
   align-items: center;
@@ -2493,10 +3332,27 @@ select.filter-select:focus,
   cursor: pointer;
   transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
-.admin-nav-card:hover { border-color: var(--accent); }
-.admin-nav-card.active { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-text); }
-.admin-nav-grid--sm .admin-nav-card { padding: 12px 8px; min-height: 48px; color: var(--text-2); }
-.admin-nav-grid--sm .admin-nav-card.active { color: var(--accent-text); }
+
+.admin-nav-card:hover {
+  border-color: var(--accent);
+}
+
+.admin-nav-card.active {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--accent-text);
+}
+
+.admin-nav-grid--sm .admin-nav-card {
+  padding: 12px 8px;
+  min-height: 48px;
+  color: var(--text-2);
+}
+
+.admin-nav-grid--sm .admin-nav-card.active {
+  color: var(--accent-text);
+}
+
 .admin-content-heading {
   font-size: 15px;
   font-weight: 800;
@@ -2512,6 +3368,7 @@ select.filter-select:focus,
   max-width: 640px;
   margin: 0 auto;
 }
+
 .admin-content-block[data-subitem="filename-editor"] {
   max-width: 75%;
 }
@@ -2523,20 +3380,34 @@ select.filter-select:focus,
   border-radius: var(--radius-lg);
   padding: 18px 16px;
 }
-.admin-card--spaced { margin-top: 12px; }
+
+.admin-card--spaced {
+  margin-top: 12px;
+}
+
 .admin-card-label {
   font-size: 12px;
   font-weight: 700;
   color: var(--text-2);
   margin-bottom: 8px;
 }
+
 .admin-card-hint {
   font-size: 12px;
   color: var(--text-3);
   margin-bottom: 10px;
 }
-.admin-backup-error { color: var(--danger-text); margin-top: 4px; }
-.admin-key-ok { color: var(--green); margin-top: 4px; }
+
+.admin-backup-error {
+  color: var(--danger-text);
+  margin-top: 4px;
+}
+
+.admin-key-ok {
+  color: var(--green);
+  margin-top: 4px;
+}
+
 .admin-empty-hint {
   font-size: 12px;
   color: var(--text-3);
@@ -2550,6 +3421,7 @@ select.filter-select:focus,
   gap: 6px;
   margin-bottom: 10px;
 }
+
 .folder-row {
   display: flex;
   align-items: center;
@@ -2559,6 +3431,7 @@ select.filter-select:focus,
   border-radius: var(--radius);
   padding: 6px 10px;
 }
+
 .folder-path {
   flex: 1;
   font-size: 13px;
@@ -2569,6 +3442,7 @@ select.filter-select:focus,
   white-space: nowrap;
   min-width: 0;
 }
+
 .folder-remove-btn {
   font-size: 11px;
   color: var(--text-3);
@@ -2580,13 +3454,30 @@ select.filter-select:focus,
   transition: border-color 0.15s, color 0.15s;
   flex-shrink: 0;
 }
-.folder-remove-btn:hover { border-color: var(--danger); color: var(--danger); }
 
-.folder-add-row { display: flex; gap: 8px; }
+.folder-remove-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.folder-add-row {
+  display: flex;
+  gap: 8px;
+}
 
 /* Custom Tabs (admin > Advanced Settings) */
-.admin-subsection { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
-.admin-subsection-heading { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.admin-subsection {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.admin-subsection-heading {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
 .ct-tab-row {
   display: flex;
   align-items: center;
@@ -2596,8 +3487,21 @@ select.filter-select:focus,
   border-radius: var(--radius);
   padding: 8px 10px;
 }
-.ct-tab-info { flex: 1; min-width: 0; }
-.ct-tab-name { font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+
+.ct-tab-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ct-tab-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .ct-tab-path {
   font-size: 12px;
   color: var(--text-3);
@@ -2606,6 +3510,7 @@ select.filter-select:focus,
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .ct-hidden-badge {
   font-size: 10px;
   font-weight: 700;
@@ -2616,6 +3521,7 @@ select.filter-select:focus,
   border-radius: 8px;
   padding: 1px 6px;
 }
+
 .ct-visible-toggle {
   font-size: 11px;
   font-weight: 600;
@@ -2627,14 +3533,44 @@ select.filter-select:focus,
   cursor: pointer;
   flex-shrink: 0;
 }
-.ct-visible-toggle.is-visible { color: var(--accent); border-color: var(--accent); }
-.ct-add-form { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
-.ct-path-row { display: flex; gap: 8px; }
-.ct-viewmode-row { display: flex; align-items: center; gap: 8px; }
-.ct-add-actions { display: flex; align-items: center; gap: 12px; }
+
+.ct-visible-toggle.is-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.ct-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ct-path-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ct-viewmode-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ct-add-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
 /* Home Page Strips — reorder arrows + basis/order radio rows */
-.hs-reorder-arrows { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+.hs-reorder-arrows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
 .hs-arrow-btn {
   font-size: 10px;
   line-height: 1;
@@ -2645,11 +3581,36 @@ select.filter-select:focus,
   color: var(--text-2);
   cursor: pointer;
 }
-.hs-arrow-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-.hs-arrow-btn:disabled { opacity: 0.3; cursor: default; }
-.hs-basis-row { display: flex; gap: 14px; align-items: center; }
-.hs-radio { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-2); cursor: pointer; }
-.hs-radio input { cursor: pointer; accent-color: var(--accent); }
+
+.hs-arrow-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.hs-arrow-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.hs-basis-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.hs-radio {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.hs-radio input {
+  cursor: pointer;
+  accent-color: var(--accent);
+}
 
 .admin-input {
   flex: 1;
@@ -2662,7 +3623,10 @@ select.filter-select:focus,
   outline: none;
   transition: border-color 0.2s;
 }
-.admin-input:focus { border-color: var(--accent); }
+
+.admin-input:focus {
+  border-color: var(--accent);
+}
 
 /* Pagination setting */
 .pagination-setting-row {
@@ -2671,6 +3635,7 @@ select.filter-select:focus,
   gap: 14px;
   flex-wrap: wrap;
 }
+
 .admin-select {
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -2682,8 +3647,15 @@ select.filter-select:focus,
   cursor: pointer;
   transition: border-color 0.2s;
 }
-.admin-select:focus { border-color: var(--accent); }
-.admin-hint { font-size: 12px; color: var(--text-3); }
+
+.admin-select:focus {
+  border-color: var(--accent);
+}
+
+.admin-hint {
+  font-size: 12px;
+  color: var(--text-3);
+}
 
 /* Advanced settings */
 .admin-lock-label {
@@ -2696,7 +3668,12 @@ select.filter-select:focus,
   margin-bottom: 18px;
   user-select: none;
 }
-.admin-lock-label input { cursor: pointer; accent-color: var(--accent); }
+
+.admin-lock-label input {
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
 .admin-lock-label--compact {
   flex: 0 0 auto;
   margin-bottom: 24px;
@@ -2706,6 +3683,7 @@ select.filter-select:focus,
   background: var(--surface);
   font-weight: 700;
 }
+
 .admin-fieldset {
   border: none;
   padding: 0;
@@ -2713,7 +3691,12 @@ select.filter-select:focus,
   flex-direction: column;
   gap: 16px;
 }
-.admin-fieldset:disabled { opacity: 0.4; pointer-events: none; }
+
+.admin-fieldset:disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 .admin-field-row {
   display: flex;
   align-items: flex-start;
@@ -2721,6 +3704,7 @@ select.filter-select:focus,
   flex-wrap: wrap;
   padding-top: 5px
 }
+
 .admin-field-label {
   font-size: 12px;
   font-weight: 600;
@@ -2729,15 +3713,32 @@ select.filter-select:focus,
   padding-top: 8px;
   flex-shrink: 0;
 }
-.admin-field-input-wrap { flex: 1; min-width: 180px; padding-top: 5px}
-.admin-field-input-row { display: flex; gap: 10px; align-items: center; }
-.admin-field-input-row .admin-input { flex: 1; }
+
+.admin-field-input-wrap {
+  flex: 1;
+  min-width: 180px;
+  padding-top: 5px
+}
+
+.admin-field-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-field-input-row .admin-input {
+  flex: 1;
+}
+
 .admin-field-hint {
   font-size: 11px;
   color: var(--text-3);
   margin-top: 4px;
 }
-.admin-field-actions { padding-top: 4px; }
+
+.admin-field-actions {
+  padding-top: 4px;
+}
 
 /* Toast */
 .admin-toast {
@@ -2756,13 +3757,18 @@ select.filter-select:focus,
   transition: opacity 0.22s, transform 0.22s;
   z-index: 999;
   white-space: nowrap;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
 }
+
 .admin-toast--show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
-.admin-toast--error { border-color: var(--danger); color: var(--danger-text); }
+
+.admin-toast--error {
+  border-color: var(--danger);
+  color: var(--danger-text);
+}
 
 /* Multi-select bulk-action toolbar (Tier 4 Item 2) */
 .selection-toolbar {
@@ -2780,19 +3786,25 @@ select.filter-select:focus,
   border-top: 1px solid var(--border);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
 }
-.selection-toolbar[hidden] { display: none; }
+
+.selection-toolbar[hidden] {
+  display: none;
+}
+
 .selection-count {
   font-size: 13px;
   font-weight: 700;
   color: var(--text);
   margin-right: auto;
 }
+
 .selection-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
 }
+
 .selection-action-btn {
   background: var(--surface-2);
   color: var(--text-2);
@@ -2803,8 +3815,17 @@ select.filter-select:focus,
   border: 1px solid var(--border);
   transition: all 0.15s;
 }
-.selection-action-btn:hover { border-color: var(--accent); color: var(--text); }
-.selection-action-btn--danger:hover { border-color: var(--danger); color: var(--danger); }
+
+.selection-action-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.selection-action-btn--danger:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
 .selection-rate {
   display: flex;
   align-items: center;
@@ -2814,23 +3835,35 @@ select.filter-select:focus,
   border-radius: 16px;
   padding: 7px 12px;
 }
+
 .selection-rate .rating-star {
   font-size: 14px;
   color: var(--text-2);
   transition: color 0.15s, transform 0.1s;
 }
-.selection-rate .rating-star:hover { color: var(--favourite); transform: scale(1.15); }
+
+.selection-rate .rating-star:hover {
+  color: var(--favourite);
+  transform: scale(1.15);
+}
+
 .selection-rate .rating-clear {
   font-size: 12px;
   margin-right: 4px;
   padding-right: 8px;
   border-right: 1px solid var(--border);
 }
-.selection-rate .rating-clear:hover { color: var(--text); transform: none; }
+
+.selection-rate .rating-clear:hover {
+  color: var(--text);
+  transform: none;
+}
+
 .selection-toolbar-end {
   display: flex;
   gap: 8px;
 }
+
 .selection-done-btn {
   font-size: 13px;
   font-weight: 600;
@@ -2849,6 +3882,7 @@ select.filter-select:focus,
   gap: 4px;
   padding: 24px 0 32px;
 }
+
 .page-btn {
   min-width: 36px;
   height: 36px;
@@ -2859,14 +3893,26 @@ select.filter-select:focus,
   font-size: 14px;
   transition: background 0.15s;
 }
-.page-btn:hover:not(:disabled) { background: var(--surface-3); }
-.page-btn:disabled { opacity: 0.35; cursor: default; }
+
+.page-btn:hover:not(:disabled) {
+  background: var(--surface-3);
+}
+
+.page-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .page-btn--current {
   background: var(--accent);
   color: var(--on-accent);
   font-weight: 600;
 }
-.page-btn--current:hover { background: var(--accent); }
+
+.page-btn--current:hover {
+  background: var(--accent);
+}
+
 .page-ellipsis {
   min-width: 28px;
   text-align: center;
@@ -2886,6 +3932,7 @@ select.filter-select:focus,
   z-index: 1000;
   padding: 24px;
 }
+
 .editor-modal {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2896,6 +3943,7 @@ select.filter-select:focus,
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
 }
+
 .editor-modal-header {
   display: flex;
   align-items: center;
@@ -2906,17 +3954,36 @@ select.filter-select:focus,
 /* Compact login/no-password modal — 60% narrower than the shared
    .editor-modal width (which is sized for the much wider metadata editor),
    with a consistent 10px horizontal inset replacing the base chrome's 20px. */
-.login-modal { max-width: 288px; }
+.login-modal {
+  max-width: 288px;
+}
+
 .login-modal .editor-modal-header,
-.login-modal .editor-actions { padding-left: 10px; padding-right: 10px; }
-.login-modal .editor-error { margin-left: 10px; margin-right: 10px; }
-.login-modal .editor-field { padding: 0 10px; }
-.editor-modal-title { font-size: 17px; font-weight: 700; }
+.login-modal .editor-actions {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.login-modal .editor-error {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.login-modal .editor-field {
+  padding: 0 10px;
+}
+
+.editor-modal-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
 .log-viewer-hint {
   margin: 8px 20px 0;
   font-size: 12px;
   color: var(--text-secondary);
 }
+
 .log-viewer-content {
   margin: 16px 20px 20px;
   padding: 12px;
@@ -2928,6 +3995,7 @@ select.filter-select:focus,
   max-height: 50vh;
   overflow-y: auto;
 }
+
 .editor-close-btn {
   background: none;
   color: var(--text-2);
@@ -2935,18 +4003,24 @@ select.filter-select:focus,
   line-height: 1;
   padding: 4px;
 }
-.editor-close-btn:hover { color: var(--text); }
+
+.editor-close-btn:hover {
+  color: var(--text);
+}
+
 .fe-process-error-footer {
   display: flex;
   justify-content: flex-end;
   padding: 0 20px 20px;
 }
+
 .editor-tabs {
   display: flex;
   gap: 4px;
   padding: 14px 20px 0;
   border-bottom: 1px solid var(--border);
 }
+
 .editor-tab-btn {
   background: none;
   color: var(--text-3);
@@ -2956,34 +4030,68 @@ select.filter-select:focus,
   border-bottom: 2px solid transparent;
   transition: color 0.15s, border-color 0.15s;
 }
-.editor-tab-btn:hover { color: var(--text-2); }
-.editor-tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
-.editor-tab-panel { padding: 18px 20px 4px; display: flex; flex-direction: column; gap: 14px; }
-.editor-field { display: flex; flex-direction: column; gap: 6px; }
-.editor-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.editor-tab-btn:hover {
+  color: var(--text-2);
+}
+
+.editor-tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.editor-tab-panel {
+  padding: 18px 20px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.editor-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
 .fe-number-row {
   display: flex;
   align-items: center;
   gap: 14px;
 }
-.fe-number-row .editor-field-checkbox { white-space: nowrap; }
+
+.fe-number-row .editor-field-checkbox {
+  white-space: nowrap;
+}
+
 .fe-number-row .editor-field {
   flex-direction: row;
   align-items: center;
   gap: 8px;
 }
+
 .fe-number-row .editor-field:last-child {
   margin-left: auto;
 }
+
 .fe-number-row .editor-field label {
   white-space: nowrap;
 }
+
 .editor-field label {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-2);
 }
-.editor-required { color: var(--accent); }
+
+.editor-required {
+  color: var(--accent);
+}
 
 /* EDITOR_SPEC.md §5.2 amended note — per-field "Apply to: All" checkbox for
    Process All (default unchecked). Sits opposite the field's own label;
@@ -2996,6 +4104,7 @@ select.filter-select:focus,
   justify-content: space-between;
   gap: 10px;
 }
+
 .fe-apply-all-label {
   display: flex;
   align-items: center;
@@ -3006,7 +4115,11 @@ select.filter-select:focus,
   white-space: nowrap;
   cursor: pointer;
 }
-.fe-apply-all-label input { cursor: pointer; }
+
+.fe-apply-all-label input {
+  cursor: pointer;
+}
+
 /* Beats #feForm .editor-field-checkbox label's specificity so the BlackAndWhite
    row's "Apply to: All" label keeps the same muted styling as every other field's. */
 #feForm .editor-field-checkbox label.fe-apply-all-label {
@@ -3014,6 +4127,7 @@ select.filter-select:focus,
   font-weight: 500;
   color: var(--text-3);
 }
+
 .editor-field input[type="text"],
 .editor-field select,
 .editor-field textarea {
@@ -3025,10 +4139,18 @@ select.filter-select:focus,
   padding: 8px 10px;
   font-family: inherit;
 }
+
 .editor-field input[type="text"]:focus,
 .editor-field select:focus,
-.editor-field textarea:focus { border-color: var(--accent); outline: none; }
-.editor-field textarea { resize: vertical; }
+.editor-field textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.editor-field textarea {
+  resize: vertical;
+}
+
 .editor-field-checkbox label {
   display: flex;
   align-items: center;
@@ -3037,11 +4159,13 @@ select.filter-select:focus,
   font-weight: 400;
   color: var(--text);
 }
+
 #feForm .editor-field-checkbox label {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-2);
 }
+
 .editor-genre-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3053,30 +4177,40 @@ select.filter-select:focus,
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
+
 #fe-genre-grid {
   grid-template-columns: repeat(5, 1fr);
 }
+
 .ed-format-row {
   grid-template-columns: auto auto auto;
   justify-content: start;
   align-items: end;
 }
+
 .ed-format-row .editor-field-checkbox {
   white-space: nowrap;
 }
-#ed-format, #ed-agerating {
+
+#ed-format,
+#ed-agerating {
   max-width: 200px;
 }
+
 #ed-genre-grid {
   grid-template-columns: repeat(4, 1fr);
 }
+
 #ed-genre-grid .editor-genre-item {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-#fe-number, #fe-year {
+
+#fe-number,
+#fe-year {
   max-width: 90px;
 }
+
 .editor-genre-item {
   display: flex;
   align-items: center;
@@ -3085,6 +4219,7 @@ select.filter-select:focus,
   font-weight: 400;
   color: var(--text);
 }
+
 .editor-error {
   margin: 0 20px;
   padding: 10px 12px;
@@ -3094,6 +4229,7 @@ select.filter-select:focus,
   color: var(--danger-text);
   font-size: 13px;
 }
+
 /* Neutral variant — "a previous save is still finishing," not an actual
    error (Basic Editor async save, INBOX.md 2026-07-11). */
 .editor-error--notice {
@@ -3101,12 +4237,14 @@ select.filter-select:focus,
   border-color: var(--accent);
   color: var(--text);
 }
+
 .editor-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   padding: 16px 20px 20px;
 }
+
 .page-ellipsis {
   min-width: 28px;
   text-align: center;
@@ -3133,7 +4271,13 @@ select.filter-select:focus,
   letter-spacing: -0.01em;
   white-space: nowrap;
 }
-.fe-header-glyph { font-family: var(--font-mono); font-size: 13px; color: var(--accent-text); }
+
+.fe-header-glyph {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--accent-text);
+}
+
 .fe-header-actions {
   margin-left: auto;
   display: flex;
@@ -3141,9 +4285,20 @@ select.filter-select:focus,
   gap: 8px;
   flex-shrink: 0;
 }
-.fe-header-actions .settings-btn { margin-left: 0; }
-.btn-admin-action--ghost { background: transparent; border-color: transparent; }
-.btn-admin-action--ghost:hover:not(:disabled) { background: var(--surface-2); border-color: var(--border); }
+
+.fe-header-actions .settings-btn {
+  margin-left: 0;
+}
+
+.btn-admin-action--ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+.btn-admin-action--ghost:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
 
 /* Workspace shell — fills the viewport below the sticky header. */
 .fe-shell {
@@ -3154,6 +4309,7 @@ select.filter-select:focus,
   gap: 12px;
   min-height: 0;
 }
+
 .fe-layout {
   flex: 1;
   min-height: 0;
@@ -3161,6 +4317,7 @@ select.filter-select:focus,
   grid-template-columns: 340px 540px 470px minmax(280px, 1fr);
   gap: 14px;
 }
+
 .fe-panel {
   display: flex;
   flex-direction: column;
@@ -3170,6 +4327,7 @@ select.filter-select:focus,
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
+
 .fe-panel-head {
   display: flex;
   align-items: center;
@@ -3178,6 +4336,7 @@ select.filter-select:focus,
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
+
 .fe-panel-num {
   display: inline-flex;
   align-items: center;
@@ -3191,6 +4350,7 @@ select.filter-select:focus,
   font-weight: 800;
   flex-shrink: 0;
 }
+
 .fe-panel-title {
   font-size: 12px;
   font-weight: 700;
@@ -3199,22 +4359,32 @@ select.filter-select:focus,
   color: var(--text-2);
   white-space: nowrap;
 }
+
 .fe-panel-toolbar {
   display: flex;
   gap: 8px;
   padding: 12px 14px 0;
   flex-shrink: 0;
 }
-.fe-btn-block { flex: 1; }
+
+.fe-btn-block {
+  flex: 1;
+}
+
 .fe-panel-foot {
   display: flex;
   gap: 8px;
   align-items: center;
   padding: 12px 14px;
   border-top: 1px solid var(--border);
-  flex-shrink: 0;
+  justify-content: flex-end;
 }
-.fe-panel-foot--col { flex-direction: column; align-items: stretch; gap: 8px; }
+
+.fe-panel-foot--col {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
 
 /* ── Col 1 — Load / Select Files ── */
 .fe-lib-path {
@@ -3227,11 +4397,13 @@ select.filter-select:focus,
   font-size: 12px;
   color: var(--text-2);
 }
+
 .fe-lib-path span {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .fe-tree {
   flex: 1;
   min-height: 0;
@@ -3239,14 +4411,19 @@ select.filter-select:focus,
   padding: 0 8px 10px;
   outline: none;
 }
-.fe-tree-empty, .fe-queue-empty {
+
+.fe-tree-empty,
+.fe-queue-empty {
   padding: 30px 12px;
   text-align: center;
   color: var(--text-3);
   font-size: 12px;
   line-height: 1.6;
 }
-.fe-tree-folder, .fe-tree-series, .fe-tree-issue {
+
+.fe-tree-folder,
+.fe-tree-series,
+.fe-tree-issue {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -3255,10 +4432,29 @@ select.filter-select:focus,
   cursor: pointer;
   transition: background var(--dur-fast) var(--ease);
 }
-.fe-tree-folder:hover, .fe-tree-series:hover, .fe-tree-issue:hover { background: var(--surface-2); }
-.fe-tree-series { padding-left: 20px; }
-.fe-tree-chev { width: 12px; font-size: 10px; color: var(--text-3); flex-shrink: 0; }
-.fe-tree-ico { font-size: 13px; flex-shrink: 0; }
+
+.fe-tree-folder:hover,
+.fe-tree-series:hover,
+.fe-tree-issue:hover {
+  background: var(--surface-2);
+}
+
+.fe-tree-series {
+  padding-left: 20px;
+}
+
+.fe-tree-chev {
+  width: 12px;
+  font-size: 10px;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.fe-tree-ico {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
 .fe-tree-folder-name {
   flex: 1;
   font-size: 13px;
@@ -3268,6 +4464,7 @@ select.filter-select:focus,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .fe-tree-series-name {
   flex: 1;
   font-size: 13px;
@@ -3277,7 +4474,13 @@ select.filter-select:focus,
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.fe-tree-count { font-size: 11px; color: var(--text-3); flex-shrink: 0; }
+
+.fe-tree-count {
+  font-size: 11px;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
 .fe-tree-issue-name {
   flex: 1;
   font-size: 12.5px;
@@ -3286,11 +4489,16 @@ select.filter-select:focus,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .fe-tree-issue.selected {
   background: var(--accent-tint);
   box-shadow: inset 2px 0 0 var(--accent);
 }
-.fe-tree-issue.selected .fe-tree-issue-name { color: var(--accent-text); }
+
+.fe-tree-issue.selected .fe-tree-issue-name {
+  color: var(--accent-text);
+}
+
 .fe-tree-lowconf {
   width: 7px;
   height: 7px;
@@ -3298,6 +4506,7 @@ select.filter-select:focus,
   background: var(--danger);
   flex-shrink: 0;
 }
+
 .fe-tree-xml {
   font-size: 9px;
   font-weight: 800;
@@ -3308,7 +4517,12 @@ select.filter-select:focus,
   border-radius: var(--radius-xs);
   flex-shrink: 0;
 }
-.fe-tree-xml.warning { color: var(--favourite); background: color-mix(in srgb, var(--favourite) 16%, transparent); }
+
+.fe-tree-xml.warning {
+  color: var(--favourite);
+  background: color-mix(in srgb, var(--favourite) 16%, transparent);
+}
+
 .fe-tree-remove {
   width: 20px;
   height: 20px;
@@ -3319,16 +4533,31 @@ select.filter-select:focus,
   opacity: 0;
   transition: opacity var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
-.fe-tree-issue:hover .fe-tree-remove { opacity: 1; }
-.fe-tree-remove:hover { color: var(--danger); }
+
+.fe-tree-issue:hover .fe-tree-remove {
+  opacity: 1;
+}
+
+.fe-tree-remove:hover {
+  color: var(--danger);
+}
 
 .fe-stats {
   display: flex;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
-.fe-stat { flex: 1; padding: 11px 6px; text-align: center; }
-.fe-stat + .fe-stat { border-left: 1px solid var(--border); }
+
+.fe-stat {
+  flex: 1;
+  padding: 11px 6px;
+  text-align: center;
+}
+
+.fe-stat+.fe-stat {
+  border-left: 1px solid var(--border);
+}
+
 .fe-stat-num {
   font-size: 18px;
   font-weight: 800;
@@ -3336,7 +4565,11 @@ select.filter-select:focus,
   line-height: 1;
   color: var(--text);
 }
-.fe-stat-num--accent { color: var(--accent); }
+
+.fe-stat-num--accent {
+  color: var(--accent);
+}
+
 .fe-stat-label {
   font-size: 9px;
   font-weight: 700;
@@ -3355,7 +4588,13 @@ select.filter-select:focus,
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.fe-tabs-row .editor-tabs { padding: 0; border-bottom: none; gap: 22px; }
+
+.fe-tabs-row .editor-tabs {
+  padding: 0;
+  border-bottom: none;
+  gap: 22px;
+}
+
 .fe-apply-head {
   font-size: 10px;
   font-weight: 700;
@@ -3364,6 +4603,7 @@ select.filter-select:focus,
   color: var(--text-3);
   white-space: nowrap;
 }
+
 .fe-form-body {
   flex: 1;
   min-height: 0;
@@ -3371,20 +4611,38 @@ select.filter-select:focus,
   overflow-x: hidden;
   padding: 12px 16px;
 }
-.fe-form-body .editor-tab-panel { padding: 0; gap: 8px; }
+
+.fe-form-body .editor-tab-panel {
+  padding: 0;
+  gap: 8px;
+}
+
 .fe-field-row {
   display: flex;
   gap: 12px;
   align-items: flex-end;
   margin-bottom: 8px;
 }
-.fe-field { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+
+.fe-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .fe-field label {
   font-size: 11.5px;
   font-weight: 600;
   color: var(--text-2);
 }
-.fe-field label small { font-weight: 500; color: var(--text-3); }
+
+.fe-field label small {
+  font-weight: 500;
+  color: var(--text-3);
+}
+
 .fe-field input[type="text"],
 .fe-field select,
 .fe-field textarea {
@@ -3398,14 +4656,47 @@ select.filter-select:focus,
   padding: 0 10px;
   font-family: inherit;
 }
-.fe-field textarea { height: auto; min-height: 62px; padding: 7px 10px; line-height: 1.45; resize: vertical; }
+
+.fe-field textarea {
+  height: auto;
+  min-height: 62px;
+  padding: 7px 10px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
 .fe-field input[type="text"]:focus,
 .fe-field select:focus,
-.fe-field textarea:focus { border-color: var(--accent); outline: none; }
-.fe-field--split { flex-direction: row; align-items: flex-end; gap: 14px; }
-.fe-field--split > div:first-child { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.fe-field--two { flex-direction: row; gap: 12px; }
-.fe-field--two > div { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.fe-field textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.fe-field--split {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.fe-field--split>div:first-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fe-field--two {
+  flex-direction: row;
+  gap: 12px;
+}
+
+.fe-field--two>div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .fe-inline-check {
   display: inline-flex;
   align-items: center;
@@ -3416,7 +4707,11 @@ select.filter-select:focus,
   white-space: nowrap;
   cursor: pointer;
 }
-.fe-inline-check--wide { flex: 1; }
+
+.fe-inline-check--wide {
+  flex: 1;
+}
+
 .fe-apply-cell {
   width: 56px;
   flex-shrink: 0;
@@ -3425,12 +4720,28 @@ select.filter-select:focus,
   justify-content: center;
   height: var(--control-md);
 }
+
 /* Summary's checkbox: stretch the cell to the textarea height and centre the
    box vertically so it sits in the middle of the field, not pinned to a corner. */
-.fe-apply-cell--top { align-self: stretch; height: auto; align-items: center; padding-top: 0; }
-.fe-apply-cell--dual { gap: 14px; }
+.fe-apply-cell--top {
+  align-self: stretch;
+  height: auto;
+  align-items: center;
+  padding-top: 0;
+}
+
+.fe-apply-cell--dual {
+  gap: 14px;
+}
+
 .fe-apply-all,
-.fe-apply-cell input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+.fe-apply-cell input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
 /* "Increment #" label sits in front of its checkbox, which lines up in the
    Apply-to-All column with every other field's checkbox. */
 .fe-increment-label {
@@ -3456,6 +4767,7 @@ select.filter-select:focus,
   border-radius: var(--radius);
   min-height: var(--control-md);
 }
+
 .fe-genre-chip {
   display: inline-flex;
   align-items: center;
@@ -3467,6 +4779,7 @@ select.filter-select:focus,
   font-size: 12px;
   font-weight: 600;
 }
+
 .fe-genre-chip-x {
   color: var(--accent-text);
   font-size: 10px;
@@ -3474,7 +4787,12 @@ select.filter-select:focus,
   padding: 2px;
   opacity: 0.75;
 }
-.fe-genre-chip-x:hover { color: var(--danger); opacity: 1; }
+
+.fe-genre-chip-x:hover {
+  color: var(--danger);
+  opacity: 1;
+}
+
 /* The add-genre dropdown fills the wrap with no border of its own, so the field
    reads as a single bordered control like Format / Age Rating (no inner box).
    Selector is `select.fe-genre-add` to outweigh `.fe-field select`.
@@ -3498,7 +4816,10 @@ select.fe-genre-add {
   padding: 0 2px;
   cursor: pointer;
 }
-select.fe-genre-add:focus { outline: none; }
+
+select.fe-genre-add:focus {
+  outline: none;
+}
 
 /* ── Col 3 — Comic Viewer ── */
 .fe-viewer-toolbar {
@@ -3509,7 +4830,11 @@ select.fe-genre-add:focus { outline: none; }
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.fe-vbtn-spacer { flex: 1; }
+
+.fe-vbtn-spacer {
+  flex: 1;
+}
+
 .fe-vbtn {
   min-width: 30px;
   height: 30px;
@@ -3522,10 +4847,29 @@ select.fe-genre-add:focus { outline: none; }
   cursor: pointer;
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
-.fe-vbtn--wide { padding: 0 12px; font-weight: 600; font-size: 12px; }
-.fe-vbtn--tall { height: 40px; flex-shrink: 0; }
-.fe-vbtn:hover:not(:disabled) { background: var(--surface-3); color: var(--text); border-color: var(--accent); }
-.fe-vbtn:disabled { opacity: 0.4; cursor: default; }
+
+.fe-vbtn--wide {
+  padding: 0 12px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.fe-vbtn--tall {
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.fe-vbtn:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.fe-vbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .fe-page-info {
   font-family: var(--font-mono);
   font-size: 12px;
@@ -3533,6 +4877,7 @@ select.fe-genre-add:focus { outline: none; }
   min-width: 58px;
   text-align: center;
 }
+
 .fe-viewer-frame {
   flex: 1;
   min-height: 0;
@@ -3543,6 +4888,7 @@ select.fe-genre-add:focus { outline: none; }
   background: var(--bg);
   overflow: auto;
 }
+
 .fe-viewer-img {
   display: block;
   max-width: 100%;
@@ -3551,8 +4897,17 @@ select.fe-genre-add:focus { outline: none; }
   border-radius: var(--radius-xs);
   box-shadow: var(--shadow-pop);
 }
-.fe-viewer-empty { color: var(--text-3); font-size: 13px; }
-.fe-viewer-frame:fullscreen { background: var(--bg); padding: 24px; }
+
+.fe-viewer-empty {
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.fe-viewer-frame:fullscreen {
+  background: var(--bg);
+  padding: 24px;
+}
+
 .fe-thumb-row {
   display: flex;
   align-items: center;
@@ -3561,6 +4916,7 @@ select.fe-genre-add:focus { outline: none; }
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }
+
 .fe-thumb-strip {
   flex: 1;
   display: flex;
@@ -3568,6 +4924,7 @@ select.fe-genre-add:focus { outline: none; }
   overflow-x: auto;
   padding-bottom: 2px;
 }
+
 .fe-thumb {
   display: flex;
   flex-direction: column;
@@ -3583,8 +4940,16 @@ select.fe-genre-add:focus { outline: none; }
   background: var(--surface-card);
   transition: border-color var(--dur) var(--ease);
 }
-.fe-thumb:hover { border-color: var(--accent); }
-.fe-thumb.active { border-color: var(--accent); background: var(--accent-tint); }
+
+.fe-thumb:hover {
+  border-color: var(--accent);
+}
+
+.fe-thumb.active {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+
 .fe-thumb-img {
   flex: 1;
   width: 100%;
@@ -3594,11 +4959,24 @@ select.fe-genre-add:focus { outline: none; }
   background-repeat: no-repeat;
   border-radius: 2px;
 }
-.fe-thumb-num { font-size: 10px; font-family: var(--font-mono); color: var(--text-3); }
-.fe-thumb.active .fe-thumb-num { color: var(--accent-text); }
+
+.fe-thumb-num {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--text-3);
+}
+
+.fe-thumb.active .fe-thumb-num {
+  color: var(--accent-text);
+}
 
 /* ── Col 4 — Edited Files Queue ── */
-.fe-count { font-size: 12px; color: var(--text-3); font-weight: 600; }
+.fe-count {
+  font-size: 12px;
+  color: var(--text-3);
+  font-weight: 600;
+}
+
 .fe-queue-meta {
   display: flex;
   align-items: center;
@@ -3606,13 +4984,20 @@ select.fe-genre-add:focus { outline: none; }
   padding: 11px 14px 8px;
   flex-shrink: 0;
 }
-.fe-mismatch-inline { font-size: 11px; font-weight: 600; color: var(--favourite); }
+
+.fe-mismatch-inline {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--favourite);
+}
+
 .fe-queue-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding: 0 12px;
 }
+
 .fe-queue-card {
   display: flex;
   align-items: center;
@@ -3623,6 +5008,7 @@ select.fe-genre-add:focus { outline: none; }
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
+
 .fe-queue-check {
   display: inline-flex;
   align-items: center;
@@ -3635,7 +5021,12 @@ select.fe-genre-add:focus { outline: none; }
   font-size: 11px;
   flex-shrink: 0;
 }
-.fe-queue-info { flex: 1; min-width: 0; }
+
+.fe-queue-info {
+  flex: 1;
+  min-width: 0;
+}
+
 .fe-queue-name {
   font-size: 13px;
   font-weight: 600;
@@ -3644,7 +5035,13 @@ select.fe-genre-add:focus { outline: none; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.fe-queue-status { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+
+.fe-queue-status {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 1px;
+}
+
 .fe-queue-remove {
   width: 24px;
   height: 24px;
@@ -3653,7 +5050,11 @@ select.fe-genre-add:focus { outline: none; }
   font-size: 13px;
   flex-shrink: 0;
 }
-.fe-queue-remove:hover { color: var(--danger); }
+
+.fe-queue-remove:hover {
+  color: var(--danger);
+}
+
 .fe-queue-actions-label {
   font-size: 10px;
   font-weight: 700;
@@ -3661,16 +5062,31 @@ select.fe-genre-add:focus { outline: none; }
   text-transform: uppercase;
   color: var(--text-3);
 }
-.fe-queue-actions { display: flex; gap: 8px; }
-.fe-queue-actions .btn-primary { flex: 1; }
+
+.fe-queue-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.fe-queue-actions .btn-primary {
+  flex: 1;
+}
+
 .fe-queue-actions .btn-primary,
-.fe-queue-actions .btn-primary:hover { color: #fff; }
+.fe-queue-actions .btn-primary:hover {
+  color: #fff;
+}
+
 .fe-status-indicator {
   font-size: 11px;
   color: var(--text-3);
   line-height: 1.4;
 }
-.fe-status-indicator.processing { color: var(--accent-text); font-weight: 600; }
+
+.fe-status-indicator.processing {
+  color: var(--accent-text);
+  font-weight: 600;
+}
 
 /* ── Footer status bar ── */
 .fe-statusbar {
@@ -3684,21 +5100,51 @@ select.fe-genre-add:focus { outline: none; }
   flex-shrink: 0;
   font-size: 12px;
 }
-.fe-sb-muted { color: var(--text-3); }
-.fe-sb-strong { color: var(--text); font-weight: 600; margin-left: 6px; }
-.fe-sb-ok { color: var(--state-read); }
-.fe-sb-warn { color: var(--favourite); }
-.fe-sb-sep { width: 1px; height: 16px; background: var(--border); margin: 0 16px; }
-.fe-sb-spacer { flex: 1; }
+
+.fe-sb-muted {
+  color: var(--text-3);
+}
+
+.fe-sb-strong {
+  color: var(--text);
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+.fe-sb-ok {
+  color: var(--state-read);
+}
+
+.fe-sb-warn {
+  color: var(--favourite);
+}
+
+.fe-sb-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 16px;
+}
+
+.fe-sb-spacer {
+  flex: 1;
+}
 
 /* File picker modal */
-.fe-picker-modal { max-width: 640px; }
+.fe-picker-modal {
+  max-width: 640px;
+}
+
 .fe-picker-breadcrumb {
   padding: 14px 20px 0;
   font-size: 12px;
   color: var(--text-2);
 }
-.fe-picker-breadcrumb a { color: var(--accent); }
+
+.fe-picker-breadcrumb a {
+  color: var(--accent);
+}
+
 .fe-picker-controls {
   display: flex;
   align-items: center;
@@ -3706,7 +5152,13 @@ select.fe-genre-add:focus { outline: none; }
   flex-wrap: wrap;
   padding: 10px 20px;
 }
-.fe-picker-selected-count { font-size: 12px; color: var(--text-3); margin-left: auto; }
+
+.fe-picker-selected-count {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-left: auto;
+}
+
 .fe-picker-tree {
   margin: 0 20px;
   max-height: 320px;
@@ -3716,6 +5168,7 @@ select.fe-genre-add:focus { outline: none; }
   background: var(--surface-2);
   padding: 6px;
 }
+
 .fe-picker-item {
   display: flex;
   align-items: center;
@@ -3725,21 +5178,48 @@ select.fe-genre-add:focus { outline: none; }
   font-size: 13px;
   cursor: pointer;
 }
-.fe-picker-item:hover { background: var(--surface-3); }
-.fe-picker-item.selected { background: color-mix(in srgb, var(--accent) 15%, var(--surface-2)); }
-.fe-picker-item.folder .fe-picker-item-name::before { content: "📁 "; }
-.fe-picker-item.file .fe-picker-item-name::before { content: "📄 "; }
-.fe-picker-empty { color: var(--text-3); font-size: 13px; text-align: center; padding: 20px; }
+
+.fe-picker-item:hover {
+  background: var(--surface-3);
+}
+
+.fe-picker-item.selected {
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface-2));
+}
+
+.fe-picker-item.folder .fe-picker-item-name::before {
+  content: "📁 ";
+}
+
+.fe-picker-item.file .fe-picker-item-name::before {
+  content: "📄 ";
+}
+
+.fe-picker-empty {
+  color: var(--text-3);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+}
 
 /* Multi-ComicInfo.xml resolution modal */
-.fe-multixml-modal { max-width: 720px; }
-.fe-multixml-hint { padding: 10px 20px 0; font-size: 13px; color: var(--text-2); }
+.fe-multixml-modal {
+  max-width: 720px;
+}
+
+.fe-multixml-hint {
+  padding: 10px 20px 0;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
 .fe-multixml-candidates {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
   padding: 16px 20px 20px;
 }
+
 .fe-multixml-candidate {
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -3749,7 +5229,13 @@ select.fe-genre-add:focus { outline: none; }
   flex-direction: column;
   gap: 8px;
 }
-.fe-multixml-candidate-header { font-weight: 700; font-size: 13px; color: var(--accent); }
+
+.fe-multixml-candidate-header {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--accent);
+}
+
 .fe-multixml-candidate-fields {
   font-size: 12px;
   color: var(--text-2);
@@ -3759,15 +5245,41 @@ select.fe-genre-add:focus { outline: none; }
   flex-direction: column;
   gap: 4px;
 }
-.fe-multixml-field-row strong { color: var(--text); }
+
+.fe-multixml-field-row strong {
+  color: var(--text);
+}
 
 /* Search Online — Select Series / Select Issue (EDITOR_SPEC.md §9.6) */
-.fe-search-online-modal { max-width: 900px; }
-.fe-so-step { padding: 14px 20px 20px; }
-#feSoBackBtn { margin-bottom: 12px; }
-.fe-so-controls { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; }
-.fe-so-layout { display: flex; gap: 16px; }
-.fe-so-step .editor-actions { padding: 12px 0 0; justify-content: flex-start; }
+.fe-search-online-modal {
+  max-width: 900px;
+}
+
+.fe-so-step {
+  padding: 14px 20px 20px;
+}
+
+#feSoBackBtn {
+  margin-bottom: 12px;
+}
+
+.fe-so-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+
+.fe-so-layout {
+  display: flex;
+  gap: 16px;
+}
+
+.fe-so-step .editor-actions {
+  padding: 12px 0 0;
+  justify-content: flex-start;
+}
+
 .fe-so-results-table {
   flex: 1 1 auto;
   min-width: 0;
@@ -3777,7 +5289,15 @@ select.fe-genre-add:focus { outline: none; }
   max-height: 420px;
   overflow-y: auto;
 }
-.fe-so-results-table thead, .fe-so-results-table tbody, .fe-so-results-table tr { display: table; width: 100%; table-layout: fixed; }
+
+.fe-so-results-table thead,
+.fe-so-results-table tbody,
+.fe-so-results-table tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
 .fe-so-results-table th {
   text-align: left;
   padding: 6px 8px;
@@ -3785,19 +5305,31 @@ select.fe-genre-add:focus { outline: none; }
   color: var(--text-3);
   font-size: 12px;
 }
+
 .fe-so-results-table td {
   padding: 6px 8px;
   border-bottom: 1px solid var(--border);
 }
-.fe-so-results-table tbody tr { cursor: pointer; }
-.fe-so-results-table tbody tr:hover { background: var(--surface-3); }
-.fe-so-results-table tbody tr.selected { background: color-mix(in srgb, var(--accent) 15%, var(--surface-2)); }
+
+.fe-so-results-table tbody tr {
+  cursor: pointer;
+}
+
+.fe-so-results-table tbody tr:hover {
+  background: var(--surface-3);
+}
+
+.fe-so-results-table tbody tr.selected {
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface-2));
+}
+
 .fe-so-preview {
   flex: 0 0 220px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
+
 .fe-so-cover-img {
   width: 100%;
   min-height: 140px;
@@ -3805,6 +5337,7 @@ select.fe-genre-add:focus { outline: none; }
   background: var(--surface-2);
   border-radius: var(--radius);
 }
+
 .fe-so-description {
   font-size: 12px;
   color: var(--text-2);
@@ -3816,15 +5349,25 @@ select.fe-genre-add:focus { outline: none; }
    viewport height and let it stack + scroll vertically (columns keep a usable
    min-height instead of being crushed). */
 @media (max-width: 1500px) {
-  .fe-shell { height: auto; min-height: calc(100vh - var(--header-h)); }
+  .fe-shell {
+    height: auto;
+    min-height: calc(100vh - var(--header-h));
+  }
+
   .fe-layout {
     grid-template-columns: 1fr 1fr;
     grid-auto-rows: minmax(420px, auto);
   }
 }
+
 @media (max-width: 900px) {
-  .fe-layout { grid-template-columns: 1fr; }
-  .fe-header-brand { display: none; }
+  .fe-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .fe-header-brand {
+    display: none;
+  }
 }
 
 /* Processing Tools (admin-spec-section-12-processing-tools.md §12) */
@@ -3835,25 +5378,46 @@ select.fe-genre-add:focus { outline: none; }
   flex-wrap: wrap;
   margin-bottom: 10px;
 }
+
 .pt-rename-row {
   display: flex;
   gap: 20px;
   align-items: flex-start;
   margin-bottom: 18px;
 }
-.pt-rename-row:last-child { margin-bottom: 0; }
+
+.pt-rename-row:last-child {
+  margin-bottom: 0;
+}
+
 .pt-rename-col-buttons {
   display: flex;
   flex-direction: column;
   gap: 8px;
   flex: 0 0 150px;
 }
-.pt-rename-col-list { flex: 1 1 220px; min-width: 180px; }
-.pt-rename-col-fields { flex: 1 1 280px; min-width: 240px; }
-@media (max-width: 900px) {
-  .pt-rename-row { flex-direction: column; }
-  .pt-rename-col-buttons { flex-direction: row; flex: none; }
+
+.pt-rename-col-list {
+  flex: 1 1 220px;
+  min-width: 180px;
 }
+
+.pt-rename-col-fields {
+  flex: 1 1 280px;
+  min-width: 240px;
+}
+
+@media (max-width: 900px) {
+  .pt-rename-row {
+    flex-direction: column;
+  }
+
+  .pt-rename-col-buttons {
+    flex-direction: row;
+    flex: none;
+  }
+}
+
 .pt-rename-filelist {
   max-height: 200px;
   overflow-y: auto;
@@ -3861,6 +5425,7 @@ select.fe-genre-add:focus { outline: none; }
   border-radius: 6px;
   margin-bottom: 14px;
 }
+
 .pt-rename-file-row {
   display: flex;
   align-items: center;
@@ -3870,11 +5435,31 @@ select.fe-genre-add:focus { outline: none; }
   cursor: pointer;
   border-bottom: 1px solid var(--border);
 }
-.pt-rename-file-row:last-child { border-bottom: none; }
-.pt-rename-file-row:hover { background: var(--surface-3); }
-.pt-rename-file-row.selected { background: color-mix(in srgb, var(--accent) 15%, var(--surface-2)); }
-.pt-rename-file-row.in-preview .pt-rename-file-name { color: var(--accent); font-weight: 600; }
-.pt-rename-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pt-rename-file-row:last-child {
+  border-bottom: none;
+}
+
+.pt-rename-file-row:hover {
+  background: var(--surface-3);
+}
+
+.pt-rename-file-row.selected {
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface-2));
+}
+
+.pt-rename-file-row.in-preview .pt-rename-file-name {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.pt-rename-file-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .pt-reorder-btn {
   background: var(--surface-3);
   border: 1px solid var(--border);
@@ -3886,9 +5471,18 @@ select.fe-genre-add:focus { outline: none; }
   line-height: 1;
   flex-shrink: 0;
 }
-.pt-reorder-btn:disabled { opacity: 0.35; cursor: default; }
 
-.pt-rename-fields { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+.pt-reorder-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pt-rename-fields {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 14px;
+}
+
 .pt-rename-fields th {
   text-align: left;
   font-size: 11px;
@@ -3896,11 +5490,30 @@ select.fe-genre-add:focus { outline: none; }
   color: var(--text-3);
   padding: 4px 8px;
 }
-.pt-rename-fields td { padding: 4px 8px; vertical-align: middle; }
-.pt-rename-fields td:first-child { font-size: 13px; color: var(--text-2); width: 70px; }
-.pt-rename-fields td:nth-child(2) { width: auto; }
-.pt-rename-fields input[type="text"] { width: 100%; }
-.pt-rename-fields input[type="checkbox"] { display: block; margin: 0 auto; }
+
+.pt-rename-fields td {
+  padding: 4px 8px;
+  vertical-align: middle;
+}
+
+.pt-rename-fields td:first-child {
+  font-size: 13px;
+  color: var(--text-2);
+  width: 70px;
+}
+
+.pt-rename-fields td:nth-child(2) {
+  width: auto;
+}
+
+.pt-rename-fields input[type="text"] {
+  width: 100%;
+}
+
+.pt-rename-fields input[type="checkbox"] {
+  display: block;
+  margin: 0 auto;
+}
 
 .pt-rename-batch-options {
   display: flex;
@@ -3910,7 +5523,12 @@ select.fe-genre-add:focus { outline: none; }
   color: var(--text-2);
   margin-bottom: 14px;
 }
-.pt-rename-case-style { display: flex; gap: 16px; flex-wrap: wrap; }
+
+.pt-rename-case-style {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
 
 .pt-preview-heading {
   display: flex;
@@ -3920,6 +5538,7 @@ select.fe-genre-add:focus { outline: none; }
   color: var(--text-2);
   margin: 0 0 8px;
 }
+
 .pt-rename-preview-list {
   max-height: 160px;
   overflow-y: auto;
@@ -3927,6 +5546,7 @@ select.fe-genre-add:focus { outline: none; }
   border-radius: 6px;
   margin-bottom: 10px;
 }
+
 .pt-preview-row {
   display: flex;
   align-items: center;
@@ -3937,8 +5557,18 @@ select.fe-genre-add:focus { outline: none; }
   font-family: ui-monospace, Consolas, monospace;
   border-bottom: 1px solid var(--border);
 }
-.pt-preview-row:last-child { border-bottom: none; }
-.pt-preview-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.pt-preview-row:last-child {
+  border-bottom: none;
+}
+
+.pt-preview-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .pt-remove-btn {
   background: var(--surface-3);
   border: 1px solid var(--border);
@@ -3950,7 +5580,11 @@ select.fe-genre-add:focus { outline: none; }
   line-height: 1;
   flex-shrink: 0;
 }
-.pt-remove-btn:hover { color: var(--danger, #d9534f); border-color: var(--danger, #d9534f); }
+
+.pt-remove-btn:hover {
+  color: var(--danger, #d9534f);
+  border-color: var(--danger, #d9534f);
+}
 
 .pt-summary-error-list {
   margin: 10px 0 0;

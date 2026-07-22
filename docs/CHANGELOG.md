@@ -13,6 +13,26 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-22** — Light theme: split the Series/Issue Detail cover backdrop
+  and the Home/Browse/Folder View cover "cloud field" background into their
+  own light-theme tokens, tunable without touching dark.
+  → `progress.md` "Light theme: split backdrop & library-page background controls from dark (2026-07-22)"
+- **2026-07-22** — Issue Detail page: cover frame now matches the grid view's
+  2:3 cover aspect ratio instead of reading squarer/shorter.
+  → `progress.md` "Issue Detail cover: match grid-view cover aspect ratio (2026-07-22)"
+- **2026-07-22** — Light theme: favourited-issue button now shows a gold
+  border only, label stays its normal colour instead of also turning gold.
+  → `progress.md` "Favourite button (light theme): border-only cue, no text-colour change (2026-07-22)"
+- **2026-07-22** — Fixed the read-state badge (green dot, grid/list/home-strip
+  cards) not updating live after a bulk Mark as Read/Unread action.
+  → `progress.md` "Read-state badge: fix stale badge after bulk Mark Read/Unread (2026-07-22)"
+- **2026-07-22** — Flag badge repositioned to bottom-right, filled solid red,
+  and its background-circle opacity unified across every card that shows it.
+  → `progress.md` "Flag badge: repositioned, red fill, consistent opacity everywhere (2026-07-22)"
+- **2026-07-22** — Issue Detail page: added a missing flag-badge overlay on
+  the cover for flagged-for-review state, and changed the toggle button's
+  active label from "Flagged for Review" to "Flagged".
+  → `progress.md` "Issue Detail page: missing Flagged-for-review icon (2026-07-22)"
 - **2026-07-21** — Added a Delete action to the multi-select bottom toolbar:
   permanent DB+disk delete with a pill-button confirm modal (no DB-only tier).
   → `progress.md` "Bulk Delete added to multi-select toolbar (2026-07-21)"

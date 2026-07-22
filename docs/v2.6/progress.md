@@ -5065,3 +5065,142 @@ the server had picked up the new route — clicking OK exercised the failure
 path cleanly (404 → "Delete failed" toast, card/selection untouched, no
 console errors). Tez then restarted the server and ran the actual delete
 himself against real data; confirmed fully working.
+
+## Issue Detail page: missing Flagged-for-review icon (2026-07-22)
+
+`docs/INBOX.md` item: "Issue page: the Flagged icon is not visible - change
+the text from Flagged for review to 'Flagged'". Turned out there was no icon
+at all on this page for the flagged state — `buildFavoriteToggle` already
+overlays a `❤` badge on the cover frame (`.cc-favorite-badge`, top-left) but
+the equivalent for flagged-for-review was never built; only the text button
+below the cover changed color/label.
+
+Fixed in `frontend/js/app.js` (`buildIssueDetail`/`buildFlagReviewToggle`):
+added a `.cc-flag-badge` span (same flag SVG as the grid card's
+`buildFlagBadge()`) overlaid top-right on the cover frame, toggled via
+`[hidden]` from `buildFlagReviewToggle`'s `sync()` — same pattern as the
+favourite badge. Also changed the button's active-state label from "Flagged
+for Review" to "Flagged" per the inbox item (unflagged label "Flag for
+Review" unchanged).
+
+`frontend/css/style.css`: new `.cc-flag-badge` rule mirroring
+`.cc-favorite-badge`'s slab styling, positioned top-right so it doesn't
+collide with the favourite badge, coloured with `var(--danger)`.
+
+Verified live via Claude-in-Chrome against the running tray-app server on a
+real issue (`/issue/5467`, "The Swede"): flagging shows the flag badge
+top-right on the cover and the button reads "Flagged"; unflagging removes
+the badge and reverts the button to "Flag for Review". Issue reset to its
+original unflagged state after the check — no real data left changed.
+
+## Flag badge: repositioned, red fill, consistent opacity everywhere (2026-07-22)
+
+Follow-on refinements to the flag badge above, done as small same-session
+tweaks (not individually doc'd per Tez's steer at the time, rolled up here
+now):
+
+- Moved `.cc-flag-badge` (Issue Detail) from top-right to bottom-right —
+  top-right is the read-state badge's corner (see below).
+- `buildFlagBadge()`'s SVG (used by every grid/list/home-strip/series card via
+  `.card-flag-badge`) and `.cc-flag-badge`'s SVG both changed from a
+  stroke-only outline to `fill="currentColor"`, so the flag reads as a solid
+  red glyph instead of a thin outline.
+- Unified the badge-circle background opacity at `0.6` in both places —
+  `.card-flag-badge` (main cards) already used `0.6`; `.cc-flag-badge` (Issue
+  Detail) was brought up to match instead of its own `0.3`.
+- `.card-flag-badge`'s icon colour switched from a fixed `rgba(0,0,0,.75)` to
+  `var(--danger)`, matching `.cc-flag-badge`.
+
+Verified live: flagged/unflagged toggle on `/issue/5467` and on its Home-strip
+card show the same red-filled flag, same circle opacity, in both spots.
+Issue reset to unflagged afterward.
+
+## Read-state badge: fix stale badge after bulk Mark Read/Unread (2026-07-22)
+
+Bug: `.card-read-badge` (the always-visible green dot marking a fully-read
+card, top-right corner on grid/list/home-strip cards) is only created at
+initial card render (`buildStripCard`/`buildCoverCard`/`buildFolderFileCard`,
+each doing `if (state === 'state-read') wrap.appendChild(buildReadBadge())`).
+The bulk multi-select Mark as Read/Mark as Unread action
+(`applyReadStateToDom`) only toggled the `state-read`/`state-unread` class on
+already-rendered cards — which drives the border/background — but never
+touched the badge element itself, so a card marked read/unread from the
+selection toolbar kept (or lacked) a stale badge until the next full
+re-render.
+
+Fixed in `frontend/js/app.js`'s `applyReadStateToDom`: mirrors the exact
+pattern `applyFlagReviewToDom` already uses for `.card-flag-badge` — find the
+card's `.cover-img-wrap`, check for an existing `.card-read-badge`, and
+add/remove it via `buildReadBadge()` to match the new status.
+
+Verified live via Claude-in-Chrome (direct DOM/JS inspection, since the
+select-dot is a hover-reveal element headless mouse events don't reliably
+trigger): selected an unread card in Browse (All), fired the real bulk
+Mark Read action, confirmed the badge appeared with no page reload; fired
+Mark Unread, confirmed it disappeared. Test issue reset to its original
+unread state afterward.
+
+## Favourite button (light theme): border-only cue, no text-colour change (2026-07-22)
+
+`.btn-favorite-toggle.is-favorite` set both `border-color` and `color` to
+`var(--favourite)` (gold). In light theme, gold label text against the
+light button surface read low-contrast; Tez wanted the border alone to
+carry the favourited state, with the label staying its normal colour.
+
+Added a light-theme-only override in `frontend/css/style.css` (`:root[data-
+theme="light"] .btn-favorite-toggle.is-favorite`, plus the matching
+`@media (prefers-color-scheme: light) :root:not([data-theme])` block) that
+resets `color` back to `var(--text-2)`. Dark theme's rule is untouched — gold
+border + gold text still both apply there, since Tez said dark already looks
+good and shouldn't change.
+
+Verified live in light theme on `/issue/5467`: favouriting shows a gold
+border with the label staying grey; unfavouriting reverts normally. Test
+issue reset afterward.
+
+## Issue Detail cover: match grid-view cover aspect ratio (2026-07-22)
+
+The Issue Detail page's cover "slab" (`.cc-frame-outer` > `.cc-frame-mat` >
+`.cc-frame-inner` > `.cc-cover-glow` > `.issue-cover-img`) nests three layers
+of fixed-px padding (11px/3px/5px) around the art. The innermost image had
+its own `aspect-ratio: 2/3` (matching grid-view covers), but because the
+padding is fixed pixels added equally at every layer, the outer slab's own
+proportions ended up squarer than 2:3 — shorter than an actual grid-view
+cover at the same width.
+
+Fixed in `frontend/css/style.css`: moved the `2/3` aspect-ratio to
+`.cc-frame-outer` itself (the true outer bound of "the card"), and changed
+`.cc-frame-mat`, `.cc-frame-inner`, `.cc-cover-glow`, and `.issue-cover-img`
+to `height: 100%` (stretching to fill their parent) instead of each computing
+an independent ratio. The art still fills its frame via `object-fit: cover`,
+now inside a frame that's the same 2:3 shape as a grid-view cover.
+
+Verified live via JS-measured `getBoundingClientRect()` on `/issue/5467`:
+`.cc-frame-outer` measured 250×375 (ratio 0.667 = exactly 2/3). Checked in
+both light and dark — dark's slab styling (metallic bezel, mat colour,
+glow) is unaffected, just taller.
+
+## Light theme: split backdrop & library-page background controls from dark (2026-07-22)
+
+Tez asked to be able to tune the Series/Issue Detail cover backdrop and the
+Home/Browse/Folder View cover "cloud field" background for light theme
+without touching dark, since dark already looks right and the same shared
+values read as almost invisible in light.
+
+Both were previously single shared tokens in `tokens-base.css`, deliberately
+*not* split per-theme (its own comment: "Design's elevation.css doesn't
+override these for light") — `--backdrop-opacity`/`--blur-backdrop` (used by
+`.series-backdrop-img`/`.issue-backdrop-img`) and `--pagebg-blob-opacity`/
+`--pagebg-blur` (used by `.page-bg-blob`, the multi-cover cloud field).
+
+Added light-theme-only overrides for all four in `frontend/css/tokens-
+light.css` (both the explicit `:root[data-theme="light"]` block and the
+`@media (prefers-color-scheme: light) :root:not([data-theme])` block, kept
+identical per the file's own convention) — landed at `--backdrop-opacity:
+0.5`, `--blur-backdrop: 3px`, `--pagebg-blob-opacity: 0.5`, `--pagebg-blur:
+32px` after Tez's own hands-on tuning. `tokens-base.css` (dark theme's
+source for these) is untouched.
+
+Verified live in both themes on the Issue Detail page and Home: light now
+shows a clearly visible backdrop/cloud field; dark is pixel-identical to
+before.

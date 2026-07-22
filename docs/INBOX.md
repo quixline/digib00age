@@ -4,17 +4,13 @@
 
 ### Unprocessed
 
-- [x] Full Editor - loaded Luna (2021).cbz - 2 comicinfo.xml files, choose the one from ComicVault - Error "Could not resolve the multiple XML files." - Was a bad CRC-32, corrupted file - added extra detail to message
+- [ ] List View, Light Theme: black text for Unread, 65% black for Read/Reading
 
-- [ ] fix alignment on all buttons
+- [ ] List View, All Themes: Add stars when rated - should be positioned on the last row after the summary
 
-- [ ] add link to series pill when on issue page - clicking Series from the issue page takes user to the series page for that issue
+- [ ] change card size % options to 30% then every 10% to 100% (change due to new elements added to card get squashed at 25% or lower) - this should also change the home page cards and in addition to the size change, the strips should hold more cards to 25 on each strip
 
-- [ ] spend time on the light theme and make changes
-
-- [ ] add a dimmed/solorized theme
-
-- [ ] re-visit the Serch ComicVine - Selection Modal and function
+- [ ] re-visit the Search ComicVine - Selection Modal and function
 
 - [ ] design review - mobile reader UI - get a closer consistency to the web ui, drop the outer glow around cards but keep white border, the inner style and genre/info - add pinch zoom when reading, - change the app icon to the new one
 
@@ -24,7 +20,7 @@
 
 - [ ] stress test
 
-- [ ] plan & build windows install package
+- [ ] plan & build windows install package - browser popout like boxy svg
 
 - [ ] build website and demo
   
@@ -36,15 +32,51 @@
 
 ## Processed
 
-_20-07-2026_
+_22-07-2026_
 
+* [x] move "Logs" on each of the scan card in admin to the bottom of the card, remove the pill and underline the text on over
+  
+  
 
+* [x] Light Theme changes: Read state text - remove the blur from cards; year and #pages/issues text
+
+* [x] stop text size increase on all cards/themes when marked as Read
+
+* [x] add a new Read state icon to top left of card, circle filled with green
+
+* [x] Light theme: add 50% black bg to stars on cards
+
+* [x] Issue page: the Flagged icon is not visible - change the text from Flagged for review to "Flagged"
+
+* [x] Issue page, all themes: increase the height of the cards so the ratio is the same as the *covers in the Grid view (*cover dimensions not cards)
+
+* [x] Issue page, light theme: make the Favourite button text+star be the same colour as Mark as Read
+
+_21-07-2026_
+
+* [x] add Delete option for selected cards - add to bottom menu - selection options. This is a Danger zone! Delete overrides any other selection (eg Flagged) When clicking Delete - Modal popup : Two Operations/Options: 1. Delete from Library/DB 2. Delete from Library, DB & HDD, each has it's own checkbox and only one can be selected, the one not selected gets greyed out. Two other pill buttons - Cancel & Ok, - Ok has two functions - if option 1. is selected the selection modal closes and opens a new modal saying that "The selected files will be removed from the library but will remain on disk untouched" OK button to confirm. If user selected option 2. same close and open new modal confirmation "Are you sure you want to proceed, all data and the files will be deleted, no going back."
+
+* [x] fix alignment on all buttons
+
+* [x] add pill bg to div class "rating control" - same as Add to Favorites
+
+* [x] home page strip nav arrows
+
+* [x] Flag for Review - broken
+
+* [x] light theme - needs own bg controls - the dark theme shouldn't change but the light theme doesn't really show the bg - this should be on all library pages - also for the cards in grid view
+
+* [x] add links to Series pill when on issue page - clicking Series from the issue page takes user to the series page for that issue - alternativley if the Format is not Series then it relates to any Format in Singles and the Filter function should be in place like it is when clicking a genre
+
+_21-07-2026_
+
+* [x] Full Editor - loaded Luna (2021).cbz - 2 comicinfo.xml files, choose the one from ComicVault - Error "Could not resolve the multiple XML files." - Was a bad CRC-32, corrupted file - added extra detail to message/clear
 
 * [x] issue page - read state border around cover no longer changes on read state change.
 
 * [x] series bg needs to fill area
-
-
+  
+  
 
 _19-07-2026_
 
