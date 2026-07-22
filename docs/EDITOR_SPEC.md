@@ -517,7 +517,10 @@ which aligns in the apply column.
 
 **Column 3 — Comic Viewer.** Toolbar: zoom in/out, **Fit** (reset to fit), page
 prev/next with an `X / Y` counter, and **Fullscreen** (Fullscreen API on the viewer
-frame). **No Rotate** (dropped by Tez, `DECISIONS.md`). Cover auto-loads on focus;
+frame). **No Rotate** (dropped by Tez, `DECISIONS.md`). When zoomed past 100% the
+page is click-drag-pannable (`grab`/`grabbing` cursor), on top of the frame's own
+scrollbars — added 2026-07-22 after the zoom-in control shipped with no way to
+reach a page larger than the frame besides two scrollbars. Cover auto-loads on focus;
 pages load on demand via `GET /editor/full/files/{id}/page/{n}` as before. New: a
 **lazy page-thumbnail strip** below the canvas — a windowed set of thumbnails around
 the current page, each fetched on demand at reduced size via the endpoint's new
