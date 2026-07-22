@@ -4999,8 +4999,6 @@ select.fe-genre-add:focus {
   flex: 1;
   min-height: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
   padding: 18px;
   background: var(--bg);
   overflow: auto;
@@ -5017,6 +5015,7 @@ select.fe-genre-add:focus {
 
 .fe-viewer-img {
   display: block;
+  margin: auto;
   max-width: 100%;
   max-height: 100%;
   border: 1px solid var(--border-strong, var(--border));
@@ -5026,6 +5025,7 @@ select.fe-genre-add:focus {
 }
 
 .fe-viewer-empty {
+  margin: auto;
   color: var(--text-3);
   font-size: 13px;
 }

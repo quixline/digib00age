@@ -15,7 +15,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 
 - **2026-07-22** — Full Editor comic viewer: added click-drag panning while
   zoomed in (`grab`/`grabbing` cursor), since a zoomed page is usually
-  oversized in both axes.
+  oversized in both axes; follow-up fix same day for a classic flexbox
+  centered-overflow bug that made the top/left of a zoomed cover
+  unreachable by either the drag or the frame's own scrollbars.
   → `progress.md` "Full Editor comic viewer: drag-to-pan when zoomed in (2026-07-22)"
 - **2026-07-22** — Fixed two bugs: Full Editor comic-viewer zoom-in had no
   visible effect (CSS `max-width/max-height: 100%` was clamping the inline

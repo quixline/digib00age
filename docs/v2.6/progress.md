@@ -5452,3 +5452,36 @@ previously below/right of the viewport) — confirmed via
 `el.className`/`getComputedStyle(el).cursor` mid-state, not just visually.
 Clicked Fit afterward and confirmed both the `fe-viewer-frame--zoomed`
 class and the `grab` cursor cleared.
+
+**Follow-up same session — top/left of the cover unreachable.** Tez found
+that after the above, the top and left edges of a zoomed cover still
+couldn't be reached by either dragging or the frame's own scrollbars,
+only bottom/right. Cause: `.fe-viewer-frame`'s `align-items: center;
+justify-content: center;` — the classic flexbox/grid "centered overflow"
+trap. When a centered flex item is bigger than its container, browsers
+still center it around the container's midpoint, which pushes its
+start edge to a *negative* offset — but `scrollLeft`/`scrollTop` can't go
+negative, so nothing (drag included, since it just sets those same
+properties) can ever bring that negative region into view. Only the
+positive (bottom/right) overflow, past the container's far edge, is
+reachable.
+
+**Fix:** removed `align-items`/`justify-content` from `.fe-viewer-frame`
+and gave `.fe-viewer-img` (and `.fe-viewer-empty`, the "No file selected"
+placeholder, so it stays centered too) `margin: auto` instead. This is
+the standard fix for this exact problem: auto margins on a flex item
+center it when there's slack space, but resolve to `0` once the item
+is larger than the container — pinning it to the container's start
+corner (top-left) so the *entire* overflow, in every direction, sits at
+non-negative scroll offsets and is reachable by both scrollbars and the
+drag-to-pan handler above.
+
+**Verification:** live-tested via Claude-in-Chrome on the same file.
+At Fit/no-file-selected the empty-state text and the cover both still
+render centered (no regression). Zoomed to 175%, set `scrollLeft`/
+`scrollTop` to `0` via devtools and confirmed the screenshot now shows
+the cover's actual top-left corner flush against the frame's padding
+(previously clipped). Dragging past that corner clamped cleanly at
+`0,0` instead of doing nothing/jumping. Dragged to the opposite corner
+and confirmed the bottom edge (page footer text) is likewise fully
+reachable.
