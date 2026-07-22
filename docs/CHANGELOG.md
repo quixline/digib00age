@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-22** — Series/Issue backdrop crop moved from `center 20%` to
+  `center 10%` — 20% was cropping into cover title-logo text, sometimes
+  hiding the top title line entirely.
+  → `progress.md` "Series/Issue backdrop crop was hiding the top title line (2026-07-22)"
 - **2026-07-22** — List/Series view: fixed unreadable read-state text in light
   theme (was fixed white opacity); added rating stars to List View's last row;
   fixed Series/Issue backdrop bleeding under the sidebar at ≤640px widths.

@@ -2087,7 +2087,12 @@ select.filter-select:focus,
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 20%;
+  /* 20% cropped into cover-logo text on several tested covers (title/tagline
+     text cut off mid-glyph, sometimes hiding the top title line entirely) —
+     10% (2026-07-22) leaves more headroom above the logo band most covers
+     use. Still a single fixed anchor shared by every cover in the library,
+     so it's a best-effort default, not a per-cover guarantee. */
+  object-position: center 10%;
   opacity: var(--backdrop-opacity);
   filter: blur(var(--blur-backdrop));
   display: block;
@@ -2544,7 +2549,8 @@ select.filter-select:focus,
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center 20%;
+  /* See .series-backdrop-img's comment — same fix, same reason. */
+  object-position: center 10%;
   opacity: var(--backdrop-opacity);
   filter: blur(var(--blur-backdrop));
   display: block;

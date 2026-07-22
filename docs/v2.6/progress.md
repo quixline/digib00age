@@ -5317,3 +5317,35 @@ the `--container-pad-x` override method above rather than a real narrow
 window — flagged here as a lighter-weight verification than a literal
 resize, in case Tez wants to eyeball it directly at a narrow window width.
 `docs/SPEC.md` §20.5/§20.6 updated to match.
+
+## Session — 2026-07-22 — Series/Issue backdrop crop was hiding the top title line
+
+Follow-up report on the backdrop work above: "the bg seems to be hidden at
+the top — the first line on the cover is '4 Kids Walk' but what the bg shows
+at the top is the second line, 'Into a Bank'." Not an edge-bleed problem
+(that was the previous session's fix) — a crop-position problem.
+
+Investigated with the actual "4 Kids Walk Into a Bank" #1 cover (id 5453) via
+Claude-in-Chrome: fetched the real 300×461 cover image directly
+(`/api/cover/5453`) to see its true layout (skyline art + a "CRIME CAPER IN
+FIVE PARTS" tagline band ~19-23% down, then the "4 KIDS / WALK / INTO A /
+BANK" logo stacked through roughly 23-59% down), then worked out what
+`object-fit: cover` + `object-position: center 20%` actually renders given
+how extreme the zoom is here — a 300×461 thumbnail stretched to cover a
+~1800px-wide strip only ~200-440px tall means only a ~8-18% tall sliver of
+the source image is ever visible at once. At `20%`, that sliver starts
+~18% down the image — landing mid-tagline on the Series page's shorter strip
+and, on the taller Issue page strip, extending just far enough to clip the
+bottom of "4 KIDS" (the title's first word/line) — consistent with Tez's
+report of seeing further into the logo than the top line.
+
+**Fix:** `object-position` on both `.series-backdrop-img` and
+`.issue-backdrop-img` changed from `center 20%` to `center 10%`
+(`style.css`). Verified live against two different cover layouts — "4 Kids
+Walk Into a Bank" (multi-line stacked title, text starts ~19% down) and "47
+Ronin" (single-line wordmark, text centered lower): `10%` gave clean,
+uncropped text on both instead of the mid-glyph cropping `20%` produced,
+tested on both the Series page's shorter strip and the Issue page's taller
+440px one. Still a single shared anchor point across the whole library, not
+a per-cover fit — flagged in `docs/SPEC.md` §20.6 as a best-effort default,
+not a guarantee for every cover's layout.
