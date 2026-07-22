@@ -918,6 +918,8 @@ A **list/grid toggle** applies on all browse surfaces (Home, Series, Singles, Al
 - No red.
 - In **list view**, the state colour is carried as a border/background around the thumbnail.
 - **List-view text emphasis, as of 2026-07-17:** background tint colours above are shared with Grid View, but List View intentionally inverts *text* emphasis — read/part-read rows render with muted, lighter-weight text and unread rows render bold/high-contrast, so the eye is drawn to what's unread rather than what's already read. Grid View's text styling is unchanged (still brighter/bolder on read/part-read). See `docs/v2.6/progress.md` "List View redesign".
+- **Light-theme colour fix (2026-07-22):** the muted read/part-read text above was authored as a fixed white-based opacity, correct on List View's dark-theme card surface but unreadable against light theme's pale card. Light theme now renders unread text black and read/part-read text at 60% black (same rule applied to the Series Detail issue-row cards, §20.6).
+- **Rating stars, List View (2026-07-22):** rated titles show their star rating on their own row, after the description — Grid View's rating row stays hidden in List View as before, this is a separate row specific to the list layout.
 
 **Progress indicator (part-read only):**
 - **Grid** → thin progress bar overlaid on the cover
@@ -927,6 +929,7 @@ A **list/grid toggle** applies on all browse surfaces (Home, Series, Singles, Al
 ### 20.6 Series Detail Page (`/series/{id}`)
 
 - **Full-cover backdrop:** the first-issue cover fills the header background, bleeding past the page's side padding edge-to-edge (no rounded card / inset margin). **18% opacity / 2px blur in dark theme, 50% opacity / 3px blur in light theme** (split per-theme 2026-07-22 — the dark-tuned value read as near-invisible against light's paler `--bg`/`--surface`; see `docs/DECISIONS.md`), slight blur, top+bottom gradient fade to `--bg` (not a flat dark overlay). Layer order: image → blur → gradient fade → text. Same recipe (`--backdrop-opacity`/`--blur-backdrop` tokens, dark theme's values live in `tokens-base.css`, light theme's override in `tokens-light.css`) and bleed technique as the Issue Detail page's backdrop (20.8 below) — unified 2026-07-20 after the two had quietly drifted apart; see `docs/DECISIONS.md`.
+- **Edge-bleed fix (2026-07-22):** the bleed offset was a hardcoded `-30px` matching `.container`'s default side padding, but the narrow-viewport breakpoint (≤640px) shrinks that padding to `10px` without the offset following — the backdrop overshot by 20px on each side, bleeding under the sidebar/past the viewport edge. Both `.series-backdrop` and `.issue-backdrop` now offset by `calc(var(--container-pad-x) * -1)`, and the 640px breakpoint changes `--container-pad-x` itself rather than `.container`'s padding directly, so the two can't drift apart again. See `docs/DECISIONS.md`.
 - **Header contents:** back button, mark-all-read button, title. Header ≈15% of a 10" tablet screen.
 - **Below header:** Publisher · Year, then genre tags, then # Issues, then the issue list.
 - **Issue list renders as a 2-column card grid** (added 2026-07-17, matching

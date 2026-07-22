@@ -68,6 +68,9 @@
   --pagebg-blob-opacity: 0.32; /* per-blob opacity; overlaps build up denser */
   --space-12: 48px;
   --space-16: 64px;
+  --container-pad-x: 30px; /* .container's horizontal gutter — also drives the
+    full-bleed negative-offset math on .series-backdrop/.issue-backdrop, so
+    both stay in sync if this ever changes (see the 640px override below). */
 
   /* Typography */
   --font-sans: 'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', sans-serif;

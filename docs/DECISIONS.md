@@ -4,6 +4,27 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Series/Issue backdrop bleed: shared `--container-pad-x` token instead of a second hardcoded `-30px`
+
+**Decided:** 2026-07-22, fixing the Series/Issue Detail backdrop bleeding past
+the sidebar edge at the ≤640px breakpoint.
+
+**Why:** `.series-backdrop`/`.issue-backdrop` cancelled `.container`'s side
+padding with a literal `left: -30px; right: -30px` to achieve their edge-to-
+edge bleed. The 640px responsive breakpoint shrinks `.container`'s own
+padding to `10px` but the backdrop's offset stayed `-30px`, so below that
+width the backdrop overshot the container's real edge by 20px on each side —
+visually bleeding under the sidebar on the left. Fixed by introducing
+`--container-pad-x` (`tokens-base.css`, default `30px`) as the single source
+for that padding value: `.container`'s padding and both backdrops' negative
+offsets now all read from it, and the 640px media query overrides the token
+itself (`10px`) rather than overriding `.container`'s padding directly — the
+two literally cannot drift apart again since there's only one number.
+
+**Where:** `frontend/css/tokens-base.css` (`--container-pad-x`),
+`frontend/css/style.css` (`.container`, `.series-backdrop`, `.issue-backdrop`,
+the 640px media query).
+
 ### Card Size range shift: preserve 50%/100% pixel anchors, treat stale saved values as unset
 
 **Decided:** 2026-07-22, when replacing the 10/25/50/75/100% Card Size options

@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-22** — List/Series view: fixed unreadable read-state text in light
+  theme (was fixed white opacity); added rating stars to List View's last row;
+  fixed Series/Issue backdrop bleeding under the sidebar at ≤640px widths.
+  → `progress.md` "Three cosmetic INBOX design changes: List/Series read-state colour, List View rating stars, backdrop edge-bleed (2026-07-22)"
+
 - **2026-07-22** — Card Size options raised to 30-100% (10% steps, replacing
   10/25/75%) to stop badge/pill overlays squashing at small sizes; Home strips
   now hold 25 cards instead of 15.

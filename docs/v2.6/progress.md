@@ -5253,3 +5253,67 @@ Series/Singles/All grid. No console errors on reload.
 Narrow-viewport `@media` overrides in `style.css` (90px/100px at ≤400px/
 ≤640px, independent of this setting) were explicitly left untouched — out of
 scope for this change, flagged as a possible follow-up.
+
+## Session — 2026-07-22 — Three cosmetic INBOX design changes: List/Series read-state colour, List View rating stars, backdrop edge-bleed
+
+Three direct design-change requests (matching `docs/INBOX.md`'s unprocessed
+lines verbatim, but given directly in chat rather than triaged from the
+inbox) — all cosmetic per CLAUDE.md §5's threshold (colour, an added element
+within the existing card layout, a positioning fix), no build-queue item.
+
+**1. List/Series view, light theme read-state text.** `.cover-grid.list-view`'s
+and Series Detail's `.issue-row`'s read/part-read text-emphasis rules
+(`style.css` ~1140/~2305, see SPEC.md §20.5) were authored as fixed white-based
+`rgba()` opacity values — correct against List View's dark-theme card, but
+close to invisible against light theme's pale card (confirmed live via
+Claude-in-Chrome: read-state issue titles on `/series/5458` rendered as
+barely-visible pale-grey-on-white). Unread text was already fine (inherits
+`var(--text)`, near-black in light theme, via the existing `a { color:
+inherit }` rule) except `.list-summary`'s unread state, hardcoded to a
+dark-theme-only light-grey. Added `:root[data-theme="light"]` overrides (plus
+the matching `@media (prefers-color-scheme: light) { :root:not([data-theme])
+}` block, mirroring `tokens-light.css`'s existing dual-block convention) —
+unread renders `var(--text)`/inherited black, read/part-read renders 60%
+black, on both List View cards and Series issue-rows.
+
+**2. List View rating stars.** List View has hidden the redesigned grid
+card's genre-ribbon/rating-row entirely since the 2026-07-17 list redesign
+(`.cover-grid.list-view .card-rating-row { display: none }`) — rated titles
+showed no stars at all in List View. `buildCoverCard()` (`app.js`) now builds
+a second `buildRatingRow()` instance (can't reuse the grid's — a DOM node
+can't be in two places) tagged `.list-rating-row`, appended as the last child
+of `.list-meta` (after genres/publisher-writer/summary/progress-text) when
+`personal_rating > 0`. One added CSS rule re-enables it specifically
+(`.cover-grid.list-view .card-rating-row.list-rating-row { display: flex }`,
+beating the blanket hide rule on selector count) — reuses the existing
+`.rating-star`/light-theme-pill styling with no new color rules needed.
+
+**3. Series/Issue backdrop edge-bleed at narrow widths.** Re-investigated
+`docs/INBOX.md`'s "bg sits behind the header/nav bar" report. Live-measured
+`getBoundingClientRect()` on `.series-backdrop`/`.issue-backdrop` at normal
+window widths — both already bounded correctly against the sidebar/header
+(this session isn't a repeat of the 2026-07-20 "doesn't stretch" fix above;
+that bug is confirmed still fixed). The actual bug: both backdrops cancel
+`.container`'s side padding with a literal `left/right: -30px`, but the
+≤640px responsive breakpoint (`style.css` ~2377) drops `.container`'s padding
+to `10px` without the backdrop's offset following — simulated by overriding
+`--container-pad-x` in a live tab rather than actually resizing the window
+(the `resize_window` tool didn't take effect on this machine's window
+manager) and confirming via rect math that the backdrop's left edge tracked
+20px past the container's, into the sidebar's footprint. Fixed by adding
+`--container-pad-x` (`tokens-base.css`, default `30px`) as the one number
+`.container`'s padding and both backdrops' `calc(var(--container-pad-x) * -1)`
+offsets all read from; the 640px breakpoint now overrides the token itself
+instead of `.container`'s padding directly. See `docs/DECISIONS.md`.
+
+**Verification:** live-tested via Claude-in-Chrome against the dev server
+(port 9424, Tez's tray app — memory note re: BUG-032/no Cache-Control
+confirmed again mid-session, a fresh tab still served pre-edit `app.js` until
+a real hard-reload). Confirmed in both light and dark theme: read-state text
+legible in List View and Series Detail; a 5-star-rated title (`2000 AD
+Villains Special`, via the Rated→5 browse filter) shows its stars on the
+correct last row in List View, in both themes. Backdrop fix confirmed via
+the `--container-pad-x` override method above rather than a real narrow
+window — flagged here as a lighter-weight verification than a literal
+resize, in case Tez wants to eyeball it directly at a narrow window width.
+`docs/SPEC.md` §20.5/§20.6 updated to match.

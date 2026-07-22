@@ -91,7 +91,7 @@ ul {
 .container {
   max-width: none;
   margin: 0 auto;
-  padding: 5px 30px 0;
+  padding: 5px var(--container-pad-x) 0;
 }
 
 /* ── Random library-page cover background (INBOX 2026-07-13, corrected
@@ -1196,6 +1196,89 @@ select.filter-select:focus,
   color: rgba(201 201 201);
 }
 
+/* Light theme override — the rules above assume a dark list-card surface
+   (white/near-white text at reduced opacity for read/part-read). Light
+   theme's list cards are pale, so that text is nearly invisible; swap to
+   black-based equivalents instead. Unread text is already near-black via
+   var(--text) (inherited through .cover-card/.issue-row, "a { color:
+   inherit }") — no override needed there beyond the count/year/summary
+   tokens, which were already theme-aware except list-summary above. */
+:root[data-theme="light"] .cover-grid.list-view .cover-card.state-read .cover-title,
+:root[data-theme="light"] .cover-grid.list-view .cover-card.state-part-read .cover-title,
+:root[data-theme="light"] .issue-row.state-read .issue-title,
+:root[data-theme="light"] .issue-row.state-reading .issue-title {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme="light"] .cover-grid.list-view .cover-card.state-read .cover-count,
+:root[data-theme="light"] .cover-grid.list-view .cover-card.state-read .cover-year,
+:root[data-theme="light"] .cover-grid.list-view .cover-card.state-part-read .cover-count,
+:root[data-theme="light"] .cover-grid.list-view .cover-card.state-part-read .cover-year {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme="light"] .cover-grid.list-view .cover-card.state-read .list-genres,
+:root[data-theme="light"] .cover-grid.list-view .cover-card.state-read .list-pub-writer,
+:root[data-theme="light"] .cover-grid.list-view .cover-card.state-read .list-summary,
+:root[data-theme="light"] .cover-grid.list-view .cover-card.state-part-read .list-genres,
+:root[data-theme="light"] .cover-grid.list-view .cover-card.state-part-read .list-pub-writer,
+:root[data-theme="light"] .cover-grid.list-view .cover-card.state-part-read .list-summary {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme="light"] .cover-grid.list-view .cover-card:not(.state-read):not(.state-part-read) .list-summary {
+  color: var(--text);
+}
+
+:root[data-theme="light"] .issue-row.state-read .issue-sub,
+:root[data-theme="light"] .issue-row.state-read .issue-genres,
+:root[data-theme="light"] .issue-row.state-read .issue-summary,
+:root[data-theme="light"] .issue-row.state-reading .issue-sub,
+:root[data-theme="light"] .issue-row.state-reading .issue-genres,
+:root[data-theme="light"] .issue-row.state-reading .issue-summary {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* Same overrides, OS-preference light (no explicit data-theme override) —
+   mirrors tokens-light.css's own dual-block convention. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .cover-grid.list-view .cover-card.state-read .cover-title,
+  :root:not([data-theme]) .cover-grid.list-view .cover-card.state-part-read .cover-title,
+  :root:not([data-theme]) .issue-row.state-read .issue-title,
+  :root:not([data-theme]) .issue-row.state-reading .issue-title {
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  :root:not([data-theme]) .cover-grid.list-view .cover-card.state-read .cover-count,
+  :root:not([data-theme]) .cover-grid.list-view .cover-card.state-read .cover-year,
+  :root:not([data-theme]) .cover-grid.list-view .cover-card.state-part-read .cover-count,
+  :root:not([data-theme]) .cover-grid.list-view .cover-card.state-part-read .cover-year {
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  :root:not([data-theme]) .cover-grid.list-view .cover-card.state-read .list-genres,
+  :root:not([data-theme]) .cover-grid.list-view .cover-card.state-read .list-pub-writer,
+  :root:not([data-theme]) .cover-grid.list-view .cover-card.state-read .list-summary,
+  :root:not([data-theme]) .cover-grid.list-view .cover-card.state-part-read .list-genres,
+  :root:not([data-theme]) .cover-grid.list-view .cover-card.state-part-read .list-pub-writer,
+  :root:not([data-theme]) .cover-grid.list-view .cover-card.state-part-read .list-summary {
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  :root:not([data-theme]) .cover-grid.list-view .cover-card:not(.state-read):not(.state-part-read) .list-summary {
+    color: var(--text);
+  }
+
+  :root:not([data-theme]) .issue-row.state-read .issue-sub,
+  :root:not([data-theme]) .issue-row.state-read .issue-genres,
+  :root:not([data-theme]) .issue-row.state-read .issue-summary,
+  :root:not([data-theme]) .issue-row.state-reading .issue-sub,
+  :root:not([data-theme]) .issue-row.state-reading .issue-genres,
+  :root:not([data-theme]) .issue-row.state-reading .issue-summary {
+    color: rgba(0, 0, 0, 0.6);
+  }
+}
+
 .cover-img-wrap {
   position: relative;
   aspect-ratio: 2 / 3;
@@ -1723,6 +1806,16 @@ select.filter-select:focus,
   display: none;
 }
 
+/* ...except the list-only rating row appended after the summary (buildCoverCard,
+   app.js) — reuses .card-rating-row's star styling but sits in .list-meta as
+   its own last row, so it needs re-enabling against the blanket hide above.
+   Two classes beats the single-class hide rule's specificity regardless of
+   source order. */
+.cover-grid.list-view .card-rating-row.list-rating-row {
+  display: flex;
+  margin-top: 3px;
+}
+
 .cover-grid.list-view .cover-title+.cover-meta-row {
   margin-top: 0;
 }
@@ -1980,8 +2073,8 @@ select.filter-select:focus,
   position: absolute;
   top: 0;
   bottom: 0;
-  left: -30px;
-  right: -30px;
+  left: calc(var(--container-pad-x) * -1);
+  right: calc(var(--container-pad-x) * -1);
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
@@ -2374,8 +2467,8 @@ select.filter-select:focus,
     --card-min: 100px;
   }
 
-  .container {
-    padding: 5px 10px 0;
+  :root {
+    --container-pad-x: 10px;
   }
 
   .strip-track {
@@ -2436,8 +2529,8 @@ select.filter-select:focus,
 .issue-backdrop {
   position: absolute;
   top: 0;
-  left: -30px;
-  right: -30px;
+  left: calc(var(--container-pad-x) * -1);
+  right: calc(var(--container-pad-x) * -1);
   height: 440px;
   overflow: hidden;
   z-index: 0;

@@ -1804,6 +1804,14 @@ function buildCoverCard(s) {
     const pct = Math.round((s.read_count / s.issue_count) * 100);
     listMeta.appendChild(el('div', 'list-progress-text', `${pct}% Read`));
   }
+  // List view's own rating stars — the grid's ratingRow (in countRow above)
+  // stays CSS-hidden in list view; this is a separate instance so it can sit
+  // on its own last row, after the summary, instead.
+  if (s.personal_rating > 0) {
+    const listRating = buildRatingRow(s.personal_rating);
+    listRating.classList.add('list-rating-row');
+    listMeta.appendChild(listRating);
+  }
   info.appendChild(listMeta);
 
   card.append(wrap, info);
