@@ -5381,3 +5381,37 @@ fill, unaffected by what's behind it). No responsive `.back-nav` override
 exists at any breakpoint, so the fixed 40px/480px pairing holds at all
 widths — only the existing left/right bleed varies by breakpoint
 (`--container-pad-x`), untouched by this change.
+
+## Session — 2026-07-22 — Two bug fixes: Full Editor zoom-in, Library selection-bar Deselect
+
+**Bug 1 — Full Editor comic viewer zoom-in did nothing.** `applyViewerZoom()`
+(`js/editor_full.js`) set the image's inline `width` to `100 * viewerZoom`%,
+but `.fe-viewer-img` (`style.css`) carries `max-width: 100%; max-height:
+100%`. For a replaced element, an active `max-width`/`max-height` wins over
+a larger inline `width`, so any zoom above 100% was silently clamped back
+down — zooming out (below 100%) worked since it never hit the clamp, which
+is why only "zoom in" was reported broken.
+
+**Fix:** `applyViewerZoom()` now also sets `img.style.maxWidth`/`maxHeight`
+to `'none'` whenever `viewerZoom !== 1`, and clears them back to `''` (so
+the CSS 100% rules resume governing the fit) at `viewerZoom === 1`.
+
+**Bug 2 — Library selection-bar "Deselect" closed the bar instead of just
+clearing the selection.** Both the `Deselect` and `Done` buttons
+(`js/app.js`, `ensureSelectionToolbar()`) called `exitSelectionMode()`,
+which clears `selectedIds` and hides the toolbar — so Deselect and Done
+were functionally identical.
+
+**Fix:** added `clearSelection()` — clears `selectedIds` and each card's
+`.selected` class, then calls `updateSelectionToolbar()` instead of
+`hideSelectionToolbar()`, leaving `selectionActive` and the bar visible.
+`Deselect`'s click handler now calls `clearSelection()`; `Done` is
+unchanged and still calls `exitSelectionMode()`.
+
+**Verification:** both live-tested via Claude-in-Chrome. Full Editor:
+loaded `2000AD #763 (1991).cbr` at `/editor`, clicked zoom-in twice (150%)
+— cover visibly enlarged with the frame scrolled/clipped to it — then Fit
+restored the normal size. Library: selected two cards in Grid view via the
+select-dot, clicked Deselect — both cards lost their selection highlight,
+the bar stayed open showing "0 selected" — then clicked Done, which closed
+the bar as before.

@@ -213,6 +213,18 @@ function exitSelectionMode() {
   hideSelectionToolbar();
 }
 
+// Deselect toolbar button: clears the current selection but leaves selection
+// mode (and the toolbar) active, unlike exitSelectionMode()/Done which close it.
+function clearSelection() {
+  selectionAnchorId = null;
+  for (const id of selectedIds.keys()) {
+    const node = document.querySelector(`[data-issue-id="${id}"]`);
+    if (node) node.classList.remove('selected');
+  }
+  selectedIds.clear();
+  updateSelectionToolbar();
+}
+
 function toggleSelected(id, kind = 'issue') {
   if (selectedIds.has(id)) selectedIds.delete(id);
   else selectedIds.set(id, kind);
@@ -357,7 +369,7 @@ function ensureSelectionToolbar() {
   const deselectBtn = el('button', 'selection-action-btn', 'Deselect');
   deselectBtn.id     = 'selDeselect';
   deselectBtn.type   = 'button';
-  deselectBtn.addEventListener('click', () => exitSelectionMode());
+  deselectBtn.addEventListener('click', () => clearSelection());
   const doneBtn    = el('button', 'selection-done-btn', 'Done');
   doneBtn.id       = 'selDone';
   doneBtn.type     = 'button';

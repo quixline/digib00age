@@ -869,8 +869,19 @@ function fitViewer() {
 function applyViewerZoom() {
   const img = document.getElementById('feViewerImg');
   if (img.hidden) return;
-  // zoom === 1 → let the CSS max-width/height fit the frame; otherwise scale up.
-  img.style.width = viewerZoom === 1 ? '' : `${100 * viewerZoom}%`;
+  // zoom === 1 → let the CSS max-width/height fit the frame. Otherwise the
+  // .fe-viewer-img max-width/max-height: 100% rules must be cleared too —
+  // left in place they clamp the inline width straight back down, so zooming
+  // in (>100%) had no visible effect while zooming out still "worked".
+  if (viewerZoom === 1) {
+    img.style.width = '';
+    img.style.maxWidth = '';
+    img.style.maxHeight = '';
+  } else {
+    img.style.width = `${100 * viewerZoom}%`;
+    img.style.maxWidth = 'none';
+    img.style.maxHeight = 'none';
+  }
 }
 
 function toggleFullscreen() {

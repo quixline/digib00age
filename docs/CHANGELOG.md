@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-22** — Fixed two bugs: Full Editor comic-viewer zoom-in had no
+  visible effect (CSS `max-width/max-height: 100%` was clamping the inline
+  zoom width back down); Library selection-bar's Deselect button closed the
+  bar instead of just clearing the selection.
+  → `progress.md` "Two bug fixes: Full Editor zoom-in, Library selection-bar Deselect (2026-07-22)"
 - **2026-07-22** — Issue page: closed the flat-bg seam between the Back
   button row and the backdrop image below it (backdrop now extends up
   behind the Back button instead of stopping just below it).
