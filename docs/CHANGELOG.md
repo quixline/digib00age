@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-22** — Full Editor comic viewer: added click-drag panning while
+  zoomed in (`grab`/`grabbing` cursor), since a zoomed page is usually
+  oversized in both axes.
+  → `progress.md` "Full Editor comic viewer: drag-to-pan when zoomed in (2026-07-22)"
 - **2026-07-22** — Fixed two bugs: Full Editor comic-viewer zoom-in had no
   visible effect (CSS `max-width/max-height: 100%` was clamping the inline
   zoom width back down); Library selection-bar's Deselect button closed the

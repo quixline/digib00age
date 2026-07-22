@@ -5006,6 +5006,15 @@ select.fe-genre-add:focus {
   overflow: auto;
 }
 
+.fe-viewer-frame--zoomed {
+  cursor: grab;
+}
+
+.fe-viewer-frame--dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
 .fe-viewer-img {
   display: block;
   max-width: 100%;
@@ -5013,6 +5022,7 @@ select.fe-genre-add:focus {
   border: 1px solid var(--border-strong, var(--border));
   border-radius: var(--radius-xs);
   box-shadow: var(--shadow-pop);
+  -webkit-user-drag: none;
 }
 
 .fe-viewer-empty {

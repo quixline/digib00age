@@ -780,6 +780,45 @@ function wireImageViewer() {
   document.getElementById('feZoomOutBtn').onclick = () => setZoom(viewerZoom - 0.25);
   document.getElementById('feFitBtn').onclick = fitViewer;
   document.getElementById('feFullscreenBtn').onclick = toggleFullscreen;
+  wireViewerPan();
+}
+
+// Drag-to-pan — once zoomed past 100% the frame scrolls (overflow: auto),
+// but a zoomed-in comic page is usually bigger than the visible frame in
+// both axes, so a click-drag is the natural way to look around it (plain
+// scrollbars only cover one axis at a time comfortably). Only active while
+// zoomed; at 100% the image already fits so there's nothing to pan.
+function wireViewerPan() {
+  const frame = document.getElementById('feViewerFrame');
+  let dragging = false;
+  let startX = 0, startY = 0, startScrollLeft = 0, startScrollTop = 0;
+
+  frame.addEventListener('pointerdown', (e) => {
+    if (viewerZoom === 1 || e.button !== 0) return;
+    dragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    startScrollLeft = frame.scrollLeft;
+    startScrollTop = frame.scrollTop;
+    frame.classList.add('fe-viewer-frame--dragging');
+    frame.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+
+  frame.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    frame.scrollLeft = startScrollLeft - (e.clientX - startX);
+    frame.scrollTop = startScrollTop - (e.clientY - startY);
+  });
+
+  const endDrag = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    frame.classList.remove('fe-viewer-frame--dragging');
+    if (e && frame.hasPointerCapture(e.pointerId)) frame.releasePointerCapture(e.pointerId);
+  };
+  frame.addEventListener('pointerup', endDrag);
+  frame.addEventListener('pointercancel', endDrag);
 }
 
 const VIEWER_BTNS = ['fePrevBtn', 'feNextBtn', 'feThumbPrev', 'feThumbNext',
@@ -794,6 +833,7 @@ function resetViewer() {
   const img = document.getElementById('feViewerImg');
   img.hidden = true;
   img.style.width = '';
+  document.getElementById('feViewerFrame').classList.remove('fe-viewer-frame--zoomed');
   document.getElementById('feViewerEmpty').hidden = false;
   document.getElementById('fePageInfo').textContent = '—';
   document.getElementById('feThumbStrip').innerHTML = '';
@@ -882,6 +922,8 @@ function applyViewerZoom() {
     img.style.maxWidth = 'none';
     img.style.maxHeight = 'none';
   }
+  document.getElementById('feViewerFrame')
+    .classList.toggle('fe-viewer-frame--zoomed', viewerZoom !== 1);
 }
 
 function toggleFullscreen() {

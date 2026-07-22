@@ -5415,3 +5415,40 @@ restored the normal size. Library: selected two cards in Grid view via the
 select-dot, clicked Deselect — both cards lost their selection highlight,
 the bar stayed open showing "0 selected" — then clicked Done, which closed
 the bar as before.
+
+## Session — 2026-07-22 — Full Editor comic viewer: drag-to-pan when zoomed in
+
+Tez asked for a drag/move function on the zoomed-in cover, as a follow-up to
+the same session's zoom-in fix above. `.fe-viewer-frame` already scrolls
+(`overflow: auto`) once the image is larger than the frame, but a zoomed
+comic page is normally oversized in both axes, so a click-drag is the more
+natural way to look around than wrangling two scrollbars.
+
+**Built:** `wireViewerPan()` (`js/editor_full.js`), wired once from
+`wireImageViewer()`. Pointer-event drag on `#feViewerFrame`: `pointerdown`
+records the start pointer position and the frame's current
+`scrollLeft`/`scrollTop` (bails out at `viewerZoom === 1`, since there's
+nothing to pan when the page already fits); `pointermove` while dragging
+sets `scrollLeft`/`scrollTop` to the recorded start minus the pointer delta;
+`pointerup`/`pointercancel` end the drag. Uses `setPointerCapture` so the
+drag keeps tracking even if the pointer leaves the frame mid-drag.
+
+`applyViewerZoom()` now also toggles a `fe-viewer-frame--zoomed` class on
+the frame (on whenever `viewerZoom !== 1`, off at `viewerZoom === 1` —
+`resetViewer()` also clears it when a file is closed). New CSS
+(`style.css`): `.fe-viewer-frame--zoomed { cursor: grab; }` and
+`.fe-viewer-frame--dragging { cursor: grabbing; user-select: none; }` (the
+latter toggled by the pointerdown/up handlers) — a `grab` hand shows
+whenever panning is possible, switching to `grabbing` mid-drag, and the
+Fit/100% state keeps the default cursor since there's nothing to grab.
+Also added `-webkit-user-drag: none` to `.fe-viewer-img` so the browser's
+native image-drag-ghost doesn't fire and compete with the custom pan.
+
+**Verification:** live-tested via Claude-in-Chrome on `2000AD #2492
+(2026).cbz` at `/editor`. Zoomed to 175%, confirmed cursor computed to
+`grab`; dragged from center toward the upper-left and the page panned
+correctly in both axes (scrolled down and right, revealing content
+previously below/right of the viewport) — confirmed via
+`el.className`/`getComputedStyle(el).cursor` mid-state, not just visually.
+Clicked Fit afterward and confirmed both the `fe-viewer-frame--zoomed`
+class and the `grab` cursor cleared.
