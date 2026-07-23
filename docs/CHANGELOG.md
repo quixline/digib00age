@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-23** — Folder View folder-tile cards (any custom tab, e.g. 2000
+  AD's year folders) restyled to match the main library/home cards: fixed
+  dark-gradient background, hover-only glow ring (was always-on), matching
+  light-theme border override added. → `progress.md` "Folder View folder-tile
+  cards restyled to match main library cards"
 - **2026-07-23** — Search ComicVine "Select Series" modal reworked: wider
   modal, description moved below the results list, Cancel/Issues/Ok moved to
   the bottom of the cover-preview column; ComicVine's stray embedded `<img>`

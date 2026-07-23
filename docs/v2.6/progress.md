@@ -5694,3 +5694,61 @@ confirmed after the backend restart that the description now renders as
 clean plain text with no embedded image. No console errors at any point.
 Tez confirmed each round live and gave final sign-off on the last layout
 (buttons at the bottom of the preview column, gap above them).
+
+## Session — 2026-07-23 — Folder View folder-tile cards restyled to match main library cards
+
+Tez flagged that Folder View's folder/series tiles (e.g. each year folder inside
+the "2000 AD" custom library) looked visually inconsistent with the main
+library/home page cards, and asked for the difference to be applied — scoped to
+dimensions, border, and hover state only, not the info text styling.
+
+**Investigation first:** an Explore pass over `frontend/css/style.css` and
+`frontend/js/app.js` found Folder View actually renders two distinct card types
+into the same `#folderGrid`:
+- Issue cards inside an opened folder (`buildFolderFileCard()`, `app.js:2118`)
+  already carry the exact same classes as the main library cards
+  (`cover-card cover-card--redesign`) — nothing to fix there.
+- Folder/series tiles (`buildFolderCard()`, `app.js:2080`, class `.folder-card`
+  + `.has-cover` variant) are a genuinely separate, older-style ruleset: flat
+  `var(--surface-card)` background instead of the redesigned card's fixed dark
+  gradient, an always-on faint white `box-shadow` ring at rest (the redesigned
+  card has none until hover), and no light-theme override at all.
+
+Confirmed with Tez this should apply to `.folder-card` generally (any custom
+tab using Folder View), not just 2000 AD specifically — it's a shared class, so
+one CSS fix covers every such tab automatically.
+
+**Change, `frontend/css/style.css` (`.folder-card` rule, ~line 1878):**
+- `background` swapped to the same fixed dark gradient
+  (`linear-gradient(160deg, #1b2028 0%, #12161d 100%)`) `.cover-card--redesign`
+  uses.
+- Always-on idle `box-shadow: 0 0 2px 1px rgba(255,255,255,0.5)` removed — the
+  redesigned card only shows its white-glow ring on `:hover`, matching what
+  `.folder-card:hover` already did.
+- `transition` switched from a hardcoded `0.2s` to the shared `var(--dur)
+  var(--ease)` tokens, matching the redesigned card's easing.
+- Added a light-theme override block (`:root[data-theme="light"] .folder-card`
+  + the `@media (prefers-color-scheme: light)` duplicate), mirroring the
+  existing `.cover-card.cover-card--redesign` light-theme rules: background
+  reverts to `var(--surface-card)`, with a `#96b7d1` border and `#454566`
+  box-shadow ring always visible, swapping to a stronger glow on hover.
+- `.folder-card.has-cover`'s own padding/aspect-ratio override and
+  `border-radius`/hover ruleset needed no changes — already matched the
+  redesigned card's layout; it just inherits the background/box-shadow fix
+  from the base rule.
+- Text styling (`.folder-card-name`/`.folder-card-count`, still
+  `var(--text)`/`var(--text-3)`) deliberately untouched, per scope — verified
+  it stays readable in both themes since dark theme's `--text` already
+  resolves light-colored, and light theme's background override reverts to
+  the normal light card fill before text is drawn over it.
+
+**Verification:** live in the running app (`localhost:9424`) via Claude in
+Chrome. Navigated Sidebar → Libraries → "2000 AD" (`?surface=tab-1`) to view
+the year-folder tiles, screenshotted and zoomed to compare border/background
+against the Home page's redesigned cards — matched. Switched theme to Dark via
+Admin → Library Appearance → Theme Selection and re-checked both surfaces:
+folder tiles now show the same borderless dark-gradient face at rest as the
+main library cards, with matching hover lift/glow. Switched theme back to
+Light (the original setting) afterward so the app was left as found. No
+console errors observed. Issue cards inside an opened folder confirmed
+unaffected (they already matched before this change).
