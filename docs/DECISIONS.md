@@ -4,6 +4,40 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Basic PWA support: explicit-button-only install, dedicated root-scope service worker route
+
+**Decided:** 2026-07-23 (backfilled — the implementation itself was built by
+Dispatch, outside a Claude Code session, in response to an ad-hoc feasibility
+ask from Tez; this entry captures the reasoning after the fact from the
+diff/new files, since Tez has manually confirmed it works).
+
+**Why:** Two choices in the implementation are non-obvious enough to be worth
+recording so a later session doesn't "fix" them by accident:
+- **No automatic install prompt.** `frontend/js/pwa.js` captures the browser's
+  `beforeinstallprompt` event and calls `preventDefault()` on it immediately,
+  stashing it for later instead of letting the browser show its own mini-
+  infobar. Install only ever fires from the explicit **Install App** button
+  on the Admin page (hidden unless the page is actually installable). This
+  keeps the install offer out of every visitor's face on every page and puts
+  it somewhere Tez already goes to manage the app.
+- **`/sw.js` gets its own FastAPI route, not `/static/sw.js`.** A service
+  worker's control scope is limited to the path it's served from and below —
+  serving it under the existing `/static` mount would only ever let it
+  control `/static/*`, not the actual app pages. `backend/main.py` adds a
+  dedicated `GET /sw.js` route (still reading the file from `FRONTEND_DIR`)
+  with `Cache-Control: no-cache` so browsers always revalidate it against
+  the server rather than serving a stale cached worker indefinitely.
+
+Caching strategy is also worth noting even though it's more routine:
+`frontend/sw.js` is cache-first for the static app shell (CSS/JS/images/
+manifest) and network-first-with-cache-fallback for `/api/*` — always want
+fresh library data, but the shell itself can serve instantly from cache.
+
+**Where:** `backend/main.py` (`/sw.js` route), `frontend/js/pwa.js`,
+`frontend/sw.js`, `frontend/manifest.json`, `ADMIN_SPEC.md` §2 ("Install App"
+row + new "Install App / PWA support" subsection), `docs/v2.6/progress.md`
+"Session — 2026-07-23 — Basic PWA support (Install App button)".
+
 ### Series/Issue backdrop bleed: shared `--container-pad-x` token instead of a second hardcoded `-30px`
 
 **Decided:** 2026-07-22, fixing the Series/Issue Detail backdrop bleeding past

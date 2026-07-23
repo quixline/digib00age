@@ -116,7 +116,38 @@ Four buttons spread across the full row width (not grouped):
 | **User Guide** | Opens a stub page in a new tab (placeholder; full guide is a future addition) |
 | **Backup Database** | Triggers `POST /api/admin/backup` — exports a dated copy of `comicvault.db` to the configured backup location. **Superseded by §7 (Scheduled Database Backup)** for the scheduling side; this button remains for on-demand manual backup. |
 | **Password Reset** | Placeholder button in V1 (no function). Becomes a real control once password protection (§7.1) ships. |
+| **Install App** *(built 2026-07-23, see below)* | `hidden` by default. Shown only when the browser fires `beforeinstallprompt` (i.e. the site is installable and not already installed); click triggers the native install prompt. Stays hidden if the page is already running as an installed PWA. |
 
+### Install App / PWA support *(built 2026-07-23)*
+
+Basic PWA (installable web app) support, built by Dispatch outside a Claude
+Code session and backfilled into this doc afterward — see `docs/v2.6/progress.md`
+"Session — 2026-07-23 — Basic PWA support (Install App button)" for the full
+narrative. The Admin **Install App** button above is only the trigger; the
+underlying capability is wired in site-wide:
+
+- Every full HTML page (`index.html`, `series.html`, `issue.html`,
+  `guide.html`, `editor_full.html`, `admin.html`) links `/static/manifest.json`,
+  sets a `theme-color` meta tag, and includes `/static/js/pwa.js`.
+- `frontend/js/pwa.js` registers the service worker on load, captures
+  `beforeinstallprompt` (preventing the browser's default mini-infobar and
+  stashing the event instead), and exposes `window.triggerPWAInstall()`. No
+  page ever prompts for install automatically — it only ever fires from the
+  Admin button's click handler.
+- `frontend/sw.js` is a minimal service worker: cache-first for the static app
+  shell (CSS/JS/images/manifest), network-first with cache fallback for
+  `/api/*` calls.
+- The service worker is served from a dedicated `GET /sw.js` route in
+  `backend/main.py` (not under `/static`) — a service worker's scope is
+  limited to the path it's served from, so it has to be served at the root to
+  control the whole site.
+- `frontend/manifest.json` and the two icon files
+  (`frontend/images/icons/icon-192.png`/`icon-512.png`) back the manifest's
+  name/theme/icon fields.
+
+This is a lighter-weight, browser-native installability feature — not the
+same as `ROADMAP.md` item 7's packaged Windows/Mac/Linux installer, which
+remains a separate, unscoped, larger piece of work.
 
 ---
 
@@ -2065,6 +2096,7 @@ support wired in now, unused — same rationale as §11.5.5.
 
 | Date | Change | Reason |
 |---|---|---|
+| 2026-07-23 | §2 — Added **Install App** button to the Top Action Row table, plus a new "Install App / PWA support" subsection documenting the site-wide manifest/service-worker plumbing that backs it. | Basic PWA support built by Dispatch outside a Claude Code session; backfilled into this doc after the fact once Tez manually confirmed it works — see `docs/DECISIONS.md` and `docs/v2.6/progress.md`. |
 | 2026-07-19 | §11.1.3/§11.1.4 — File Rename output format changed from `Series - Title #Issue (Year)` to `Series #Issue - Title (Year)`, and the Edit Panel's field order swapped to match (Series, Issue, Title, Year). Manually tested with a sample file, confirmed working. | Tez request — Issue reads more naturally right after Series than after Title. |
 | 2026-07-18 | §7.4 — Clear Database now documents the full reset scope (thumbnails, scan logs, `log_last_viewed`/`next_processing_run`) and the restart-after-clear mechanism (`checkpoint_wal()` → `engine.dispose()` → VACUUM → sidecar delete → `_schedule_delayed_exit()`), reusing §9.2's Restore Database pattern. | BUG-026/BUG-027 fixed — Clear Database left orphaned thumbnails/DB bloat and had no safe reset path since the Admin page and the DB-holding process are the same process; see `docs/DECISIONS.md` and `docs/archive/bugs-fixed-archive.md`. |
 | 2026-07-18 | §9.2 — Restore Database mechanism now documents the WAL-checkpoint + engine-dispose + sidecar-delete step (new step 2) that runs before the file copy, and notes `run_database_backup()` also checkpoints before its own copy. Status block corrected: Item 12 restore no longer marked failing. | BUG-016 fixed — restore was silently failing to revert DB state due to WAL replay; see `docs/DECISIONS.md` and `docs/archive/bugs-fixed-archive.md`. |

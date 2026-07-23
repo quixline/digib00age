@@ -173,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initDangerZone();
   initDonate();
   initPasswordRecovery();
+  initPWAInstall();
 });
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -1733,4 +1734,29 @@ async function submitPwReset(e) {
   }
   closePwResetModal();
   showToast('Password changed');
+}
+
+// ── PWA Install button ────────────────────────────────────────────────────────
+// Hidden by default. Shown when the browser fires beforeinstallprompt
+// (captured in pwa.js). Hidden again once installed or if already running
+// as a standalone PWA.
+
+function initPWAInstall() {
+  const btn = document.getElementById('pwaInstallBtn');
+  if (!btn) return;
+
+  // Already running as installed PWA — nothing to offer
+  if (window.matchMedia('(display-mode: standalone)').matches) return;
+
+  btn.addEventListener('click', () => {
+    window.triggerPWAInstall && window.triggerPWAInstall();
+  });
+
+  document.addEventListener('pwa-installable', () => {
+    btn.hidden = false;
+  });
+
+  document.addEventListener('pwa-installed', () => {
+    btn.hidden = true;
+  });
 }

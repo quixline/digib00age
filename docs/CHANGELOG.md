@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-23** — Basic PWA support added: manifest + service worker site-wide,
+  new "Install App" button on Admin (built by Dispatch outside a Claude Code
+  session, backfilled into docs after the fact). → `progress.md` "Basic PWA
+  support (Install App button)"
 - **2026-07-23** — Convert Images: Lossless checkbox and Quality slider now
   sit on one row. → `progress.md` "Convert Images: Lossless checkbox and
   Quality slider on one row"

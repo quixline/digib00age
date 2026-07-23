@@ -4,29 +4,23 @@
 
 ### Unprocessed
 
-- [ ] List View, Light Theme: black text for Unread, 65% black for Read/Reading
+- [x] 
 
-- [ ] List View, All Themes: Add stars when rated - should be positioned on the last row after the summary
+- [ ] mobile design review - get a closer consistency to the web ui, drop the outer glow around cards but keep white border, the inner style and genre/info - add pinch zoom when reading, - change the app icon to the new one - theme control add to settings
 
-- [ ] change card size % options to 30% then every 10% to 100% (change due to new elements added to card get squashed at 25% or lower) - this should also change the home page cards and in addition to the size change, the strips should hold more cards to 25 on each strip
-
-- [ ] re-visit the Search ComicVine - Selection Modal and function
-
-- [ ] design review - mobile reader UI - get a closer consistency to the web ui, drop the outer glow around cards but keep white border, the inner style and genre/info - add pinch zoom when reading, - change the app icon to the new one
-
-- [ ] **Scanner speedups:** — thumbnails are 53% of the 21.5 min, per-file commits 18%. Batching commits is the easy win (~4 min). Both need scoping; nothing's been attempted.
+- [ ] **Scanner speedups:** — thumbnails are 53% of the 21.5 min, per-file commits 18%. Batching commits is the easy win (~4 min). Both need scoping; nothing's been attempted. - inc recheck of CT function - slower that CT app when pulling issues details. test/time
 
 - [ ] scan code base - clean, removal of dead code, fix linting issues - other useful tasks to clean code base - do in focused sessions or overview then specific
 
 - [ ] stress test
 
-- [ ] plan & build windows install package - browser popout like boxy svg
+- [ ] plan & build windows install package - PWA - Progressive Web App
 
 - [ ] build website and demo
-  
-  
-  
-  
+
+
+
+
 
 ---
 
@@ -34,9 +28,19 @@
 
 _22-07-2026_
 
+- [x] Selection Modal and function - issues listed are not in prog # order
+
+- [x] put convert archives and convert images side by side Admin.
+
+- [x] zoom doesn't work - full editor
+
+- [x] add drag/move function to zoomed in images
+
+- [x] Deselect - function should not close the selection options bar
+
+* [x] DESIGN CHANGES: 1. List & Series view, "Light Theme" cards: black text for Unread, 60% black for Read/Reading. 2. List View, All Themes: Add stars when rated - should be positioned on the last row after the summary. 3. issue and series pages all themes - the bg sits behind the top header bar, make the bg stretch only to the edge of the header and left nav bar not behindchange card size % options to 30% then every 10% to 100% (change due to new elements added to card get squashed at 25% or lower) - this should also change the home page cards and in addition to the size change, the strips should hold more cards to 25 on each strip
+
 * [x] move "Logs" on each of the scan card in admin to the bottom of the card, remove the pill and underline the text on over
-  
-  
 
 * [x] Light Theme changes: Read state text - remove the blur from cards; year and #pages/issues text
 

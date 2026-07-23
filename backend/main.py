@@ -182,6 +182,17 @@ if FRONTEND_DIR.exists():
             raise HTTPException(status_code=403, detail={"error": "remote_admin_disabled"})
         return FileResponse(str(FRONTEND_DIR / "editor_full.html"))
 
+    # Service worker must be served from the root scope (/sw.js) so it can
+    # control all pages. StaticFiles only covers /static/*, so add an explicit
+    # route here. Cache-Control: no-cache so browsers always revalidate it.
+    @app.get("/sw.js", include_in_schema=False)
+    async def service_worker():
+        return FileResponse(
+            str(FRONTEND_DIR / "sw.js"),
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-cache"},
+        )
+
 # ---------------------------------------------------------------------------
 # Entry point — run directly with: python backend/main.py
 # ---------------------------------------------------------------------------

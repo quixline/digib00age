@@ -5552,3 +5552,59 @@ flex-wrap: wrap`) and applied it only to Convert Images' container in
 **Verification:** live-tested via Claude-in-Chrome — Lossless and Quality
 now render on one row, matching the "From CBR / From PDF" row style already
 used in Convert Archives.
+
+## Session — 2026-07-23 — Basic PWA support (Install App button)
+
+Built by **Dispatch**, not a Claude Code session — Tez asked Dispatch while away
+from the computer to assess whether ComicVault could support basic PWA
+(installable web app) behaviour. Dispatch confirmed it was feasible and
+implemented it directly; Tez has since manually tested the install flow and
+confirmed it works. This entry backfills the doc updates the normal
+close-of-session checklist (`CLAUDE.md` §4) would have produced, written from
+the actual diff/new files already in the working tree — no code changed as
+part of this backfill, docs only.
+
+**What was built:**
+- `frontend/manifest.json` (new) — app name "ComicVault", `display: standalone`,
+  theme colour `#0A5FFF`, background `#0D0E10`, pointing at two new icons.
+- `frontend/sw.js` (new) — a minimal service worker: cache-first for the static
+  app shell (CSS/JS/images/manifest, explicitly listed), network-first with
+  cache fallback for `/api/*` calls. Standard install/activate lifecycle
+  (precache on install, stale-cache cleanup on activate, `skipWaiting()` /
+  `clients.claim()`).
+- `frontend/images/icons/icon-192.png`, `icon-512.png` (new) — real generated
+  icons (31 KB / 101 KB), `maskable` purpose.
+- `frontend/js/pwa.js` (new) — registers the service worker on load, captures
+  the browser's `beforeinstallprompt` event (preventing the default mini-
+  infobar and stashing it), exposes `window.triggerPWAInstall()`, and
+  dispatches `pwa-installable` / `pwa-installed` custom events for the UI to
+  react to. Deliberately **no automatic install prompt** — install only ever
+  fires from an explicit button click.
+- `backend/main.py` — new `GET /sw.js` route serving the file straight from
+  `FRONTEND_DIR` with `Cache-Control: no-cache`. Needed because the existing
+  `/static` mount only scopes a service worker to `/static/*` — serving it at
+  the root path lets it control the whole site.
+- Every full HTML page (`index.html`, `series.html`, `issue.html`,
+  `guide.html`, `editor_full.html`, `admin.html`) gained the manifest
+  `<link>`, a `theme-color` meta tag, an `apple-mobile-web-app-capable` meta
+  tag, and a `<script src="/static/js/pwa.js">` include — the PWA plumbing is
+  site-wide, not Admin-only.
+- `frontend/admin.html` / `frontend/js/admin.js` — a new **"Install App"**
+  button in the Admin top action row, `hidden` by default. `initPWAInstall()`
+  keeps it hidden if the page is already running standalone
+  (`display-mode: standalone`), un-hides it on `pwa-installable`, re-hides it
+  on `pwa-installed`, and its click handler calls `window.triggerPWAInstall()`.
+
+**Why:** an ad-hoc feasibility ask from Tez, not a planned build-queue item —
+handled entirely by Dispatch outside the normal session flow, which is why it
+needed backfilling here rather than being logged live.
+
+**Relationship to `ROADMAP.md` item 7:** that item is a full packaged
+Windows/Mac/Linux installer — a bigger, separate scoping question. This PWA
+work doesn't resolve it; `ROADMAP.md` is left untouched. `docs/INBOX.md`
+separately has an open, unchecked item from Tez ("plan & build windows
+install package - PWA - Progressive Web App") that also stays open — per
+`CLAUDE.md`, INBOX.md is entry-only and Claude never writes to it unprompted.
+
+**Verification:** confirmed live by Tez — installed the app via the new
+Admin "Install App" button and confirmed it works.
