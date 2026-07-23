@@ -741,7 +741,10 @@ Search Online again. There is no separate re-search input inside the modal.
 `images/search-online-manual-selection-from-results.PNG`):
 
 - Results table: Series / Year / Issues / Publisher.
-- Cover-art preview and description panel, both update on row selection.
+- Cover-art preview, both update on row selection. **Reworked 2026-07-23:**
+  modal widened (`max-width` 900px → 1200px); the description panel moved out
+  from under the cover to sit below the results table instead (same column,
+  full width), so it's no longer squeezed into the narrow preview column.
 - Double-click a row to proceed to Select Issue.
 - **Dropped from CT's native version:** editable search box, Re-Search button,
   Filter Publishers checkbox — superseded by §9.5's read-from-form behaviour.
@@ -761,8 +764,11 @@ Search Online again. There is no separate re-search input inside the modal.
   returning results, so "Best match" is a real, deterministic ranking
   ComicVault computes itself rather than an assumption about pass-through
   order.
-- **Built 2026-07-19: Cancel / Issues / Ok buttons**, left-aligned below the
-  results table. **Cancel** closes the modal (same as ×). **Issues**
+- **Built 2026-07-19: Cancel / Issues / Ok buttons.** **Reworked 2026-07-23:**
+  moved from a left-aligned row below the results table to stacked, centred
+  buttons anchored to the bottom of the cover-preview column (a gap separates
+  them from the cover — they sit at the bottom of that column, not immediately
+  under the image). **Cancel** closes the modal (same as ×). **Issues**
   reintroduces CT's native "Show Issues" button (dropped above) — same as
   double-clicking the highlighted row, proceeds to Select Issue. **Ok** skips
   Select Issue entirely: fetches the highlighted series' issue list and
@@ -770,6 +776,16 @@ Search Online again. There is no separate re-search input inside the modal.
   for a single-issue/graphic-novel series this is identical to going through
   Select Issue normally; for a multi-issue series it's a fast-path onto issue
   #1, and picking a specific issue is still what Issues → Select Issue is for.
+- **Fixed 2026-07-23:** ComicVine's series/issue description text comes back
+  as raw HTML and can embed a small `<img>` (e.g. a "first issue" cover
+  thumbnail) alongside the text — rendered via `innerHTML`, this pushed the
+  summary text down and around a broken/slow-loading image. `backend/
+  ct_bridge.py`'s `search_series()` and `list_issues_for_series()` now run the
+  description through CT's existing `cleanup_html()` helper (already used for
+  the Summary field mapping in §9.7) before returning it, stripping all HTML
+  tags — including images — down to plain text. The frontend renders it via
+  `textContent` instead of `innerHTML`, with `white-space: pre-wrap` so
+  `cleanup_html()`'s paragraph breaks still display.
 
 **Step 2 — Select Issue** (reference screenshot
 `images/series-page-search-issue-list.PNG`):

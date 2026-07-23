@@ -108,7 +108,12 @@ def search_series(series_name: str) -> list[SeriesResult]:
             start_year=r.start_year,
             publisher=r.publisher or "",
             count_of_issues=r.count_of_issues,
-            description=r.description or "",
+            # ComicVine's series description is raw HTML and sometimes embeds
+            # a small <img> (e.g. a "first issue" cover thumbnail) alongside
+            # the text -- run it through the same cleanup_html() used for the
+            # Summary field mapping below so the Select Series preview shows
+            # plain text only, never an inline image.
+            description=cleanup_html(r.description) if r.description else "",
             image_url=r.image_url or "",
         )
         for r in results
@@ -150,7 +155,7 @@ def list_issues_for_series(series_id: str) -> list[IssueResultDTO]:
                 number=md.issue or "",
                 date=date,
                 title=md.title or "",
-                description=md.description or "",
+                description=cleanup_html(md.description) if md.description else "",
                 cover_url=(md._cover_image.URL if md._cover_image else ""),
             )
         )

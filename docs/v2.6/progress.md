@@ -5637,3 +5637,60 @@ Admin "Install App" button and confirmed it works.
 cache file, confirmed the new scoring corrected it against those same rows
 (ratio 1.0, "2000 AD" first), then Tez re-ran the actual repro live in the
 Full Editor and confirmed "2000 AD" now sorts first under "Best match".
+
+## Session — 2026-07-23 — Search ComicVine "Select Series" modal: layout rework + stray-image fix
+
+Cosmetic/UI-polish session on the Search Online modal's Select Series step
+(`EDITOR_SPEC.md` §9.6), driven entirely by Tez's live back-and-forth against
+the running editor — no build-queue item, iterated to a final layout across
+several rounds.
+
+**Layout, `frontend/editor_full.html` + `frontend/css/style.css`:**
+- Modal widened: `.fe-search-online-modal` `max-width` 900px → 1200px.
+- Results table and description panel grouped into a new `.fe-so-left`
+  column; the description (`#feSoSeriesDescription`) moved from under the
+  cover-preview column to below the results table instead, full width of the
+  left column.
+- Cancel / Issues / Ok moved out of the row below the table and into the
+  cover-preview column (`.fe-so-preview`), stacked vertically, text
+  centred (`justify-content: center` on `.btn-admin-action`, which only
+  centred by accident before via auto-width — needed explicitly once the
+  buttons were stretched to the column's full width). Landed on: buttons
+  anchored to the **bottom** of the preview column via `margin-top: auto` on
+  `.editor-actions`, leaving a gap between the cover image and the buttons
+  rather than sitting flush under it — this took three iterations live with
+  Tez to land on (tried buttons directly under the cover, then moved to the
+  very bottom of the whole modal spanning full width, before landing here).
+- All IDs unchanged throughout, so `editor_full.js`'s `getElementById()` wiring
+  needed no changes for the layout moves.
+
+**Stray-image fix, `backend/ct_bridge.py` + `frontend/js/editor_full.js`:**
+- Root cause (Tez's report, reproduced live on "2000 AD"): ComicVine's
+  series/issue description comes back as raw HTML and sometimes embeds a
+  small `<img>` (e.g. a "first issue" cover thumbnail) inline with the text.
+  Both `search_series()`/`list_issues_for_series()` and the frontend's
+  `.innerHTML =` assignment were passing that HTML straight through, so the
+  image rendered (or sat broken/slow under ComicVine rate limiting) and
+  pushed the summary text around.
+- Fixed by running both descriptions through `cleanup_html()` — the same
+  helper CT's own pipeline already uses for the Summary field mapping
+  (§9.7) — before returning them from `ct_bridge.py`. Strips all HTML tags,
+  including `<img>`, down to plain text.
+- `editor_full.js`'s four description assignments (series list-empty reset,
+  series preview, issue list-empty reset, issue preview) switched from
+  `.innerHTML` to `.textContent` — no longer any HTML to interpret, and
+  plain-text assignment is the safer default regardless.
+- `.fe-so-description` gained `white-space: pre-wrap` so `cleanup_html()`'s
+  `\n\n` paragraph breaks still render instead of collapsing to one line.
+- **This backend change needed a server restart to take effect** — this app
+  runs `reload=False` (established precedent, see BUG-032/`reload` entries
+  earlier in this log). Tez restarted the tray app's server mid-session.
+
+**Verification:** all changes verified live in a real browser tab against the
+running editor (`localhost:9424/editor`), reloading/hard-reloading between
+rounds to rule out the project's known static-asset caching gotcha. Opened
+Select Series against the real "2000 AD" search repeatedly across rounds;
+confirmed after the backend restart that the description now renders as
+clean plain text with no embedded image. No console errors at any point.
+Tez confirmed each round live and gave final sign-off on the last layout
+(buttons at the bottom of the preview column, gap above them).

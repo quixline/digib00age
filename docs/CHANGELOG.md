@@ -13,6 +13,12 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-23** — Search ComicVine "Select Series" modal reworked: wider
+  modal, description moved below the results list, Cancel/Issues/Ok moved to
+  the bottom of the cover-preview column; ComicVine's stray embedded `<img>`
+  in series/issue descriptions now stripped to plain text (`cleanup_html()`).
+  → `progress.md` "Search ComicVine 'Select Series' modal: layout rework +
+  stray-image fix"
 - **2026-07-23** — BUG-033 fixed: Search Online "Best match" order was wrong
   once a search term hit the local CT cache (missing `ORDER BY` in the pinned
   dependency's cache-read query); `ct_bridge.py` now re-ranks results itself.

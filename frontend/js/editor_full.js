@@ -1334,7 +1334,7 @@ function renderSoSeriesTable() {
   const tbody = document.getElementById('feSoSeriesTbody');
   tbody.innerHTML = '';
   document.getElementById('feSoSeriesCover').src = '';
-  document.getElementById('feSoSeriesDescription').innerHTML = '';
+  document.getElementById('feSoSeriesDescription').textContent = '';
 
   const sorted = getSortedSoSeriesResults();
   if (!sorted.length) {
@@ -1358,7 +1358,7 @@ function previewSoSeries(series, row) {
   document.querySelectorAll('#feSoSeriesTbody tr').forEach((r) => r.classList.remove('selected'));
   if (row) row.classList.add('selected');
   document.getElementById('feSoSeriesCover').src = series.image_url || '';
-  document.getElementById('feSoSeriesDescription').innerHTML = series.description || '';
+  document.getElementById('feSoSeriesDescription').textContent = series.description || '';
 }
 
 function soIssuesBtnClick() {
@@ -1399,7 +1399,7 @@ function renderSoIssueTable(issues) {
   const tbody = document.getElementById('feSoIssueTbody');
   tbody.innerHTML = '';
   document.getElementById('feSoIssueCover').src = '';
-  document.getElementById('feSoIssueDescription').innerHTML = '';
+  document.getElementById('feSoIssueDescription').textContent = '';
 
   if (!issues.length) {
     tbody.innerHTML = '<tr><td colspan="3">No issues found.</td></tr>';
@@ -1420,7 +1420,7 @@ function previewSoIssue(issue, row) {
   document.querySelectorAll('#feSoIssueTbody tr').forEach((r) => r.classList.remove('selected'));
   if (row) row.classList.add('selected');
   document.getElementById('feSoIssueCover').src = issue.cover_url || '';
-  document.getElementById('feSoIssueDescription').innerHTML = issue.description || '';
+  document.getElementById('feSoIssueDescription').textContent = issue.description || '';
 }
 
 async function confirmSoIssue(issueId) {
