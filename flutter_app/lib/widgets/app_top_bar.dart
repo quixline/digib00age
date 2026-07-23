@@ -16,8 +16,8 @@ class AppTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.border)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.of(context).border)),
       ),
       child: Row(
         children: [
@@ -58,7 +58,7 @@ class _RoundIconButton extends StatelessWidget {
           customBorder: const CircleBorder(),
           onTap: onTap,
           child: Center(
-            child: Text(glyph, style: const TextStyle(color: AppColors.textSecondary, fontSize: 18)),
+            child: Text(glyph, style: TextStyle(color: AppColors.of(context).textSecondary, fontSize: 18)),
           ),
         ),
       ),

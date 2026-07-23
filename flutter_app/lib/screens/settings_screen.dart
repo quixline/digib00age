@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/settings_service.dart';
 import '../services/protocol_handler_service.dart';
+import '../theme/tokens.dart';
 
 class SettingsScreen extends StatefulWidget {
   final SettingsService settings;
@@ -109,6 +110,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
           const Divider(height: 32),
+          Text('Appearance', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          _AppearanceTile(settings: widget.settings),
+          const Divider(height: 32),
           Text('Reading', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           _ReadingModeTile(settings: widget.settings),
@@ -181,7 +186,7 @@ class _ReaderRegistrationTileState extends State<_ReaderRegistrationTile> {
               ? 'This PC is registered — clicking a comic cover on the web UI opens it here.'
               : 'Not registered — clicking a comic cover on the web UI does nothing yet.',
           style: TextStyle(
-            color: _registered ? Colors.greenAccent : Colors.white60,
+            color: _registered ? Colors.greenAccent : AppColors.of(context).textSecondary,
             fontSize: 13,
           ),
         ),
@@ -190,6 +195,47 @@ class _ReaderRegistrationTileState extends State<_ReaderRegistrationTile> {
           onPressed: _toggle,
           icon: Icon(_registered ? Icons.link_off : Icons.link),
           label: Text(_registered ? 'Unregister' : 'Register as this PC\'s comic reader'),
+        ),
+      ],
+    );
+  }
+}
+
+class _AppearanceTile extends StatefulWidget {
+  final SettingsService settings;
+  const _AppearanceTile({required this.settings});
+
+  @override
+  State<_AppearanceTile> createState() => _AppearanceTileState();
+}
+
+class _AppearanceTileState extends State<_AppearanceTile> {
+  late ThemeMode _mode;
+
+  @override
+  void initState() {
+    super.initState();
+    _mode = widget.settings.themeMode;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Theme'),
+        const SizedBox(height: 6),
+        SegmentedButton<ThemeMode>(
+          segments: const [
+            ButtonSegment(value: ThemeMode.system, label: Text('Auto'), icon: Icon(Icons.brightness_auto)),
+            ButtonSegment(value: ThemeMode.light, label: Text('Light'), icon: Icon(Icons.light_mode_outlined)),
+            ButtonSegment(value: ThemeMode.dark, label: Text('Dark'), icon: Icon(Icons.dark_mode_outlined)),
+          ],
+          selected: {_mode},
+          onSelectionChanged: (v) {
+            setState(() => _mode = v.first);
+            widget.settings.themeMode = v.first;
+          },
         ),
       ],
     );

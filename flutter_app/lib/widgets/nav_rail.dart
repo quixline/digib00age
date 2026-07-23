@@ -31,13 +31,14 @@ class NavRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return AnimatedContainer(
       duration: AppMotion.railDuration,
       curve: AppMotion.railCurve,
       width: collapsed ? 64 : 196,
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceCard,
-        border: Border(right: BorderSide(color: AppColors.border, width: 1)),
+      decoration: BoxDecoration(
+        color: colors.surfaceCard,
+        border: Border(right: BorderSide(color: colors.border, width: 1)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
       child: SingleChildScrollView(
@@ -101,7 +102,7 @@ class NavRail extends StatelessWidget {
               if (!collapsed)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(14, 8, 14, 4),
-                  child: Text('Libraries', style: AppText.eyebrow()),
+                  child: Text('Libraries', style: AppText.of(context).eyebrow()),
                 ),
               for (final tab in customTabs)
                 _LibraryRow(
@@ -128,7 +129,7 @@ class _ToggleButton extends StatelessWidget {
       height: 36,
       child: IconButton(
         onPressed: onTap,
-        icon: const Icon(Icons.view_sidebar_outlined, size: 18, color: AppColors.textMuted),
+        icon: Icon(Icons.view_sidebar_outlined, size: 18, color: AppColors.of(context).textMuted),
       ),
     );
   }
@@ -143,7 +144,7 @@ class _Divider extends StatelessWidget {
     return Container(
       height: 1,
       margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-      color: AppColors.border,
+      color: AppColors.of(context).border,
     );
   }
 }
@@ -167,7 +168,8 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = active ? AppColors.accent : AppColors.textSecondary;
+    final colors = AppColors.of(context);
+    final fg = active ? colors.accent : colors.textSecondary;
     final iconWidget = icon != null
         ? Icon(icon, size: 19, color: fg)
         : SizedBox(
@@ -178,7 +180,7 @@ class _Row extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Material(
-        color: active ? AppColors.accentTint : Colors.transparent,
+        color: active ? colors.accentTint : Colors.transparent,
         borderRadius: BorderRadius.circular(6),
         child: InkWell(
           borderRadius: BorderRadius.circular(6),
@@ -196,7 +198,7 @@ class _Row extends StatelessWidget {
                       Expanded(
                         child: Text(
                           label,
-                          style: AppText.label(size: 14, weight: FontWeight.w600, color: fg),
+                          style: AppText.of(context).label(size: 14, weight: FontWeight.w600, color: fg),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -224,10 +226,11 @@ class _LibraryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Material(
-        color: active ? AppColors.accentTint : Colors.transparent,
+        color: active ? colors.accentTint : Colors.transparent,
         borderRadius: BorderRadius.circular(6),
         child: InkWell(
           borderRadius: BorderRadius.circular(6),
@@ -243,13 +246,13 @@ class _LibraryRow extends StatelessWidget {
                       height: 30,
                       alignment: Alignment.center,
                       decoration: active
-                          ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.accent, width: 2))
+                          ? BoxDecoration(shape: BoxShape.circle, border: Border.all(color: colors.accent, width: 2))
                           : null,
                       child: Container(
                         width: 26,
                         height: 26,
                         alignment: Alignment.center,
-                        decoration: const BoxDecoration(color: AppColors.accent, shape: BoxShape.circle),
+                        decoration: BoxDecoration(color: colors.accent, shape: BoxShape.circle),
                         child: Text(
                           tab.firstLetterGlyph,
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
@@ -259,10 +262,10 @@ class _LibraryRow extends StatelessWidget {
                   )
                 : Text(
                     tab.name,
-                    style: AppText.label(
+                    style: AppText.of(context).label(
                       size: 14,
                       weight: FontWeight.w600,
-                      color: active ? AppColors.accent : AppColors.textSecondary,
+                      color: active ? colors.accent : colors.textSecondary,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

@@ -8,6 +8,7 @@ import '../services/local_cbz_service.dart';
 import '../services/download_service.dart';
 import '../services/sync_service.dart';
 import '../screens/reader_screen.dart' show LocalReaderArgs;
+import '../theme/tokens.dart';
 
 class OfflineLibraryView extends StatelessWidget {
   final SettingsService settings;
@@ -35,6 +36,7 @@ class OfflineLibraryView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final recentFiles = settings.recentLocalFiles;
     final downloaded = downloads.list();
     return Column(
@@ -68,11 +70,11 @@ class OfflineLibraryView extends StatelessWidget {
           child: ListView(
             children: [
               if (downloaded.isNotEmpty) ...[
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Downloaded', style: TextStyle(color: Colors.white60)),
+                    child: Text('Downloaded', style: TextStyle(color: colors.textSecondary)),
                   ),
                 ),
                 ...downloaded.map((d) {
@@ -91,7 +93,7 @@ class OfflineLibraryView extends StatelessWidget {
                           : 'Downloaded ${_formatAgo(d.downloadedAt)}',
                       style: TextStyle(
                         fontSize: 11,
-                        color: dirty ? Colors.amber : Colors.white38,
+                        color: dirty ? Colors.amber : colors.textMuted,
                       ),
                     ),
                     onTap: () => Navigator.of(context).pushNamed(
@@ -102,17 +104,17 @@ class OfflineLibraryView extends StatelessWidget {
                 }),
               ],
               if (_localFilePickingSupported && recentFiles.isNotEmpty) ...[
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, 8),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Recent files', style: TextStyle(color: Colors.white60)),
+                    child: Text('Recent files', style: TextStyle(color: colors.textSecondary)),
                   ),
                 ),
                 ...recentFiles.map((path) => ListTile(
                       leading: const Icon(Icons.book),
                       title: Text(localCbz.titleFromPath(path), style: const TextStyle(fontSize: 14)),
-                      subtitle: Text(path, style: const TextStyle(fontSize: 11, color: Colors.white38)),
+                      subtitle: Text(path, style: TextStyle(fontSize: 11, color: colors.textMuted)),
                       onTap: () => Navigator.of(context).pushNamed(
                         '/reader/local',
                         arguments: LocalReaderArgs(path),

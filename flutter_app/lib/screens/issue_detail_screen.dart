@@ -81,6 +81,8 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
       return Center(child: Text(_error!, style: const TextStyle(color: Colors.redAccent)));
     }
 
+    final colors = AppColors.of(context);
+    final text = AppText.of(context);
     final issue = _issue!;
     final readStatus = _readStatusOverride ?? issue.readStatus;
     final favourite = _favouriteOverride ?? issue.favorites;
@@ -130,13 +132,13 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                                     clipBehavior: Clip.antiAlias,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                                      border: Border.all(color: AppColors.border),
+                                      border: Border.all(color: colors.border),
                                       boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 60, offset: Offset(0, 20))],
                                     ),
                                     child: CachedNetworkImage(
                                       imageUrl: coverUrl,
                                       fit: BoxFit.cover,
-                                      errorWidget: (_, _, _) => Container(color: AppColors.surfaceRaised),
+                                      errorWidget: (_, _, _) => Container(color: colors.surfaceRaised),
                                     ),
                                   ),
                                 ),
@@ -171,7 +173,7 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                                         '★',
                                         style: TextStyle(
                                           fontSize: 22,
-                                          color: filled ? AppColors.favouriteGold : const Color(0xFF2A2E36),
+                                          color: filled ? colors.favouriteGold : colors.surfaceSunken,
                                         ),
                                       ),
                                     ),
@@ -186,7 +188,7 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(issue.displayTitle, style: AppText.titleLarge()),
+                              Text(issue.displayTitle, style: text.titleLarge()),
                               const SizedBox(height: 12),
                               Row(
                                 children: [
@@ -204,7 +206,7 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                                   if (issue.year != null) '${issue.year}',
                                   if (issue.language != null) issue.language!,
                                 ].join(' · '),
-                                style: AppText.secondary(),
+                                style: text.secondary(),
                               ),
                               if (issue.genres.isNotEmpty) ...[
                                 const SizedBox(height: 12),
@@ -214,25 +216,25 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                                   children: issue.genres.map((g) => _Tag(label: g)).toList(),
                                 ),
                               ],
-                              const Divider(height: 36, color: AppColors.border),
-                              Text('Summary', style: AppText.eyebrow()),
+                              Divider(height: 36, color: colors.border),
+                              Text('Summary', style: text.eyebrow()),
                               const SizedBox(height: 8),
-                              Text(issue.summary ?? '', style: AppText.body()),
-                              const Divider(height: 36, color: AppColors.border),
-                              Text('Credits', style: AppText.eyebrow()),
+                              Text(issue.summary ?? '', style: text.body()),
+                              Divider(height: 36, color: colors.border),
+                              Text('Credits', style: text.eyebrow()),
                               const SizedBox(height: 8),
                               if (issue.writer != null)
                                 Row(
                                   crossAxisAlignment: CrossAxisAlignment.baseline,
                                   textBaseline: TextBaseline.alphabetic,
                                   children: [
-                                    SizedBox(width: 52, child: Text('Writer', style: AppText.meta())),
+                                    SizedBox(width: 52, child: Text('Writer', style: text.meta())),
                                     Text(
                                       issue.writer!,
-                                      style: AppText.label(
+                                      style: text.label(
                                         size: 14,
                                         weight: FontWeight.w400,
-                                        color: AppColors.accentHover,
+                                        color: colors.accentHover,
                                       ).copyWith(decoration: TextDecoration.underline),
                                     ),
                                   ],
@@ -240,7 +242,7 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                               const SizedBox(height: 18),
                               Text(
                                 'Rated: ${issue.ageRating ?? 'Unrated'}${issue.pageCount != null ? ' · ${issue.pageCount} pages' : ''}',
-                                style: AppText.meta(),
+                                style: text.meta(),
                               ),
                             ],
                           ),
@@ -281,7 +283,7 @@ class _PrevNextBar extends StatelessWidget {
           const SizedBox(width: 14),
           Text(
             issue.displayTitle,
-            style: AppText.meta(),
+            style: AppText.of(context).meta(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -308,10 +310,11 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Opacity(
       opacity: enabled ? 1 : 0.35,
       child: Material(
-        color: AppColors.surfaceCard,
+        color: colors.surfaceCard,
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -320,10 +323,10 @@ class _NavButton extends StatelessWidget {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: colors.border),
               borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             ),
-            child: Text(label, style: AppText.label(size: 13)),
+            child: Text(label, style: AppText.of(context).label(size: 13)),
           ),
         ),
       ),
@@ -339,7 +342,7 @@ class _PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.accent,
+      color: AppColors.of(context).accent,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
@@ -348,7 +351,7 @@ class _PrimaryButton extends StatelessWidget {
           width: double.infinity,
           height: 36,
           alignment: Alignment.center,
-          child: Text(label, style: AppText.label(size: 13, color: Colors.white), textAlign: TextAlign.center),
+          child: Text(label, style: AppText.of(context).label(size: 13, color: Colors.white), textAlign: TextAlign.center),
         ),
       ),
     );
@@ -362,8 +365,9 @@ class _SecondaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Material(
-      color: AppColors.surfaceRaised,
+      color: colors.surfaceRaised,
       borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
@@ -373,10 +377,10 @@ class _SecondaryButton extends StatelessWidget {
           height: 36,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: colors.border),
             borderRadius: BorderRadius.circular(AppSpacing.radiusSm),
           ),
-          child: Text(label, style: AppText.label(size: 13), textAlign: TextAlign.center),
+          child: Text(label, style: AppText.of(context).label(size: 13), textAlign: TextAlign.center),
         ),
       ),
     );
@@ -391,14 +395,14 @@ class _AccentPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.accent,
+      color: AppColors.of(context).accent,
       borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          child: Text(label, style: AppText.label(size: 13, color: Colors.white)),
+          child: Text(label, style: AppText.of(context).label(size: 13, color: Colors.white)),
         ),
       ),
     );
@@ -411,14 +415,15 @@ class _RaisedPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.surfaceRaised,
-        border: Border.all(color: AppColors.border),
+        color: colors.surfaceRaised,
+        border: Border.all(color: colors.border),
         borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       ),
-      child: Text(label, style: AppText.label(size: 12, weight: FontWeight.w700)),
+      child: Text(label, style: AppText.of(context).label(size: 12, weight: FontWeight.w700)),
     );
   }
 }
@@ -432,10 +437,10 @@ class _AccentFilledPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.accent,
+        color: AppColors.of(context).accent,
         borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       ),
-      child: Text(label, style: AppText.label(size: 12, weight: FontWeight.w700, color: Colors.white)),
+      child: Text(label, style: AppText.of(context).label(size: 12, weight: FontWeight.w700, color: Colors.white)),
     );
   }
 }
@@ -446,14 +451,15 @@ class _Tag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.surfaceRaised,
-        border: Border.all(color: AppColors.border),
+        color: colors.surfaceRaised,
+        border: Border.all(color: colors.border),
         borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       ),
-      child: Text(label, style: AppText.meta(size: 12, color: AppColors.textSecondary)),
+      child: Text(label, style: AppText.of(context).meta(size: 12, color: colors.textSecondary)),
     );
   }
 }

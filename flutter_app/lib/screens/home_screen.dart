@@ -88,7 +88,7 @@ class _StripRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppText.eyebrow()),
+          Text(title, style: AppText.of(context).eyebrow()),
           const SizedBox(height: 14),
           SizedBox(
             height: 300,

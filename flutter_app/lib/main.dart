@@ -93,14 +93,19 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ComicVault',
-      navigatorKey: _navigatorKey,
-      navigatorObservers: [routeObserver],
-      debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
-      initialRoute: '/',
-      onGenerateRoute: _buildRoute,
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: widget.settings.themeModeNotifier,
+      builder: (context, themeMode, _) => MaterialApp(
+        title: 'ComicVault',
+        navigatorKey: _navigatorKey,
+        navigatorObservers: [routeObserver],
+        debugShowCheckedModeBanner: false,
+        theme: buildLightTheme(),
+        darkTheme: buildDarkTheme(),
+        themeMode: themeMode,
+        initialRoute: '/',
+        onGenerateRoute: _buildRoute,
+      ),
     );
   }
 

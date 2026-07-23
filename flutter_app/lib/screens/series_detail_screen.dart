@@ -102,11 +102,11 @@ class _SeriesDetailScreenState extends State<SeriesDetailScreen> {
                       ],
                     ),
                     const SizedBox(height: 18),
-                    Text(seriesName, style: AppText.titleMedium()),
+                    Text(seriesName, style: AppText.of(context).titleMedium()),
                     const SizedBox(height: 8),
                     Text(
                       [?publisher, ?year?.toString()].join(' · '),
-                      style: AppText.secondary(),
+                      style: AppText.of(context).secondary(),
                     ),
                     const SizedBox(height: 12),
                     if (genres.isNotEmpty)
@@ -116,7 +116,7 @@ class _SeriesDetailScreenState extends State<SeriesDetailScreen> {
                         children: genres.map((g) => _Tag(label: g)).toList(),
                       ),
                     const SizedBox(height: 12),
-                    Text('${issues.length} issue${issues.length == 1 ? '' : 's'}', style: AppText.meta()),
+                    Text('${issues.length} issue${issues.length == 1 ? '' : 's'}', style: AppText.of(context).meta()),
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -155,14 +155,14 @@ class _AccentPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.accent,
+      color: AppColors.of(context).accent,
       borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          child: Text(label, style: AppText.label(size: 13, color: Colors.white)),
+          child: Text(label, style: AppText.of(context).label(size: 13, color: Colors.white)),
         ),
       ),
     );
@@ -175,14 +175,15 @@ class _Tag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.surfaceRaised,
-        border: Border.all(color: AppColors.border),
+        color: colors.surfaceRaised,
+        border: Border.all(color: colors.border),
         borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
       ),
-      child: Text(label, style: AppText.meta(size: 12, color: AppColors.textSecondary)),
+      child: Text(label, style: AppText.of(context).meta(size: 12, color: colors.textSecondary)),
     );
   }
 }
@@ -213,6 +214,8 @@ class _IssueRowState extends State<_IssueRow> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final text = AppText.of(context);
     final issue = widget.issue;
     final number = issue['number'] as String?;
     final title = issue['title'] as String?;
@@ -224,9 +227,9 @@ class _IssueRowState extends State<_IssueRow> {
     final coverPath = issue['cover_path'] as String? ?? '';
 
     final borderColor = readStatus == 'read'
-        ? AppColors.readGreen
-        : (readStatus == 'reading' ? AppColors.accent : AppColors.border);
-    final bgColor = readStatus == 'reading' ? AppColors.accent.withValues(alpha: 0.08) : AppColors.surfaceCard;
+        ? colors.readGreen
+        : (readStatus == 'reading' ? colors.accent : colors.border);
+    final bgColor = readStatus == 'reading' ? colors.accent.withValues(alpha: 0.08) : colors.surfaceCard;
 
     // BoxDecoration.border rejects a borderRadius when side colors aren't
     // uniform, so the 3px status-colored left edge is layered separately
@@ -239,7 +242,7 @@ class _IssueRowState extends State<_IssueRow> {
             child: Container(
               decoration: BoxDecoration(
                 color: bgColor,
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: colors.border),
               ),
             ),
           ),
@@ -265,7 +268,7 @@ class _IssueRowState extends State<_IssueRow> {
                 child: CachedNetworkImage(
                   imageUrl: '${widget.api.baseUrl}$coverPath',
                   fit: BoxFit.cover,
-                  errorWidget: (_, _, _) => Container(color: AppColors.surfaceRaised, child: const Icon(Icons.menu_book_outlined, color: AppColors.textMuted)),
+                  errorWidget: (_, _, _) => Container(color: colors.surfaceRaised, child: Icon(Icons.menu_book_outlined, color: colors.textMuted)),
                 ),
               ),
             ),
@@ -275,7 +278,7 @@ class _IssueRowState extends State<_IssueRow> {
               child: Text(
                 number != null ? '#$number' : '',
                 textAlign: TextAlign.center,
-                style: AppText.label(size: 13, weight: FontWeight.w700, color: AppColors.textSecondary),
+                style: text.label(size: 13, weight: FontWeight.w700, color: colors.textSecondary),
               ),
             ),
             const SizedBox(width: 6),
@@ -285,18 +288,18 @@ class _IssueRowState extends State<_IssueRow> {
                 children: [
                   Text(
                     title ?? widget.seriesName,
-                    style: AppText.label(size: 14, color: missing ? AppColors.textMuted : AppColors.textPrimary),
+                    style: text.label(size: 14, color: missing ? colors.textMuted : colors.textPrimary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     [if (year != null) '$year', if (pageCount != null) '$pageCount pages'].join(' · '),
-                    style: AppText.meta(),
+                    style: text.meta(),
                   ),
                   if (summary != null && summary.isNotEmpty) ...[
                     const SizedBox(height: 2),
-                    Text(summary, style: AppText.meta(), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(summary, style: text.meta(), maxLines: 2, overflow: TextOverflow.ellipsis),
                   ],
                 ],
               ),
@@ -326,7 +329,7 @@ class _IssueRowState extends State<_IssueRow> {
     return IconButton(
       icon: Icon(
         downloaded ? Icons.download_done : Icons.download_for_offline_outlined,
-        color: downloaded ? Colors.greenAccent : AppColors.textMuted,
+        color: downloaded ? Colors.greenAccent : AppColors.of(context).textMuted,
         size: 20,
       ),
       visualDensity: VisualDensity.compact,

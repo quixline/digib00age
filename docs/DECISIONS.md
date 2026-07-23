@@ -4,6 +4,32 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Flutter mobile theming: build light+dark infrastructure before touching card visuals, not dark-first
+
+**Decided:** 2026-07-23.
+
+**Why:** the Flutter reader had zero theme-switching machinery going in — no
+`ThemeMode`, no light color set, no persisted preference, no toggle;
+`AppColors` was a `static const` dark-only holder referenced directly by
+every widget. Two sequencing options were considered when scoping the work
+Tez asked for (bring the dark theme in line with the web app's redesigned
+cards, and add a light theme via a Settings toggle):
+- **Dark-first** — fully polish the dark cards to match the web app's
+  redesigned look, ship that, then add light theme + toggle as a second
+  phase. Gets a visible win sooner, but every widget touched for the dark
+  polish would need touching again to make it theme-aware, since nothing
+  reads from a theme yet.
+- **Infra-first (chosen)** — convert `AppColors`/`AppText` into a
+  `ThemeExtension`-backed light+dark pair and wire up `ThemeMode` + the
+  Settings toggle first, with no visual change to the cards yet, then port
+  the redesigned card look into both themes in the same later pass (the web
+  app already defines both, so this isn't double work).
+- Chose infra-first: it touches each widget exactly once. Confirmed with Tez
+  before starting (see `docs/v2.6/progress.md` "Flutter mobile reader:
+  light/dark theme infrastructure (Phase A)").
+
+**Where:** `flutter_app/lib/theme/tokens.dart`; `docs/v2.6/progress.md`.
+
 ### BUG-033 fix: re-rank Search Online results in ComicVault's own bridge layer, not by patching the pinned CT dependency
 
 **Decided:** 2026-07-23.

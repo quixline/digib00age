@@ -18,19 +18,20 @@ class StatusButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final Color color;
     final String glyph;
     switch (status) {
       case 'read':
-        color = AppColors.readGreen;
+        color = colors.readGreen;
         glyph = '✓';
         break;
       case 'reading':
-        color = AppColors.stateReadingBlue;
+        color = colors.stateReadingBlue;
         glyph = '◐';
         break;
       default:
-        color = AppColors.textMuted;
+        color = colors.textMuted;
         glyph = '○';
     }
 

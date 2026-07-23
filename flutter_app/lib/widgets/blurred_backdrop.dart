@@ -25,12 +25,12 @@ class BlurredBackdrop extends StatelessWidget {
           ),
           Container(color: Colors.black.withValues(alpha: 0.45)),
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.transparent, AppColors.canvas],
-                stops: [0.3, 1.0],
+                colors: [Colors.transparent, AppColors.of(context).canvas],
+                stops: const [0.3, 1.0],
               ),
             ),
           ),

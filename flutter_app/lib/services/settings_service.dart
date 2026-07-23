@@ -1,15 +1,20 @@
+import 'package:flutter/material.dart' show ThemeMode, ValueNotifier;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsService {
   static const _keyServerUrl = 'server_url';
   static const _keyReadingMode = 'reading_mode';
   static const _keyConnectionMode = 'connection_mode';
+  static const _keyThemeMode = 'theme_mode';
 
   static const defaultServerUrl = 'http://192.168.1.10:9424';
 
   final SharedPreferences _prefs;
+  late final ValueNotifier<ThemeMode> themeModeNotifier;
 
-  SettingsService._(this._prefs);
+  SettingsService._(this._prefs) {
+    themeModeNotifier = ValueNotifier(_readThemeMode());
+  }
 
   // Exposed so sibling services (DownloadService, SyncStore, SyncService)
   // can share the same storage instead of each opening their own.
@@ -18,6 +23,30 @@ class SettingsService {
   static Future<SettingsService> load() async {
     final prefs = await SharedPreferences.getInstance();
     return SettingsService._(prefs);
+  }
+
+  ThemeMode _readThemeMode() {
+    switch (_prefs.getString(_keyThemeMode)) {
+      case 'light':
+        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.system;
+    }
+  }
+
+  // "auto" (follows OS) / "light" / "dark" — mirrors the web app's Admin
+  // Appearance setting (frontend/js/admin.js initTheme()).
+  ThemeMode get themeMode => themeModeNotifier.value;
+  set themeMode(ThemeMode mode) {
+    final raw = switch (mode) {
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+      ThemeMode.system => 'auto',
+    };
+    _prefs.setString(_keyThemeMode, raw);
+    themeModeNotifier.value = mode;
   }
 
   String get serverUrl {

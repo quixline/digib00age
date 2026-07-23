@@ -47,6 +47,8 @@ class _CoverCardState extends State<CoverCard> {
   @override
   Widget build(BuildContext context) {
     final d = widget.data;
+    final colors = AppColors.of(context);
+    final text = AppText.of(context);
     final isRead = d.state == 'read';
     final isProgress = d.state == 'progress';
 
@@ -70,8 +72,8 @@ class _CoverCardState extends State<CoverCard> {
                     borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
                     border: Border.all(
                       color: d.favourite
-                          ? AppColors.favouriteGold
-                          : (_hover ? AppColors.accent : AppColors.border),
+                          ? colors.favouriteGold
+                          : (_hover ? colors.accent : colors.border),
                       width: d.favourite ? 2 : 1,
                     ),
                   ),
@@ -82,12 +84,12 @@ class _CoverCardState extends State<CoverCard> {
                         imageUrl: d.coverUrl,
                         fit: BoxFit.cover,
                         errorWidget: (_, _, _) => Container(
-                          color: AppColors.surfaceRaised,
-                          child: const Icon(Icons.menu_book_outlined, color: AppColors.textMuted, size: 32),
+                          color: colors.surfaceRaised,
+                          child: Icon(Icons.menu_book_outlined, color: colors.textMuted, size: 32),
                         ),
                       ),
                       if (isRead)
-                        Container(color: AppColors.readGreen.withValues(alpha: 0.5)),
+                        Container(color: colors.readGreen.withValues(alpha: 0.5)),
                       if (isProgress) ...[
                         Positioned(
                           left: 0,
@@ -100,8 +102,8 @@ class _CoverCardState extends State<CoverCard> {
                                 begin: Alignment.bottomCenter,
                                 end: Alignment.topCenter,
                                 colors: [
-                                  AppColors.readGreen.withValues(alpha: 0.85),
-                                  AppColors.readGreen.withValues(alpha: 0.0),
+                                  colors.readGreen.withValues(alpha: 0.85),
+                                  colors.readGreen.withValues(alpha: 0.0),
                                 ],
                               ),
                             ),
@@ -111,7 +113,7 @@ class _CoverCardState extends State<CoverCard> {
                           left: 0,
                           right: 0,
                           bottom: 0,
-                          child: Container(height: 3, color: AppColors.readGreen),
+                          child: Container(height: 3, color: colors.readGreen),
                         ),
                         Positioned(
                           left: 6,
@@ -119,7 +121,7 @@ class _CoverCardState extends State<CoverCard> {
                           bottom: 6,
                           child: Text(
                             '${d.progressPercent}% Read',
-                            style: AppText.label(size: 11, color: Colors.white),
+                            style: text.label(size: 11, color: Colors.white),
                           ),
                         ),
                       ],
@@ -134,7 +136,7 @@ class _CoverCardState extends State<CoverCard> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.black, width: 1),
                             ),
-                            child: const Text('★', style: TextStyle(color: AppColors.favouriteGold, fontSize: 13, height: 1)),
+                            child: Text('★', style: TextStyle(color: colors.favouriteGold, fontSize: 13, height: 1)),
                           ),
                         ),
                       if (d.unreadCount > 0)
@@ -144,10 +146,10 @@ class _CoverCardState extends State<CoverCard> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.accent,
+                              color: colors.accent,
                               borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
                             ),
-                            child: Text('${d.unreadCount}', style: AppText.label(size: 10, color: Colors.white)),
+                            child: Text('${d.unreadCount}', style: text.label(size: 10, color: Colors.white)),
                           ),
                         ),
                     ],
@@ -157,14 +159,14 @@ class _CoverCardState extends State<CoverCard> {
               const SizedBox(height: 6),
               Text(
                 d.title,
-                style: AppText.label(size: 13),
+                style: text.label(size: 13),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 2),
               Text(
                 d.meta,
-                style: AppText.meta(),
+                style: text.meta(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -190,6 +192,8 @@ class _CoverListRowState extends State<CoverListRow> {
   @override
   Widget build(BuildContext context) {
     final d = widget.data;
+    final colors = AppColors.of(context);
+    final text = AppText.of(context);
     final isRead = d.state == 'read';
     final isProgress = d.state == 'progress';
 
@@ -203,12 +207,12 @@ class _CoverListRowState extends State<CoverListRow> {
           curve: AppMotion.railCurve,
           transform: Matrix4.translationValues(0, _hover ? -AppMotion.lift : 0, 0),
           decoration: BoxDecoration(
-            color: AppColors.surfaceCard,
+            color: colors.surfaceCard,
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             border: Border.all(
               color: d.favourite
-                  ? AppColors.favouriteGold
-                  : (_hover ? AppColors.accent : AppColors.border),
+                  ? colors.favouriteGold
+                  : (_hover ? colors.accent : colors.border),
               width: d.favourite ? 2 : 1,
             ),
           ),
@@ -226,12 +230,12 @@ class _CoverListRowState extends State<CoverListRow> {
                         imageUrl: d.coverUrl,
                         fit: BoxFit.cover,
                         errorWidget: (_, _, _) => Container(
-                          color: AppColors.surfaceRaised,
-                          child: const Icon(Icons.menu_book_outlined, color: AppColors.textMuted),
+                          color: colors.surfaceRaised,
+                          child: Icon(Icons.menu_book_outlined, color: colors.textMuted),
                         ),
                       ),
                       if (isRead)
-                        Container(color: AppColors.readGreen.withValues(alpha: 0.5)),
+                        Container(color: colors.readGreen.withValues(alpha: 0.5)),
                       if (d.favourite)
                         Positioned(
                           top: 6,
@@ -243,7 +247,7 @@ class _CoverListRowState extends State<CoverListRow> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.black, width: 1),
                             ),
-                            child: const Text('★', style: TextStyle(color: AppColors.favouriteGold, fontSize: 13, height: 1)),
+                            child: Text('★', style: TextStyle(color: colors.favouriteGold, fontSize: 13, height: 1)),
                           ),
                         ),
                       if (isProgress)
@@ -263,24 +267,24 @@ class _CoverListRowState extends State<CoverListRow> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(d.title, style: AppText.label(size: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(d.title, style: text.label(size: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
                         const SizedBox(height: 3),
-                        Text(d.meta, style: AppText.meta(), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(d.meta, style: text.meta(), maxLines: 1, overflow: TextOverflow.ellipsis),
                         if (d.summary != null && d.summary!.isNotEmpty) ...[
                           const SizedBox(height: 3),
-                          Text(d.summary!, style: AppText.meta(), maxLines: 2, overflow: TextOverflow.ellipsis),
+                          Text(d.summary!, style: text.meta(), maxLines: 2, overflow: TextOverflow.ellipsis),
                         ],
                         if (d.genresLabel != null && d.genresLabel!.isNotEmpty) ...[
                           const SizedBox(height: 3),
-                          Text(d.genresLabel!, style: AppText.secondary(size: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(d.genresLabel!, style: text.secondary(size: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                         if (d.credLabel != null && d.credLabel!.isNotEmpty) ...[
                           const SizedBox(height: 3),
-                          Text(d.credLabel!, style: AppText.meta(), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(d.credLabel!, style: text.meta(), maxLines: 1, overflow: TextOverflow.ellipsis),
                         ],
                         if (isProgress) ...[
                           const SizedBox(height: 3),
-                          Text('${d.progressPercent}% Read', style: AppText.label(size: 12, color: Colors.white)),
+                          Text('${d.progressPercent}% Read', style: text.label(size: 12, color: Colors.white)),
                         ],
                       ],
                     ),

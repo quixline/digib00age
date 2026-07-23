@@ -131,9 +131,9 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(widget.filter.label.toUpperCase(), style: AppText.eyebrow()),
+                    Text(widget.filter.label.toUpperCase(), style: AppText.of(context).eyebrow()),
                     const SizedBox(height: 2),
-                    Text(_countLabel(), style: AppText.countBig()),
+                    Text(_countLabel(), style: AppText.of(context).countBig()),
                   ],
                 ),
               ),
@@ -254,8 +254,9 @@ class _ViewToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Material(
-      color: active ? AppColors.surfaceRaised : Colors.transparent,
+      color: active ? colors.surfaceRaised : Colors.transparent,
       borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
@@ -265,10 +266,10 @@ class _ViewToggleButton extends StatelessWidget {
           height: 40,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: colors.border),
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
           ),
-          child: Icon(icon, size: 18, color: active ? AppColors.textPrimary : AppColors.textMuted),
+          child: Icon(icon, size: 18, color: active ? colors.textPrimary : colors.textMuted),
         ),
       ),
     );

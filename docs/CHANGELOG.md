@@ -13,6 +13,14 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-23** — Flutter mobile reader: light/dark theme infrastructure
+  built (Phase A of a phased follow-up to v2.6 Item 4) — `AppColors` is now a
+  `ThemeExtension` with dark+light palettes mirroring the web app's tokens,
+  new Appearance toggle (Auto/Light/Dark) in Settings, all widgets switched
+  from static color constants to `Theme.of(context)`. Verified on Windows
+  desktop and Tez's Lenovo tablet. Card visual-parity porting (Phase B) still
+  to come. → `progress.md` "Flutter mobile reader: light/dark theme
+  infrastructure (Phase A)"
 - **2026-07-23** — Folder View folder-tile cards (any custom tab, e.g. 2000
   AD's year folders) restyled to match the main library/home cards: fixed
   dark-gradient background, hover-only glow ring (was always-on), matching

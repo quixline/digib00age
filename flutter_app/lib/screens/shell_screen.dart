@@ -186,7 +186,7 @@ class _ShellScreenState extends State<ShellScreen> with RouteAware {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.of(context).canvas,
       body: SafeArea(
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,

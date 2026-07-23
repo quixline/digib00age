@@ -5752,3 +5752,63 @@ main library cards, with matching hover lift/glow. Switched theme back to
 Light (the original setting) afterward so the app was left as found. No
 console errors observed. Issue cards inside an opened folder confirmed
 unaffected (they already matched before this change).
+
+## Session — 2026-07-23 — Flutter mobile reader: light/dark theme infrastructure (Phase A)
+
+Follow-up to v2.6 Item 4 (Mobile UI Redesign, closed 2026-07-13) — Tez flagged
+that the Flutter reader still had no light theme at all (dark-only) and had
+fallen behind the web app's redesigned card styling (gradient background,
+glow/lift hover shadow, floating pill progress bar, genre ribbon badge —
+`207c397`, `963e927`, `29e5bb5`). Scoped as a phased piece of work: infra
+first, then card visual parity, then fine-tuning — see `DECISIONS.md` for why
+that ordering was chosen over polishing dark first.
+
+**This session built Phase A only — theme infrastructure, no visual
+redesign of the cards yet:**
+
+- `flutter_app/lib/theme/tokens.dart`: `AppColors` (previously a `static
+  const` dark-only holder) is now a `ThemeExtension<AppColors>` with two
+  instances, `AppColors.dark` and `AppColors.light`, whose values mirror
+  `frontend/css/tokens-dark.css` / `tokens-light.css` exactly so the mobile
+  app and web app draw from the same palette. `AppText` (the text-style
+  factory) is now instance-based, resolved via `AppText.of(context)`, since
+  its default colors can no longer be compile-time constants once they come
+  from a theme.
+- `buildAppTheme()` replaced with `buildLightTheme()` / `buildDarkTheme()`,
+  both registering their palette via `ThemeData.extensions`.
+- `main.dart`: `MaterialApp` now supplies `theme`/`darkTheme`/`themeMode`
+  (was a single hardcoded `theme:`), wrapped in a `ValueListenableBuilder`
+  listening to a new `SettingsService.themeModeNotifier` so switching the
+  setting rebuilds the app live, no restart needed.
+- `services/settings_service.dart`: new persisted `themeMode` preference
+  (`ThemeMode.system` / `.light` / `.dark`, stored as `auto`/`light`/`dark` —
+  same vocabulary as the web app's Admin Appearance setting), following the
+  existing `shared_preferences` pattern used for `readingMode`.
+- `screens/settings_screen.dart`: new **Appearance** section (Auto/Light/Dark
+  `SegmentedButton`) above the existing Reading section.
+- Swept every widget that referenced the old static `AppColors.X` /
+  `AppText.X` constants directly — `cover_card.dart`, `nav_rail.dart`,
+  `app_top_bar.dart`, `status_button.dart`, `blurred_backdrop.dart`,
+  `offline_library_view.dart`, `browse_screen.dart`, `home_screen.dart`,
+  `issue_detail_screen.dart`, `series_detail_screen.dart`, `shell_screen.dart`
+  (10 files) — all now resolve through `Theme.of(context)` via
+  `AppColors.of(context)` / `AppText.of(context)`, so they respond live to
+  the toggle instead of assuming dark. `offline_library_view.dart` also had
+  a few genuinely hardcoded colors (`Colors.white60`/`white38`) that
+  predated the token system entirely — replaced with the equivalent theme
+  token.
+- **Known gap, not fixed this session:** the top-bar logo asset
+  (`assets/logo/lockup-light.png`) is light-colored text meant for a dark
+  background. No light-theme logo variant exists yet, so it will look weak
+  against the new light canvas — needs a new asset, not a code change;
+  flagged for Phase C (fine-tuning) rather than blocking Phase A.
+
+**Verification:** `flutter analyze` clean (no issues). Built and ran on two
+real targets: Windows desktop (`flutter run -d windows`) and Tez's real
+Lenovo TB128FU Android tablet (`flutter run -d HGR3SJY1`) — both built and
+launched without error. Tez manually exercised the Appearance toggle
+(Settings → Appearance) on the Windows desktop build and confirmed
+Auto/Light/Dark all render correctly (nav rail, cover cards, top bar, detail
+screens); confirmed no code changes were still needed before moving on.
+Phase B (porting the redesigned card visuals into both themes) and Phase C
+(fine-tuning) are follow-up sessions, not done here.
