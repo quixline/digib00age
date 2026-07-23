@@ -747,11 +747,20 @@ Search Online again. There is no separate re-search input inside the modal.
   Filter Publishers checkbox — superseded by §9.5's read-from-form behaviour.
 - **Built 2026-07-19: Sort control**, top row — dropdown (Series A-Z / Year /
   Issues / Publisher) plus an asc/desc toggle button, same pattern as the main
-  library grid's sort control. Defaults to a "Best match" placeholder —
-  results stay in ComicVine's own relevance order (closest match first) until
-  the user actively picks a sort option; re-sorting only ever reorders what's
+  library grid's sort control. Defaults to a "Best match" placeholder until the
+  user actively picks a sort option; re-sorting only ever reorders what's
   displayed, the cached results list itself is untouched, and the chosen sort
   persists across a re-run search within the same modal session.
+- **Fixed 2026-07-23 (BUG-033):** "Best match" is **not** simply "whatever
+  order the backend/ComicVine returned" — it can't be, since CT's own local
+  search-result cache can replay a repeated search in an order that doesn't
+  match ComicVine's original relevance ranking (see
+  `docs/archive/bugs-fixed-archive.md` BUG-033). `backend/ct_bridge.py`'s
+  `search_series()` now computes its own best-match ranking (fuzzy
+  title-similarity to the search term, tiebroken by issue count) before
+  returning results, so "Best match" is a real, deterministic ranking
+  ComicVault computes itself rather than an assumption about pass-through
+  order.
 - **Built 2026-07-19: Cancel / Issues / Ok buttons**, left-aligned below the
   results table. **Cancel** closes the modal (same as ×). **Issues**
   reintroduces CT's native "Show Issues" button (dropped above) — same as
@@ -981,3 +990,4 @@ it reflects the populated working set instead of an empty one.
 | 2026-07-15 | **Added Section 13, Review Queue (Flag for Review) — v2.6 Item 8, built and manually verified same day.** New `Issue.flagged_for_review` DB column (mirrors `favorites`), single-issue + bulk set/clear endpoints, a menu-bar filter toggle (mirrors the Favourites filter, §2.3 in `MENU_BAR_SPEC.md`), and a "Send to Full Editor" bulk action that resolves selected issues to their known file paths and adds them straight to the Full Editor's working set via a new `add-by-issues` endpoint — skipping the manual folder-browse picker. One confirmed, scoped exception to Section 5's "Full Editor never touches the DB" rule: `process_batch()` now rescans + clears the flag when the saved path matches an existing `Issue.file_path`; files with no match (the original pre-library use case) are completely untouched. Section 14 (old §13, Change Log) renumbered to make room — no other content changed. | Ad-hoc feature request 2026-07-15, scoped and built same session; see `v2.6/progress.md` "Basic Editor popup-open perf fix" session's follow-ups and the dedicated review-queue session entry for the full build narrative. |
 | 2026-07-19 | **§3.1/§9.4 — Full Editor now pre-fills Series/Number/Year from the filename when a loaded file has no `ComicInfo.xml`**, built and manually verified same day. Repointed the previously-unused `parse_filename_for_comicinfo()` shim (`backend/editor/xml_parser.py`) from the scanner's minimal internal fallback to the Filename Editor's own tested parser (`backend/rename_tool.py::parse_comic_filename()`), then wired it into `get_file_xml()`'s no-XML branch. No frontend changes — existing field-population and Search-ComicVine-guard logic just work once Series is pre-filled. | Tez's request 2026-07-19 — "Full XML Editor doesn't have any filename parsing... reuse the current parsing that is built." Scoped to Full Editor only (Basic Editor has the same gap, deliberately left out of scope). See `docs/v2.6/progress.md`. |
 | 2026-07-19 | **§9.6/§9.7 — Select Series modal gained a Sort control and Cancel/Issues/Ok buttons**, built and manually verified same day. Sort defaults to relevance order ("Best match") until manually changed — an initial build mistakenly auto-applied A-Z sort on every fresh search, caught by Tez before docs/commit and corrected same session. Ok reuses the existing confirm path (§9.7) with the first issue in the list, no new backend endpoint. Issues reintroduces CT's native "Show Issues" button, previously listed as dropped. | Tez's request 2026-07-19, built and iterated same session (Cancel button + left-alignment added in a follow-up round). See `docs/v2.6/progress.md`. |
+| 2026-07-23 | **§9.6 — BUG-033 fix: "Best match" is no longer a raw pass-through of `search_for_series()`'s order.** `backend/ct_bridge.py`'s `search_series()` now computes its own best-match ranking (fuzzy title-similarity via `difflib.SequenceMatcher`, tiebroken by issue count) because the pinned CT dependency's own local search-result cache can replay a repeated search in an order that doesn't match ComicVine's original relevance ranking — confirmed by reproducing the cache's actual broken read order against a real search ("2000 AD" returning "Best of 2000 AD Monthly" first). | Tez reported the wrong-order symptom 2026-07-23 against `2000AD #763 (1991).cbz`; root cause traced and fixed same session. See `docs/archive/bugs-fixed-archive.md` BUG-033, `DECISIONS.md`, `docs/v2.6/progress.md`. |

@@ -4,6 +4,40 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### BUG-033 fix: re-rank Search Online results in ComicVault's own bridge layer, not by patching the pinned CT dependency
+
+**Decided:** 2026-07-23.
+
+**Why:** the root cause is inside the pinned `comictagger`/`comictalker` pip
+dependency (`comictalker/comiccacher.py`'s `get_search_results()` — a cache-read
+SQL query missing `ORDER BY`, so a cached search replays in arbitrary join order
+instead of ComicVine's original relevance order). Two ways to fix it were
+considered:
+- **Monkeypatch the dependency's cache query at runtime** (e.g. add `ORDER BY
+  rowid` to `get_search_results()`) — fixes the true root cause and would also
+  benefit any other code path that reads this cache, but means reaching into a
+  pinned third-party git commit's private SQL internals. If that pin is ever
+  bumped (`requirements.txt` already notes it's pinned past the last PyPI
+  release for unrelated reasons), the patch could silently stop applying or
+  break against a changed schema, with no test surface to catch it.
+- **Re-rank results in ComicVault's own `ct_bridge.py`** (chosen) — `ct_bridge.py`
+  already exists specifically as the layer that adapts CT's raw output for
+  ComicVault's own use, so recomputing "best match" there rather than trusting
+  CT's pass-through order keeps the fix inside code ComicVault owns and tests
+  against, independent of how the dependency's internals evolve.
+- Chose the second: `search_series()` now scores each result with
+  `difflib.SequenceMatcher` over `comicapi.utils.sanitize_title`-normalized
+  strings (the same technique CT's own `titles_match()` uses internally for
+  accept/reject filtering, just applied as a sort key), tiebroken by
+  `count_of_issues` descending. This makes "Best match" actually deterministic
+  and correct regardless of whether the underlying call was cache- or
+  live-served, rather than depending on an assumption (`EDITOR_SPEC.md` §9.6's
+  "results stay in ComicVine's own relevance order") that a cache hit can
+  silently violate.
+
+**Where:** `backend/ct_bridge.py` (`_series_match_score()`, `search_series()`);
+`docs/EDITOR_SPEC.md` §9.6; `docs/archive/bugs-fixed-archive.md` BUG-033.
+
 ### Basic PWA support: explicit-button-only install, dedicated root-scope service worker route
 
 **Decided:** 2026-07-23 (backfilled — the implementation itself was built by

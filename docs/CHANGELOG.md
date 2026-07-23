@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-23** — BUG-033 fixed: Search Online "Best match" order was wrong
+  once a search term hit the local CT cache (missing `ORDER BY` in the pinned
+  dependency's cache-read query); `ct_bridge.py` now re-ranks results itself.
+  → `progress.md` "BUG-033: Search Online 'Best match' order fix"
 - **2026-07-23** — Basic PWA support added: manifest + service worker site-wide,
   new "Install App" button on Admin (built by Dispatch outside a Claude Code
   session, backfilled into docs after the fact). → `progress.md` "Basic PWA

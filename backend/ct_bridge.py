@@ -13,6 +13,7 @@ comictalker plugin split this module depends on (confirmed 2026-07-03).
 
 from __future__ import annotations
 
+import difflib
 import os
 import re
 from dataclasses import dataclass
@@ -21,6 +22,7 @@ from typing import Optional
 
 from comicapi.comicarchive import ComicArchive
 from comicapi.genericmetadata import ComicSeries, GenericMetadata
+from comicapi.utils import sanitize_title
 from comictaggerlib.issueidentifier import IssueIdentifier, IssueIdentifierOptions
 from comictaggerlib.issueidentifier import Result as IIResult
 from comictaggerlib.resulttypes import IssueResult
@@ -74,6 +76,22 @@ class SeriesResult:
     image_url: str
 
 
+def _series_match_score(series_name: str, result: ComicSeries) -> tuple[float, int]:
+    """Best-match ranking key: title-similarity ratio first (same technique
+    CT's own comicapi.utils.titles_match uses internally for accept/reject
+    filtering, applied here as a score instead of a threshold cutoff), then
+    issue count as a flagship-vs-spinoff tiebreak. Needed because CT's own
+    ComicVineTalker.search_for_series() can serve results from its sqlite
+    cache (comictalker/comiccacher.py's get_search_results(), no ORDER BY),
+    which does not preserve ComicVine's live relevance order -- confirmed
+    2026-07-23 by reproducing the exact cache-read query against a real
+    cache hit that put a spinoff series ahead of the actual "2000 AD" series."""
+    ratio = difflib.SequenceMatcher(
+        None, sanitize_title(series_name), sanitize_title(result.name)
+    ).ratio()
+    return (ratio, result.count_of_issues or 0)
+
+
 def search_series(series_name: str) -> list[SeriesResult]:
     """Shared backend function (EDITOR_SPEC.md 9.1) — called by the Full
     Editor's Search Online modal. The CT Auto-Tag automation stage shares
@@ -82,6 +100,7 @@ def search_series(series_name: str) -> list[SeriesResult]:
     search are different CT entry points, per DECISIONS.md 2026-07-03)."""
     talker = get_talker()
     results: list[ComicSeries] = talker.search_for_series(series_name, on_rate_limit=None)
+    results.sort(key=lambda r: _series_match_score(series_name, r), reverse=True)
     return [
         SeriesResult(
             id=r.id,

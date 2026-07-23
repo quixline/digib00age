@@ -1646,3 +1646,55 @@ turned out to be the browser serving a cached pre-fix `editor_full.js`, per
 `Empire of the Dead` folder was never processed — its working set was cleared from the
 Full Editor's in-memory list only (not from disk) before testing, left empty after for
 Tez to reload and redo his actual batch.
+
+### BUG-033 — Search Online "Best match" order wrong once a search term is cached
+
+**Found:** 2026-07-23, Tez reported that searching "2000 AD" via the Full Editor's
+Search Online modal put "Best of 2000 AD Monthly" (1985, 119 issues) at the top of
+Select Series instead of "2000 AD" itself (1977, 2491 issues) — the standalone
+desktop ComicTagger app put "2000 AD" first for the same search term.
+
+**Where:** `backend/ct_bridge.py` `search_series()` (the Full Editor's manual Search
+Online path only — `identify_file()`'s CT Auto-Tag pipeline is unaffected, see
+`DECISIONS.md`).
+
+**What happened:** `search_series()` returns whatever order
+`ComicVineTalker.search_for_series()` (pinned `comictagger`/`comictalker` pip
+dependency) hands back, on the assumption it's always ComicVine's own relevance
+order. That holds for a live API call, but `search_for_series()` first checks a
+local sqlite cache (`ct_cache/comic_cache.db`, ComicTagger's own `ComicCacher`, kept
+7 days) populated by an earlier search/auto-tag run of the same term. A cache hit
+replays through `ComicCacher.get_search_results()`
+(`comictalker/comiccacher.py:194-216`, installed package) — a `SELECT ... INNER
+JOIN ... WHERE search_term=?` with no `ORDER BY`, so SQLite returns rows in
+whatever order its join/index planner picks, not the original relevance order.
+
+**Root cause (confirmed):** reproduced directly against ComicVault's real
+`ct_cache/comic_cache.db` — running that exact cache-read query for
+`search_term='2000 ad'` returns "Best of 2000 AD Monthly" first and doesn't even
+surface "2000 AD" in the top 10, an exact match for the reported bug. Re-running
+the same rows with an explicit `ORDER BY rowid` (insertion order) instead correctly
+puts "2000 AD" first, confirming the cached data itself is fine — only the
+read-back order is broken. ComicVault's cache already held two prior entries for
+this term (`"2000ad"` from a 2026-07-18 Auto-Tag run, `"2000 ad"` from a
+2026-07-22 manual search), so Tez's search hit the cache and got the broken order;
+the desktop CT app's own search evidently hadn't hit its cache for this term yet
+and got a correctly-ordered live response.
+
+**Fix:** `search_series()` now re-ranks the talker's results itself before
+returning them, rather than trusting pass-through order. Added
+`_series_match_score()`, scoring each result by
+`difflib.SequenceMatcher(...).ratio()` between `comicapi.utils.sanitize_title`-
+normalized versions of the search term and the result's name (the same
+similarity technique CT's own `titles_match()` already uses internally, just as a
+sort key instead of an accept/reject cutoff), tiebroken by `count_of_issues`
+descending. This corrects cache-hit replies and is a no-op-equivalent correction
+when results already arrived in true relevance order (a live call), since
+`sorted()` is stable. Patching the pinned dependency's cache SQL directly wasn't
+viable — see `DECISIONS.md`.
+
+**Verified:** reproduced the broken order directly against the real cache file
+(see above), then confirmed the new scoring/sort puts "2000 AD" first (ratio
+1.0) against those exact same rows. Tez then re-ran the actual repro live — Full
+Editor, Search Online "2000 AD" against the already-tagged `2000AD #763
+(1991).cbz` — and confirmed "2000 AD" now sorts first.

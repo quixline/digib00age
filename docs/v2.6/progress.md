@@ -5608,3 +5608,32 @@ install package - PWA - Progressive Web App") that also stays open — per
 
 **Verification:** confirmed live by Tez — installed the app via the new
 Admin "Install App" button and confirmed it works.
+
+## Session — 2026-07-23 — BUG-033: Search Online "Best match" order fix
+
+- Tez reported that Search Online for "2000 AD" (against the already-tagged
+  `L:\Comic Archives\Processing\Stage 1\2000AD #763 (1991).cbz`) put "Best of
+  2000 AD Monthly" at the top of Select Series instead of "2000 AD" itself,
+  unlike the standalone desktop ComicTagger app searching the same term.
+- Root cause confirmed by direct reproduction against ComicVault's own
+  `ct_cache/comic_cache.db`: the pinned `comictagger`/`comictalker` pip
+  dependency's cache-read query (`comictalker/comiccacher.py`
+  `get_search_results()`) has no `ORDER BY`, so a search that hits the local
+  7-day cache (as this one did, from an earlier Auto-Tag run and a prior
+  manual search) replays in arbitrary SQLite join order instead of
+  ComicVine's original relevance order. Confirmed the underlying cached data
+  was fine — an explicit `ORDER BY rowid` against the same rows correctly put
+  "2000 AD" first — only the cache-read order was broken.
+- Fixed in `backend/ct_bridge.py`: `search_series()` now re-ranks results
+  itself via a new `_series_match_score()` (fuzzy title-similarity ratio,
+  same technique CT's own `titles_match()` uses internally, tiebroken by
+  issue count) instead of trusting the talker's pass-through order. See
+  `DECISIONS.md` for why this was fixed in ComicVault's own bridge layer
+  rather than by patching the pinned dependency's cache SQL.
+- Full details, root-cause evidence, and fix description: `docs/archive/
+  bugs-fixed-archive.md` BUG-033.
+
+**Verification:** reproduced the broken order directly against the real
+cache file, confirmed the new scoring corrected it against those same rows
+(ratio 1.0, "2000 AD" first), then Tez re-ran the actual repro live in the
+Full Editor and confirmed "2000 AD" now sorts first under "Best match".
