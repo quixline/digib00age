@@ -138,8 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   loadCustomTabs();
+  loadCtGenreOptions();
   document.getElementById('ctAddBtn').addEventListener('click', addCustomTab);
   document.getElementById('ctAddFavouritesBtn').addEventListener('click', addFavouritesTab);
+  document.getElementById('ctAddGenreBtn').addEventListener('click', addGenreTab);
   document.getElementById('ctBrowseBtn').addEventListener('click', () => openCtPicker('ctPathInput'));
   document.getElementById('ctPickerCloseBtn').addEventListener('click', closeCtPicker);
   document.getElementById('ctPickerSelectBtn').addEventListener('click', selectCtPickerFolder);
@@ -877,12 +879,71 @@ function renderCustomTabs() {
 
   const hasFavouritesTab = customTabs.some(t => t.basis_type === 'favorites');
   document.getElementById('ctAddFavouritesBtn').disabled = hasFavouritesTab || atCap;
+
+  renderCtGenreOptions();
+  document.getElementById('ctAddGenreBtn').disabled = atCap;
+}
+
+// ── Genre Library (CUSTOM_TABS_SPEC.md §10.9) ───────────────────────────────
+let ctAllGenres = []; // cached from /browse/genres: [{genre, issue_count}, ...]
+
+async function loadCtGenreOptions() {
+  try {
+    const r = await fetch(`${API}/browse/genres`);
+    ctAllGenres = r.ok ? await r.json() : [];
+  } catch (_) {
+    ctAllGenres = [];
+  }
+  renderCtGenreOptions();
+}
+
+function renderCtGenreOptions() {
+  const select = document.getElementById('ctGenreSelect');
+  if (!select) return;
+  const usedGenres = new Set(
+    customTabs.filter(t => t.basis_type === 'genre').map(t => t.field_value)
+  );
+  const prevValue = select.value;
+  select.innerHTML = '';
+  select.add(new Option('Genre…', ''));
+  for (const g of ctAllGenres) {
+    if (usedGenres.has(g.genre)) continue;
+    select.add(new Option(g.genre, g.genre));
+  }
+  select.value = usedGenres.has(prevValue) ? '' : prevValue;
+}
+
+async function addGenreTab() {
+  const select = document.getElementById('ctGenreSelect');
+  const genre = select.value;
+  if (!genre) {
+    showToast('Choose a genre first', true);
+    return;
+  }
+  try {
+    const r = await fetch(`${API}/admin/custom-tabs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ basis_type: 'genre', field_value: genre }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      showToast(d.detail || 'Could not add Genre Library', true);
+      return;
+    }
+    showToast(`Genre Library "${genre}" added`);
+    select.value = '';
+    await loadCustomTabs();
+  } catch (e) {
+    showToast('Could not add Genre Library: ' + e.message, true);
+  }
 }
 
 function makeCustomTabRow(tab) {
   const row = document.createElement('div');
   row.className = 'ct-tab-row';
   const isFavourites = tab.basis_type === 'favorites';
+  const isGenre = tab.basis_type === 'genre';
 
   const info = document.createElement('div');
   info.className = 'ct-tab-info';
@@ -897,14 +958,18 @@ function makeCustomTabRow(tab) {
   }
   const pathLine = document.createElement('div');
   pathLine.className = 'ct-tab-path';
-  pathLine.textContent = isFavourites ? 'Library-wide (Favourites)' : tab.folder_path;
+  pathLine.textContent = isFavourites
+    ? 'Library-wide (Favourites)'
+    : isGenre
+      ? `Genre: ${tab.field_value}`
+      : tab.folder_path;
   info.append(nameLine, pathLine);
 
   const viewModeSelect = document.createElement('select');
   viewModeSelect.className = 'ct-viewmode-select admin-select';
   viewModeSelect.innerHTML = '<option value="flat">Flat</option><option value="folder">Folder View</option>';
   viewModeSelect.value = tab.view_mode || 'flat';
-  viewModeSelect.disabled = isFavourites;
+  viewModeSelect.disabled = isFavourites || isGenre;
   viewModeSelect.addEventListener('change', () => updateCustomTabViewMode(tab, viewModeSelect.value));
 
   const toggleBtn = document.createElement('button');

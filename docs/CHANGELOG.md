@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-24** — Add Genre Library: a new `basis_type='genre'` custom tab,
+  scoped to one genre, added via a dropdown next to "Add Favourites Library" in
+  Add/Remove Libraries; multiple genres can each get their own tab. →
+  `progress.md` "Add Genre Library"
 - **2026-07-24** — Flutter mobile reader: pinch-zoom added to Scroll mode
   (Page mode already had it). → `progress.md` "Flutter mobile reader:
   pinch-zoom in Scroll mode"

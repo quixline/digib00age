@@ -175,10 +175,11 @@ class CustomTab(Base):
 
     id          = Column(Integer, primary_key=True, autoincrement=True)
     name        = Column(Text, nullable=False)
-    folder_path = Column(Text, nullable=False)          # stored normalized — see backend.path_utils; "" for basis_type='favorites'
+    folder_path = Column(Text, nullable=False)          # stored normalized — see backend.path_utils; "" for basis_type in ('favorites', 'genre')
     visible     = Column(Boolean, default=True, nullable=False)
     view_mode   = Column(Text, nullable=False, default="flat")   # 'flat' | 'folder'
-    basis_type  = Column(Text, nullable=False, default="folder")  # 'folder' | 'favorites' — CUSTOM_TABS_SPEC.md §10
+    basis_type  = Column(Text, nullable=False, default="folder")  # 'folder' | 'favorites' | 'genre' — CUSTOM_TABS_SPEC.md §10
+    field_value = Column(Text, nullable=True)           # genre name, only set for basis_type='genre'
     created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     def __repr__(self):

@@ -752,7 +752,8 @@ let searchLibraryCache = {};    // query (lowercased) -> /api/library?q=… resp
 
 // Folder View (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9)
 let tabViewModes        = {};   // custom tab id (string) -> 'flat' | 'folder', from /nav/config
-let tabBasisTypes       = {};   // custom tab id (string) -> 'folder' | 'favorites', from /nav/config
+let tabBasisTypes       = {};   // custom tab id (string) -> 'folder' | 'favorites' | 'genre', from /nav/config
+let tabNames            = {};   // custom tab id (string) -> tab.name, from /nav/config
 let viewTabPath         = '';   // relative path within the active folder-view tab
 let folderViewCache     = {};   // cache key `${tabId}:${path}` -> folder-contents response
 let folderViewSearchActive = false;
@@ -930,6 +931,7 @@ async function loadCustomTabsNav() {
       container.appendChild(btn);
       tabViewModes[String(tab.id)] = tab.view_mode || 'flat';
       tabBasisTypes[String(tab.id)] = tab.basis_type || 'folder';
+      tabNames[String(tab.id)] = tab.name;
     });
     sizeSidebarToContent();
   } catch (_) {
@@ -963,6 +965,10 @@ function isFolderViewTab(surface) {
 
 function isFavoritesTab(surface) {
   return surface.startsWith('tab-') && tabBasisTypes[surface.slice(4)] === 'favorites';
+}
+
+function isGenreTab(surface) {
+  return surface.startsWith('tab-') && tabBasisTypes[surface.slice(4)] === 'genre';
 }
 
 // Menu bar controls (sort/rated/favourites) act on whichever surface is
@@ -1609,11 +1615,14 @@ function _renderBrowsePage() {
   grid.innerHTML = '';
 
   if (!filtered.length) {
-    // CUSTOM_TABS_SPEC.md §10.6 — a Favourites tab with nothing in it yet
-    // reads as broken with the generic filters message; give it its own.
+    // CUSTOM_TABS_SPEC.md §10.6/§10.9 — a Favourites or Genre tab with nothing
+    // in it yet reads as broken with the generic filters message; give each
+    // its own.
     const emptyMsg = isFavoritesTab(activeSurface)
       ? 'No favourites yet — star some issues to see them here.'
-      : 'No matching titles found';
+      : isGenreTab(activeSurface)
+        ? `No comics tagged "${tabNames[activeSurface.slice(4)]}" yet.`
+        : 'No matching titles found';
     grid.innerHTML =
       '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
       `<p>${emptyMsg}</p></div>`;

@@ -151,8 +151,8 @@ def _drop_legacy_credit_columns():
 def _add_missing_custom_tab_columns():
     """
     create_all() only creates missing *tables* — it never adds columns to a
-    table that already exists. The additive CustomTab.view_mode/basis_type
-    columns need a manual ALTER TABLE here, run once each (idempotent).
+    table that already exists. The additive CustomTab.view_mode/basis_type/
+    field_value columns need a manual ALTER TABLE here, run once each (idempotent).
     """
     with engine.connect() as conn:
         cols = {row[1] for row in conn.execute(text("PRAGMA table_info(custom_tabs)"))}
@@ -160,6 +160,8 @@ def _add_missing_custom_tab_columns():
             conn.execute(text("ALTER TABLE custom_tabs ADD COLUMN view_mode TEXT NOT NULL DEFAULT 'flat'"))
         if "basis_type" not in cols:
             conn.execute(text("ALTER TABLE custom_tabs ADD COLUMN basis_type TEXT NOT NULL DEFAULT 'folder'"))
+        if "field_value" not in cols:
+            conn.execute(text("ALTER TABLE custom_tabs ADD COLUMN field_value TEXT"))
         conn.commit()
 
 

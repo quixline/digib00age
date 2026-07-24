@@ -488,11 +488,61 @@ confusing place to leave things.
   "favourites within my Marvel folder") — considered and rejected during scoping;
   nobody asked for it and it breaks the single-criterion pattern `HomeStrip` already
   established for the same reason.
-- Generic field-based custom tabs (Genre/Publisher/etc. as a tab's own scoping
+- ~~Generic field-based custom tabs (Genre/Publisher/etc. as a tab's own scoping
   criterion, the way `HomeStrip` supports for strips) — `basis_type` as a column
   doesn't preclude adding a third value later, but no admin UI for it is being built
-  now.
+  now.~~ **Superseded 2026-07-24 — see §10.9.** Genre shipped as a third
+  `basis_type`; Publisher/Writer/etc. remain out of scope until asked for.
 - Removing the "Add Tab" form's manual-path text input now that the Browse picker
   works reliably — flagged during scoping as redundant, but unrelated to this
   feature; tracked separately via `INBOX.md`.
+
+### 10.9 Genre Library (v2.6)
+
+**Built and manually tested 2026-07-24.** A third `basis_type` value, `'genre'`,
+scoping a tab to every issue tagged with one specific genre — library-wide,
+like Favourites, not folder-restricted. Multiple genres can each get their own
+tab (unlike Favourites, capped at one row ever); each is still subject to the
+existing 4-visible-tab cap (§3).
+
+**Data model** — one new nullable column, `custom_tabs.field_value` (added the
+same additive-migration way as `view_mode`/`basis_type`,
+`_add_missing_custom_tab_columns()` in `database.py`), storing the genre name
+for `basis_type = 'genre'` rows. No separate `field_name` column was added
+(unlike `HomeStrip`'s `field_name`/`field_value` pair) — `basis_type = 'genre'`
+already fixes the dimension, so a second column naming it would be redundant.
+
+**Admin — "Add Genre Library"**: a dropdown (sourced from the existing
+`GET /api/browse/genres`, the same endpoint Home Strips' Genre field already
+uses) plus its own button, next to the "Add Favourites Library" control. The
+dropdown excludes genres that already have a tab. Unlike Favourites' payload
+(`{"basis_type": "favorites"}`, no other fields), this POSTs
+`{"basis_type": "genre", "field_value": "<genre>"}`. Server rejects a repeat of
+the same genre value with 409 (dedup is per-genre-value, not "one row ever"
+like Favourites); the tab's `name` is set to the genre string itself, unprefixed
+(e.g. "Horror", not "Genre: Horror") — the admin row's path-line text shows
+`Genre: <value>` for clarity in the list, but the sidebar-facing `name` stays
+plain.
+
+**Query resolution** — `get_library()`'s `tab_id` branch gains a `basis_type ==
+"genre"` case alongside `favorites`/folder, filtering `all_issues` through the
+already-existing `matches_field(issue, "genre", tab.field_value)` helper
+(`path_utils.py`) — the same genre-membership test the filter bar and
+field-based Home Strips already use. Zero new queries; `Issue.genres` is
+already eager-loaded for this endpoint.
+
+**Guards** — same treatment as Favourites (§10.4): `view_mode` forced to
+`"flat"` at creation and locked via `PATCH`; `folder_path`/`basis_type`/
+`field_value` are all locked on `PATCH`. The three Folder View endpoints'
+favourites-only guard was generalized from `basis_type == "favorites"` to
+`basis_type != "folder"`, so genre tabs are blocked from Folder View the same
+way, without an ever-growing exclusion list (this also changed the guards'
+error message from "...for a favourites-basis tab" to the generic "Folder
+View is not available for this tab", now that two non-folder types exist).
+
+**Empty state** — mirrors §10.6: a genre tab with nothing tagged reads
+`No comics tagged "<genre>" yet.` instead of the generic filters message.
+
+**Out of scope, same as before** — Publisher/Writer/Format/etc. as their own
+`basis_type` remain unbuilt; only Genre was asked for.
 

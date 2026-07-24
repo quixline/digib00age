@@ -6156,3 +6156,60 @@ tested pinch-in/out on a page in Scroll mode, single-finger pan while
 zoomed, resumed normal scroll after pinching back out, a bottom-bar slider
 jump while zoomed, and confirmed Page mode's existing pinch/double-tap zoom
 is unaffected — confirmed fully working.
+
+## Session — 2026-07-24 — Add Genre Library
+
+New custom-tab type: a third `CustomTab.basis_type`, `'genre'`, scoped to one
+genre — library-wide like Favourites, not folder-restricted. Mirrors the
+existing Favourites Library pattern almost line-for-line rather than
+introducing new machinery; full design rationale and out-of-scope notes in
+`CUSTOM_TABS_SPEC.md` §10.9, column-choice rationale in `DECISIONS.md`.
+
+**Backend:**
+- `backend/models.py` — added `CustomTab.field_value` (nullable Text), the
+  genre name for `basis_type='genre'` rows; migrated additively via
+  `_add_missing_custom_tab_columns()` in `backend/database.py`.
+- `backend/routers/admin.py` — `create_custom_tab()` gained a `genre` branch
+  (require `field_value`, 409 on a repeat of the same genre, existing
+  4-visible-tab cap applies); `update_custom_tab()`'s lock-down (previously
+  favourites-only) now also covers genre rows (`folder_path`/`basis_type`/
+  `field_value` locked, `view_mode` forced to `"flat"`); `_custom_tab_to_dict()`
+  includes `field_value`.
+- `backend/routers/library.py` — `get_library()`'s `tab_id` resolution gained
+  a `genre` branch, filtering through the already-existing
+  `matches_field(issue, "genre", value)` helper (same one the filter bar and
+  field-based Home Strips already use — no new query logic). Generalized the
+  three Folder-View-only 400 guards from `basis_type == "favorites"` to
+  `basis_type != "folder"` so genre tabs are blocked the same way, without an
+  ever-growing exclusion list.
+
+**Frontend:**
+- `frontend/admin.html` — new "Add Genre Library" row (genre dropdown +
+  button) in the Add/Remove Libraries card, next to "Add Favourites Library".
+- `frontend/js/admin.js` — `loadCtGenreOptions()`/`renderCtGenreOptions()`
+  (populate the dropdown from `GET /api/browse/genres`, excluding genres that
+  already have a tab; built with `new Option(...)`, not `innerHTML`, since
+  admin.js has no `escapeHtml` helper and genre names are arbitrary strings),
+  `addGenreTab()` (modeled on `addFavouritesTab()`), and `makeCustomTabRow()`/
+  `renderCustomTabs()` updates for genre rows (path-line shows
+  `Genre: <value>`, view-mode select locked same as Favourites).
+- `frontend/js/app.js` — added a `tabNames` map (id → name) alongside the
+  existing `tabViewModes`/`tabBasisTypes`, and `isGenreTab()`, so the empty
+  Library View state can show `No comics tagged "<genre>" yet.` instead of the
+  generic message — mirrors the existing Favourites empty-state treatment
+  (§10.6). No other nav/rendering changes needed; sidebar rendering is fully
+  generic over `tab.id`/`name`/`view_mode`/`basis_type`.
+
+**Verification:** backend restarted (Tez's tray app) to run the migration and
+load the new routes — confirmed `field_value` appeared via
+`PRAGMA table_info`/the API response. Live-tested in the real admin panel and
+main library view (`localhost:9424/admin`, `localhost:9424/`): added a
+"Cyberpunk" genre tab via the UI, confirmed it appeared in the sidebar
+scoped correctly (only issues tagged Cyberpunk, e.g. Akira); added "Horror"
+as a second genre tab, confirmed 499 matching titles and Flat-view lock;
+confirmed the dropdown excludes already-added genres; confirmed re-POSTing an
+existing genre 409s; confirmed the generalized Folder-View guard 400s for a
+genre tab. Deleted both test tabs afterward via the API (avoids the admin
+UI's native `confirm()` dialog, which blocks browser automation) to leave the
+dev DB clean — Tez can add real genre libraries himself now that it's
+confirmed working.

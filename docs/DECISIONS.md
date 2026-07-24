@@ -4,6 +4,28 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Genre Library: one `field_value` column, no `field_name` pair; dedup per-genre-value, not one-ever
+
+**Decided:** 2026-07-24.
+
+**Why:** Genre Library (`CUSTOM_TABS_SPEC.md` §10.9) needed a way to remember
+which genre a `custom_tabs` row is scoped to. `HomeStrip` already has a
+precedent for this — `field_name`/`field_value` pair, since a Home Strip can be
+scoped by any of several dimensions (genre, publisher, writer, ...). Custom
+Tabs' new type only ever means genre, though — `basis_type = 'genre'` already
+tells you the dimension, so a `field_name` column would just always hold the
+string `"genre"` and add nothing. Went with a single `field_value` column
+instead, reusing the name for consistency with `HomeStrip` but not the pair.
+Also decided duplicates are prevented per-genre-*value* (can't add "Horror"
+twice, but "Horror" and "Cyberpunk" can coexist) rather than Favourites' "one
+row ever" rule — Favourites has exactly one meaning so one row is the whole
+feature, but Genre is explicitly meant to have several tabs, one per genre Tez
+actually wants pinned to the sidebar.
+
+**Where:** `backend/models.py` `CustomTab.field_value`;
+`backend/routers/admin.py` `create_custom_tab()`'s `genre` branch;
+`CUSTOM_TABS_SPEC.md` §10.9.
+
 ### Flutter library background: static color-glow blobs, not a ported blurred-photo backdrop
 
 **Decided:** 2026-07-24.

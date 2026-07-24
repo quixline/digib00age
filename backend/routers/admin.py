@@ -634,6 +634,7 @@ def _custom_tab_to_dict(tab: CustomTab) -> dict:
         "visible": tab.visible,
         "view_mode": tab.view_mode,
         "basis_type": tab.basis_type,
+        "field_value": tab.field_value,
         "created_at": tab.created_at.isoformat() if tab.created_at else None,
     }
 
@@ -670,8 +671,8 @@ def list_custom_tabs(db: Session = Depends(get_db)):
 @router.post("/admin/custom-tabs")
 def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
     basis_type = (payload.get("basis_type") or "folder").strip()
-    if basis_type not in ("folder", "favorites"):
-        raise HTTPException(status_code=400, detail="basis_type must be 'folder' or 'favorites'")
+    if basis_type not in ("folder", "favorites", "genre"):
+        raise HTTPException(status_code=400, detail="basis_type must be 'folder', 'favorites', or 'genre'")
 
     if basis_type == "favorites":
         # CUSTOM_TABS_SPEC.md §10.2 — no name/folder_path required, server
@@ -690,6 +691,37 @@ def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
         tab = CustomTab(
             name="Favourites", folder_path="", visible=True,
             view_mode="flat", basis_type="favorites",
+        )
+        db.add(tab)
+        db.commit()
+        return _custom_tab_to_dict(tab)
+
+    if basis_type == "genre":
+        # CUSTOM_TABS_SPEC.md §10.9 — one tab per distinct genre value (not
+        # "one ever" like favourites); name is just the genre name, no
+        # folder_path. field_value carries which genre this tab is scoped to.
+        genre_value = (payload.get("field_value") or "").strip()
+        if not genre_value:
+            raise HTTPException(status_code=400, detail="field_value (genre name) is required")
+
+        existing = (
+            db.query(CustomTab)
+            .filter(CustomTab.basis_type == "genre", CustomTab.field_value == genre_value)
+            .first()
+        )
+        if existing:
+            raise HTTPException(status_code=409, detail=f"A Genre Library for '{genre_value}' already exists.")
+
+        visible_count = db.query(func.count(CustomTab.id)).filter(CustomTab.visible == True).scalar()  # noqa: E712
+        if visible_count >= MAX_VISIBLE_CUSTOM_TABS:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
+            )
+
+        tab = CustomTab(
+            name=genre_value, folder_path="", visible=True,
+            view_mode="flat", basis_type="genre", field_value=genre_value,
         )
         db.add(tab)
         db.commit()
@@ -731,17 +763,18 @@ def update_custom_tab(tab_id: int, payload: dict = Body(...), db: Session = Depe
     if not tab:
         raise HTTPException(status_code=404, detail="Custom tab not found")
 
-    if tab.basis_type == "favorites":
-        # CUSTOM_TABS_SPEC.md §10.4 — favourites-basis rows only allow name/
-        # visible edits; folder_path, basis_type, and view_mode are locked.
-        locked_keys = {"folder_path", "basis_type"} & payload.keys()
+    if tab.basis_type in ("favorites", "genre"):
+        # CUSTOM_TABS_SPEC.md §10.4/10.9 — favourites/genre-basis rows only
+        # allow name/visible edits; folder_path, basis_type, and field_value
+        # are locked, and view_mode is forced to stay Flat.
+        locked_keys = {"folder_path", "basis_type", "field_value"} & payload.keys()
         if locked_keys:
             raise HTTPException(
                 status_code=400,
-                detail=f"Favourites tab does not allow changing: {', '.join(sorted(locked_keys))}",
+                detail=f"This tab does not allow changing: {', '.join(sorted(locked_keys))}",
             )
         if "view_mode" in payload and payload["view_mode"] != "flat":
-            raise HTTPException(status_code=400, detail="Favourites tab must stay in Flat view")
+            raise HTTPException(status_code=400, detail="This tab must stay in Flat view")
 
     warning = None
 
