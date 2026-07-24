@@ -933,7 +933,11 @@ async function addGenreTab() {
     }
     showToast(`Genre Library "${genre}" added`);
     select.value = '';
-    await loadCustomTabs();
+    // Re-fetch the genre list itself (not just re-render from the cached
+    // ctAllGenres) — guarantees the dropdown repopulates correctly even if
+    // the page-load fetch was still in flight when this add happened,
+    // instead of leaving it empty until a hard refresh.
+    await Promise.all([loadCustomTabs(), loadCtGenreOptions()]);
   } catch (e) {
     showToast('Could not add Genre Library: ' + e.message, true);
   }
