@@ -6237,3 +6237,94 @@ confirmed working.
   refresh needed. Deleted the test "Cyberpunk" tab afterward via the API,
   leaving Tez's real "Post-Apocalyptic" tab untouched. Tez confirmed "all
   tested and good."
+
+## Session — 2026-07-24 — Reading Queue (new feature, not a pre-listed build-queue item)
+
+Requested directly by Tez, not from `comicvault-changes-v2.6.md` — a "Queue
+Reading" action reachable from the multi-select bottom bar and the issue
+detail page, plus a corresponding "Reading Queue" library in Admin. Unlike
+Genre Library (which reused the existing computed-filter Custom Tab pattern),
+no explicit per-issue membership mechanism existed anywhere in the app before
+this — researched via two Explore passes first, which confirmed Favourites'
+boolean-column + singleton-tab shape was the closest fit and the right one to
+mirror end-to-end. Full design writeup in `CUSTOM_TABS_SPEC.md` §10.10,
+column-choice rationale in `DECISIONS.md`.
+
+**Backend:**
+- `backend/models.py` — added `Issue.queued_for_reading` (Boolean, default
+  `False`); extended `CustomTab.basis_type`'s allowed-value comment to include
+  `'reading_queue'`.
+- `backend/database.py` — `_add_missing_issue_columns()` gained the additive
+  `ALTER TABLE` for `queued_for_reading`, same pattern as `favorites`.
+- `backend/routers/progress.py` — new bulk endpoints
+  `POST /progress/bulk/queue-reading` / `/unqueue-reading`, identical shape to
+  `bulk_add_favorite`/`bulk_remove_favorite`.
+- `backend/routers/admin.py` — `create_custom_tab()` gained a `reading_queue`
+  branch (singleton, 409 on a repeat, existing 4-visible-tab cap applies);
+  `update_custom_tab()`'s lock-down list extended to include `reading_queue`
+  rows alongside `favorites`/`genre`.
+- `backend/routers/library.py` — `get_library()`'s `tab_id` resolution gained
+  a `reading_queue` branch, filtering `all_issues` on `Issue.queued_for_reading`
+  before the per-series groupby (same principle as the favourites branch).
+  Also added `queued_for_reading` to all three Issue-serializing response
+  dicts (single-issue detail, series-aggregate card, Folder View file card) —
+  needed so the frontend can set the initial `is-queued-reading` card class
+  and populate the issue-detail toggle's state on page load, not just after a
+  live client-side toggle.
+
+**Frontend:**
+- `frontend/js/app.js` — `ensureSelectionToolbar()` gained a "📖 Queue
+  Reading" button (mirrors `selFavorite`'s toggle-based-on-current-state
+  logic); `applyQueueReadingToDom()`/`_patchQueueReadingInCaches()` mirror
+  `applyFavoriteToDom()`/`_patchFavoritesInCaches()`, including live removal
+  from `tabLibraryCache` for any `reading_queue`-basis tab on dequeue.
+  `buildQueueReadingToggle()` (mirrors `buildFavoriteToggle()`) added to the
+  issue detail page's action row. `isReadingQueueTab()` added alongside
+  `isFavoritesTab()`/`isGenreTab()`; empty-state message branch added
+  ("No comics queued yet — use Queue Reading to add some."). The four
+  card-class-builder call sites (Home strip cards, series cards, issue cards,
+  Folder View issue rows) all extended to include `is-queued-reading` from
+  `queued_for_reading`, matching how `is-favorite`/`is-flagged-review` are set.
+- `frontend/css/style.css` — `.btn-queue-reading-toggle` mirrors
+  `.btn-favorite-toggle` (using `--accent` blue instead of `--favourite`
+  gold); `.is-queued-reading` gets a single box-shadow ring, same technique as
+  the favourite/flag-review rings and the Full Editor `needs-review` ring —
+  see the known-limitation note below.
+- `frontend/admin.html` / `frontend/js/admin.js` — "Add Reading Queue
+  Library" button next to "Add Favourites Library" (plain button, no
+  dropdown, since this is a singleton like Favourites); `addReadingQueueTab()`
+  mirrors `addFavouritesTab()`; `renderCustomTabs()`/`makeCustomTabRow()`
+  extended for the new basis type (disable-when-exists, "Library-wide
+  (Reading Queue)" path-line text, locked view-mode select).
+
+**Known limitation (documented, not fixed this session):** the redesigned
+cover card has all four corners already used by other badges, so Reading
+Queue only gets the box-shadow ring, which — like the older favourite/
+flag-review rings — is suppressed on `.cover-card--redesign` by a prior
+"badges only" fine-tune. Ring is visible on non-redesigned surfaces (Folder
+View, issue rows); on the primary redesigned grid it isn't, so the toggle
+button state and the Reading Queue tab itself are the reliable signal there.
+See `CUSTOM_TABS_SPEC.md` §10.10 for the full note.
+
+**Verification:** backend restarted twice (Tez's tray app, `POST
+/admin/restart` — approved by Tez before triggering, per the dev-server
+memory note that it doesn't run with `--reload`) — once after the initial
+backend build, again after adding `queued_for_reading` to the library.py
+response dicts. Confirmed via curl: tab creation, singleton 409 on a repeat,
+lock-on-edit 400 on `PATCH .../basis_type`, bulk queue/unqueue toggling the
+DB column, and `get_library(tab_id=...)` returning exactly the queued
+issue(s). Live-tested in the real app via Claude in Chrome
+(`localhost:9424`): queued/unqueued issue #4318 ("(Mostly) Wordless") from
+the issue detail page, confirmed the button flips to "📖 Queued"; selected it
+in the library grid and used the bottom bar's "Queue Reading" button to
+unqueue while viewing the Reading Queue tab itself, confirming live removal
+(card disappeared immediately, count went to 0, empty-state message
+appeared) without a page reload; confirmed the Admin row shows "Library-wide
+(Reading Queue)" and the "Add Reading Queue Library" button disables once a
+row exists. Two hard-refreshes were needed mid-session — the browser was
+serving a cached `app.js`/admin bundle from before the edits landed on a
+plain client-side nav (not a full reload), same caching behavior as noted in
+prior sessions' Chrome-automation verification passes. Left the real
+"Reading Queue" tab in place afterward (this is the shipped feature, not
+scratch); issue #4318's `queued_for_reading` flag ended the session back at
+`False` from the toggle testing.

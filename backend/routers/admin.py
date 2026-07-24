@@ -671,8 +671,8 @@ def list_custom_tabs(db: Session = Depends(get_db)):
 @router.post("/admin/custom-tabs")
 def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
     basis_type = (payload.get("basis_type") or "folder").strip()
-    if basis_type not in ("folder", "favorites", "genre"):
-        raise HTTPException(status_code=400, detail="basis_type must be 'folder', 'favorites', or 'genre'")
+    if basis_type not in ("folder", "favorites", "genre", "reading_queue"):
+        raise HTTPException(status_code=400, detail="basis_type must be 'folder', 'favorites', 'genre', or 'reading_queue'")
 
     if basis_type == "favorites":
         # CUSTOM_TABS_SPEC.md §10.2 — no name/folder_path required, server
@@ -691,6 +691,29 @@ def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
         tab = CustomTab(
             name="Favourites", folder_path="", visible=True,
             view_mode="flat", basis_type="favorites",
+        )
+        db.add(tab)
+        db.commit()
+        return _custom_tab_to_dict(tab)
+
+    if basis_type == "reading_queue":
+        # CUSTOM_TABS_SPEC.md §10.10 — mirrors the favourites branch above:
+        # no name/folder_path required, server assigns fixed values, at most
+        # one such tab ever.
+        existing = db.query(CustomTab).filter(CustomTab.basis_type == "reading_queue").first()
+        if existing:
+            raise HTTPException(status_code=409, detail="A Reading Queue tab already exists.")
+
+        visible_count = db.query(func.count(CustomTab.id)).filter(CustomTab.visible == True).scalar()  # noqa: E712
+        if visible_count >= MAX_VISIBLE_CUSTOM_TABS:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
+            )
+
+        tab = CustomTab(
+            name="Reading Queue", folder_path="", visible=True,
+            view_mode="flat", basis_type="reading_queue",
         )
         db.add(tab)
         db.commit()
@@ -763,10 +786,10 @@ def update_custom_tab(tab_id: int, payload: dict = Body(...), db: Session = Depe
     if not tab:
         raise HTTPException(status_code=404, detail="Custom tab not found")
 
-    if tab.basis_type in ("favorites", "genre"):
-        # CUSTOM_TABS_SPEC.md §10.4/10.9 — favourites/genre-basis rows only
-        # allow name/visible edits; folder_path, basis_type, and field_value
-        # are locked, and view_mode is forced to stay Flat.
+    if tab.basis_type in ("favorites", "genre", "reading_queue"):
+        # CUSTOM_TABS_SPEC.md §10.4/10.9/10.10 — favourites/genre/reading-queue
+        # basis rows only allow name/visible edits; folder_path, basis_type,
+        # and field_value are locked, and view_mode is forced to stay Flat.
         locked_keys = {"folder_path", "basis_type", "field_value"} & payload.keys()
         if locked_keys:
             raise HTTPException(

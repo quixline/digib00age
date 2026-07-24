@@ -4,6 +4,32 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Reading Queue: boolean column + singleton tab (Favourites pattern), not a join table
+
+**Decided:** 2026-07-24.
+
+**Why:** Reading Queue needed explicit per-issue "add/remove" membership —
+unlike every existing Custom Tab type (folder/favourites/genre), which are
+all computed/virtual filters over existing issue metadata at query time, with
+no concept of an issue being explicitly placed into a tab. A join table
+(`custom_tab_issues` or similar) would be the generic solution and would
+support things Reading Queue doesn't currently need — arbitrary tabs with
+arbitrary membership, ordering, "date added" metadata. But the actual ask is
+narrower: one singleton "read later" flag per issue, functionally identical
+in shape to `Issue.favorites` (also a boolean, also surfaced through exactly
+one singleton `CustomTab` row). Rather than build new schema for a shape that
+already has a working precedent, Reading Queue reuses the Favourites pattern
+end-to-end: `Issue.queued_for_reading` boolean column,
+`basis_type = 'reading_queue'` singleton tab, same bulk-endpoint/toggle-button
+wiring. If a future ask needs real membership semantics (multiple queues,
+ordering, "date added") that's a different, larger feature — not something to
+speculatively build into this one.
+
+**Where:** `backend/models.py` `Issue.queued_for_reading`;
+`backend/routers/progress.py` bulk queue/unqueue endpoints;
+`backend/routers/admin.py` `create_custom_tab()`'s `reading_queue` branch;
+`CUSTOM_TABS_SPEC.md` §10.10.
+
 ### Genre Library: one `field_value` column, no `field_name` pair; dedup per-genre-value, not one-ever
 
 **Decided:** 2026-07-24.

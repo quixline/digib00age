@@ -546,3 +546,68 @@ View is not available for this tab", now that two non-folder types exist).
 **Out of scope, same as before** — Publisher/Writer/Format/etc. as their own
 `basis_type` remain unbuilt; only Genre was asked for.
 
+### 10.10 Reading Queue (v2.6)
+
+**Built and manually tested 2026-07-24.** A fourth `basis_type` value,
+`'reading_queue'` — a library-wide, singleton "read later" tab, same shape as
+Favourites (§10.1-10.6), not folder-restricted, capped at one row ever.
+Requested directly (not derived from an existing filter concept the way
+Genre reused `matches_field()`), since no explicit per-issue membership
+mechanism existed anywhere in the app before this — Custom Tabs up to this
+point were all computed/virtual filters over existing issue metadata, never
+an explicit add/remove set.
+
+**Data model** — one new boolean column, `Issue.queued_for_reading` (added
+the same additive-migration way as `Issue.favorites`/`flagged_for_review`,
+`_add_missing_issue_columns()` in `database.py`), defaulting to `False`. This
+mirrors `favorites` exactly rather than introducing a join table — see
+`DECISIONS.md` for why a membership table wasn't used.
+
+**Selection bar + issue detail page** — "📖 Queue Reading" in the multi-select
+bottom bar (`frontend/js/app.js`, `ensureSelectionToolbar()`) and "📖 Add to
+Reading Queue" / "📖 Queued" on the issue detail page
+(`buildQueueReadingToggle()`), both mirroring the Favourite toggle's
+bulk-endpoint-with-one-id pattern:
+`POST /api/progress/bulk/queue-reading` / `/api/progress/bulk/unqueue-reading`
+(`backend/routers/progress.py`), same `BulkIssueIds` body as every other bulk
+action. Card-level state is the `is-queued-reading` class, toggled the same
+way `is-favorite` is.
+
+**Admin — "Add Reading Queue Library"**: a plain button (no dropdown, unlike
+Genre) next to "Add Favourites Library", since this is a singleton like
+Favourites, not one-per-value like Genre. POSTs
+`{"basis_type": "reading_queue"}`; server enforces the 409-if-already-exists
+singleton rule and the existing 4-visible-tab cap (§3), same as Favourites.
+
+**Query resolution** — `get_library()`'s `tab_id` branch gains a
+`basis_type == "reading_queue"` case alongside `favorites`/`genre`/folder,
+filtering `all_issues` on `Issue.queued_for_reading` before the per-series
+groupby — same principle as the favourites branch (§10.3).
+
+**Guards** — same treatment as Favourites/Genre (§10.4/§10.9): `view_mode`
+forced to `"flat"` at creation and locked via `PATCH`; `folder_path`/
+`basis_type`/`field_value` are all locked on `PATCH`. The Folder View
+endpoints' `basis_type != "folder"` guard (generalized in §10.9) already
+covers `reading_queue` without further changes.
+
+**Live removal on dequeue** — mirrors §10.5: un-queuing a card while viewing
+the Reading Queue tab removes it from view immediately (`applyQueueReadingToDom()`
+drops it from `tabLibraryCache` for any `reading_queue`-basis tab and
+re-renders), without a page reload.
+
+**Empty state** — mirrors §10.6/§10.9: `No comics queued yet — use Queue
+Reading to add some.` instead of the generic filters message.
+
+**Known limitation** — the redesigned cover card (`cover-card--redesign`)
+already has all four corners spoken for by existing badges (favourite/unread/
+flag-review/rating), so Reading Queue doesn't get its own corner badge; it
+gets only the box-shadow ring (`--accent` blue), which — like the older
+favourite/flag-review rings — is explicitly suppressed on `.cover-card--redesign`
+by a 2026-07-15 "rewind" fine-tune that made badges the only state signal on
+that card variant. In practice this means the ring is visible on the
+non-redesigned Folder View / issue-row surfaces but not on the primary
+redesigned grid card; the "Queued"/"Add to Reading Queue" button state and
+the Reading Queue tab itself remain the reliable signal there. Flagged as a
+known gap rather than solved, since fixing it would mean relitigating the
+four-corner badge layout, which nobody asked for as part of this build.
+

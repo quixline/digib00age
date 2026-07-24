@@ -128,6 +128,8 @@ def _add_missing_issue_columns():
             # PERFORMANCE.md). Forward-only: existing rows stay NULL until
             # next inserted/updated by scanner.py (BUG-029).
             conn.execute(text("ALTER TABLE issues ADD COLUMN content_hash TEXT"))
+        if "queued_for_reading" not in cols:
+            conn.execute(text("ALTER TABLE issues ADD COLUMN queued_for_reading BOOLEAN NOT NULL DEFAULT 0"))
         conn.commit()
 
 

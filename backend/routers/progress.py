@@ -184,6 +184,24 @@ def bulk_remove_favorite(body: BulkIssueIds, db: Session = Depends(get_db)):
     return {"updated": [i.id for i in issues]}
 
 
+@router.post("/progress/bulk/queue-reading")
+def bulk_queue_reading(body: BulkIssueIds, db: Session = Depends(get_db)):
+    issues = db.query(Issue).filter(Issue.id.in_(body.issue_ids)).all()
+    for issue in issues:
+        issue.queued_for_reading = True
+    db.commit()
+    return {"updated": [i.id for i in issues]}
+
+
+@router.post("/progress/bulk/unqueue-reading")
+def bulk_unqueue_reading(body: BulkIssueIds, db: Session = Depends(get_db)):
+    issues = db.query(Issue).filter(Issue.id.in_(body.issue_ids)).all()
+    for issue in issues:
+        issue.queued_for_reading = False
+    db.commit()
+    return {"updated": [i.id for i in issues]}
+
+
 @router.post("/progress/bulk/flag-review")
 def bulk_flag_review(body: BulkIssueIds, db: Session = Depends(get_db)):
     issues = db.query(Issue).filter(Issue.id.in_(body.issue_ids)).all()

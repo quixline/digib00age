@@ -1096,6 +1096,19 @@ select.filter-select:focus,
   box-shadow: 0 0 0 1px var(--danger);
 }
 
+/* Reading Queue ring — same box-shadow-ring technique, blue (--accent)
+   instead of gold/red. CUSTOM_TABS_SPEC.md §10.10. All four card corners are
+   already spoken for (favourite/unread/flag-review/rating), so this doesn't
+   get its own corner badge like those do, and doesn't compose into a
+   multi-ring combo the way favourite+flag-review does — a card that's both
+   favourited/flagged AND queued shows whichever ring's rule is later in the
+   cascade. Acceptable for a first cut; revisit if that combination turns out
+   to matter in practice. */
+.cover-card.is-queued-reading,
+.issue-row.is-queued-reading {
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
 /* Read-state card colours */
 
 /* Fully read — flat dark-green tint, same as before */
@@ -2923,6 +2936,29 @@ select.filter-select:focus,
   :root:not([data-theme]) .btn-favorite-toggle.is-favorite {
     color: var(--text-2);
   }
+}
+
+.btn-queue-reading-toggle {
+  display: block;
+  text-align: center;
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+
+.btn-queue-reading-toggle:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.btn-queue-reading-toggle.is-queued-reading {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 /* SPEC.md §20.17 — larger stars + space-between (no fixed gap) so the row

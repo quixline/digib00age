@@ -59,6 +59,7 @@ class Issue(Base):
     favorites       = Column(Boolean, default=False, nullable=False)
     personal_rating = Column(Integer, nullable=True)        # 1-5, NULL = not rated
     flagged_for_review = Column(Boolean, default=False, nullable=False)  # EDITOR_SPEC.md — review queue
+    queued_for_reading = Column(Boolean, default=False, nullable=False)  # CUSTOM_TABS_SPEC.md §10.10 — reading queue
 
     # Counts
     page_count      = Column(Integer, nullable=True)        # from XML; verified vs actual image count
@@ -175,10 +176,10 @@ class CustomTab(Base):
 
     id          = Column(Integer, primary_key=True, autoincrement=True)
     name        = Column(Text, nullable=False)
-    folder_path = Column(Text, nullable=False)          # stored normalized — see backend.path_utils; "" for basis_type in ('favorites', 'genre')
+    folder_path = Column(Text, nullable=False)          # stored normalized — see backend.path_utils; "" for basis_type in ('favorites', 'genre', 'reading_queue')
     visible     = Column(Boolean, default=True, nullable=False)
     view_mode   = Column(Text, nullable=False, default="flat")   # 'flat' | 'folder'
-    basis_type  = Column(Text, nullable=False, default="folder")  # 'folder' | 'favorites' | 'genre' — CUSTOM_TABS_SPEC.md §10
+    basis_type  = Column(Text, nullable=False, default="folder")  # 'folder' | 'favorites' | 'genre' | 'reading_queue' — CUSTOM_TABS_SPEC.md §10
     field_value = Column(Text, nullable=True)           # genre name, only set for basis_type='genre'
     created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
 

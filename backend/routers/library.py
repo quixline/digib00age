@@ -85,6 +85,7 @@ def _issue_to_dict(issue: Issue, progress: ReadingProgress | None) -> dict:
         "manga": issue.manga,
         "favorites": issue.favorites,
         "flagged_for_review": issue.flagged_for_review,
+        "queued_for_reading": issue.queued_for_reading,
         "personal_rating": issue.personal_rating,
         "page_count": issue.page_count,
         "count": issue.count,
@@ -152,6 +153,7 @@ def get_library(
 
     tab_folder = folder_path
     tab_is_favorites = False
+    tab_is_reading_queue = False
     tab_genre_value: Optional[str] = None
     if tab_id is not None:
         tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
@@ -159,6 +161,8 @@ def get_library(
             raise HTTPException(status_code=404, detail="Custom tab not found")
         if tab.basis_type == "favorites":
             tab_is_favorites = True
+        elif tab.basis_type == "reading_queue":
+            tab_is_reading_queue = True
         elif tab.basis_type == "genre":
             tab_genre_value = tab.field_value
         else:
@@ -170,6 +174,11 @@ def get_library(
         # before the per-series groupby (same principle as BUG-010's fix), so
         # every series card this builds already contains a favourited issue.
         all_issues = [i for i in all_issues if i.favorites]
+    if tab_is_reading_queue:
+        # CUSTOM_TABS_SPEC.md §10.10 — library-wide, filtered by
+        # Issue.queued_for_reading before the per-series groupby, same
+        # principle as the favourites branch above.
+        all_issues = [i for i in all_issues if i.queued_for_reading]
     if tab_genre_value:
         # CUSTOM_TABS_SPEC.md §10.9 — library-wide, filtered by genre
         # membership before the per-series groupby, same principle as the
@@ -247,6 +256,7 @@ def get_library(
             # 20-issue series must still surface the series under Favourites.
             "favorites": any(i.favorites for i in issues),
             "flagged_for_review": any(i.flagged_for_review for i in issues),
+            "queued_for_reading": any(i.queued_for_reading for i in issues),
             "personal_rating": cover_issue.personal_rating,
         })
 
@@ -501,6 +511,7 @@ def get_series(
             "genres": [g.genre_name for g in iss.genres],
             "favorites": iss.favorites,
             "flagged_for_review": iss.flagged_for_review,
+            "queued_for_reading": iss.queued_for_reading,
             "personal_rating": iss.personal_rating,
         })
 

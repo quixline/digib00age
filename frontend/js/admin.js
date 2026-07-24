@@ -141,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadCtGenreOptions();
   document.getElementById('ctAddBtn').addEventListener('click', addCustomTab);
   document.getElementById('ctAddFavouritesBtn').addEventListener('click', addFavouritesTab);
+  document.getElementById('ctAddReadingQueueBtn').addEventListener('click', addReadingQueueTab);
   document.getElementById('ctAddGenreBtn').addEventListener('click', addGenreTab);
   document.getElementById('ctBrowseBtn').addEventListener('click', () => openCtPicker('ctPathInput'));
   document.getElementById('ctPickerCloseBtn').addEventListener('click', closeCtPicker);
@@ -880,6 +881,9 @@ function renderCustomTabs() {
   const hasFavouritesTab = customTabs.some(t => t.basis_type === 'favorites');
   document.getElementById('ctAddFavouritesBtn').disabled = hasFavouritesTab || atCap;
 
+  const hasReadingQueueTab = customTabs.some(t => t.basis_type === 'reading_queue');
+  document.getElementById('ctAddReadingQueueBtn').disabled = hasReadingQueueTab || atCap;
+
   renderCtGenreOptions();
   document.getElementById('ctAddGenreBtn').disabled = atCap;
 }
@@ -948,6 +952,7 @@ function makeCustomTabRow(tab) {
   row.className = 'ct-tab-row';
   const isFavourites = tab.basis_type === 'favorites';
   const isGenre = tab.basis_type === 'genre';
+  const isReadingQueue = tab.basis_type === 'reading_queue';
 
   const info = document.createElement('div');
   info.className = 'ct-tab-info';
@@ -964,16 +969,18 @@ function makeCustomTabRow(tab) {
   pathLine.className = 'ct-tab-path';
   pathLine.textContent = isFavourites
     ? 'Library-wide (Favourites)'
-    : isGenre
-      ? `Genre: ${tab.field_value}`
-      : tab.folder_path;
+    : isReadingQueue
+      ? 'Library-wide (Reading Queue)'
+      : isGenre
+        ? `Genre: ${tab.field_value}`
+        : tab.folder_path;
   info.append(nameLine, pathLine);
 
   const viewModeSelect = document.createElement('select');
   viewModeSelect.className = 'ct-viewmode-select admin-select';
   viewModeSelect.innerHTML = '<option value="flat">Flat</option><option value="folder">Folder View</option>';
   viewModeSelect.value = tab.view_mode || 'flat';
-  viewModeSelect.disabled = isFavourites || isGenre;
+  viewModeSelect.disabled = isFavourites || isGenre || isReadingQueue;
   viewModeSelect.addEventListener('change', () => updateCustomTabViewMode(tab, viewModeSelect.value));
 
   const toggleBtn = document.createElement('button');
@@ -1096,6 +1103,25 @@ async function addFavouritesTab() {
     await loadCustomTabs();
   } catch (e) {
     showToast('Could not add Favourites tab: ' + e.message, true);
+  }
+}
+
+async function addReadingQueueTab() {
+  try {
+    const r = await fetch(`${API}/admin/custom-tabs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ basis_type: 'reading_queue' }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      showToast(d.detail || 'Could not add Reading Queue tab', true);
+      return;
+    }
+    showToast('Reading Queue tab added');
+    await loadCustomTabs();
+  } catch (e) {
+    showToast('Could not add Reading Queue tab: ' + e.message, true);
   }
 }
 

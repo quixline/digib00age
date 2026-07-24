@@ -296,6 +296,15 @@ function ensureSelectionToolbar() {
     const path = allFavorited ? '/progress/bulk/unfavorite' : '/progress/bulk/favorite';
     runBulkAction(path, {}, idsApplied => applyFavoriteToDom(idsApplied, !allFavorited));
   });
+  mkBtn('selQueueReading', '📖 Queue Reading', () => {
+    const ids = Array.from(selectedIds.keys());
+    const allQueued = ids.length > 0 && ids.every(id => {
+      const node = document.querySelector(`[data-issue-id="${id}"]`);
+      return node && node.classList.contains('is-queued-reading');
+    });
+    const path = allQueued ? '/progress/bulk/unqueue-reading' : '/progress/bulk/queue-reading';
+    runBulkAction(path, {}, idsApplied => applyQueueReadingToDom(idsApplied, !allQueued));
+  });
   mkBtn('selFlagReview', '🏷 Flag for Review', () => {
     const ids = Array.from(selectedIds.keys());
     const allFlagged = ids.length > 0 && ids.every(id => {
@@ -600,6 +609,37 @@ function _patchFavoritesInCaches(id, value) {
   for (const pool of pools) {
     const lib = (pool || []).find(s => s.series_anchor_id === id);
     if (lib) lib.favorites = value;
+  }
+}
+
+// Reading Queue flag — mirrors applyFavoriteToDom/_patchFavoritesInCaches,
+// including CUSTOM_TABS_SPEC.md §10.5's live-removal-on-clear behaviour
+// (§10.10 reuses the same principle for the Reading Queue tab).
+function applyQueueReadingToDom(ids, value) {
+  for (const id of ids) {
+    const node = document.querySelector(`[data-issue-id="${id}"]`);
+    if (node) node.classList.toggle('is-queued-reading', value);
+    _patchQueueReadingInCaches(id, value);
+  }
+
+  if (!value) {
+    for (const tabId of Object.keys(tabLibraryCache)) {
+      if (tabBasisTypes[tabId] !== 'reading_queue') continue;
+      tabLibraryCache[tabId] = tabLibraryCache[tabId].filter(s => !ids.includes(s.series_anchor_id));
+    }
+  }
+
+  if (!value && isReadingQueueTab(activeSurface)) {
+    renderBrowse();
+  }
+}
+
+function _patchQueueReadingInCaches(id, value) {
+  const pools = [allLibrary, ...Object.values(tabLibraryCache),
+    ...Object.values(viewLibraryCache), ...Object.values(searchLibraryCache)];
+  for (const pool of pools) {
+    const lib = (pool || []).find(s => s.series_anchor_id === id);
+    if (lib) lib.queued_for_reading = value;
   }
 }
 
@@ -971,6 +1011,10 @@ function isGenreTab(surface) {
   return surface.startsWith('tab-') && tabBasisTypes[surface.slice(4)] === 'genre';
 }
 
+function isReadingQueueTab(surface) {
+  return surface.startsWith('tab-') && tabBasisTypes[surface.slice(4)] === 'reading_queue';
+}
+
 // Menu bar controls (sort/rated/favourites) act on whichever surface is
 // active — Flat View re-renders the cover grid, Folder View re-fetches/
 // re-filters the current folder level (MENU_BAR_SPEC.md §3).
@@ -1241,7 +1285,7 @@ function buildStripCard(item) {
               : item.read_status === 'reading'  ? 'state-part-read'
               : 'state-unread';
 
-  const card = el('a', `cover-card cover-card--redesign strip-card ${state}${item.favorites ? ' is-favorite' : ''}${item.flagged_for_review ? ' is-flagged-review' : ''}`);
+  const card = el('a', `cover-card cover-card--redesign strip-card ${state}${item.favorites ? ' is-favorite' : ''}${item.flagged_for_review ? ' is-flagged-review' : ''}${item.queued_for_reading ? ' is-queued-reading' : ''}`);
   card.href  = href;
   card.title = item.series;
   // No makeSelectable()/select-dot here, deliberately — Home Strips have
@@ -1615,14 +1659,16 @@ function _renderBrowsePage() {
   grid.innerHTML = '';
 
   if (!filtered.length) {
-    // CUSTOM_TABS_SPEC.md §10.6/§10.9 — a Favourites or Genre tab with nothing
-    // in it yet reads as broken with the generic filters message; give each
-    // its own.
+    // CUSTOM_TABS_SPEC.md §10.6/§10.9/§10.10 — a Favourites, Genre, or Reading
+    // Queue tab with nothing in it yet reads as broken with the generic
+    // filters message; give each its own.
     const emptyMsg = isFavoritesTab(activeSurface)
       ? 'No favourites yet — star some issues to see them here.'
       : isGenreTab(activeSurface)
         ? `No comics tagged "${tabNames[activeSurface.slice(4)]}" yet.`
-        : 'No matching titles found';
+        : isReadingQueueTab(activeSurface)
+          ? 'No comics queued yet — use Queue Reading to add some.'
+          : 'No matching titles found';
     grid.innerHTML =
       '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
       `<p>${emptyMsg}</p></div>`;
@@ -1732,7 +1778,7 @@ function buildCoverCard(s) {
     : `/series/${s.series_anchor_id}${suffix}`;
   const state    = seriesReadState(s);
 
-  const card = el('a', `cover-card cover-card--redesign ${state}${s.favorites ? ' is-favorite' : ''}${s.flagged_for_review ? ' is-flagged-review' : ''}`);
+  const card = el('a', `cover-card cover-card--redesign ${state}${s.favorites ? ' is-favorite' : ''}${s.flagged_for_review ? ' is-flagged-review' : ''}${s.queued_for_reading ? ' is-queued-reading' : ''}`);
   card.href  = href;
 
   // Multi-select: Singles cards select their one underlying issue directly;
@@ -2124,7 +2170,7 @@ function buildFolderFileCard(issue) {
               : issue.read_status === 'reading'  ? 'state-part-read'
               : 'state-unread';
 
-  const card = el('a', `cover-card cover-card--redesign ${state}${issue.missing ? ' missing' : ''}${issue.favorites ? ' is-favorite' : ''}${issue.flagged_for_review ? ' is-flagged-review' : ''}`);
+  const card = el('a', `cover-card cover-card--redesign ${state}${issue.missing ? ' missing' : ''}${issue.favorites ? ' is-favorite' : ''}${issue.flagged_for_review ? ' is-flagged-review' : ''}${issue.queued_for_reading ? ' is-queued-reading' : ''}`);
   card.href  = `/issue/${issue.id}`;
   makeSelectable(card, issue.id);
 
@@ -2367,7 +2413,7 @@ function issueRowClass(issue) {
   const readState = issue.read_status === 'read'    ? 'state-read'
                   : issue.read_status === 'reading' ? 'state-reading' : '';
   return ['issue-row', issue.missing ? 'missing' : '', readState, issue.favorites ? 'is-favorite' : '',
-    issue.flagged_for_review ? 'is-flagged-review' : '']
+    issue.flagged_for_review ? 'is-flagged-review' : '', issue.queued_for_reading ? 'is-queued-reading' : '']
     .filter(Boolean).join(' ');
 }
 
@@ -2646,6 +2692,7 @@ function buildIssueDetail(data) {
 
   actions.appendChild(buildStatusToggle(data, syncReadState));
   actions.appendChild(buildFavoriteToggle(data, favoriteBadge));
+  actions.appendChild(buildQueueReadingToggle(data));
   actions.appendChild(buildRatingControl(data));
 
   const secondaryRow = el('div', 'issue-actions-row');
@@ -2829,6 +2876,34 @@ function buildFavoriteToggle(data, badgeEl) {
         body: JSON.stringify({ issue_ids: [data.id] }),
       });
       data.favorites = !data.favorites;
+      sync();
+    } catch (_) {}
+  });
+
+  return btn;
+}
+
+// Reading Queue toggle — mirrors buildFavoriteToggle's bulk-with-one-id style.
+function buildQueueReadingToggle(data) {
+  const btn = el('button', 'btn-queue-reading-toggle');
+
+  function sync() {
+    btn.textContent = data.queued_for_reading ? '📖 Queued' : '📖 Add to Reading Queue';
+    btn.classList.toggle('is-queued-reading', !!data.queued_for_reading);
+  }
+  sync();
+
+  btn.addEventListener('click', async () => {
+    const endpoint = data.queued_for_reading
+      ? '/api/progress/bulk/unqueue-reading'
+      : '/api/progress/bulk/queue-reading';
+    try {
+      await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ issue_ids: [data.id] }),
+      });
+      data.queued_for_reading = !data.queued_for_reading;
       sync();
     } catch (_) {}
   });
