@@ -117,6 +117,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Text('Reading', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           _ReadingModeTile(settings: widget.settings),
+          const Divider(height: 32),
+          Text('Library', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          _ItemsPerPageTile(settings: widget.settings),
           if (Platform.isWindows) ...[
             const Divider(height: 32),
             Text('Windows Reader', style: Theme.of(context).textTheme.titleMedium),
@@ -235,6 +239,48 @@ class _AppearanceTileState extends State<_AppearanceTile> {
           onSelectionChanged: (v) {
             setState(() => _mode = v.first);
             widget.settings.themeMode = v.first;
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _ItemsPerPageTile extends StatefulWidget {
+  final SettingsService settings;
+  const _ItemsPerPageTile({required this.settings});
+
+  @override
+  State<_ItemsPerPageTile> createState() => _ItemsPerPageTileState();
+}
+
+class _ItemsPerPageTileState extends State<_ItemsPerPageTile> {
+  late int _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.settings.itemsPerPage;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Titles per page'),
+        const SizedBox(height: 6),
+        SegmentedButton<int>(
+          segments: const [
+            ButtonSegment(value: 25, label: Text('25')),
+            ButtonSegment(value: 50, label: Text('50')),
+            ButtonSegment(value: 75, label: Text('75')),
+            ButtonSegment(value: 100, label: Text('100')),
+          ],
+          selected: {_value},
+          onSelectionChanged: (v) {
+            setState(() => _value = v.first);
+            widget.settings.itemsPerPage = v.first;
           },
         ),
       ],

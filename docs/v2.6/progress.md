@@ -5905,3 +5905,70 @@ HGR3SJY1`) throughout — each change was rebuilt and installed, then Tez
 checked it by hand on-device before the next change, across both Light and
 Dark themes (Home, grid view, list view, issue detail). All items confirmed
 working and correct in the final pass.
+
+## Session — 2026-07-24 — Web UI: Read button label matches read state
+
+- Issue Detail page's dedicated "Read" open-the-reader button
+  (`frontend/js/app.js`, `syncReadState()`) now shows **Start Reading**
+  (unread), **Continue Reading** (reading, unchanged from before), or
+  **Read Again** (read) instead of a plain "Read"/"Continue Reading" split.
+  Cosmetic/copy-only — no data-flow change. Verified live via
+  `claude-in-chrome` against three real issues (one per read state) with a
+  hard reload to bypass a stale cached `app.js`.
+
+## Session — 2026-07-24 — Flutter mobile reader: "Titles per page" pagination (follow-up to v2.6 Item 4)
+
+**Feature.** New Settings control letting Tez choose how many titles load
+per page (25/50/75/100, default 25) on the Browse screen, which serves both
+the built-in library views (All/Series/Singles/Unread/Reading/Read) and
+custom-library tabs — both are the same `BrowseScreen`. Mirrors the web
+app's existing Admin "Results per page" control (`ADMIN_SPEC.md` §6:
+50/100/200/500) but with a phone-appropriate range and default, and no
+backend changes — like the web app, this slices a list the screen already
+fetches in full client-side; the backend has no `limit`/`offset` anywhere
+and none were added.
+
+**Two explore passes first** (Settings/state patterns; Browse/custom-tab
+screens + backend), then a design pass, before writing any code — see
+`DECISIONS.md` for the two design calls that came out of it (reactive
+`ValueNotifier` setting, `SegmentedButton` over a dropdown).
+
+**Built:**
+- `flutter_app/lib/services/settings_service.dart` — new `itemsPerPage`
+  getter/setter (validated against `{25,50,75,100}`, default 25) backed by
+  a `ValueNotifier<int> itemsPerPageNotifier`, same pattern as the existing
+  `themeModeNotifier`.
+- `flutter_app/lib/screens/settings_screen.dart` — new "Library" section,
+  `_ItemsPerPageTile` (`SegmentedButton<int>`, matching `_ReadingModeTile`'s
+  shape).
+- `flutter_app/lib/screens/shell_screen.dart` — threads `settings` through
+  to `BrowseScreen` (wasn't wired before this).
+- `flutter_app/lib/widgets/pagination_bar.dart` (new) — numbered page bar
+  (Prev/Next + numbered buttons, `…` windowing for many pages), a direct
+  Dart port of `frontend/js/app.js`'s `pageWindow()`/
+  `renderPaginationControls()` look and behaviour. Button styling reuses
+  `browse_screen.dart`'s existing `_ViewToggleButton` visual vocabulary
+  (`AppColors`/`AppSpacing.radiusMd`).
+- `flutter_app/lib/screens/browse_screen.dart` — `_currentPage` state,
+  reset to 1 on every `_load()` (initial + pull-to-refresh), clamped
+  against `totalPages` at render time (mirrors the web's inline
+  `Math.min(currentPage, totalPages)`), listens to
+  `itemsPerPageNotifier` so a page-size change while this screen is still
+  mounted underneath Settings (pushed on the root navigator, so it doesn't
+  get recreated) takes effect immediately. `_buildGrid`/`_buildList` now
+  take the current page's slice instead of closing over the full list;
+  `PaginationBar` sits as a fixed `Column` sibling below the scrollable
+  grid/list, not inside it, so it doesn't scroll away.
+
+**Verification:** `flutter analyze` clean. Built and ran live on Tez's
+Lenovo TB128FU tablet (`flutter run -d HGR3SJY1`), driven via `adb input
+tap`/`screencap` for the first pass: confirmed page count/windowing math
+against the real library (5,453 individual issues → 2,125 series/singles
+cards → 85 pages at 25/page), page-to-page navigation loading distinct
+titles with the bar re-windowing correctly, grid and list view sharing the
+same page state, the `ValueNotifier` live-update (changed to 100 in
+Settings, returned to the still-open Browse screen, page count/contents
+updated immediately without reselecting the nav item), a single-page custom
+tab correctly showing no pagination bar, and pull-to-refresh resetting to
+page 1. Tez then ran his own manual pass on-device and confirmed it looks
+good before this session closed.

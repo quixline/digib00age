@@ -13,6 +13,15 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-24** — Flutter mobile reader: "Titles per page" pagination
+  (25/50/75/100, default 25) added to Settings, applying to the Browse
+  screen (library views + custom-library tabs) — numbered page bar ported
+  from the web app's pagination look/behaviour, no backend changes needed.
+  → `progress.md` "Flutter mobile reader: "Titles per page" pagination
+  (follow-up to v2.6 Item 4)"
+- **2026-07-24** — Web UI: Issue Detail's "Read" button now reads "Start
+  Reading" / "Continue Reading" / "Read Again" to match the issue's read
+  state. → `progress.md` "Web UI: Read button label matches read state"
 - **2026-07-24** — Flutter mobile reader: card visual-parity porting (Phase
   B of the Phase A follow-up) — grid density 5→4 cards/row, gold favourite
   border replaced with a theme-token card border (white dark / black light)

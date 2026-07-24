@@ -134,6 +134,7 @@ class _ShellScreenState extends State<ShellScreen> with RouteAware {
         return MaterialPageRoute(
           builder: (_) => BrowseScreen(
             api: widget.api,
+            settings: widget.settings,
             filter: filter,
             viewMode: _viewMode,
             onViewModeChanged: (m) => setState(() => _viewMode = m),

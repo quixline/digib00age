@@ -6,14 +6,18 @@ class SettingsService {
   static const _keyReadingMode = 'reading_mode';
   static const _keyConnectionMode = 'connection_mode';
   static const _keyThemeMode = 'theme_mode';
+  static const _keyItemsPerPage = 'items_per_page';
 
   static const defaultServerUrl = 'http://192.168.1.10:9424';
+  static const _validItemsPerPage = {25, 50, 75, 100};
 
   final SharedPreferences _prefs;
   late final ValueNotifier<ThemeMode> themeModeNotifier;
+  late final ValueNotifier<int> itemsPerPageNotifier;
 
   SettingsService._(this._prefs) {
     themeModeNotifier = ValueNotifier(_readThemeMode());
+    itemsPerPageNotifier = ValueNotifier(_readItemsPerPage());
   }
 
   // Exposed so sibling services (DownloadService, SyncStore, SyncService)
@@ -67,6 +71,21 @@ class SettingsService {
   // "scroll" or "page"
   String get readingMode => _prefs.getString(_keyReadingMode) ?? 'scroll';
   set readingMode(String v) => _prefs.setString(_keyReadingMode, v);
+
+  // Titles-per-page for library/custom-library browse pages — mirrors the
+  // web app's Admin "Results per page" setting (frontend/js/admin.js
+  // initPagination()), but with a phone-appropriate range.
+  int _readItemsPerPage() {
+    final raw = _prefs.getInt(_keyItemsPerPage) ?? 25;
+    return _validItemsPerPage.contains(raw) ? raw : 25;
+  }
+
+  int get itemsPerPage => itemsPerPageNotifier.value;
+  set itemsPerPage(int v) {
+    final safe = _validItemsPerPage.contains(v) ? v : 25;
+    _prefs.setInt(_keyItemsPerPage, safe);
+    itemsPerPageNotifier.value = safe;
+  }
 
   // "auto", "server", "local"
   String get connectionMode => _prefs.getString(_keyConnectionMode) ?? 'auto';

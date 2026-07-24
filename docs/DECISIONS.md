@@ -3040,3 +3040,28 @@ itself was left untouched — its own internal callers in the scanner are a
 separate, unrelated use.
 **Where:** `backend/editor/xml_parser.py` (`parse_filename_for_comicinfo()`),
 `backend/routers/editor_full.py` (`get_file_xml()`), `EDITOR_SPEC.md` §3.1/§9.4.
+
+### Mobile "Titles per page" setting: reactive `ValueNotifier`, `SegmentedButton`, own 25/50/75/100 range
+**Decided:** 2026-07-24, building the Flutter mobile reader's new pagination
+setting (follow-up to v2.6 Item 4).
+**Why:** Settings is pushed via
+`Navigator.of(context, rootNavigator: true).pushNamed('/settings')`
+(`lib/widgets/app_top_bar.dart`) — on the *root* navigator, so a `BrowseScreen`
+underneath stays mounted and is never recreated or otherwise notified when the
+user backs out. A plain getter/setter (the pattern used for `readingMode`)
+would leave a still-open library screen showing a stale page size/count until
+some unrelated nav-rail reselection happened to recreate it. Gave the new
+`itemsPerPage` setting the same `ValueNotifier<int>` treatment already used for
+`themeMode`, and had `BrowseScreen` listen directly, so a change takes effect
+immediately on return. Chose `SegmentedButton<int>` (plain "25"/"50"/"75"/"100"
+labels, no icons) over a dropdown for the 4 options, since every other
+choice-style setting on this screen (`_AppearanceTile`, `_ReadingModeTile`)
+already uses `SegmentedButton` — a dropdown would've been the only tap-to-open
+menu on the page. The option range itself (25/50/75/100) is deliberately
+different from the web app's own page-size control (50/100/200/500, see
+`ADMIN_SPEC.md` §6) — smaller, phone-appropriate numbers for a narrower screen
+and slower mobile scroll; the two controls were never meant to be the same
+range, so no reconciliation was needed.
+**Where:** `flutter_app/lib/services/settings_service.dart`
+(`itemsPerPageNotifier`/`itemsPerPage`), `flutter_app/lib/screens/settings_screen.dart`
+(`_ItemsPerPageTile`), `flutter_app/lib/screens/browse_screen.dart`.

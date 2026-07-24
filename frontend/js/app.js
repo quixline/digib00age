@@ -2629,7 +2629,9 @@ function buildIssueDetail(data) {
       progressTrack.hidden = true;
     }
 
-    readActionBtn.textContent = data.read_status === 'reading' ? 'Continue Reading' : 'Read';
+    readActionBtn.textContent = data.read_status === 'reading' ? 'Continue Reading'
+                               : data.read_status === 'read'    ? 'Read Again'
+                               : 'Start Reading';
   }
   syncReadState();
 

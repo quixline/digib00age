@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/series.dart';
 import '../services/api_service.dart';
+import '../services/settings_service.dart';
 import '../theme/tokens.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/cover_card.dart';
 import '../widgets/nav_rail.dart' show NavKind;
 import '../widgets/page_backdrop.dart';
+import '../widgets/pagination_bar.dart';
 
 class BrowseFilter {
   final NavKind kind;
@@ -20,6 +22,7 @@ enum ViewMode { grid, list }
 
 class BrowseScreen extends StatefulWidget {
   final ApiService api;
+  final SettingsService settings;
   final BrowseFilter filter;
   final ViewMode viewMode;
   final ValueChanged<ViewMode> onViewModeChanged;
@@ -28,6 +31,7 @@ class BrowseScreen extends StatefulWidget {
   const BrowseScreen({
     super.key,
     required this.api,
+    required this.settings,
     required this.filter,
     required this.viewMode,
     required this.onViewModeChanged,
@@ -42,11 +46,26 @@ class _BrowseScreenState extends State<BrowseScreen> {
   List<Series> _items = [];
   bool _loading = true;
   String? _error;
+  int _currentPage = 1;
 
   @override
   void initState() {
     super.initState();
     _load();
+    widget.settings.itemsPerPageNotifier.addListener(_onItemsPerPageChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.settings.itemsPerPageNotifier.removeListener(_onItemsPerPageChanged);
+    super.dispose();
+  }
+
+  // Settings is pushed on the root navigator, so this screen stays mounted
+  // underneath — a page-size change needs to be picked up live rather than
+  // waiting for a nav-rail reselection that would recreate this screen.
+  void _onItemsPerPageChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _load() async {
@@ -95,7 +114,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
         list = list.where((s) => s.genres.contains(f.genre)).toList();
       }
       if (!mounted) return;
-      setState(() { _items = list; _loading = false; });
+      setState(() { _items = list; _loading = false; _currentPage = 1; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
@@ -198,13 +217,31 @@ class _BrowseScreenState extends State<BrowseScreen> {
     if (_items.isEmpty) {
       return const Center(child: Text('No results', style: TextStyle(color: Colors.white38)));
     }
-    return RefreshIndicator(
-      onRefresh: _load,
-      child: widget.viewMode == ViewMode.grid ? _buildGrid() : _buildList(),
+
+    final itemsPerPage = widget.settings.itemsPerPage;
+    final totalPages = (_items.length / itemsPerPage).ceil().clamp(1, 1 << 30);
+    _currentPage = _currentPage.clamp(1, totalPages);
+    final start = (_currentPage - 1) * itemsPerPage;
+    final pageItems = _items.sublist(start, (start + itemsPerPage).clamp(0, _items.length));
+
+    return Column(
+      children: [
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: _load,
+            child: widget.viewMode == ViewMode.grid ? _buildGrid(pageItems) : _buildList(pageItems),
+          ),
+        ),
+        PaginationBar(
+          currentPage: _currentPage,
+          totalPages: totalPages,
+          onPageChanged: (p) => setState(() => _currentPage = p),
+        ),
+      ],
     );
   }
 
-  Widget _buildGrid() {
+  Widget _buildGrid(List<Series> items) {
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -213,17 +250,17 @@ class _BrowseScreenState extends State<BrowseScreen> {
         crossAxisSpacing: AppSpacing.cardGap,
         mainAxisSpacing: AppSpacing.cardGap,
       ),
-      itemCount: _items.length,
-      itemBuilder: (context, i) => CoverCard(data: _cardFor(context, _items[i])),
+      itemCount: items.length,
+      itemBuilder: (context, i) => CoverCard(data: _cardFor(context, items[i])),
     );
   }
 
-  Widget _buildList() {
+  Widget _buildList(List<Series> items) {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 40),
-      itemCount: _items.length,
+      itemCount: items.length,
       separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, i) => CoverListRow(data: _cardFor(context, _items[i])),
+      itemBuilder: (context, i) => CoverListRow(data: _cardFor(context, items[i])),
     );
   }
 
