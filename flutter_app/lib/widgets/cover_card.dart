@@ -105,41 +105,22 @@ class _CoverCardState extends State<CoverCard> {
                             ),
                           ),
                         ),
-                      if (isProgress) ...[
+                      if (isProgress)
                         Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          height: 56,
+                          left: 6,
+                          bottom: 6,
                           child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                                colors: [
-                                  colors.readGreen.withValues(alpha: 0.85),
-                                  colors.readGreen.withValues(alpha: 0.0),
-                                ],
-                              ),
+                              color: Colors.black.withValues(alpha: 0.55),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '${d.progressPercent}% Read',
+                              style: text.label(size: 11, color: Colors.white),
                             ),
                           ),
                         ),
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: Container(height: 3, color: colors.readGreen),
-                        ),
-                        Positioned(
-                          left: 6,
-                          right: 6,
-                          bottom: 6,
-                          child: Text(
-                            '${d.progressPercent}% Read',
-                            style: text.label(size: 11, color: Colors.white),
-                          ),
-                        ),
-                      ],
                       if (d.favourite)
                         Positioned(
                           top: 6,

@@ -6055,3 +6055,55 @@ pill visible; tapped Back → returned to the 50-item folder root correctly;
 tapped an issue file card → opened the issue detail screen (`#1`, full
 metadata, Start Reading) via the normal `/issue` route. No console errors
 observed at any step.
+
+## Session — 2026-07-24 — Flutter mobile reader: card polish (read-state overlay, star contrast, launcher icon)
+
+Three small follow-ups from the same session, requested together after Folder
+View testing wrapped up.
+
+**1. Removed the green progress/read overlay from cover images.** `CoverCard`
+(`flutter_app/lib/widgets/cover_card.dart`) previously layered a green
+bottom-up gradient plus a flush 3px bar under the "XX% Read" text for
+`state: 'progress'`. Now that the card also carries the green read-state dot
+badge (top-right, added in the earlier visual-parity pass) and the percent
+text was already redundant with the gradient, Tez asked for the overlay/bar
+to go, keeping just the percent readout. Replaced both `Positioned` layers
+with a single small dark pill (`rgba(0,0,0,0.55)`, same tint the web's inset
+progress-track uses) behind the "XX% Read" text so it stays legible over any
+cover art without the green tint. The `isRead` circle badge was already
+minimal (no full-image overlay in the grid card) and was left untouched.
+`CoverListRow` (list view) wasn't touched — out of scope, not what was shown/
+tested this session.
+
+**2. Darkened inactive rating stars in Light Theme only.**
+`issue_detail_screen.dart`'s 5-star rating row used `colors.surfaceSunken`
+for an unset star, which in light theme (`#E1E6EC`) is nearly the same
+tone as the surrounding card background — Tez couldn't see which stars were
+unset until tapping one. Dark theme's `surfaceSunken` (`#2A2E36`) reads fine
+against the dark canvas, so the fix is scoped to light theme only: inactive
+stars now use `colors.textMuted` when `Theme.of(context).brightness ==
+Brightness.light`, otherwise the original `surfaceSunken`. Active/filled
+stars (`colors.favouriteGold`) unchanged in both themes.
+
+**3. Launcher icon replaced with the current clean logo.** The generated
+Android/Windows launcher icons (`flutter_launcher_icons`, sourced from
+`flutter_app/assets/logo/app_icon.png`) were visibly blurred/soft at their
+edges — an old export. Tez pointed at `frontend/images/favicon.png` (128×128,
+crisp) as the current correct mark. Source images in the repo top out at
+512×512 (`frontend/images/icons/icon-512.png`) with visible aliasing at that
+size, so `favicon.png` was upscaled to 1024×1024 with Lanczos resampling
+(Pillow) and saved over `assets/logo/app_icon.png`, then `dart run
+flutter_launcher_icons` regenerated the Android mipmaps and the Windows icon
+from it. `flutter_app/assets/logo/favicon.png` (a separate, older, unused
+136×127 copy) was left as-is — nothing in `lib/` references it.
+
+**Verification:** `flutter analyze` clean after all three changes. Rebuilt
+and relaunched live on Tez's Lenovo TB128FU tablet (`flutter run -d
+HGR3SJY1`), driven via `adb input tap`/`screencap`: confirmed the Home
+screen's "Continue Reading" card ("12", 3% Read) now shows only the dark
+percent pill with no green tint; switched to Light Theme via Settings,
+opened an unrated issue ("Deep Dark Fears #1") and confirmed all 5 stars
+are now clearly visible as solid grey before rating, then switched back to
+Dark Theme and confirmed the progress card and star behaviour there are
+unchanged. Checked the generated `mipmap-xxxhdpi/ic_launcher.png` directly —
+crisp at real launcher size, matching the reference image.

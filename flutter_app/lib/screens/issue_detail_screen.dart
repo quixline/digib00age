@@ -178,7 +178,11 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                                         '★',
                                         style: TextStyle(
                                           fontSize: 22,
-                                          color: filled ? colors.favouriteGold : colors.surfaceSunken,
+                                          color: filled
+                                              ? colors.favouriteGold
+                                              : (Theme.of(context).brightness == Brightness.light
+                                                  ? colors.textMuted
+                                                  : colors.surfaceSunken),
                                         ),
                                       ),
                                     ),

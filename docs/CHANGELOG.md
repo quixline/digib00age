@@ -13,6 +13,12 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-24** — Flutter mobile reader: card polish — removed the green
+  progress/read overlay from cover images (kept the percent pill and read
+  dot), darkened inactive rating stars on the issue page in Light Theme
+  only, and swapped the launcher icon for the current clean logo (was a
+  blurred old export). → `progress.md` "Flutter mobile reader: card polish
+  (read-state overlay, star contrast, launcher icon)"
 - **2026-07-24** — Flutter mobile reader: Folder View built (new feature) —
   folder-mode custom tabs (e.g. "2000 AD") now drill down through real
   directory navigation instead of falling back to a flat grid; folder
