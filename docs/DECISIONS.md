@@ -3065,3 +3065,30 @@ range, so no reconciliation was needed.
 **Where:** `flutter_app/lib/services/settings_service.dart`
 (`itemsPerPageNotifier`/`itemsPerPage`), `flutter_app/lib/screens/settings_screen.dart`
 (`_ItemsPerPageTile`), `flutter_app/lib/screens/browse_screen.dart`.
+
+### Mobile Scroll-mode pinch-zoom: wrap the whole `ListView`, not per-item, with a dynamic `panEnabled` toggle
+**Decided:** 2026-07-24, adding pinch-zoom to the Flutter reader's Scroll mode
+(Page mode already had it via `InteractiveViewer`).
+**Why:** Wrapping each `ListView.builder` item in its own `InteractiveViewer`
+was the more obvious first approach but doesn't work — `InteractiveViewer`
+needs bounded constraints, while Scroll-mode items currently size themselves
+from the image's own intrinsic aspect ratio inside an unbounded-height list
+(`fit: BoxFit.fitWidth` + `width: double.infinity`, no explicit height);
+giving every item a fixed size just to make that work would have meant
+either pre-fetching image dimensions or an `AspectRatio` estimate, adding
+real complexity. Wrapping the *entire* `ListView` in one `InteractiveViewer`
+instead sidesteps this completely — the list still gets the same bounded
+constraints from its parent as before, and `InteractiveViewer` only applies
+a paint-time scale/pan transform over the whole scrolling strip (the same
+approach most continuous-strip/webtoon readers use). The remaining problem —
+`InteractiveViewer`'s single-finger pan competing with `ListView`'s own
+scroll drag in the gesture arena — is solved by leaving `scaleEnabled`
+always on (2-finger pinch never competes with 1-finger scroll) but toggling
+`panEnabled` dynamically: off at scale 1.0 so drags reach the list normally,
+on above 1.0 so drags pan the zoomed image instead (list scroll pauses until
+the user pinches back out). This is a known/standard pattern for this exact
+`InteractiveViewer`-in-`Scrollable` conflict, not a novel workaround.
+**Where:** `flutter_app/lib/widgets/comic_page_view.dart`
+(`_scrollPanEnabled` field and the `InteractiveViewer` wrap in
+`ComicPageViewState._buildScrollMode()` and
+`LocalComicPageViewState.build()`'s scroll branch).

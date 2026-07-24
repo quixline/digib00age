@@ -6107,3 +6107,52 @@ are now clearly visible as solid grey before rating, then switched back to
 Dark Theme and confirmed the progress card and star behaviour there are
 unchanged. Checked the generated `mipmap-xxxhdpi/ic_launcher.png` directly —
 crisp at real launcher size, matching the reference image.
+
+## Session — 2026-07-24 — Flutter mobile reader: pinch-zoom in Scroll mode
+
+New feature request: "pinch zoom -/+ on page when reading." Page mode
+(`flutter_app/lib/widgets/comic_page_view.dart`) already had full pinch-zoom
+via `InteractiveViewer` (`minScale: 0.5, maxScale: 5.0`) plus a double-tap
+fit-to-width toggle — Scroll mode, the app's default reading mode, had none
+at all; pages rendered as plain `CachedNetworkImage`/`Image.memory` with no
+zoom wrapper. Confirmed scope with Tez before building: Scroll mode only,
+pinch gesture only (no explicit +/- toolbar buttons — page mode's existing
+gesture-only zoom was the reference behaviour to match).
+
+Wrapping each `ListView.builder` item in its own `InteractiveViewer` doesn't
+work — `InteractiveViewer` needs bounded constraints, but scroll-mode items
+currently size themselves from the image's intrinsic aspect ratio inside an
+unbounded-height list (`fit: BoxFit.fitWidth` + `width: double.infinity`,
+no explicit height). Instead wrapped the **entire `ListView.builder`** in a
+single `InteractiveViewer`, reusing the `_transformController` that already
+existed on both state classes (previously unused in Scroll mode) — this
+avoids the sizing problem entirely since the ListView still receives the
+same bounded constraints from its parent as before; `InteractiveViewer` just
+applies a paint-time scale/pan transform over the whole scrolling strip
+(same approach most continuous-strip/webtoon readers use).
+
+Gesture conflict: a bare `InteractiveViewer(child: ListView(...))` has
+single-finger pan competing with the ListView's own scroll drag. Fixed with
+the standard pattern — `scaleEnabled` stays always-on (2-finger pinch never
+conflicts with 1-finger scroll, different pointer counts), but `panEnabled`
+is toggled dynamically via a new `_scrollPanEnabled` field: `false` at scale
+1.0 (single-finger drags pass through to the `ListView` for normal scroll),
+flipped to `true` once zoomed past 1.0x (drags pan the zoomed image instead;
+list scroll is paused until pinched back out). The toggle happens in
+`onInteractionEnd`, reading `_transformController.value.getMaxScaleOnAxis()`
+and only calling `setState` when the flag actually flips. `minScale: 1.0`
+(can't zoom out past the existing fit — the transform is a paint-time
+overlay, not a relayout, so going smaller would just show blank space);
+`maxScale: 5.0` to match Page mode. `resetZoom()` (already called
+unconditionally by `jumpToPage()`, used by the bottom-bar page slider) now
+also resets `_scrollPanEnabled` back to `false` so a slider jump correctly
+hands scroll control back to the list. Applied identically to both
+`ComicPageViewState` (network pages) and `LocalComicPageViewState` (local
+CBZ), mirroring the file's existing duplicated structure.
+
+**Verification:** `flutter analyze` clean. Rebuilt and relaunched live on
+Tez's Lenovo TB128FU tablet (`flutter run -d HGR3SJY1`). Tez manually
+tested pinch-in/out on a page in Scroll mode, single-finger pan while
+zoomed, resumed normal scroll after pinching back out, a bottom-bar slider
+jump while zoomed, and confirmed Page mode's existing pinch/double-tap zoom
+is unaffected — confirmed fully working.

@@ -38,6 +38,11 @@ class ComicPageViewState extends State<ComicPageView> {
   BoxConstraints? _pageConstraints;
   int _lastReportedPage = -1;
 
+  // Scroll mode: single-finger pan is only handed to InteractiveViewer while
+  // zoomed in — otherwise it stays disabled so the same drag scrolls the
+  // ListView normally. See onInteractionEnd in _buildScrollMode().
+  bool _scrollPanEnabled = false;
+
   @override
   void initState() {
     super.initState();
@@ -149,6 +154,7 @@ class ComicPageViewState extends State<ComicPageView> {
   void resetZoom() {
     _transformController.value = Matrix4.identity();
     _zoomedToWidth = false;
+    if (_scrollPanEnabled) setState(() => _scrollPanEnabled = false);
   }
 
   // Double-tap: toggle between fit-whole-page (identity) and fit-to-width.
@@ -183,20 +189,30 @@ class ComicPageViewState extends State<ComicPageView> {
     final urls = widget.reversePages
         ? widget.pageUrls.reversed.toList()
         : widget.pageUrls;
-    return ListView.builder(
-      controller: _scrollController,
-      itemCount: urls.length,
-      itemBuilder: (context, i) => CachedNetworkImage(
-        imageUrl: urls[i],
-        fit: BoxFit.fitWidth,
-        width: double.infinity,
-        placeholder: (_, _) => const AspectRatio(
-          aspectRatio: 0.67,
-          child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        ),
-        errorWidget: (_, _, _) => const AspectRatio(
-          aspectRatio: 0.67,
-          child: Icon(Icons.broken_image, color: Colors.white24, size: 48),
+    return InteractiveViewer(
+      transformationController: _transformController,
+      minScale: 1.0,
+      maxScale: 5.0,
+      panEnabled: _scrollPanEnabled,
+      onInteractionEnd: (_) {
+        final zoomed = _transformController.value.getMaxScaleOnAxis() > 1.01;
+        if (zoomed != _scrollPanEnabled) setState(() => _scrollPanEnabled = zoomed);
+      },
+      child: ListView.builder(
+        controller: _scrollController,
+        itemCount: urls.length,
+        itemBuilder: (context, i) => CachedNetworkImage(
+          imageUrl: urls[i],
+          fit: BoxFit.fitWidth,
+          width: double.infinity,
+          placeholder: (_, _) => const AspectRatio(
+            aspectRatio: 0.67,
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+          errorWidget: (_, _, _) => const AspectRatio(
+            aspectRatio: 0.67,
+            child: Icon(Icons.broken_image, color: Colors.white24, size: 48),
+          ),
         ),
       ),
     );
@@ -271,6 +287,9 @@ class LocalComicPageViewState extends State<LocalComicPageView> {
   bool _zoomedToWidth = false;
   BoxConstraints? _pageConstraints;
   int _lastReportedPage = -1;
+
+  // See ComicPageViewState._scrollPanEnabled — same fix, same reasoning.
+  bool _scrollPanEnabled = false;
 
   @override
   void initState() {
@@ -374,6 +393,7 @@ class LocalComicPageViewState extends State<LocalComicPageView> {
   void resetZoom() {
     _transformController.value = Matrix4.identity();
     _zoomedToWidth = false;
+    if (_scrollPanEnabled) setState(() => _scrollPanEnabled = false);
   }
 
   void toggleZoom() {
@@ -417,18 +437,28 @@ class LocalComicPageViewState extends State<LocalComicPageView> {
     final cacheWidth = _cacheWidth(context);
 
     if (widget.mode == ReadingMode.scroll) {
-      return ListView.builder(
-        controller: _scrollController,
-        itemCount: widget.pageCount,
-        itemBuilder: (context, i) {
-          final index = widget.reversePages ? widget.pageCount - 1 - i : i;
-          return Image.memory(
-            _pageAt(index),
-            fit: BoxFit.fitWidth,
-            width: double.infinity,
-            cacheWidth: cacheWidth,
-          );
+      return InteractiveViewer(
+        transformationController: _transformController,
+        minScale: 1.0,
+        maxScale: 5.0,
+        panEnabled: _scrollPanEnabled,
+        onInteractionEnd: (_) {
+          final zoomed = _transformController.value.getMaxScaleOnAxis() > 1.01;
+          if (zoomed != _scrollPanEnabled) setState(() => _scrollPanEnabled = zoomed);
         },
+        child: ListView.builder(
+          controller: _scrollController,
+          itemCount: widget.pageCount,
+          itemBuilder: (context, i) {
+            final index = widget.reversePages ? widget.pageCount - 1 - i : i;
+            return Image.memory(
+              _pageAt(index),
+              fit: BoxFit.fitWidth,
+              width: double.infinity,
+              cacheWidth: cacheWidth,
+            );
+          },
+        ),
       );
     }
 

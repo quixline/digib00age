@@ -750,6 +750,9 @@ User can also switch manually in Settings.
   - Top bar: back button, issue title, page counter (e.g. "12 / 32")
   - Bottom bar: reading mode toggle, fit-width / fit-height toggle, page scrubber slider
 - Manga mode: if `manga = "YesAndRightToLeft"`, page mode reverses swipe direction
+- Pinch-to-zoom (up to 5x) available in both modes — Page mode also has a
+  double-tap fit-to-width toggle; Scroll mode is pinch-only (added
+  2026-07-24) and pans the zoomed strip instead of scrolling while zoomed in
 - Progress saved to server on every page turn in Page mode (POST
   `/api/progress/{id}`); Scroll mode has no native page-turn event, so
   progress is estimated from scroll position instead and saved to the same

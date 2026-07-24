@@ -13,6 +13,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-24** — Flutter mobile reader: pinch-zoom added to Scroll mode
+  (Page mode already had it). → `progress.md` "Flutter mobile reader:
+  pinch-zoom in Scroll mode"
 - **2026-07-24** — Flutter mobile reader: card polish — removed the green
   progress/read overlay from cover images (kept the percent pill and read
   dot), darkened inactive rating stars on the issue page in Light Theme
