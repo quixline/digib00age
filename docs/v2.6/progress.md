@@ -6377,3 +6377,16 @@ live, confirming the nav rail scrolls and a Genre tab opens correctly.
 Deleted all test tabs afterward via direct API calls, confirming the
 sidebar returned to its original 4 real tabs (2000 AD, Post-Apocalyptic,
 Mystery, Reading Queue).
+
+**Debug build pushed to Tez's real Lenovo TB128FU tablet** (`flutter run -d
+HGR3SJY1`, same device as prior sessions) so Tez could manually exercise the
+cap-removal change on the actual mobile reader, not just the Windows-desktop
+target. This is a debug build (JIT, no `--release`), same as every other
+tablet verification pass in this doc — **not** a release APK. Detached from
+the debug session afterward (`flutter run`'s `d` — leaves the installed app
+running on the tablet, severs only the host-side debug/hot-reload
+connection) rather than quitting it, since Tez wanted to keep testing after
+this session ended. Tez confirmed it's working well after hands-on testing.
+**A full release build (`flutter build apk --release`) is deliberately
+deferred to a separate future session**, contingent on no issues turning up
+during Tez's own extended use — not done as part of this session.
