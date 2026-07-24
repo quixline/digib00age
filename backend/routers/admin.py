@@ -603,7 +603,6 @@ async def restore_database(request: Request, payload: dict = Body(...)):
 # Custom Tabs — admin-managed, folder-scoped library tabs (CUSTOM_TABS_SPEC.md)
 # ---------------------------------------------------------------------------
 
-MAX_VISIBLE_CUSTOM_TABS = 4
 VALID_VIEW_MODES = {"flat", "folder"}
 
 
@@ -681,13 +680,6 @@ def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
         if existing:
             raise HTTPException(status_code=409, detail="A Favourites tab already exists.")
 
-        visible_count = db.query(func.count(CustomTab.id)).filter(CustomTab.visible == True).scalar()  # noqa: E712
-        if visible_count >= MAX_VISIBLE_CUSTOM_TABS:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
-            )
-
         tab = CustomTab(
             name="Favourites", folder_path="", visible=True,
             view_mode="flat", basis_type="favorites",
@@ -703,13 +695,6 @@ def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
         existing = db.query(CustomTab).filter(CustomTab.basis_type == "reading_queue").first()
         if existing:
             raise HTTPException(status_code=409, detail="A Reading Queue tab already exists.")
-
-        visible_count = db.query(func.count(CustomTab.id)).filter(CustomTab.visible == True).scalar()  # noqa: E712
-        if visible_count >= MAX_VISIBLE_CUSTOM_TABS:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
-            )
 
         tab = CustomTab(
             name="Reading Queue", folder_path="", visible=True,
@@ -735,13 +720,6 @@ def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
         if existing:
             raise HTTPException(status_code=409, detail=f"A Genre Library for '{genre_value}' already exists.")
 
-        visible_count = db.query(func.count(CustomTab.id)).filter(CustomTab.visible == True).scalar()  # noqa: E712
-        if visible_count >= MAX_VISIBLE_CUSTOM_TABS:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
-            )
-
         tab = CustomTab(
             name=genre_value, folder_path="", visible=True,
             view_mode="flat", basis_type="genre", field_value=genre_value,
@@ -759,13 +737,6 @@ def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="view_mode must be 'flat' or 'folder'")
 
     warning = _validate_tab_folder(folder_path)
-
-    visible_count = db.query(func.count(CustomTab.id)).filter(CustomTab.visible == True).scalar()  # noqa: E712
-    if visible_count >= MAX_VISIBLE_CUSTOM_TABS:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
-        )
 
     tab = CustomTab(
         name=name, folder_path=normalize_path(folder_path), visible=True,
@@ -815,15 +786,7 @@ def update_custom_tab(tab_id: int, payload: dict = Body(...), db: Session = Depe
         tab.folder_path = normalize_path(folder_path)
 
     if "visible" in payload:
-        new_visible = bool(payload["visible"])
-        if new_visible and not tab.visible:
-            visible_count = db.query(func.count(CustomTab.id)).filter(CustomTab.visible == True).scalar()  # noqa: E712
-            if visible_count >= MAX_VISIBLE_CUSTOM_TABS:
-                raise HTTPException(
-                    status_code=409,
-                    detail=f"Maximum of {MAX_VISIBLE_CUSTOM_TABS} visible tabs already reached — hide one first.",
-                )
-        tab.visible = new_visible
+        tab.visible = bool(payload["visible"])
 
     if "view_mode" in payload:
         view_mode = (payload["view_mode"] or "").strip()

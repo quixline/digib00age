@@ -845,7 +845,6 @@ async function saveAdvanced() {
 }
 
 // ── Custom Tabs (CUSTOM_TABS_SPEC.md) ───────────────────────────────────────────
-const MAX_VISIBLE_CUSTOM_TABS = 4;
 let customTabs  = [];
 let ctPickerPath = null;
 let ctPickerRoots = [];
@@ -873,19 +872,13 @@ function renderCustomTabs() {
     }
   }
 
-  const visibleCount = customTabs.filter(t => t.visible).length;
-  const atCap   = visibleCount >= MAX_VISIBLE_CUSTOM_TABS;
-  document.getElementById('ctAddBtn').disabled  = atCap;
-  document.getElementById('ctCapHint').hidden    = !atCap;
-
   const hasFavouritesTab = customTabs.some(t => t.basis_type === 'favorites');
-  document.getElementById('ctAddFavouritesBtn').disabled = hasFavouritesTab || atCap;
+  document.getElementById('ctAddFavouritesBtn').disabled = hasFavouritesTab;
 
   const hasReadingQueueTab = customTabs.some(t => t.basis_type === 'reading_queue');
-  document.getElementById('ctAddReadingQueueBtn').disabled = hasReadingQueueTab || atCap;
+  document.getElementById('ctAddReadingQueueBtn').disabled = hasReadingQueueTab;
 
   renderCtGenreOptions();
-  document.getElementById('ctAddGenreBtn').disabled = atCap;
 }
 
 // ── Genre Library (CUSTOM_TABS_SPEC.md §10.9) ───────────────────────────────

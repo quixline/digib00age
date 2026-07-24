@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-24** — Custom Tabs: removed the 4-visible-tab cap entirely (not
+  raised) — dated from the old top-tab-bar design, moot since the v2.6 left
+  sidebar already scrolls. Backend + admin UI cap logic deleted; no Flutter
+  change needed. → `progress.md` "Custom Tabs: removed the 4-visible-tab cap"
 - **2026-07-24** — Add Reading Queue: new "Queue Reading" bulk-selection and
   issue-detail-page action, backed by a fourth `CustomTab.basis_type`
   (`reading_queue`, singleton, library-wide) plus a new `Issue.queued_for_reading`

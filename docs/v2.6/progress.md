@@ -6328,3 +6328,52 @@ prior sessions' Chrome-automation verification passes. Left the real
 "Reading Queue" tab in place afterward (this is the shipped feature, not
 scratch); issue #4318's `queued_for_reading` flag ended the session back at
 `False` from the toggle testing.
+
+## Session — 2026-07-24 — Custom Tabs: removed the 4-visible-tab cap
+
+Tez asked to remove the 4-visible-tab cap outright (not raise it) — it dated
+from the original top-tab-bar design where horizontal nav space was
+genuinely scarce; the left sidebar (v2.6 Item 1 Phase B) already scrolls
+vertically, so the constraint no longer applies. Immediate driver: Genre
+Library tabs compete with Favourites/Reading Queue/folder tabs for the same
+4 slots, which was blocking multi-genre use on the Flutter mobile reader in
+particular (Folder View and flat-tab routing already exist there — the cap
+was the only thing in the way).
+
+**Backend (`backend/routers/admin.py`):** removed `MAX_VISIBLE_CUSTOM_TABS =
+4` and all five call sites that enforced it — the four `create_custom_tab()`
+branches (favorites/reading_queue/genre/plain-folder) and
+`update_custom_tab()`'s visible-flip check. Left the unrelated singleton/
+dedup rules untouched: Favourites and Reading Queue still cap at one row
+ever, Genre still caps at one row per distinct genre value.
+
+**Frontend web (`frontend/js/admin.js`, `frontend/admin.html`):** removed
+the duplicate client-side `MAX_VISIBLE_CUSTOM_TABS`/`atCap` logic in
+`renderCustomTabs()` and the `ctCapHint` hint span; also found and fixed a
+second hardcoded "Up to 4 can be visible at once" line in the Add/Remove
+Libraries section's intro copy (not caught by the original code search —
+found live in the browser while verifying).
+
+**Flutter:** no code change — confirmed `NavRail`/`shell_screen.dart`/
+`api_service.dart` never had a client-side cap; they just render whatever
+`GET /nav/config` returns, and `NavRail`'s existing `SingleChildScrollView`
+already handles any tab count.
+
+**Verification:** backend restart required (Tez's tray app doesn't run with
+`--reload`) — Tez restarted it himself. Live-tested via Claude in Chrome:
+unlocked Admin → Library Appearance → Add/Remove Libraries, added a 5th
+visible tab (Favourites) past the old cap with no 409. Hit one caching
+snag mid-test — a stale cached `admin.js` (pre-edit) briefly threw against
+the new `admin.html` (missing the now-removed `ctCapHint` element) until a
+hard reload (`ctrl+shift+r`) cleared it; not a real bug, just browser cache,
+consistent with the caching behavior noted in prior sessions. Pushed further
+via direct `POST /api/admin/custom-tabs` calls to 15 visible tabs total,
+confirmed no 409s and the web sidebar's existing whole-sidebar
+`overflow-y: auto` scrolls correctly with the fixed items (Home/All/
+Singles/Series/Unread/Reading/Read) staying in the scroll flow above the
+Libraries list, no clipping. Built and ran the Flutter app on the Windows
+desktop target (`flutter run -d windows`) with the same 14 extra test tabs
+live, confirming the nav rail scrolls and a Genre tab opens correctly.
+Deleted all test tabs afterward via direct API calls, confirming the
+sidebar returned to its original 4 real tabs (2000 AD, Post-Apocalyptic,
+Mystery, Reading Queue).

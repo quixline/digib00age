@@ -4,6 +4,37 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Custom Tabs: removed the 4-visible-tab cap entirely, not raised
+
+**Decided:** 2026-07-24.
+
+**Why:** The cap (`MAX_VISIBLE_CUSTOM_TABS = 4`, `CUSTOM_TABS_SPEC.md` §3) dated
+from the original v2.1 design, when custom tabs rendered as a top tab bar with
+genuinely limited horizontal space. The nav moved to a left sidebar in v2.6
+(Item 1 Phase B), and the sidebar has scrolled vertically (`overflow-y: auto`
+on `.app-sidebar`) since that redesign — the space constraint the cap existed
+to protect against no longer applies, so there was no reason to raise the
+number instead of removing it. The immediate driver was Genre Library tabs
+(§10.9) competing with Favourites/Reading Queue/folder tabs for the same 4
+slots, which blocked using more than a couple of genre-grouped libraries at
+once — most noticeably on the Flutter mobile reader, where a Genre tab is the
+only way to see a genre grouping without extra filter UI, and the cap (not
+missing functionality) was the only thing preventing several from being
+visible together.
+
+Verified live rather than assumed: pushed the web sidebar to 15 visible tabs
+via the admin UI and direct API calls with no 409s, confirmed the existing
+whole-sidebar scroll handles it with no clipping; built and ran the Flutter
+Windows-desktop target with 14 extra tabs live, confirming the nav rail
+scrolls and a Genre tab routes correctly. No scroll code needed writing on
+either platform — both already had it (`overflow-y: auto` on web,
+`SingleChildScrollView` in Flutter's `NavRail`) from before this change.
+
+**Where:** `backend/routers/admin.py` (`create_custom_tab()`,
+`update_custom_tab()`); `frontend/js/admin.js` (`renderCustomTabs()`);
+`frontend/admin.html` (Add/Remove Libraries section); `CUSTOM_TABS_SPEC.md`
+§3/§5.1/§6.
+
 ### Reading Queue: boolean column + singleton tab (Favourites pattern), not a join table
 
 **Decided:** 2026-07-24.

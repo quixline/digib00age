@@ -67,18 +67,22 @@ new ingestion rule.
 
 ## 3. Caps & Visibility Rules
 
-- **Maximum 4 tabs with `visible = 1` at any time.** This is a nav-space limit, not a
-  storage limit.
+- **No cap on visible tabs (removed 2026-07-24).** The original 4-visible-tab limit
+  dated from when custom tabs rendered as a top tab bar with genuinely limited
+  horizontal space. The nav moved to a left sidebar in v2.6 (Section 5.2) and the
+  sidebar already scrolls vertically when content overflows, so the space
+  constraint the cap protected against no longer applies. See Change Log.
 - **No cap on total stored rows** for folder-based tabs. Admin can create as many tab
-  definitions as they like; toggling `visible` off frees a slot for another to be
-  shown without losing the definition.
+  definitions as they like.
 - **Maximum 1 favourites-basis tab, stored or visible, ever.** Unlike folder tabs
   (which differ by path), every favourites tab would have identical content —
-  allowing more than one only wastes visible-tab slots on duplicates. The "Add
-  Favourites Tab" button (Section 10.2) disables itself once one exists, in either
-  visibility state.
-- Enforce the visible-cap server-side (reject/409 on attempting to set a 5th tab
-  visible) — don't rely on the admin UI alone to prevent it.
+  allowing more than one only wastes a slot on a duplicate. The "Add Favourites Tab"
+  button (Section 10.2) disables itself once one exists, in either visibility state.
+- **Maximum 1 reading-queue-basis tab, stored or visible, ever** — same reasoning
+  and same disable-button pattern as favourites (Section 10.10).
+- **Maximum 1 genre-basis tab per distinct genre value** — a second tab for the same
+  genre would be a duplicate; different genres each get their own tab freely
+  (Section 10.9).
 
 ---
 
@@ -147,10 +151,10 @@ Contents:
     server's filesystem and won't be useful when administering remotely (e.g. from the
     laptop) — both inputs write to the same `folder_path` field, manual entry just
     skips the picker.
-  - New tabs always default to **visible**. "Add Tab" submit button is **disabled**
-    (with a short explanatory note, e.g. "4 tabs already visible — hide one first")
-    whenever 4 tabs are already visible. Admin must hide an existing tab before adding
-    a new one — no hidden-on-creation path.
+  - New tabs always default to **visible**. No visible-count cap (removed
+    2026-07-24, Section 3) — the "Add Tab" button is only ever disabled by its own
+    singleton/dedup rules (Favourites, Reading Queue, one-per-genre), never by how
+    many tabs are already visible.
 - **"Add Favourites Tab" button (v2.4 — see Section 10.2)**: a separate, single-click
   control next to "Add Tab" — no form, no folder picker. Creates a `basis_type =
   'favorites'` row directly, pre-filled name "Favourites" (renameable afterward via
@@ -186,9 +190,13 @@ layout.
 ## 6. Explicitly Out of Scope (This Build)
 
 - Reordering custom tabs (creation order only, for now)
-- Nav overflow / responsive handling for many visible tabs at once (up to 9 tabs total
-  possible: 4 fixed + 2000 AD + 4 custom — will assess once tabs are actually in use
-  and the bar's been seen in practice, rather than guessing now)
+- ~~Nav overflow / responsive handling for many visible tabs at once (up to 9 tabs
+  total possible: 4 fixed + 2000 AD + 4 custom — will assess once tabs are actually
+  in use and the bar's been seen in practice, rather than guessing now)~~ **Moot as
+  of 2026-07-24** — the visible-tab cap this bullet assumed is gone (Section 3), and
+  the left sidebar (Section 5.2) already scrolls vertically for any number of items;
+  verified against a larger-than-4 tab count same day. No responsive/overflow work
+  was needed beyond what already existed.
 - Any change to 2000 AD's tab, code path, or data model
 - Flutter app changes
 - Public-repo fork work (separate future effort: empty DB, four fixed tabs only, no
@@ -227,6 +235,7 @@ layout.
 | 2026-07-09 | §9.6's Folder View breadcrumb (`renderFolderBreadcrumb()`) removed, replaced by a "← Back" button using the same real-history pattern as Series/Issue's back links; search-mode label split out into its own `#folderSearchLabel` element. | Tez's post-redesign UI tweak pass, now that `BUG-014` made `history.back()` reliable app-wide — see `docs/v2.6/progress.md` and `DECISIONS.md`. |
 | 2026-07-23 | §9.2's folder cards (`.folder-card`, both plain and `.has-cover`) restyled to match the main library's redesigned card face (`.cover-card--redesign`): fixed dark gradient background (dark theme) replacing the flat `var(--surface-card)` fill, the always-on faint white idle ring removed in favour of hover-only glow, and a matching light-theme bordered-ring override added (previously had none). Folder-tile issue cards (`buildFolderFileCard()`) already shared the redesigned card CSS and needed no change. | Tez flagged the folder/series tiles (e.g. 2000 AD's year folders) as visually inconsistent with the main library/home cards — applies to any custom tab using Folder View, not just 2000 AD. See `docs/v2.6/progress.md`. |
 | 2026-07-24 | §1's "Flutter app — web UI only" statement superseded for Folder View: new §9.7 added — Flutter now has a real `FolderScreen` with directory drill-down for `view_mode: 'folder'` tabs, reusing the existing `CoverCard` widget for both folder and issue-file tiles. §9.5's folder-contents endpoint gained `year_min`/`year_max` per folder entry to support this. | Tez asked for Folder View's mobile card styling to match the main library cards; building that surfaced that Folder View didn't exist in Flutter at all yet. See `docs/v2.6/progress.md`. |
+| 2026-07-24 | §3's 4-visible-tab cap removed entirely (not raised) — `MAX_VISIBLE_CUSTOM_TABS` and all five call sites deleted from `backend/routers/admin.py` (`create_custom_tab()`'s four basis-type branches, `update_custom_tab()`'s visible-flip check); `frontend/js/admin.js`'s duplicate client-side cap/`ctCapHint` logic removed; `frontend/admin.html`'s `ctCapHint` span and the "Up to 4 can be visible at once" intro copy removed. §5.1 and §6 updated to match. No Flutter change — it never had a client-side cap, and `NavRail`'s `SingleChildScrollView` already handled any tab count. | Tez: the cap dated from the old top-tab-bar design where horizontal space was genuinely scarce; the v2.6 left-sidebar redesign already scrolls vertically, so the constraint no longer applies. Immediate driver was Genre Library tabs competing with Favourites/Reading Queue/folder tabs for the same 4 slots, blocking multi-genre use on the Flutter mobile reader in particular. Verified live: pushed the web sidebar to 15 visible tabs (admin UI + direct API calls) with no 409s and correct whole-sidebar scroll. See `docs/DECISIONS.md`. |
 
 ---
 
