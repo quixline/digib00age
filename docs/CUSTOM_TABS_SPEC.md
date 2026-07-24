@@ -226,6 +226,7 @@ layout.
 | 2026-07-07 | §5.2's nav bar moved from a top tab bar to a left sidebar ("Libraries" section, UI copy only). `loadCustomTabsNav()` (`app.js`) now renders into `#sidebarLibraries` instead of appending `.surface-btn`s to `.surface-nav`, and runs on `series.html`/`issue.html` too (not just the library page) so the Libraries list is always visible. Ordering and the `GET /nav/config` data source are unchanged. | v2.6 Item 1 Phase B (left sidebar nav) — see `docs/v2.6/progress.md`. |
 | 2026-07-09 | §9.6's Folder View breadcrumb (`renderFolderBreadcrumb()`) removed, replaced by a "← Back" button using the same real-history pattern as Series/Issue's back links; search-mode label split out into its own `#folderSearchLabel` element. | Tez's post-redesign UI tweak pass, now that `BUG-014` made `history.back()` reliable app-wide — see `docs/v2.6/progress.md` and `DECISIONS.md`. |
 | 2026-07-23 | §9.2's folder cards (`.folder-card`, both plain and `.has-cover`) restyled to match the main library's redesigned card face (`.cover-card--redesign`): fixed dark gradient background (dark theme) replacing the flat `var(--surface-card)` fill, the always-on faint white idle ring removed in favour of hover-only glow, and a matching light-theme bordered-ring override added (previously had none). Folder-tile issue cards (`buildFolderFileCard()`) already shared the redesigned card CSS and needed no change. | Tez flagged the folder/series tiles (e.g. 2000 AD's year folders) as visually inconsistent with the main library/home cards — applies to any custom tab using Folder View, not just 2000 AD. See `docs/v2.6/progress.md`. |
+| 2026-07-24 | §1's "Flutter app — web UI only" statement superseded for Folder View: new §9.7 added — Flutter now has a real `FolderScreen` with directory drill-down for `view_mode: 'folder'` tabs, reusing the existing `CoverCard` widget for both folder and issue-file tiles. §9.5's folder-contents endpoint gained `year_min`/`year_max` per folder entry to support this. | Tez asked for Folder View's mobile card styling to match the main library cards; building that surfaced that Folder View didn't exist in Flutter at all yet. See `docs/v2.6/progress.md`. |
 
 ---
 
@@ -306,7 +307,10 @@ matching what the folder's displayed issue count represents.
 - `GET /api/library/tab/{id}/folder?path=` — folder-contents endpoint for browse
   mode: immediate child folders (each with a recursive issue count) and immediate
   child files (issue cards), at one level. Single query over the tab's whole subtree
-  via `is_under()` (`path_utils.py`), grouped in Python — no N+1.
+  via `is_under()` (`path_utils.py`), grouped in Python — no N+1. Each folder entry
+  also carries `year_min`/`year_max` (added 2026-07-24 for the Flutter client, §9.7)
+  — the min/max `Issue.year` across everything recursively under that folder, both
+  `null` if none of its issues have a year set.
 - `GET /api/library?tab_id=...` (existing, unchanged) — remains the flat-mode
   tab's own content query; Folder View does not use it (see search note below).
 - `GET /api/library/tab/{id}/search?q=` — new, file-shaped (via the existing
@@ -341,6 +345,33 @@ matching what the folder's displayed issue count represents.
 - Folder View flat file cards plug into the existing multi-select mechanism
   (`makeSelectable()`) the same way the old 2000 AD prog cards did — no new
   mechanism needed.
+
+### 9.7 Flutter Mobile Reader (added 2026-07-24)
+
+**§1's original "Flutter app — web UI only, custom tabs do not need to appear in
+this round" statement no longer applies to Folder View** — built 2026-07-24, see
+Change Log and `docs/v2.6/progress.md`. §1 text left as-written per this doc's own
+convention (see the v2.2 note at the top of this file).
+
+- `flutter_app/lib/screens/folder_screen.dart` (`FolderScreen`/`FolderFilter`) —
+  one directory level per screen, pushed via a `'/folder'` route
+  (`shell_screen.dart`); `NavKind.library` tabs with `view_mode == 'folder'` route
+  here instead of the flat `BrowseScreen`.
+- Folder tiles and issue-file tiles both render through the **same** `CoverCard`
+  widget the rest of the library uses (`flutter_app/lib/widgets/cover_card.dart`)
+  — not a separate widget, unlike the web's still-distinct `.folder-card` CSS
+  family (§9.2/§9.6). Folder tiles show cover, name, and "`year_min`–`year_max` ·
+  N issues" (or a single year when `year_min == year_max`, or no year segment at
+  all when both are `null`); no genre ribbon, rating, or favourite/flagged badge
+  (backend returns `has_favorite`/`has_flagged_review` per folder but the Flutter
+  card doesn't surface them yet).
+- Navigation: a "← Back" pill (shown only below the tab root) pops one level —
+  mirrors the web's current back-button behaviour (§9.2's 2026-07-09 note), not a
+  breadcrumb trail.
+- No search mode (§9.3) or per-folder Mark All Read (§9.4) on the Flutter side yet
+  — out of scope for this build, not attempted.
+- Verified live on Tez's Lenovo tablet against the real "2000 AD" tab; see
+  `docs/v2.6/progress.md` for the full verification narrative.
 
 ---
 

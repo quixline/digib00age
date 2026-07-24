@@ -295,6 +295,7 @@ def get_tab_folder_contents(
     subfolder_issues: dict[str, list[Issue]] = {}
     subfolder_has_favorite: dict[str, bool] = {}
     subfolder_has_flagged_review: dict[str, bool] = {}
+    subfolder_years: dict[str, set[int]] = {}
     for issue in under_target:
         issue_dir = normalize_path(os.path.dirname(issue.file_path))
         if issue_dir == target_dir:
@@ -308,6 +309,8 @@ def get_tab_folder_contents(
             subfolder_has_favorite[immediate_child] = True
         if issue.flagged_for_review:
             subfolder_has_flagged_review[immediate_child] = True
+        if issue.year is not None:
+            subfolder_years.setdefault(immediate_child, set()).add(issue.year)
 
     progress_map = {
         p.issue_id: p
@@ -325,6 +328,8 @@ def get_tab_folder_contents(
             ),
             "has_favorite": subfolder_has_favorite.get(name, False),
             "has_flagged_review": subfolder_has_flagged_review.get(name, False),
+            "year_min": min(subfolder_years[name]) if subfolder_years.get(name) else None,
+            "year_max": max(subfolder_years[name]) if subfolder_years.get(name) else None,
         }
         for name, count in sorted(subfolder_counts.items(), key=lambda kv: kv[0].lower())
     ]

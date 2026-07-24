@@ -13,6 +13,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-24** — Flutter mobile reader: Folder View built (new feature) —
+  folder-mode custom tabs (e.g. "2000 AD") now drill down through real
+  directory navigation instead of falling back to a flat grid; folder
+  tiles and issue-file tiles both render via the existing library card
+  widget. Backend addition: folder entries now include a computed
+  `year_min`/`year_max`. → `progress.md` "Flutter mobile reader: Folder
+  View (new feature)"
 - **2026-07-24** — Flutter mobile reader: "Titles per page" pagination
   (25/50/75/100, default 25) added to Settings, applying to the Browse
   screen (library views + custom-library tabs) — numbered page bar ported

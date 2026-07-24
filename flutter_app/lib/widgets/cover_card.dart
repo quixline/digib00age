@@ -8,7 +8,7 @@ import '../theme/tokens.dart';
 class CoverCardData {
   final String title;
   final String meta;
-  final String coverUrl;
+  final String? coverUrl; // null = no cover (e.g. an empty folder tile)
   final String state; // 'unread' | 'progress' | 'read'
   final int progressPercent;
   final bool favourite;
@@ -83,18 +83,28 @@ class _CoverCardState extends State<CoverCard> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      CachedNetworkImage(
-                        imageUrl: d.coverUrl,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, _, _) => Container(
+                      if (d.coverUrl == null)
+                        Container(
                           color: colors.surfaceRaised,
                           child: Icon(
                             Icons.menu_book_outlined,
                             color: colors.textMuted,
                             size: 32,
                           ),
+                        )
+                      else
+                        CachedNetworkImage(
+                          imageUrl: d.coverUrl!,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, _, _) => Container(
+                            color: colors.surfaceRaised,
+                            child: Icon(
+                              Icons.menu_book_outlined,
+                              color: colors.textMuted,
+                              size: 32,
+                            ),
+                          ),
                         ),
-                      ),
                       if (isProgress) ...[
                         Positioned(
                           left: 0,
@@ -256,17 +266,26 @@ class _CoverListRowState extends State<CoverListRow> {
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          CachedNetworkImage(
-                            imageUrl: d.coverUrl,
-                            fit: BoxFit.cover,
-                            errorWidget: (_, _, _) => Container(
+                          if (d.coverUrl == null)
+                            Container(
                               color: colors.surfaceRaised,
                               child: Icon(
                                 Icons.menu_book_outlined,
                                 color: colors.textMuted,
                               ),
+                            )
+                          else
+                            CachedNetworkImage(
+                              imageUrl: d.coverUrl!,
+                              fit: BoxFit.cover,
+                              errorWidget: (_, _, _) => Container(
+                                color: colors.surfaceRaised,
+                                child: Icon(
+                                  Icons.menu_book_outlined,
+                                  color: colors.textMuted,
+                                ),
+                              ),
                             ),
-                          ),
                           if (isRead)
                             Container(
                               color: colors.readGreen.withValues(alpha: 0.5),

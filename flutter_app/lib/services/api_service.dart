@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/series.dart';
 import '../models/issue.dart';
 import '../models/custom_tab.dart';
+import '../models/folder_entry.dart';
 
 class ApiService {
   String baseUrl; // e.g. "http://192.168.1.10:9424"
@@ -61,6 +62,27 @@ class ApiService {
     return (body['custom_tabs'] as List)
         .map((e) => CustomTabInfo.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  // Folder View browse mode (CUSTOM_TABS_SPEC.md §9) — one directory level
+  // under a folder-mode custom tab's root. `files` reuses the same shape
+  // /api/issue/{id} returns, so Issue.fromJson parses it directly.
+  Future<({List<FolderEntry> folders, List<Issue> files})> getFolderContents(
+    int tabId,
+    String path,
+  ) async {
+    final uri = Uri.parse('$apiBase/library/tab/$tabId/folder')
+        .replace(queryParameters: {'path': path});
+    final res = await http.get(uri);
+    _assertOk(res);
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    final folders = (body['folders'] as List)
+        .map((e) => FolderEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final files = (body['files'] as List)
+        .map((e) => Issue.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return (folders: folders, files: files);
   }
 
   // Home page strips (HOME_STRIPS_SPEC.md) — defaults + admin-added.

@@ -11,6 +11,7 @@ import '../widgets/nav_rail.dart';
 import '../widgets/offline_library_view.dart';
 import 'home_screen.dart';
 import 'browse_screen.dart';
+import 'folder_screen.dart';
 import 'series_detail_screen.dart';
 import 'issue_detail_screen.dart';
 
@@ -116,6 +117,12 @@ class _ShellScreenState extends State<ShellScreen> with RouteAware {
         return (name: '/browse', arguments: const BrowseFilter(kind: NavKind.read, label: 'Read'));
       case NavKind.library:
         final tab = _customTabs.firstWhere((t) => t.id == target.tabId);
+        if (tab.viewMode == 'folder') {
+          return (
+            name: '/folder',
+            arguments: FolderFilter(tabId: tab.id, tabName: tab.name),
+          );
+        }
         return (
           name: '/browse',
           arguments: BrowseFilter(kind: NavKind.library, tabId: tab.id, label: tab.name),
@@ -140,6 +147,11 @@ class _ShellScreenState extends State<ShellScreen> with RouteAware {
             onViewModeChanged: (m) => setState(() => _viewMode = m),
             onSettingsReturn: _checkAndLoad,
           ),
+        );
+      case '/folder':
+        final filter = routeSettings.arguments as FolderFilter;
+        return MaterialPageRoute(
+          builder: (_) => FolderScreen(api: widget.api, filter: filter, onSettingsReturn: _checkAndLoad),
         );
       case '/series':
         final anchorId = routeSettings.arguments as int;

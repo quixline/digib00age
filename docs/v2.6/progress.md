@@ -5972,3 +5972,86 @@ updated immediately without reselecting the nav item), a single-page custom
 tab correctly showing no pagination bar, and pull-to-refresh resetting to
 page 1. Tez then ran his own manual pass on-device and confirmed it looks
 good before this session closed.
+
+## Session — 2026-07-24 — Flutter mobile reader: Folder View (new feature)
+
+**Feature.** The Flutter mobile reader had no Folder View at all — every
+`view_mode: "folder"` custom tab (e.g. "2000 AD") fell through to the flat
+`BrowseScreen`, same as any other library, with no directory drill-down.
+Tez asked for it, styled to match the main library cards (cover, title,
+year, "N issues"). Explore-first confirmed the gap was still fully open
+(no `FolderScreen`/`FolderCard` anywhere in `flutter_app/lib/`) despite an
+existing scratch doc (`docs/flutter-ui-sync-plan.md` §4) already having
+sketched it.
+
+**Design call:** rather than a separate `FolderCard` widget (what the web
+still does, and what the sync-plan doc sketched), folder tiles reuse the
+existing `CoverCard`/`CoverCardData` widget directly — guarantees exact
+visual parity with series cards by construction instead of a second style
+to keep in sync.
+
+**Year field:** the backend's folder endpoint had no `year` at all (a
+directory can span many issue-years). Tez confirmed the wanted behaviour
+was a computed year range, not just omitting it (which is what the web's
+`.folder-card` does today) — so this needed a small backend change, not
+just a Flutter one.
+
+**Built:**
+- `backend/routers/library.py`, `get_tab_folder_contents()` — added
+  `subfolder_years` aggregation (`issue.year` per immediate child) and
+  `year_min`/`year_max` on each returned folder entry. Additive JSON field,
+  no web change needed (web ignores unknown fields).
+- `flutter_app/lib/widgets/cover_card.dart` — `CoverCardData.coverUrl`
+  widened to nullable; `CoverCard`/`CoverListRow` show the existing
+  book-icon placeholder container directly when null, instead of feeding
+  an empty string to `CachedNetworkImage`. Existing callers all pass
+  non-null covers, so behaviour-preserving for them.
+- `flutter_app/lib/models/folder_entry.dart` (new) — `FolderEntry` (name,
+  issueCount, coverPath, yearMin/yearMax) + a `yearLabel` getter
+  ("2019–2023", or a single year when `yearMin == yearMax`, or `null`).
+- `flutter_app/lib/services/api_service.dart` — `getFolderContents(tabId,
+  path)` hits `GET /api/library/tab/{id}/folder`; `folders` parsed via
+  `FolderEntry.fromJson`, `files` parsed via the **existing** `Issue.fromJson`
+  (the endpoint's file shape is the same `_issue_to_dict()` shape `/api/issue/{id}`
+  already returns — no new file model needed).
+- `flutter_app/lib/screens/folder_screen.dart` (new) — `FolderFilter` +
+  `FolderScreen`, mirrors `BrowseScreen`'s structure (`AppTopBar`, eyebrow/
+  count row, same `SliverGridDelegateWithMaxCrossAxisExtent` grid). Folder
+  tiles render via `CoverCard` (title=name, meta="`yearLabel` · N issues",
+  `state: 'unread'`, no favourite/flagged badges — scoped out, see below);
+  tapping pushes a deeper `'/folder'` route. File tiles reuse the same
+  Singles-card meta convention `BrowseScreen._cardFor()` uses (year · N
+  pages) and push `'/issue'` directly. A "← Back" pill (only shown when
+  `path` is non-empty) pops one level — matches the web's **current**
+  behaviour (`CUSTOM_TABS_SPEC.md` §9's 2026-07-09 changelog entry: the old
+  breadcrumb was deliberately replaced by a plain back button using real
+  navigation history), not the older sync-plan doc's breadcrumb sketch.
+- `flutter_app/lib/screens/shell_screen.dart` — `_routeFor()`'s
+  `NavKind.library` case now branches on `tab.viewMode`: `'folder'` tabs
+  route to `'/folder'` (root `FolderFilter`) instead of `'/browse'`. Added
+  the `'/folder'` case to `_onGenerateRoute()` alongside the existing
+  `/browse`/`/series`/`/issue` cases (this lives in `shell_screen.dart`,
+  not `main.dart` — `main.dart`'s `_buildRoute` only handles the outer
+  shell/reader/settings routes; `ShellScreen` owns its own nested
+  `Navigator` for library content).
+
+**Scoped out deliberately:** `has_favorite`/`has_flagged_review` on folder
+tiles (backend returns them, but neither the current web folder tile nor
+Tez's ask mentioned them — easy to add later); pagination inside a folder
+level (folder/prog listings are small in practice).
+
+**Verification:** `flutter analyze` clean. Backend: hit
+`GET /api/library/tab/1/folder?path=` directly against the running dev
+server (restarted by Tez mid-session to pick up the code change) — confirmed
+`year_min`/`year_max` correct per subfolder (2000 AD's structure is one
+folder per year, so every folder in practice has `year_min == year_max`;
+drilling into `2000 AD - 1977` confirmed `files[]` returns full issue data).
+Built and ran live on Tez's Lenovo TB128FU tablet (`flutter run -d
+HGR3SJY1`), driven via `adb input tap`/`screencap`: tapped the "2000 AD" nav
+rail entry → root folder tiles rendered with full library-card styling
+("2000 AD - 1977" / "1977 · 45 issues" etc.); drilled into a year folder →
+45 issue file cards rendered ("2000 AD #1" / "1977 · 32 pages"), "← Back"
+pill visible; tapped Back → returned to the 50-item folder root correctly;
+tapped an issue file card → opened the issue detail screen (`#1`, full
+metadata, Start Reading) via the normal `/issue` route. No console errors
+observed at any step.
