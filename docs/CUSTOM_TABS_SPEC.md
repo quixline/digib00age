@@ -131,10 +131,18 @@ the point where it needs to become at least partially dynamic.
 
 ## 5. Frontend
 
-### 5.1 Admin page — Advanced Settings section
+### 5.1 Admin page — Add/Remove Libraries section
 
-Add a new "Custom Tabs" subsection inside the existing locked Advanced Settings
-fieldset (same unlock-checkbox gating as the rest of that section).
+**Moved 2026-07-07 (v2.6 Item 1 Phase C1)** — originally built inside the locked
+Advanced Settings fieldset (same unlock-checkbox gating as the rest of that
+section), this now lives in the unlocked **Library Appearance → Add/Remove
+Libraries** section (`frontend/admin.html`, `data-category="library-appearance"
+data-subitem="libraries"`), same as Home Page Strips. No unlock checkbox
+required — see `DECISIONS.md` "v2.6 Item 1 Phase C1: Home Page Strips /
+Add-Remove Libraries — unlock them". Original text below left as "Custom
+Tabs"/Advanced-Settings-framed since the *contents* it describes (the list,
+the Add Tab form, etc.) are otherwise unchanged — only its location and
+lock status moved.
 
 Contents:
 - **List of all stored tabs** (visible and hidden together, no separate collapsed
@@ -235,7 +243,8 @@ layout.
 | 2026-07-09 | §9.6's Folder View breadcrumb (`renderFolderBreadcrumb()`) removed, replaced by a "← Back" button using the same real-history pattern as Series/Issue's back links; search-mode label split out into its own `#folderSearchLabel` element. | Tez's post-redesign UI tweak pass, now that `BUG-014` made `history.back()` reliable app-wide — see `docs/v2.6/progress.md` and `DECISIONS.md`. |
 | 2026-07-23 | §9.2's folder cards (`.folder-card`, both plain and `.has-cover`) restyled to match the main library's redesigned card face (`.cover-card--redesign`): fixed dark gradient background (dark theme) replacing the flat `var(--surface-card)` fill, the always-on faint white idle ring removed in favour of hover-only glow, and a matching light-theme bordered-ring override added (previously had none). Folder-tile issue cards (`buildFolderFileCard()`) already shared the redesigned card CSS and needed no change. | Tez flagged the folder/series tiles (e.g. 2000 AD's year folders) as visually inconsistent with the main library/home cards — applies to any custom tab using Folder View, not just 2000 AD. See `docs/v2.6/progress.md`. |
 | 2026-07-24 | §1's "Flutter app — web UI only" statement superseded for Folder View: new §9.7 added — Flutter now has a real `FolderScreen` with directory drill-down for `view_mode: 'folder'` tabs, reusing the existing `CoverCard` widget for both folder and issue-file tiles. §9.5's folder-contents endpoint gained `year_min`/`year_max` per folder entry to support this. | Tez asked for Folder View's mobile card styling to match the main library cards; building that surfaced that Folder View didn't exist in Flutter at all yet. See `docs/v2.6/progress.md`. |
-| 2026-07-24 | §3's 4-visible-tab cap removed entirely (not raised) — `MAX_VISIBLE_CUSTOM_TABS` and all five call sites deleted from `backend/routers/admin.py` (`create_custom_tab()`'s four basis-type branches, `update_custom_tab()`'s visible-flip check); `frontend/js/admin.js`'s duplicate client-side cap/`ctCapHint` logic removed; `frontend/admin.html`'s `ctCapHint` span and the "Up to 4 can be visible at once" intro copy removed. §5.1 and §6 updated to match. No Flutter change — it never had a client-side cap, and `NavRail`'s `SingleChildScrollView` already handled any tab count. | Tez: the cap dated from the old top-tab-bar design where horizontal space was genuinely scarce; the v2.6 left-sidebar redesign already scrolls vertically, so the constraint no longer applies. Immediate driver was Genre Library tabs competing with Favourites/Reading Queue/folder tabs for the same 4 slots, blocking multi-genre use on the Flutter mobile reader in particular. Verified live: pushed the web sidebar to 15 visible tabs (admin UI + direct API calls) with no 409s and correct whole-sidebar scroll. See `docs/DECISIONS.md`. |
+| 2026-07-24 | §3's 4-visible-tab cap removed entirely (not raised) — `MAX_VISIBLE_CUSTOM_TABS` and all five call sites deleted from `backend/routers/admin.py` (`create_custom_tab()`'s four basis-type branches, `update_custom_tab()`'s visible-flip check); `frontend/js/admin.js`'s duplicate client-side cap/`ctCapHint` logic removed; `frontend/admin.html`'s `ctCapHint` span and the "Up to 4 can be visible at once" intro copy removed. §5.1 and §6 updated to match. No Flutter change — it never had a client-side cap, and `NavRail`'s `SingleChildScrollView` already handled any tab count. | Tez: the cap dated from the old top-tab-bar design where horizontal space was genuinely scarce; the v2.6 left-sidebar redesign already scrolls vertically, so the constraint no longer applies. Immediate driver was Genre Library tabs competing with Favourites/Reading Queue/folder tabs for the same 4 slots, blocking multi-genre use on the Flutter mobile reader in particular. Verified live: pushed the web sidebar to 15 visible tabs (admin UI + direct API calls) with no 409s and correct whole-sidebar scroll; built and ran the Flutter Windows-desktop target with 14 extra tabs live, confirming the nav rail scrolls and a Genre tab routes correctly. See `docs/DECISIONS.md`. |
+| 2026-07-24 | §5.1 corrected — was still describing the Add/Remove Libraries section as living inside the locked Advanced Settings fieldset, but it actually moved to the unlocked Library Appearance section back on 2026-07-07 (v2.6 Item 1 Phase C1) and the spec was never updated at the time. Found live in the browser while verifying the cap-removal change above; unrelated to that change itself, fixed as a drive-by doc-accuracy correction. | Doc drift caught during the same session's live verification pass — flagged rather than left, since Tez was already looking at this exact paragraph. |
 
 ---
 
