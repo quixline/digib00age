@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-24** — Add Genre Library follow-up: admin layout reorder ("Add
+  Library" next to the View dropdown, "Add Favourites Library" moved after
+  "Add Genre Library"), and fixed a bug where the genre dropdown went empty
+  after adding a tab until a hard refresh. → `progress.md` "Add Genre
+  Library" (follow-up fixes)
 - **2026-07-24** — Add Genre Library: a new `basis_type='genre'` custom tab,
   scoped to one genre, added via a dropdown next to "Add Favourites Library" in
   Add/Remove Libraries; multiple genres can each get their own tab. →

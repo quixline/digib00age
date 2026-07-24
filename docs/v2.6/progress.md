@@ -6213,3 +6213,27 @@ genre tab. Deleted both test tabs afterward via the API (avoids the admin
 UI's native `confirm()` dialog, which blocks browser automation) to leave the
 dev DB clean — Tez can add real genre libraries himself now that it's
 confirmed working.
+
+**Follow-up fixes, same day, after Tez's own live testing (added a real
+"Post-Apocalyptic" genre tab):**
+- **Layout reorder** (`frontend/admin.html`): "Add Library" moved up into the
+  View dropdown's row; "Add Favourites Library" moved to after "Add Genre
+  Library" — cosmetic reorder, no behavior change, done at Tez's request.
+- **Stale-dropdown bug fix** (`frontend/js/admin.js` `addGenreTab()`): Tez hit
+  a case where the genre dropdown went empty right after adding a tab and
+  stayed empty until a hard refresh. Root cause: the dropdown is populated
+  from a page-load-cached `ctAllGenres` array (fetched once via
+  `loadCtGenreOptions()`); `addGenreTab()` was only calling `loadCustomTabs()`
+  afterward, which re-renders the dropdown from that same cached array rather
+  than re-fetching it — if the cache wasn't fully warm yet, the re-render had
+  nothing to show and nothing ever repopulated it afterward. Fix: `addGenreTab()`
+  now runs `loadCustomTabs()` and `loadCtGenreOptions()` together after a
+  successful add, guaranteeing a fresh genre-list fetch every time — the same
+  effect Tez's hard refresh had, without needing one.
+- **Verified:** hard-refreshed the admin page fresh (no leftover cached JS),
+  added a "Cyberpunk" genre tab live, and confirmed via `read_page` that the
+  dropdown remained fully populated (all remaining genres present, Cyberpunk
+  and Post-Apocalyptic correctly excluded) immediately after the add — no
+  refresh needed. Deleted the test "Cyberpunk" tab afterward via the API,
+  leaving Tez's real "Post-Apocalyptic" tab untouched. Tez confirmed "all
+  tested and good."
