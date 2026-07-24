@@ -13,6 +13,17 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-24** — Flutter mobile reader: card visual-parity porting (Phase
+  B of the Phase A follow-up) — grid density 5→4 cards/row, gold favourite
+  border replaced with a theme-token card border (white dark / black light)
+  wrapping the whole card including title/meta, 3px cover inset on grid and
+  list, heart badge replacing star, green-dot read badge replacing the full
+  overlay and unread pill, meta line anchored to card bottom, new
+  gradient-glow page background (color blobs, not blurred photos — an
+  Impeller rendering issue killed the literal web-parity approach), light
+  theme wordmark asset added, and three issue-detail-page fixes (credit
+  overflow, real format pill, tappable genre pills). → `progress.md`
+  "Flutter mobile reader: card visual-parity porting (Phase B)"
 - **2026-07-23** — Flutter mobile reader: light/dark theme infrastructure
   built (Phase A of a phased follow-up to v2.6 Item 4) — `AppColors` is now a
   `ThemeExtension` with dark+light palettes mirroring the web app's tokens,

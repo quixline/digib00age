@@ -5812,3 +5812,96 @@ Auto/Light/Dark all render correctly (nav rail, cover cards, top bar, detail
 screens); confirmed no code changes were still needed before moving on.
 Phase B (porting the redesigned card visuals into both themes) and Phase C
 (fine-tuning) are follow-up sessions, not done here.
+
+## Session — 2026-07-24 — Flutter mobile reader: card visual-parity porting (Phase B)
+
+Phase B of the phased follow-up to v2.6 Item 4 begun in Phase A (2026-07-23,
+above). Source list: `docs/mobile-reader-changes.txt` (Tez's own working
+list, not part of the tracked doc set — left untouched, same handling as
+`INBOX.md`). Scoped to the items that apply across both themes first, plus
+three issue-detail-page fixes also flagged all-themes; the remaining
+theme-specific items were pulled forward into this same session once Tez
+asked to keep going rather than stopping at the original scope line.
+
+**Library cards (`flutter_app/lib/widgets/cover_card.dart`, grid `CoverCard`
++ list `CoverListRow`, both themes):**
+- Grid density: `AppSpacing.cardMin` 150→188 so 4 cards fit a row instead of 5.
+- Removed the favourite-gold border variant entirely; card border is now a
+  theme token (`AppColors.cardBorder`) instead of the generic `border` token
+  — **white** in dark theme, **black** in light theme, per Tez's explicit
+  ask partway through the session. Hover still shows `accent`.
+- Added a 3px inset gap between the cover image and its border on both grid
+  and list cards (grid: outer bordered `Container` + padding, image in an
+  inner `ClipRRect`; list: same pattern applied to the 96px thumbnail column).
+- Grid card border now wraps the title/meta text too, not just the cover
+  image — restructured from "border around `AspectRatio` only" to "border
+  around the whole card `Column`", matching how the list row's border always
+  wrapped the full row.
+- Favourite badge: `★` → `♥` (red, `#E0435C`), both grid and list.
+- Read-state badge: removed the full-cover green overlay and the unread-count
+  pill; added a 14×14px white-ringed green-dot badge (top-right) for
+  `state == 'read'`. `progress` state's bottom gradient/bar/"XX% Read" text
+  left unchanged.
+- Year/issue-count meta line now anchors to the bottom of the grid card
+  regardless of title line count (`Expanded` + `spaceBetween` around
+  title/meta, instead of both packed directly under the cover) — added after
+  Tez saw same-row cards with inconsistent meta position depending on
+  1-line vs 2-line titles.
+
+**Library background — `flutter_app/lib/widgets/page_backdrop.dart` (new):**
+Web parity was "cloudy/alien blur" — several blurred cover images masked
+into soft circles, ported from `frontend/css/style.css`'s `.page-bg`. First
+attempt did exactly that (`ImageFiltered` blur + `ShaderMask`/`RadialGradient`
+soft-circle mask over `CachedNetworkImage`), but rendered as hard-edged
+"patchwork" rectangles on Tez's tablet — root cause was an inverted gradient
+stop order (fixed once, didn't help) compounded by the image-filter chain
+apparently not compositing cleanly under this device's Impeller/Vulkan
+backend. Rather than keep debugging blind against a live device, pivoted
+(with Tez's go-ahead — "doesn't have to change like the web UI, just give a
+little depth") to a much simpler, renderer-proof technique: a handful of
+static, low-opacity `RadialGradient`-filled circles tinted from existing
+theme colors (`accent`/`readGreen`/`favouriteGold`), no blur filters or
+network images involved at all. See `DECISIONS.md` for the fuller rationale.
+Wired behind `BrowseScreen` and `HomeScreen` via a `Stack`. Light theme uses
+the same blob layout with RGB-inverted tints (`_invert()` in
+`page_backdrop.dart`) per Tez's request, so light and dark don't look like
+the same washed-out overlay.
+
+**Issue detail page (`flutter_app/lib/screens/issue_detail_screen.dart`):**
+- Fixed the credit-row `RenderFlex` overflow Tez was hitting — the writer
+  `Text` sat directly in a `Row` with no `Expanded` next to a fixed 52px
+  label; long names overflowed past the ~130px available on a phone. Wrapped
+  in `Expanded` so it wraps instead.
+- Format pill now shows `Issue.format` (the real ComicInfo format field —
+  "One Shot", "TPB", etc.) when populated, falling back to the previous
+  Series/Single label only when the API didn't supply one. Previously it
+  always showed one of those two hardcoded strings regardless of the actual
+  format.
+- Genre pills are now tappable, navigating to `/browse` with a new
+  `BrowseFilter.genre` field that filters the existing "All" pool
+  client-side (`s.genres.contains(f.genre)`) — reuses the existing route and
+  shell state (`viewMode`/`onSettingsReturn`) rather than building a new
+  issue-level browse surface. Confirmed this scope with Tez first (filtered
+  "All" list of series+singles, not a flat ungrouped issue list).
+
+**Light-theme wordmark:** copied `frontend/images/lockup-dark.png` into
+`flutter_app/assets/logo/` (bundled, matching the existing `lockup-light.png`
+pattern — no new network dependency) and switched `AppTopBar` to pick the
+asset by `Theme.of(context).brightness`. This closes the "no light-theme
+logo variant yet" gap flagged as a known gap in Phase A's session entry
+above.
+
+**Explicitly not done this session:** "light theme - use light css tokens -
+tint the white" from `mobile-reader-changes.txt` — left as-is pending
+clarification on what specific surfaces/tokens this refers to in the
+current Flutter implementation (the web's per-card dark-gradient-swap this
+line originally described doesn't have a direct Flutter equivalent, since
+the card-level gradient background was never ported here). Flagged, not
+built.
+
+**Verification:** `flutter analyze` clean after every change (no issues).
+Built and ran live on Tez's real Lenovo TB128FU tablet (`flutter run -d
+HGR3SJY1`) throughout — each change was rebuilt and installed, then Tez
+checked it by hand on-device before the next change, across both Light and
+Dark themes (Home, grid view, list view, issue detail). All items confirmed
+working and correct in the final pass.

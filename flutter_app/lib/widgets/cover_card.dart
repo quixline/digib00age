@@ -60,23 +60,26 @@ class _CoverCardState extends State<CoverCard> {
         child: AnimatedContainer(
           duration: AppMotion.railDuration,
           curve: AppMotion.railCurve,
-          transform: Matrix4.translationValues(0, _hover ? -AppMotion.lift : 0, 0),
+          transform: Matrix4.translationValues(
+            0,
+            _hover ? -AppMotion.lift : 0,
+            0,
+          ),
+          padding: const EdgeInsets.fromLTRB(3, 3, 3, 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
+            border: Border.all(
+              color: _hover ? colors.accent : colors.cardBorder,
+              width: 1,
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               AspectRatio(
                 aspectRatio: AppSpacing.coverRatio,
-                child: Container(
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppSpacing.radiusLg),
-                    border: Border.all(
-                      color: d.favourite
-                          ? colors.favouriteGold
-                          : (_hover ? colors.accent : colors.border),
-                      width: d.favourite ? 2 : 1,
-                    ),
-                  ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusLg - 3),
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
@@ -85,11 +88,13 @@ class _CoverCardState extends State<CoverCard> {
                         fit: BoxFit.cover,
                         errorWidget: (_, _, _) => Container(
                           color: colors.surfaceRaised,
-                          child: Icon(Icons.menu_book_outlined, color: colors.textMuted, size: 32),
+                          child: Icon(
+                            Icons.menu_book_outlined,
+                            color: colors.textMuted,
+                            size: 32,
+                          ),
                         ),
                       ),
-                      if (isRead)
-                        Container(color: colors.readGreen.withValues(alpha: 0.5)),
                       if (isProgress) ...[
                         Positioned(
                           left: 0,
@@ -136,39 +141,56 @@ class _CoverCardState extends State<CoverCard> {
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.black, width: 1),
                             ),
-                            child: Text('★', style: TextStyle(color: colors.favouriteGold, fontSize: 13, height: 1)),
+                            child: const Text(
+                              '♥',
+                              style: TextStyle(
+                                color: Color(0xFFE0435C),
+                                fontSize: 13,
+                                height: 1,
+                              ),
+                            ),
                           ),
                         ),
-                      if (d.unreadCount > 0)
+                      if (isRead)
                         Positioned(
                           top: 6,
                           right: 6,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            width: 14,
+                            height: 14,
                             decoration: BoxDecoration(
-                              color: colors.accent,
-                              borderRadius: BorderRadius.circular(AppSpacing.radiusPill),
+                              color: colors.readGreen,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
                             ),
-                            child: Text('${d.unreadCount}', style: text.label(size: 10, color: Colors.white)),
                           ),
                         ),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                d.title,
-                style: text.label(size: 13),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                d.meta,
-                style: text.meta(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        d.title,
+                        style: text.label(size: 13),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      d.meta,
+                      style: text.meta(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -205,15 +227,17 @@ class _CoverListRowState extends State<CoverListRow> {
         child: AnimatedContainer(
           duration: AppMotion.railDuration,
           curve: AppMotion.railCurve,
-          transform: Matrix4.translationValues(0, _hover ? -AppMotion.lift : 0, 0),
+          transform: Matrix4.translationValues(
+            0,
+            _hover ? -AppMotion.lift : 0,
+            0,
+          ),
           decoration: BoxDecoration(
             color: colors.surfaceCard,
             borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
             border: Border.all(
-              color: d.favourite
-                  ? colors.favouriteGold
-                  : (_hover ? colors.accent : colors.border),
-              width: d.favourite ? 2 : 1,
+              color: _hover ? colors.accent : colors.cardBorder,
+              width: 1,
             ),
           ),
           clipBehavior: Clip.antiAlias,
@@ -223,41 +247,67 @@ class _CoverListRowState extends State<CoverListRow> {
               children: [
                 SizedBox(
                   width: 96,
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      CachedNetworkImage(
-                        imageUrl: d.coverUrl,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, _, _) => Container(
-                          color: colors.surfaceRaised,
-                          child: Icon(Icons.menu_book_outlined, color: colors.textMuted),
-                        ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(3),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        AppSpacing.radiusMd - 3,
                       ),
-                      if (isRead)
-                        Container(color: colors.readGreen.withValues(alpha: 0.5)),
-                      if (d.favourite)
-                        Positioned(
-                          top: 6,
-                          left: 6,
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.35),
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.black, width: 1),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          CachedNetworkImage(
+                            imageUrl: d.coverUrl,
+                            fit: BoxFit.cover,
+                            errorWidget: (_, _, _) => Container(
+                              color: colors.surfaceRaised,
+                              child: Icon(
+                                Icons.menu_book_outlined,
+                                color: colors.textMuted,
+                              ),
                             ),
-                            child: Text('★', style: TextStyle(color: colors.favouriteGold, fontSize: 13, height: 1)),
                           ),
-                        ),
-                      if (isProgress)
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: Container(height: 32, color: Colors.black.withValues(alpha: 0.35)),
-                        ),
-                    ],
+                          if (isRead)
+                            Container(
+                              color: colors.readGreen.withValues(alpha: 0.5),
+                            ),
+                          if (d.favourite)
+                            Positioned(
+                              top: 6,
+                              left: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.35),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.black,
+                                    width: 1,
+                                  ),
+                                ),
+                                child: const Text(
+                                  '♥',
+                                  style: TextStyle(
+                                    color: Color(0xFFE0435C),
+                                    fontSize: 13,
+                                    height: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (isProgress)
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              child: Container(
+                                height: 32,
+                                color: Colors.black.withValues(alpha: 0.35),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
                 Expanded(
@@ -267,24 +317,53 @@ class _CoverListRowState extends State<CoverListRow> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(d.title, style: text.label(size: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(
+                          d.title,
+                          style: text.label(size: 14),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         const SizedBox(height: 3),
-                        Text(d.meta, style: text.meta(), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(
+                          d.meta,
+                          style: text.meta(),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         if (d.summary != null && d.summary!.isNotEmpty) ...[
                           const SizedBox(height: 3),
-                          Text(d.summary!, style: text.meta(), maxLines: 2, overflow: TextOverflow.ellipsis),
+                          Text(
+                            d.summary!,
+                            style: text.meta(),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
-                        if (d.genresLabel != null && d.genresLabel!.isNotEmpty) ...[
+                        if (d.genresLabel != null &&
+                            d.genresLabel!.isNotEmpty) ...[
                           const SizedBox(height: 3),
-                          Text(d.genresLabel!, style: text.secondary(size: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(
+                            d.genresLabel!,
+                            style: text.secondary(size: 12),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                         if (d.credLabel != null && d.credLabel!.isNotEmpty) ...[
                           const SizedBox(height: 3),
-                          Text(d.credLabel!, style: text.meta(), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          Text(
+                            d.credLabel!,
+                            style: text.meta(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                         if (isProgress) ...[
                           const SizedBox(height: 3),
-                          Text('${d.progressPercent}% Read', style: text.label(size: 12, color: Colors.white)),
+                          Text(
+                            '${d.progressPercent}% Read',
+                            style: text.label(size: 12, color: Colors.white),
+                          ),
                         ],
                       ],
                     ),

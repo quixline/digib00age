@@ -4,6 +4,34 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Flutter library background: static color-glow blobs, not a ported blurred-photo backdrop
+
+**Decided:** 2026-07-24.
+
+**Why:** `mobile-reader-changes.txt` asked for the web's "cloudy/alien blur"
+library background — several real cover images blurred and masked into soft
+circles (`frontend/css/style.css`'s `.page-bg`). The literal port
+(`ImageFiltered` Gaussian blur + `ShaderMask`/`RadialGradient` soft-circle
+mask over `CachedNetworkImage`, in a new `page_backdrop.dart`) rendered as
+hard-edged "patchwork" rectangles on Tez's real tablet instead of a soft
+cloud. First fix attempt (the gradient's stop order was inverted, giving a
+mostly-opaque disc instead of a gradual fade) didn't resolve it — the
+remaining hard edges point to the image-filter chain not compositing
+cleanly under this device's Impeller/Vulkan renderer, not just the gradient
+math. Rather than keep iterating blind against a live device (each attempt
+costs a full rebuild+install cycle), asked Tez whether literal web parity
+mattered here; he confirmed it didn't ("doesn't have to change like the web
+UI, just give a little depth"), so switched to a technique that can't
+produce this failure mode at all: static, low-opacity `RadialGradient`-filled
+circles tinted from existing theme colors, no blur filters or network
+images involved. Light theme uses the same blob layout with RGB-inverted
+tints, per a later Tez request, so it doesn't read as a washed-out copy of
+the dark version.
+
+**Where:** `flutter_app/lib/widgets/page_backdrop.dart`;
+`docs/v2.6/progress.md` "Flutter mobile reader: card visual-parity porting
+(Phase B)".
+
 ### Flutter mobile theming: build light+dark infrastructure before touching card visuals, not dark-first
 
 **Decided:** 2026-07-23.

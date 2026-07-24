@@ -5,13 +5,15 @@ import '../theme/tokens.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/cover_card.dart';
 import '../widgets/nav_rail.dart' show NavKind;
+import '../widgets/page_backdrop.dart';
 
 class BrowseFilter {
   final NavKind kind;
   final int? tabId;
   final String label; // eyebrow text, e.g. "All", "Unread", a library name
+  final String? genre; // set when reached via an issue-page genre pill tap
 
-  const BrowseFilter({required this.kind, this.tabId, required this.label});
+  const BrowseFilter({required this.kind, this.tabId, required this.label, this.genre});
 }
 
 enum ViewMode { grid, list }
@@ -89,6 +91,9 @@ class _BrowseScreenState extends State<BrowseScreen> {
         case NavKind.home:
           break;
       }
+      if (f.genre != null) {
+        list = list.where((s) => s.genres.contains(f.genre)).toList();
+      }
       if (!mounted) return;
       setState(() { _items = list; _loading = false; });
     } catch (e) {
@@ -118,6 +123,15 @@ class _BrowseScreenState extends State<BrowseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        const Positioned.fill(child: PageBackdrop()),
+        _buildContent(context),
+      ],
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

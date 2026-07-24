@@ -21,7 +21,12 @@ class AppTopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Image.asset('assets/logo/lockup-light.png', height: 24),
+          Image.asset(
+            Theme.of(context).brightness == Brightness.light
+                ? 'assets/logo/lockup-dark.png'
+                : 'assets/logo/lockup-light.png',
+            height: 24,
+          ),
           const Spacer(),
           _RoundIconButton(
             glyph: '⌕',

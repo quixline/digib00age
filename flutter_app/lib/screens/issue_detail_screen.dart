@@ -4,6 +4,8 @@ import '../models/issue.dart';
 import '../services/api_service.dart';
 import '../theme/tokens.dart';
 import '../widgets/blurred_backdrop.dart';
+import 'browse_screen.dart' show BrowseFilter;
+import '../widgets/nav_rail.dart' show NavKind;
 
 class IssueDetailScreen extends StatefulWidget {
   final int issueId;
@@ -93,6 +95,9 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
     final coverUrl = '${widget.api.baseUrl}${issue.coverPath}';
     final isSeriesIssue = issue.formatGroup != 'Singles';
     final hasNumber = isSeriesIssue && issue.number != null && issue.number!.isNotEmpty;
+    final formatLabel = (issue.format != null && issue.format!.trim().isNotEmpty)
+        ? issue.format!
+        : (isSeriesIssue ? 'Series' : 'Single');
 
     return Stack(
       children: [
@@ -196,7 +201,7 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                                     _RaisedPill(label: '#${issue.number}'),
                                     const SizedBox(width: 8),
                                   ],
-                                  _AccentFilledPill(label: isSeriesIssue ? 'Series' : 'Single'),
+                                  _AccentFilledPill(label: formatLabel),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -213,7 +218,13 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                                 Wrap(
                                   spacing: 6,
                                   runSpacing: 6,
-                                  children: issue.genres.map((g) => _Tag(label: g)).toList(),
+                                  children: issue.genres.map((g) => GestureDetector(
+                                    onTap: () => Navigator.of(context).pushNamed(
+                                      '/browse',
+                                      arguments: BrowseFilter(kind: NavKind.all, label: g, genre: g),
+                                    ),
+                                    child: _Tag(label: g),
+                                  )).toList(),
                                 ),
                               ],
                               Divider(height: 36, color: colors.border),
@@ -225,17 +236,18 @@ class _IssueDetailScreenState extends State<IssueDetailScreen> {
                               const SizedBox(height: 8),
                               if (issue.writer != null)
                                 Row(
-                                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                                  textBaseline: TextBaseline.alphabetic,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     SizedBox(width: 52, child: Text('Writer', style: text.meta())),
-                                    Text(
-                                      issue.writer!,
-                                      style: text.label(
-                                        size: 14,
-                                        weight: FontWeight.w400,
-                                        color: colors.accentHover,
-                                      ).copyWith(decoration: TextDecoration.underline),
+                                    Expanded(
+                                      child: Text(
+                                        issue.writer!,
+                                        style: text.label(
+                                          size: 14,
+                                          weight: FontWeight.w400,
+                                          color: colors.accentHover,
+                                        ).copyWith(decoration: TextDecoration.underline),
+                                      ),
                                     ),
                                   ],
                                 ),

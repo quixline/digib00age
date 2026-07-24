@@ -24,6 +24,9 @@ class AppColors extends ThemeExtension<AppColors> {
 
   final Color readGreen;
   final Color favouriteGold;
+  final Color cardBorder;
+
+  final double pagebgBlobOpacity;
 
   const AppColors({
     required this.canvas,
@@ -41,6 +44,8 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.onAccent,
     required this.readGreen,
     required this.favouriteGold,
+    required this.cardBorder,
+    required this.pagebgBlobOpacity,
   });
 
   Color get accentTint => accent.withValues(alpha: 0.16);
@@ -63,6 +68,8 @@ class AppColors extends ThemeExtension<AppColors> {
     onAccent: Colors.white,
     readGreen: Color(0xFF3FB877),
     favouriteGold: Color(0xFFF0C419), // tokens-base.css --favourite, theme-neutral
+    cardBorder: Colors.white,
+    pagebgBlobOpacity: 0.14,
   );
 
   // frontend/css/tokens-light.css :root[data-theme="light"]
@@ -82,6 +89,8 @@ class AppColors extends ThemeExtension<AppColors> {
     onAccent: Colors.white,
     readGreen: Color(0xFF2E9E60),
     favouriteGold: Color(0xFFF0C419), // tokens-base.css --favourite, theme-neutral
+    cardBorder: Colors.black,
+    pagebgBlobOpacity: 0.10,
   );
 
   static AppColors of(BuildContext context) =>
@@ -104,6 +113,8 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? onAccent,
     Color? readGreen,
     Color? favouriteGold,
+    Color? cardBorder,
+    double? pagebgBlobOpacity,
   }) {
     return AppColors(
       canvas: canvas ?? this.canvas,
@@ -121,6 +132,8 @@ class AppColors extends ThemeExtension<AppColors> {
       onAccent: onAccent ?? this.onAccent,
       readGreen: readGreen ?? this.readGreen,
       favouriteGold: favouriteGold ?? this.favouriteGold,
+      cardBorder: cardBorder ?? this.cardBorder,
+      pagebgBlobOpacity: pagebgBlobOpacity ?? this.pagebgBlobOpacity,
     );
   }
 
@@ -143,6 +156,8 @@ class AppColors extends ThemeExtension<AppColors> {
       onAccent: Color.lerp(onAccent, other.onAccent, t)!,
       readGreen: Color.lerp(readGreen, other.readGreen, t)!,
       favouriteGold: Color.lerp(favouriteGold, other.favouriteGold, t)!,
+      cardBorder: Color.lerp(cardBorder, other.cardBorder, t)!,
+      pagebgBlobOpacity: pagebgBlobOpacity + (other.pagebgBlobOpacity - pagebgBlobOpacity) * t,
     );
   }
 }
@@ -156,7 +171,7 @@ class AppSpacing {
   static const radiusLg = 10.0;
   static const radiusPill = 999.0;
 
-  static const cardMin = 150.0;
+  static const cardMin = 188.0; // was 150 — widened so 4 cards fit a row instead of 5
   static const cardGap = 14.0;
   static const coverRatio = 2 / 3;
 }

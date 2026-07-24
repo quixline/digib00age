@@ -3,6 +3,7 @@ import '../services/api_service.dart';
 import '../theme/tokens.dart';
 import '../widgets/cover_card.dart';
 import '../widgets/app_top_bar.dart';
+import '../widgets/page_backdrop.dart';
 
 class HomeScreen extends StatefulWidget {
   final ApiService api;
@@ -37,11 +38,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Stack(
       children: [
-        AppTopBar(api: widget.api, onSettingsReturn: widget.onSettingsReturn),
-        Expanded(child: _buildBody()),
+        const Positioned.fill(child: PageBackdrop()),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppTopBar(api: widget.api, onSettingsReturn: widget.onSettingsReturn),
+            Expanded(child: _buildBody()),
+          ],
+        ),
       ],
     );
   }
