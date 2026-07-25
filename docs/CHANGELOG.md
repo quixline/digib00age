@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-25** — "Send to Full Editor" bulk-selection action also brought
+  same-tab (was `window.open(..., '_blank')`) — now awaits the background
+  file-add then navigates in place. → `DECISIONS.md`/`progress.md`
+  "Send to Full Editor also brought same-tab"
 - **2026-07-25** — Admin "Open Editor" link now navigates in the same tab
   (was `target="_blank"`) — matches the wordmark/admin-cog same-window nav
   pattern, contained within the installed PWA window. →

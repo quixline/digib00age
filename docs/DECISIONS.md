@@ -18,13 +18,25 @@ the regular browser chrome, breaking the app-window feel. Removed
 wordmark and admin-cog links already do; `editor_full.html` already has both
 of those for getting back out, so no other nav changes were needed.
 
-**Not changed:** `app.js`'s "→ Send to Full Editor" bulk-selection action
-(`window.open('/editor', '_blank')`) still opens a new tab — it's a
-different mechanism (kicks off a background file-add API call, then reloads
-that tab once it completes, while the original library-selection tab stays
-usable in the meantime), not a simple nav link. Flagged to Tez rather than
-changed unprompted, since collapsing it to same-tab would drop the
-selection/toast context. `User Guide` also still opens in a new tab —
+**Follow-up, same day:** the "→ Send to Full Editor" bulk-selection action
+(`app.js`) originally used `window.open('/editor', '_blank')` too, for a
+different reason — it had to open the tab synchronously with the click (a
+popup-blocker rule: `window.open()` calls made after an `await` get
+blocked) and then reload that tab once a background API call
+(`add-by-issues`) finished adding the selected files. Tez asked whether this
+could be brought in line with the same-tab pattern too. Since the point of
+the popup workaround was only to have somewhere to reload once the add
+finished, removing `window.open()` entirely and just deferring
+`window.location.href = '/editor'` until after the `await` resolves works
+with no popup-blocker concern (there's no `window.open()` call left to
+block) — verified live: selecting a title and clicking "Send to Full
+Editor" shows the "Sending files…" toast, then the same tab navigates to
+`/editor` once the add completes, with the file present in the working set.
+Tradeoff accepted knowingly: the library selection page is no longer usable
+in parallel while the add is running (a few seconds for a large selection,
+per the original code comment) — the tab is occupied until the navigation
+happens, rather than the old flow where the editor tab loaded immediately
+and the library tab stayed free. `User Guide` still opens in a new tab —
 un-asked, so left as-is.
 
 **Gotcha hit while verifying:** the service worker (`sw.js`,

@@ -318,13 +318,11 @@ function ensureSelectionToolbar() {
     const originalIds = Array.from(selectedIds.keys());
     if (!originalIds.length) return;
 
-    // Open the tab immediately (must happen synchronously with the click to
-    // avoid popup-blocker issues) and let the user know the actual file-add
-    // is still running — find_xml_in_archive per file can take a moment for
-    // a large selection. Reload that same tab once the add completes so it
-    // picks up the working set instead of loading it empty/stale.
-    showLibraryToast('Sending files in the background…');
-    const editorWindow = window.open('/editor', '_blank');
+    // Stays in the same tab (PWA-contained navigation, matches the rest of
+    // the nav) — find_xml_in_archive per file can take a moment for a large
+    // selection, so wait for the add to finish before navigating rather
+    // than opening a separate tab to reload once ready.
+    showLibraryToast('Sending files to Full Editor…');
 
     try {
       const issueIds = await resolveBulkIssueIds();
@@ -333,8 +331,7 @@ function ensureSelectionToolbar() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ issue_ids: issueIds }),
       });
-      if (editorWindow && !editorWindow.closed) editorWindow.location.reload();
-      showLibraryToast('Sent to Full Editor');
+      window.location.href = '/editor';
     } catch (_) {
       showLibraryToast('Failed to send files to Full Editor', true);
     }

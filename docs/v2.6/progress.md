@@ -6517,3 +6517,32 @@ errors), and clicking the wordmark from there navigated back to `/` in the
 same tab, confirming the round trip works. Left the SW/cache cleared for
 future testing convenience — not persisted to Tez's real usage, since the
 SW re-registers itself from normal browsing regardless.
+
+**Follow-up, same session — "Send to Full Editor" also brought same-tab.**
+Tez asked whether the bulk-selection "→ Send to Full Editor" action could
+be combined with the same contained-window approach. It also used
+`window.open('/editor', '_blank')`, but for a different reason than the
+Admin link — the tab had to be opened synchronously with the click to dodge
+the browser's popup-blocker (calls to `window.open()` made after an
+`await` get blocked), then reloaded once a background `add-by-issues` API
+call finished. See `DECISIONS.md` for the full writeup, including the
+accepted tradeoff (the library selection tab is now occupied for the
+duration of the add instead of staying free while a separate tab loads).
+
+**Change:** `frontend/js/app.js`, `selSendToFullEditor` handler — removed
+`window.open()` entirely; now awaits `resolveBulkIssueIds()` and the
+`add-by-issues` fetch, then does `window.location.href = '/editor'` in the
+same tab. No popup-blocker workaround needed since there's no `window.open()`
+call left.
+
+**Verification:** live-tested via Claude in Chrome. Entering selection mode
+needed a simulated long-press (dispatched synthetic `pointerdown` +
+600ms wait + `pointerup` via JS, since a plain click on the hover-reveal
+select-dot mis-targeted and navigated to the issue page instead) — selected
+"(Mostly) Wordless", clicked "→ Send to Full Editor" in the selection
+toolbar, confirmed via `tabs_context_mcp` that no new tab opened while the
+"Sending files to Full Editor…" toast showed, then confirmed the same tab
+navigated to `/editor` once the add completed, with "(Mostly) Wordless
+(2013).cbz" present in the working set (`1 files found`). No console
+errors. Cleared the working set afterward via the Editor's own "Clear"
+button so the test file isn't left sitting there for Tez.
