@@ -3424,10 +3424,14 @@ select.filter-select:focus,
   min-width: 140px;
 }
 
-/* Library Scan cards only, slightly thinner than the Library Stats row
-   above — scoped to #scanGrid so the shared .stat-card rule isn't touched. */
+/* Library Scan cards only, slightly thinner/narrower than the Library Stats
+   row above — scoped to #scanGrid so the shared .stat-card rule isn't
+   touched. flex-basis/min-width override the .stat-card shorthand's basis
+   component (165px/140px), ~10px narrower per card. */
 #scanGrid .stat-card {
   padding: 14px 16px 10px;
+  flex-basis: 155px;
+  min-width: 130px;
 }
 
 .stat-value {
@@ -3476,6 +3480,12 @@ select.filter-select:focus,
 /* Scan Now card */
 .scan-now-card {
   gap: 8px;
+}
+
+/* Scan Now pill — narrower than the default .btn-primary padding to fit the
+   thinner card above. */
+#scanNowBtn {
+  padding: 3px 22px;
 }
 
 .scan-progress {

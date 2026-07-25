@@ -16,8 +16,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 - **2026-07-25** — Four cosmetic UI tweaks: favourite heart nudged 2px down
   without moving its circle badge, "Reading" card text blur removed in light
   theme, issue-detail inactive rating stars darkened 10% in light theme,
-  Admin Library Scan cards made thinner. → `progress.md` "Four cosmetic UI
-  tweaks"
+  Admin Library Scan cards made thinner (height, then a same-session
+  follow-up narrowed them ~10px too, plus a narrower Scan Now pill). →
+  `progress.md` "Four cosmetic UI tweaks"
 - **2026-07-24** — Custom Tabs: removed the 4-visible-tab cap entirely (not
   raised) — dated from the old top-tab-bar design, moot since the v2.6 left
   sidebar already scrolls. Backend + admin UI cap logic deleted; no Flutter

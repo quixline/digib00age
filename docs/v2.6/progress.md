@@ -6464,3 +6464,18 @@ inactive star color `rgb(202,207,212)` in light theme with filled stars
 still `rgb(240,196,25)`; `#scanGrid .stat-card` padding `14px 16px 10px`
 vs. Library Stats row's unchanged `18px 16px 14px`, `.scan-now-card` gap
 `8px`. No console errors.
+
+**Follow-up in the same session:** Tez asked for the Scan cards narrower too
+(not just shorter) — ~10px off each card's width — plus a narrower "Scan
+Now" pill. Added `flex-basis: 155px; min-width: 130px;` to the existing
+`#scanGrid .stat-card` block (overrides just the basis/min-width components
+of the shared `.stat-card`'s `flex: 0 1 165px; min-width: 140px;` shorthand,
+via the higher-specificity `#scanGrid` selector already in place from the
+padding fix) and `padding: 3px 22px;` on `#scanNowBtn` specifically (not
+`.btn-primary`, which is shared with unrelated buttons elsewhere, e.g.
+`.fe-queue-actions .btn-primary`). Verified via computed styles after a hard
+reload: scan cards render at 155px vs. the Library Stats row's unchanged
+165px, `#scanNowBtn` width dropped from ~118px to ~102px; visually checked
+the six-card row still lays out cleanly with no label wrapping/clipping
+(`MISSING RECORDS`, `CHANGED FILES`, etc. still fit on one line at 130px min
+content width). No console errors.
