@@ -6390,3 +6390,77 @@ this session ended. Tez confirmed it's working well after hands-on testing.
 **A full release build (`flutter build apk --release`) is deliberately
 deferred to a separate future session**, contingent on no issues turning up
 during Tez's own extended use — not done as part of this session.
+
+## Session — 2026-07-25 — Four cosmetic UI tweaks
+
+Batch of small cosmetic fixes, all in `frontend/css/style.css` (CLAUDE.md §5
+cosmetic threshold — no build-queue item / `DECISIONS.md` entry).
+
+**1. Favourite heart badge nudged 2px down, circle unchanged.** Both the
+grid/list card corner badge (`.cover-card.is-favorite .cover-img-wrap::before`
+/ `.issue-row.is-favorite .issue-thumb::before`, incl. the `--redesign`
+override) and the issue-detail page badge (`.cc-favorite-badge`) originally
+fused the circle background and the heart glyph into one flex-centered box
+(the glyph is CSS `content`), so a plain `transform`/`top` tweak would have
+moved both together. Considered adding a second pseudo-element for the
+glyph, but `::after` on the same elements is already used by the
+flag-for-review badge and (on `.cover-img-wrap`) the "reading" state's
+bottom-feather gradient — using it for the heart too would have silently
+broken one of those whenever both classes apply to the same card.
+Used instead: shrink each box's content-box `height` by 2px and add a
+matching `padding-top: 2px` — background/border/border-radius always paint
+over the full padding box regardless of `box-sizing`, so the circle's
+rendered footprint is unchanged while the flex-centered glyph inside shifts
+down 2px. No DOM/JS changes needed.
+
+**2. "Reading" card blur removed in light theme.** The light-theme overrides
+for `.state-unread`/`.state-read` (`.cover-count`/`.cover-year`, ~line 1767+)
+never covered `.state-part-read` — a comment there explicitly said "Reading
+left untouched", a deliberate prior exclusion since `--read-overlay`/
+`--read-overlay-text` keep the Reading card's background dark with white
+text even in light theme (unlike Unread/Read, which go white-background/
+black-text). Per Tez's direct request, added a `.state-part-read` variant to
+both the `:root[data-theme="light"]` block and its
+`@media (prefers-color-scheme: light)` mirror, dropping just the
+`text-shadow` (left `color` alone — still needs contrast against the dark
+overlay). Dark theme's base rule (text-shadow retained) is untouched.
+
+**3. Issue detail page inactive stars darkened 10% in light theme.**
+`.rating-control .rating-star` inactive color is `var(--surface-3)`
+(`#E1E6EC` in light theme) — reused elsewhere for borders/surfaces, so
+scoped the fix locally rather than touching the token: added
+`:root[data-theme="light"] .rating-control .rating-star:not(.is-filled) {
+color: #CACFD4; }` (×0.9) plus its `prefers-color-scheme` mirror. The
+`:not(.is-filled)` guard matters — without it the new rule sits at equal
+specificity to `.rating-control .rating-star.is-filled` and, being later in
+the cascade, would have overridden `--favourite` on filled stars too,
+turning them gray in light theme. Caught and fixed during implementation,
+verified filled stars stayed `#F0C419` after.
+
+**4. Admin Library Scan cards thinner.** `.stat-card`'s `padding: 18px 16px
+14px` is shared between the Library Stats row and the six Library Scan
+cards; scoped the reduction to `#scanGrid .stat-card { padding: 14px 16px
+10px; }` so the Stats row above is untouched. Also tightened
+`.scan-now-card`'s internal `gap` from 12px to 8px (Scan Now / Missing
+Records cards, both already scoped inside `#scanGrid`).
+
+**Verification:** live-tested via Claude in Chrome against the running dev
+server (port 9424, Tez's tray app). Hit the project's known service-worker
+caching gotcha again — `sw.js` cache-first-serves `/static/css/style.css`
+on reader pages (registered by `app.js`/`pwa.js`, not by `admin.js`, which
+is why the admin page picked up the fresh CSS immediately after a hard
+reload while the issue-detail page kept serving the stale cached
+stylesheet even after `ctrl+shift+r`) — cleared via
+`caches.delete()`/`unregister()` in-page rather than editing `sw.js`. Toggled
+theme via `localStorage.cv_theme` (found in `admin.js` `initTheme()`) to
+check both themes; reset to `auto` afterward. Temporarily flipped an unread
+issue to "reading" status via `POST /api/progress/{id}` to get a
+`.state-part-read` card to inspect (dev DB read/unread state is disposable
+test residue per CLAUDE.md §6, but reset it back to unread afterward anyway).
+Confirmed via computed styles: heart circle position/size unchanged in both
+badge locations with the glyph visibly lower; `.state-part-read` text-shadow
+is `none` in light theme and still `rgba(0,0,0,0.6) 0px 1px 3px` in dark;
+inactive star color `rgb(202,207,212)` in light theme with filled stars
+still `rgb(240,196,25)`; `#scanGrid .stat-card` padding `14px 16px 10px`
+vs. Library Stats row's unchanged `18px 16px 14px`, `.scan-now-card` gap
+`8px`. No console errors.

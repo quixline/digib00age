@@ -1027,7 +1027,12 @@ select.filter-select:focus,
   top: 6px;
   left: 6px;
   width: 20px;
-  height: 20px;
+  /* height+padding-top = 20px, matching the circle's original 20px envelope
+     (background/border always paint over the full padding box regardless of
+     box-sizing) — this nudges the flex-centered glyph down 2px inside the
+     box without moving the circle itself. */
+  height: 18px;
+  padding-top: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1774,6 +1779,16 @@ select.filter-select:focus,
   text-shadow: none;
 }
 
+/* Reading (state-part-read) keeps the dark --read-overlay background and
+   white --read-overlay-text in light theme too (see tokens-light.css), so
+   color is untouched here — just drop the dark text-shadow blur. */
+:root[data-theme="light"] .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-part-read .cover-count,
+:root[data-theme="light"] .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-part-read .cover-year,
+:root[data-theme="light"] .continue-strip .cover-card.cover-card--redesign.state-part-read .cover-count,
+:root[data-theme="light"] .continue-strip .cover-card.cover-card--redesign.state-part-read .cover-year {
+  text-shadow: none;
+}
+
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-unread .cover-count,
   :root:not([data-theme]) .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-unread .cover-year,
@@ -1787,6 +1802,13 @@ select.filter-select:focus,
   :root:not([data-theme]) .continue-strip .cover-card.cover-card--redesign.state-read .cover-count,
   :root:not([data-theme]) .continue-strip .cover-card.cover-card--redesign.state-read .cover-year {
     color: rgba(0, 0, 0, 0.65);
+    text-shadow: none;
+  }
+
+  :root:not([data-theme]) .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-part-read .cover-count,
+  :root:not([data-theme]) .cover-grid:not(.list-view) .cover-card.cover-card--redesign.state-part-read .cover-year,
+  :root:not([data-theme]) .continue-strip .cover-card.cover-card--redesign.state-part-read .cover-count,
+  :root:not([data-theme]) .continue-strip .cover-card.cover-card--redesign.state-part-read .cover-year {
     text-shadow: none;
   }
 }
@@ -2802,7 +2824,10 @@ select.filter-select:focus,
   top: 8px;
   left: 8px;
   width: 26px;
-  height: 26px;
+  /* height+padding-top = 26px, matching the circle's original envelope —
+     nudges the flex-centered glyph down 2px without moving the circle. */
+  height: 24px;
+  padding-top: 2px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -2989,6 +3014,20 @@ select.filter-select:focus,
 
 .rating-control .rating-star.is-filled {
   color: var(--favourite);
+}
+
+/* Inactive stars 10% darker in light theme (--surface-3 #E1E6EC × 0.9),
+   scoped here rather than in the shared --surface-3 token since that token
+   is reused for borders/surfaces elsewhere. :not(.is-filled) so this can't
+   clobber the .is-filled rule above at equal specificity. */
+:root[data-theme="light"] .rating-control .rating-star:not(.is-filled) {
+  color: #CACFD4;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .rating-control .rating-star:not(.is-filled) {
+    color: #CACFD4;
+  }
 }
 
 /* Edit XML + Flag for Review share a row, equal width (2026-07-17). */
@@ -3385,6 +3424,12 @@ select.filter-select:focus,
   min-width: 140px;
 }
 
+/* Library Scan cards only, slightly thinner than the Library Stats row
+   above — scoped to #scanGrid so the shared .stat-card rule isn't touched. */
+#scanGrid .stat-card {
+  padding: 14px 16px 10px;
+}
+
 .stat-value {
   font-size: 30px;
   font-weight: 900;
@@ -3430,7 +3475,7 @@ select.filter-select:focus,
 
 /* Scan Now card */
 .scan-now-card {
-  gap: 12px;
+  gap: 8px;
 }
 
 .scan-progress {

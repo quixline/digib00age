@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-25** — Four cosmetic UI tweaks: favourite heart nudged 2px down
+  without moving its circle badge, "Reading" card text blur removed in light
+  theme, issue-detail inactive rating stars darkened 10% in light theme,
+  Admin Library Scan cards made thinner. → `progress.md` "Four cosmetic UI
+  tweaks"
 - **2026-07-24** — Custom Tabs: removed the 4-visible-tab cap entirely (not
   raised) — dated from the old top-tab-bar design, moot since the v2.6 left
   sidebar already scrolls. Backend + admin UI cap logic deleted; no Flutter
