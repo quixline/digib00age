@@ -6479,3 +6479,41 @@ reload: scan cards render at 155px vs. the Library Stats row's unchanged
 the six-card row still lays out cleanly with no label wrapping/clipping
 (`MISSING RECORDS`, `CHANGED FILES`, etc. still fit on one line at 130px min
 content width). No console errors.
+
+## Session — 2026-07-25 — Admin "Open Editor" opens in the same tab
+
+Tez asked to stop the Admin page's "Open Editor" link from spawning a new
+browser tab and instead behave like the other nav links (wordmark, admin
+cog) — navigate in the same window. Driver: now that the app runs as an
+installed PWA, a `target="_blank"` link pops a bare browser tab alongside
+the PWA window, breaking the contained-app feel Tez wants. See
+`DECISIONS.md` "Admin 'Open Editor' link opens in the same tab, not a new
+one" for the full rationale, including what was deliberately **not**
+changed (the "→ Send to Full Editor" bulk-selection action in `app.js`
+still opens a new tab — different mechanism, background API call + tab
+reload-on-completion — and `User Guide`, un-asked, both flagged rather than
+touched).
+
+**Change:** `frontend/admin.html` — removed `target="_blank" rel="noopener"`
+from the `<a href="/editor">Open Editor</a>` link. `frontend/editor_full.html`
+already has the wordmark (`→ /`) and admin cog (`→ /admin`) for navigating
+back out in the same window, so no other file needed changes.
+
+**Verification:** live-tested via Claude in Chrome. Hit the same
+service-worker caching gotcha as the previous session's testing, worse this
+time — the SW had re-registered itself (its scope covers the whole origin,
+picked up again just from browsing reader pages earlier in the session) and
+was cache-first-serving the *stale* `/admin` HTML even though a direct
+`curl` to the server confirmed the actual server response was already
+correct. A plain `navigate()` reload wasn't enough either — clearing the
+SW's Cache Storage via `caches.delete()`/`unregister()` still left the
+browser's separate native HTTP cache serving the old page; needed a hard
+reload (`ctrl+shift+r`) on top of that to actually see the live DOM update.
+Confirmed via `document.querySelectorAll('a')` that the anchor's `target`
+attribute is `null` post-fix, then clicked it and confirmed via
+`tabs_context_mcp` that no new tab opened — the existing tab's URL changed
+to `/editor` in place. Editor page loaded cleanly (screenshot, no console
+errors), and clicking the wordmark from there navigated back to `/` in the
+same tab, confirming the round trip works. Left the SW/cache cleared for
+future testing convenience — not persisted to Tez's real usage, since the
+SW re-registers itself from normal browsing regardless.

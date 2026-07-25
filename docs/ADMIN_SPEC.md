@@ -114,6 +114,7 @@ Four buttons spread across the full row width (not grouped):
 |---|---|
 | **Back** | Returns to the main library |
 | **User Guide** | Opens a stub page in a new tab (placeholder; full guide is a future addition) |
+| **Open Editor** | Navigates to `/editor` (Full Editor) in the same tab — same-window pattern as the wordmark/admin-cog nav links, not a new tab (changed 2026-07-25, `DECISIONS.md`) |
 | **Backup Database** | Triggers `POST /api/admin/backup` — exports a dated copy of `comicvault.db` to the configured backup location. **Superseded by §7 (Scheduled Database Backup)** for the scheduling side; this button remains for on-demand manual backup. |
 | **Password Reset** | Placeholder button in V1 (no function). Becomes a real control once password protection (§7.1) ships. |
 | **Install App** *(built 2026-07-23, see below)* | `hidden` by default. Shown only when the browser fires `beforeinstallprompt` (i.e. the site is installable and not already installed); click triggers the native install prompt. Stays hidden if the page is already running as an installed PWA. |

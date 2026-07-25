@@ -4,6 +4,45 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Admin "Open Editor" link opens in the same tab, not a new one
+
+**Decided:** 2026-07-25.
+
+**Why:** The link (`admin.html`, "Open Editor" → `/editor`) originally used
+`target="_blank" rel="noopener"`, opening the Full Editor in a new browser
+tab. Now that the app runs as an installed PWA, Tez wants everything
+contained within that single PWA window rather than spawning bare browser
+tabs alongside it — a new tab opened from an installed PWA window opens in
+the regular browser chrome, breaking the app-window feel. Removed
+`target="_blank"`/`rel="noopener"` so it navigates in place, same as the
+wordmark and admin-cog links already do; `editor_full.html` already has both
+of those for getting back out, so no other nav changes were needed.
+
+**Not changed:** `app.js`'s "→ Send to Full Editor" bulk-selection action
+(`window.open('/editor', '_blank')`) still opens a new tab — it's a
+different mechanism (kicks off a background file-add API call, then reloads
+that tab once it completes, while the original library-selection tab stays
+usable in the meantime), not a simple nav link. Flagged to Tez rather than
+changed unprompted, since collapsing it to same-tab would drop the
+selection/toast context. `User Guide` also still opens in a new tab —
+un-asked, so left as-is.
+
+**Gotcha hit while verifying:** the service worker (`sw.js`,
+`comicvault-shell-v1`) does cache-first for "HTML shells" as well as static
+assets, and its registration/scope covers the whole origin (`/`) — so once
+it's registered from visiting any reader page, it also intercepts `/admin`
+even though `admin.js` never calls `register()` itself. A plain reload
+wasn't enough to see the fix live; needed `caches.delete()` +
+`unregister()` in the page **and** a hard reload (`ctrl+shift+r`) to clear
+both the SW's Cache Storage and the browser's separate HTTP cache. Same
+class of issue as the caching gotcha noted in the 2026-07-24 Custom Tabs
+session — this will bite Tez's own day-to-day PWA usage too after any
+future static-file deploy, not just this testing session, since the SW has
+no cache-busting/versioning tied to actual content changes
+(`CACHE_NAME = 'comicvault-shell-v1'` is static). Not fixed here — out of
+scope for this change — but worth a future session if stale-after-update
+becomes a recurring annoyance.
+
 ### Custom Tabs: removed the 4-visible-tab cap entirely, not raised
 
 **Decided:** 2026-07-24.
