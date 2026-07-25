@@ -4,6 +4,7 @@ FastAPI entry point. Runs on localhost:9424 by default (home network accessible)
 All paths come from config.json — nothing is hardcoded here.
 """
 
+import hashlib
 import json
 import os
 import sys
@@ -148,7 +149,7 @@ if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
     # Serve the HTML pages at their short URLs
-    from fastapi.responses import FileResponse
+    from fastapi.responses import FileResponse, Response
     from fastapi import HTTPException, Request
 
     @app.get("/", include_in_schema=False)
@@ -182,13 +183,29 @@ if FRONTEND_DIR.exists():
             raise HTTPException(status_code=403, detail={"error": "remote_admin_disabled"})
         return FileResponse(str(FRONTEND_DIR / "editor_full.html"))
 
+    def _frontend_asset_version() -> str:
+        # Hash of every file under frontend/ (path + size + mtime) — changes
+        # whenever any served asset changes, so the substituted CACHE_NAME in
+        # sw.js changes too. That's what makes the service worker's own
+        # update check (a byte comparison of this route's response) notice a
+        # deploy and evict its stale cache, instead of requiring a developer
+        # to remember to bump a hardcoded cache version by hand.
+        parts = [
+            f"{path.relative_to(FRONTEND_DIR)}:{path.stat().st_mtime_ns}:{path.stat().st_size}"
+            for path in sorted(FRONTEND_DIR.rglob("*"))
+            if path.is_file()
+        ]
+        return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()[:12]
+
     # Service worker must be served from the root scope (/sw.js) so it can
     # control all pages. StaticFiles only covers /static/*, so add an explicit
     # route here. Cache-Control: no-cache so browsers always revalidate it.
     @app.get("/sw.js", include_in_schema=False)
     async def service_worker():
-        return FileResponse(
-            str(FRONTEND_DIR / "sw.js"),
+        sw_source = (FRONTEND_DIR / "sw.js").read_text(encoding="utf-8")
+        sw_source = sw_source.replace("ASSET_VERSION_TOKEN", _frontend_asset_version())
+        return Response(
+            content=sw_source,
             media_type="application/javascript",
             headers={"Cache-Control": "no-cache"},
         )

@@ -3,7 +3,13 @@
 // network-first for API calls. Served at /sw.js via a dedicated FastAPI
 // route so it controls the full / scope.
 
-const CACHE_NAME = 'comicvault-shell-v1';
+// The placeholder token below is substituted server-side (backend/main.py's
+// /sw.js route) with a hash of every file under frontend/ — changes
+// automatically whenever any served file changes, so the browser's SW
+// update check (which compares this file's bytes) notices and the activate
+// handler below evicts the stale cache, instead of relying on someone
+// remembering to bump a hardcoded version string by hand.
+const CACHE_NAME = 'comicvault-shell-' + 'ASSET_VERSION_TOKEN';
 
 const APP_SHELL = [
   '/',

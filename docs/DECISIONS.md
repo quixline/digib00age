@@ -55,6 +55,70 @@ no cache-busting/versioning tied to actual content changes
 scope for this change — but worth a future session if stale-after-update
 becomes a recurring annoyance.
 
+### Service worker cache now versions itself from a content hash, not a hardcoded string
+
+**Decided:** 2026-07-25 (same day as the two entries above — the stale-cache
+gotcha hit while verifying those made this worth fixing properly rather than
+letting it recur on every future deploy).
+
+**Why:** `sw.js` cache-first-serves static assets *and* HTML shells, keyed
+under `CACHE_NAME`. That was a hardcoded literal (`'comicvault-shell-v1'`)
+that never changed, so the service worker had no way to know any served file
+had changed — it kept answering from its original cache indefinitely,
+surviving even a hard reload, until someone manually unregistered it via
+devtools. This isn't just a testing inconvenience: it affects Tez's actual
+installed PWA the same way after every future UI deploy, not just this
+session's testing.
+
+**What changed:** `frontend/sw.js`'s `CACHE_NAME` now ends in a placeholder
+token (`ASSET_VERSION_TOKEN`) instead of a literal version number.
+`backend/main.py`'s `/sw.js` route (already a dedicated FastAPI route rather
+than plain `StaticFiles`, needed for root-scope control) now reads the file
+and substitutes that token with a SHA-256 hash (first 12 hex chars) of every
+file under `frontend/` (relative path + mtime + size), computed fresh on
+every request — cheap enough not to bother caching (36 files, ~7ms) for a
+single-user home server. Any frontend file changing — not just the files
+explicitly listed in `APP_SHELL` — changes the hash, which changes the bytes
+`/sw.js` serves, which is exactly what the browser's built-in SW update
+check compares to decide whether to install a new worker. The existing
+`activate` handler already deleted any cache key that didn't match the
+current `CACHE_NAME` (that logic was already correct) — it just never had a
+`CACHE_NAME` that actually changed to trigger it.
+
+**Considered and rejected:** manually bumping a version string by hand each
+release. Rejected because it depends on human memory every single time
+static files change — exactly the failure mode that caused today's
+confusion, and this project doesn't tag/version every session (only
+`docs/vN.M/` closures get git tags), so a lot of small UI-tweak sessions
+like today's would fall through the cracks. A content hash is automatic and
+self-correcting with no ongoing discipline required. Considered switching
+navigation requests to network-first instead of cache-first (also solves
+staleness, arguably more standard for HTML) but that's a bigger behavioral
+change to the offline story than the fix actually called for — content
+hashing solves the reported problem with a much smaller diff.
+
+**Caught during implementation:** the first draft's explanatory comment in
+`sw.js` above the `CACHE_NAME` line literally spelled out the placeholder
+token name in prose — `str.replace()` doesn't care about context, so it
+also rewrote the comment text into nonsense (`// 7fc4304bffc6 is
+substituted server-side...`) alongside the real substitution. Fixed by
+picking a token name that only appears once in the file, on the actual code
+line.
+
+**Verified live** (two rounds, matching the two backend restarts this
+change needed): confirmed via `curl /sw.js` that touching any frontend file
+(a scratch single-space append + revert to `style.css`, checked byte-equal
+to `HEAD` afterward via `git hash-object` before moving on) changes the
+served hash with **no server restart required** — only the Python route
+logic itself needs a restart to deploy, not each individual frontend edit
+after that. In the browser: cleared the leftover `comicvault-shell-v1`
+cache from before this fix existed, did a clean reload (installed
+`comicvault-shell-<hash>`), touched a file again, called
+`registration.update()` to force the browser's update check, and confirmed
+the cache automatically flipped to the new hash with no stuck "waiting"
+worker (`skipWaiting()`/`clients.claim()` already in the existing
+lifecycle code took effect immediately) and no console errors.
+
 ### Custom Tabs: removed the 4-visible-tab cap entirely, not raised
 
 **Decided:** 2026-07-24.

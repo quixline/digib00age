@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-25** — Service worker cache (`sw.js`) now self-versions from a
+  content hash of `frontend/` instead of a hardcoded string, so future
+  static-file deploys self-heal instead of serving stale cached pages
+  indefinitely. → `DECISIONS.md`/`progress.md` "Service worker cache now
+  versions itself from a content hash"
 - **2026-07-25** — "Send to Full Editor" bulk-selection action also brought
   same-tab (was `window.open(..., '_blank')`) — now awaits the background
   file-add then navigates in place. → `DECISIONS.md`/`progress.md`

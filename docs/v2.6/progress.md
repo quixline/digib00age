@@ -6546,3 +6546,41 @@ navigated to `/editor` once the add completed, with "(Mostly) Wordless
 (2013).cbz" present in the working set (`1 files found`). No console
 errors. Cleared the working set afterward via the Editor's own "Clear"
 button so the test file isn't left sitting there for Tez.
+
+## Session — 2026-07-25 — Service worker cache now self-versions from a content hash
+
+Follow-up to the caching gotcha flagged (not fixed) during the two sessions
+above. See `DECISIONS.md` "Service worker cache now versions itself from a
+content hash, not a hardcoded string" for the full rationale, alternatives
+considered, and a bug caught mid-implementation (an explanatory comment in
+`sw.js` accidentally contained the literal placeholder token, so the
+server-side `str.replace()` mangled the comment too — fixed by renaming the
+token to something that only appears once, on the actual code line).
+
+**Change:** `frontend/sw.js` — `CACHE_NAME` now ends in a placeholder token
+substituted server-side instead of a hardcoded version string.
+`backend/main.py`'s `/sw.js` route — added `_frontend_asset_version()`
+(SHA-256 of every file under `frontend/`, path+mtime+size, first 12 hex
+chars, recomputed fresh per request) and substitutes it into the served
+`sw.js` content in place of the token.
+
+**Verification:** two rounds, since this is backend Python code and Tez's
+tray app doesn't run with `--reload` — Tez restarted the server both times.
+Round 1 (after the initial implementation) caught the comment-mangling bug
+via `curl http://localhost:9424/sw.js`. Round 2 (after the token fix)
+confirmed: `curl`'d `/sw.js` to capture the current hash; appended a single
+space to `frontend/css/style.css` and confirmed via another `curl` that the
+served hash changed immediately, with **no additional server restart** —
+only the Python route logic itself needed the restart, not each frontend
+edit after that; reverted the test edit and confirmed via `git hash-object`
+it matched `HEAD` exactly (byte-for-byte, no residue). In the browser (via
+Claude in Chrome): cleared the leftover `comicvault-shell-v1` cache that
+predated this fix, did a clean reload to install a freshly-versioned worker
+(`comicvault-shell-fd9f92e7f25e`), touched `style.css` again to simulate a
+deploy, called `registration.update()` to force the browser's SW update
+check, and confirmed the cache automatically flipped to the new hash
+(`comicvault-shell-990883e2f0ef`) with no stuck "waiting" worker and no
+console errors — the existing `skipWaiting()`/`clients.claim()` lifecycle
+code (already correct, just never had a changing `CACHE_NAME` to act on)
+took over immediately. Reverted that second test edit too, confirmed clean
+via `git status`/`git hash-object` before finishing.
