@@ -13,6 +13,14 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-25** — Full Editor: "+ Queue" turns blue once Genre/Format/Age
+  Rating are all filled, and "Process All" disables once the queue has ≥1
+  item. → `progress.md` "Full Editor: Queue-readiness color + Process All
+  lockout"
+- **2026-07-25** — Three cosmetic UI tweaks: Folder View card border (dark
+  theme), Folder View year range under card name, Issue page Previous/Next
+  nav now spans full width. → `progress.md` "Three cosmetic UI tweaks
+  (Folder View border/year, issue nav)"
 - **2026-07-25** — Service worker cache (`sw.js`) now self-versions from a
   content hash of `frontend/` instead of a hardcoded string, so future
   static-file deploys self-heal instead of serving stale cached pages

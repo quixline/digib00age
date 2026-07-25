@@ -2133,7 +2133,11 @@ function buildFolderCard(tabId, currentPath, folder) {
   const hasCover = !!folder.cover_path;
   const card = el('div', `folder-card${hasCover ? ' has-cover' : ''}`);
   const nameEl = el('div', 'folder-card-name', folder.name);
-  const countEl = el('div', 'folder-card-count', `${folder.issue_count} issue${folder.issue_count === 1 ? '' : 's'}`);
+  const yearLabel = folder.year_min != null
+    ? (folder.year_min === folder.year_max ? `${folder.year_min}` : `${folder.year_min}–${folder.year_max}`)
+    : null;
+  const countText = `${folder.issue_count} issue${folder.issue_count === 1 ? '' : 's'}`;
+  const countEl = el('div', 'folder-card-count', yearLabel ? `${yearLabel} · ${countText}` : countText);
 
   if (hasCover) {
     const wrap = el('div', 'cover-img-wrap');

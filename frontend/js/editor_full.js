@@ -110,6 +110,7 @@ function renderGenreChips() {
     wrap.appendChild(chip);
   }
   renderGenreAddDropdown();
+  updateActionButtonStates();
 }
 
 function addGenre(name) {
@@ -614,6 +615,8 @@ function wireXmlEditor() {
     addGenre(e.target.value);
     e.target.value = '';
   });
+  document.getElementById('fe-format').addEventListener('change', updateActionButtonStates);
+  document.getElementById('fe-agerating').addEventListener('change', updateActionButtonStates);
 }
 
 function setField(id, value) {
@@ -722,7 +725,11 @@ function collectFieldsForProcessAll() {
 
 function updateActionButtonStates() {
   document.getElementById('feQueueBtn').disabled = !focusedFileId;
-  document.getElementById('feProcessAllBtn').disabled = loadedFiles.length === 0;
+  const queueReady = selectedGenres.length > 0
+    && document.getElementById('fe-format').value !== ''
+    && document.getElementById('fe-agerating').value !== '';
+  document.getElementById('feQueueBtn').classList.toggle('is-ready', queueReady);
+  document.getElementById('feProcessAllBtn').disabled = loadedFiles.length === 0 || queueFiles.length > 0;
   document.getElementById('feProcessQueueBtn').disabled = queueFiles.length === 0;
   document.getElementById('feClearQueueBtn').disabled = queueFiles.length === 0;
 }

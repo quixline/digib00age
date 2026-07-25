@@ -3286,3 +3286,22 @@ the user pinches back out). This is a known/standard pattern for this exact
 (`_scrollPanEnabled` field and the `InteractiveViewer` wrap in
 `ComicPageViewState._buildScrollMode()` and
 `LocalComicPageViewState.build()`'s scroll branch).
+
+### Full Editor "+ Queue" readiness fields = Genre/Format/Age Rating (not Series or any other field)
+**Decided:** 2026-07-25, implementing "turn + Queue blue once required
+fields are filled."
+**Why:** Tez's request didn't enumerate which fields count as "required," so
+the field set had to be inferred. Chose Genre (≥1 chip) + Format + Age
+Rating specifically because these are the only fields the codebase already
+treats as "required" anywhere: they're the exact three fields `backend/
+editor/validation.py::validate_enforced_fields()` checks server-side at
+process time, and they're the exact three fields Basic Editor's own Save
+button already gates on (`editor_basic.js::updateSaveButtonState()` —
+`anyGenreChecked && formatSet && ratingSet`). Extending the same three
+fields to Full Editor's Queue button keeps "required" meaning one consistent
+thing across both editors instead of inventing a second, editor-specific
+definition. Series was considered (it's required elsewhere, e.g. Search
+Online) but excluded — it's not part of the enforced-dropdown set and isn't
+what either editor currently blocks Save/Process on.
+**Where:** `frontend/js/editor_full.js` (`updateActionButtonStates()`),
+`frontend/css/style.css` (`.btn-admin-action.is-ready`).

@@ -1922,6 +1922,8 @@ select.filter-select:focus,
   gap: 4px;
   justify-content: center;
   aspect-ratio: 2 / 3;
+  /* Thin white ring at rest, matching .cover-card.cover-card--redesign (~line 1532) */
+  box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.5);
 }
 
 .folder-card:hover {
@@ -3242,21 +3244,15 @@ select.filter-select:focus,
   border: 1px solid var(--border);
   border-radius: var(--radius);
   transition: border-color 0.15s, color 0.15s;
-  display: inline-block;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
 }
 
 .nav-issue-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-}
-
-.nav-prev {
-  text-align: left;
-}
-
-.nav-next {
-  text-align: right;
-  justify-self: end;
 }
 
 .nav-series-link {
@@ -3376,6 +3372,18 @@ select.filter-select:focus,
 .btn-admin-action:disabled {
   opacity: 0.38;
   cursor: default;
+}
+
+.btn-admin-action.is-ready {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+
+.btn-admin-action.is-ready:hover:not(:disabled) {
+  background: var(--accent-dim);
+  color: var(--on-accent);
+  border-color: var(--accent-dim);
 }
 
 .log-btn {

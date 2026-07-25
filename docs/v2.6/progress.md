@@ -6584,3 +6584,75 @@ console errors — the existing `skipWaiting()`/`clients.claim()` lifecycle
 code (already correct, just never had a changing `CACHE_NAME` to act on)
 took over immediately. Reverted that second test edit too, confirmed clean
 via `git status`/`git hash-object` before finishing.
+
+## Session — 2026-07-25 — Three cosmetic UI tweaks (Folder View border/year, issue nav)
+
+Three cosmetic changes from Tez's list, all within the existing UI (no nav/
+routing/IA changes, so handled directly per `CLAUDE.md`'s cosmetic threshold).
+
+**1. Folder View card border (dark theme):** `.folder-card` in
+`frontend/css/style.css` had no rest-state border in dark theme (only light
+theme had one; dark theme only gained a ring on hover). Added the same thin
+white rest-state ring already used on Library Grid cards
+(`.cover-card.cover-card--redesign`, `box-shadow: 0 0 2px 1px rgba(255,
+255, 255, 0.5)`) so Folder View cards look consistent with the rest of the
+grid.
+
+**2. Folder View year range ("under N issues"):** The backend folder-contents
+endpoint (`backend/routers/library.py`) already computed and returned
+`year_min`/`year_max` per subfolder, and the Flutter mobile reader already
+displayed a `yearMin`–`yearMax` label, but the web UI's `buildFolderCard()`
+(`frontend/js/app.js`) only rendered the issue count, ignoring the year
+fields the API was already sending. Added the same label format used by the
+Flutter app's `FolderEntry.yearLabel` getter (single year if `yearMin ===
+yearMax`, otherwise `YYYY–YYYY`), prepended to the issue-count text with a
+"·" separator. No backend change needed.
+
+**3. Issue page Previous/Next nav — full width:** `.issue-nav` (grid,
+`frontend/css/style.css`) already laid out Previous / series title / Next
+as three columns, but `.nav-issue-btn` was `display: inline-block`
+(content-sized) rather than stretching to fill its grid column, so the
+buttons didn't visually reach the edges. Changed `.nav-issue-btn` to
+`display: block; width: 100%; box-sizing: border-box; text-align: center`
+and removed the now-redundant per-button `.nav-prev`/`.nav-next` alignment
+rules, so both buttons now span the full width of their side of the layout
+with the series title staying centered as the separator.
+
+**Verification:** Tez manually tested all three changes live (Chrome
+automation wasn't connected this session) and confirmed no issues.
+
+## Session — 2026-07-25 — Full Editor: Queue-readiness color + Process All lockout
+
+Two behavior changes to the Full Editor's queue workflow
+(`frontend/editor_full.html` + `frontend/js/editor_full.js`), following the
+cosmetic pass above. See `DECISIONS.md` for the required-fields definition
+rationale.
+
+**1. `+ Queue` turns blue once required fields are filled:** `#feQueueBtn`
+previously stayed neutral gray (`.btn-admin-action`) regardless of form
+state, only gated on `focusedFileId` for its `disabled` attribute. Added a
+new `.btn-admin-action.is-ready` CSS modifier (reuses `var(--accent)`/
+`var(--accent-dim)`/`var(--on-accent)`, same tokens as `.btn-primary`) and
+toggle logic in `updateActionButtonStates()`: the button turns blue once
+Genre (≥1 chip), Format, and Age Rating are all set — the same three fields
+the codebase already treats as "enforced" elsewhere (`backend/editor/
+validation.py::validate_enforced_fields()`, and Basic Editor's
+`updateSaveButtonState()` in `frontend/js/editor_basic.js`). `disabled`
+state is unchanged (still gated on `focusedFileId` only) — this is a
+readiness color affordance, not a new hard block on queuing. Wired via
+`change` listeners on `#fe-format`/`#fe-agerating` and a call to
+`updateActionButtonStates()` at the end of `renderGenreChips()` (covers all
+three genre-chip mutation paths in one place).
+
+**2. `Process All` disables once the queue has ≥1 item:** `#feProcessAllBtn`
+was previously gated only on `loadedFiles.length === 0`, independent of
+queue state. Condition changed to `loadedFiles.length === 0 ||
+queueFiles.length > 0` in `updateActionButtonStates()` — no new wiring
+needed since that function already runs after every queue mutation
+(add/remove/clear), so the button re-enables automatically once the queue
+empties back out.
+
+**Verification:** Tez manually tested both changes live (filled fields one
+at a time to confirm the color threshold, queued an item to confirm Process
+All locked out, cleared the queue to confirm it re-enabled) and confirmed
+no issues.
