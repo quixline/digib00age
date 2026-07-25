@@ -6,9 +6,9 @@ Run from the project root:
     pythonw tray\\tray_app.py       (silent, for normal/startup use)
 
 Tray icon (left or right click) shows a menu with:
-    - Open Library
-    - Admin
-    - Metadata Editor               (opens the URL only — does not launch/manage that process)
+    - Open Library                  (opens in an app-mode window, see open_app_window())
+    - Admin                         (same)
+    - Metadata Editor               (same; opens the URL only — does not launch/manage that process)
     - Start ComicVault at login     (checkable — creates/removes the Windows Startup shortcut)
     - Stop Server                   (stops the reader subprocess only; tray keeps running)
     - Start Server                  (restarts it; no-op if already running)
@@ -74,6 +74,44 @@ def port_is_open(port, timeout=1.0):
 
 
 READER_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reader_stdout.log")
+
+# App-mode launch: Edge/Chrome's --app=<url> opens a chromeless window (no
+# tabs/address bar) instead of a tab in the user's regular browser session.
+# Edge preferred (Windows default, virtually always present); Chrome as
+# fallback; plain webbrowser.open() (a normal tab) if neither is found.
+_APP_BROWSER_CANDIDATES = [
+    os.path.join(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"), "Microsoft", "Edge", "Application", "msedge.exe"),
+    os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), "Microsoft", "Edge", "Application", "msedge.exe"),
+    os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), "Google", "Chrome", "Application", "chrome.exe"),
+    os.path.join(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"), "Google", "Chrome", "Application", "chrome.exe"),
+]
+_app_browser_exe = None  # resolved lazily; False once probed with nothing found
+
+
+def _find_app_browser_exe():
+    global _app_browser_exe
+    if _app_browser_exe is None:
+        _app_browser_exe = next((p for p in _APP_BROWSER_CANDIDATES if os.path.exists(p)), False)
+        if _app_browser_exe:
+            log(f"App-mode browser: {_app_browser_exe}")
+        else:
+            log("App-mode browser: none found (Edge/Chrome), falling back to webbrowser.open().")
+    return _app_browser_exe
+
+
+def open_app_window(url):
+    """Opens `url` in a chromeless app-mode window rather than a browser tab."""
+    exe = _find_app_browser_exe()
+    if exe:
+        try:
+            subprocess.Popen(
+                [exe, f"--app={url}"],
+                creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0,
+            )
+            return
+        except OSError as e:
+            log(f"App-mode launch failed ({e}), falling back to webbrowser.open().")
+    webbrowser.open(url)
 
 # digib00age brand mark (frontend/images/favicon.png) — reused here as the
 # tray icon's base glyph. Square with a transparent background, unlike
@@ -171,17 +209,17 @@ def make_icon_image(status):
 
 
 def open_library(icon=None, item=None):
-    webbrowser.open(f"http://localhost:{READER_PORT}")
+    open_app_window(f"http://localhost:{READER_PORT}")
 
 
 def open_admin(icon=None, item=None):
-    webbrowser.open(f"http://localhost:{READER_PORT}/admin")
+    open_app_window(f"http://localhost:{READER_PORT}/admin")
 
 
 def open_editor(icon=None, item=None):
     # Editor is part of the same FastAPI app, no separate process/port
     # (EDITOR_SPEC.md Section 2) — was http://localhost:{EDITOR_PORT} (8001).
-    webbrowser.open(f"http://localhost:{READER_PORT}/editor")
+    open_app_window(f"http://localhost:{READER_PORT}/editor")
 
 
 def _terminate_reader_process():

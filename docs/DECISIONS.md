@@ -3305,3 +3305,22 @@ Online) but excluded — it's not part of the enforced-dropdown set and isn't
 what either editor currently blocks Save/Process on.
 **Where:** `frontend/js/editor_full.js` (`updateActionButtonStates()`),
 `frontend/css/style.css` (`.btn-admin-action.is-ready`).
+
+### Tray app opens pages via Edge/Chrome `--app=` mode, not an embedded webview library
+**Decided:** 2026-07-25, implementing "open pages in the app window instead
+of the browser."
+**Why:** Two ways to get an app-like window: (1) launch the system browser
+with the Chromium `--app=<url>` flag, which opens a chromeless window (no
+tabs/address bar) as a normal subprocess, or (2) embed a real webview
+(e.g. `pywebview`) inside the tray process itself. Chose (1) — no new
+dependency in `requirements.txt`, no change to the tray app's threading
+model (a `pywebview` window needs its own run loop, which would compete
+with `pystray`'s `icon.run()` for the main thread), and it reuses
+whichever of Edge/Chrome is already installed and already logged in to any
+site-specific state, rather than spinning up a separate cookie-less
+embedded browser profile. Tradeoff accepted: each click launches a new OS
+process/window rather than reusing one persistent embedded view, and it
+depends on Edge or Chrome being installed (checked at runtime, falls back
+to a normal `webbrowser.open()` tab if neither is found).
+**Where:** `tray/tray_app.py` (`open_app_window()`,
+`_find_app_browser_exe()`).

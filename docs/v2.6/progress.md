@@ -6656,3 +6656,35 @@ empties back out.
 at a time to confirm the color threshold, queued an item to confirm Process
 All locked out, cleared the queue to confirm it re-enabled) and confirmed
 no issues.
+
+## Session — 2026-07-25 — Tray App: Open Pages in App-Mode Window Instead of Browser Tab
+
+Tez asked whether the taskbar tray app could open Library/Admin/Editor in
+"the app window" instead of the browser. `tray/tray_app.py`'s `open_library`/
+`open_admin`/`open_editor` previously called `webbrowser.open()`, which opens
+a tab in whatever the user's default browser session already has open —
+Chrome, Edge, or otherwise, tabs and all.
+
+**Change:** added `open_app_window(url)` in `tray/tray_app.py`, which
+launches Edge (preferred, since it's the Windows default and virtually
+always present) or Chrome (fallback) directly via `subprocess.Popen([exe,
+f"--app={url}"])` — Chromium's app-mode flag opens a chromeless window (no
+tabs, no address bar) instead of a tab in the regular browser session. The
+executable path is resolved once and cached (`_find_app_browser_exe()`,
+checking the standard Program Files / Program Files (x86) install
+locations for both browsers) and logged to `tray/tray.log`. If neither
+browser is found, or the launch itself fails, it falls back to the
+original `webbrowser.open()` behavior — no hard dependency added, no new
+package in `requirements.txt`. All three tray menu items (`Open Library`,
+`Admin`, `Metadata Editor`) now route through this helper instead of
+calling `webbrowser.open()` directly.
+
+**Verification:** imported `tray_app` in a throwaway script (without
+calling `main()`, so it didn't spawn a competing reader subprocess against
+Tez's already-running tray instance on port 9424) and called
+`open_app_window()` against the live library URL. Confirmed via
+`tray.log` that it resolved `C:\Program Files (x86)\Microsoft\Edge\
+Application\msedge.exe`, and via `Get-Process msedge` that a window titled
+"digib00age" (the app's PWA manifest name) opened with `MainWindowTitle`
+set — i.e. an actual chromeless app window, not a tab. Closed the test
+window afterward.

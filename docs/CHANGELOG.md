@@ -13,6 +13,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-25** — Tray app opens Library/Admin/Editor in an Edge/Chrome
+  app-mode window instead of a regular browser tab. → `progress.md` "Tray
+  App: Open Pages in App-Mode Window Instead of Browser Tab"
 - **2026-07-25** — Full Editor: "+ Queue" turns blue once Genre/Format/Age
   Rating are all filled, and "Process All" disables once the queue has ≥1
   item. → `progress.md` "Full Editor: Queue-readiness color + Process All
