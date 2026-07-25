@@ -6688,3 +6688,25 @@ Application\msedge.exe`, and via `Get-Process msedge` that a window titled
 "digib00age" (the app's PWA manifest name) opened with `MainWindowTitle`
 set — i.e. an actual chromeless app window, not a tab. Closed the test
 window afterward.
+
+**Follow-up, same session — `start.bat`'s cmd window no longer needs to be
+closed manually.** Tez pointed out that after launching the tray app,
+`start.bat`'s cmd window stayed open for the app's entire runtime (closing
+it manually didn't stop the tray app, since it's a separate detached
+process — but the extra window sitting there was the actual complaint).
+Root cause: `pythonw tray\tray_app.py` runs synchronously — cmd.exe
+doesn't return, and so can't close its own window, until the tray app
+process exits (which for a working tray app is "never," short of hitting
+Close). Fix: `start "" pythonw tray\tray_app.py` — `start` launches it as a
+detached process and returns immediately, so the batch script (and its cmd
+host window) finishes and closes itself right away instead of blocking for
+the app's whole lifetime.
+
+**Verification:** built a throwaway batch file + a dummy long-running
+Python script in the scratchpad directory (to avoid spawning a duplicate
+tray icon/reader process against the real app already running on port
+9424) using the same `start ""` pattern, launched it the same way a
+double-click would (`Start-Process`), and confirmed via `Get-Process` that
+the cmd host left no lingering process while the dummy pythonw process
+kept running for its full sleep duration. Killed the dummy process and
+deleted the scratch files afterward.

@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-25** — `start.bat` launches the tray app detached (`start ""`)
+  so its cmd host window closes itself immediately instead of staying open
+  for the app's whole runtime. → `progress.md` "Tray App: Open Pages in
+  App-Mode Window Instead of Browser Tab" (same session)
 - **2026-07-25** — Tray app opens Library/Admin/Editor in an Edge/Chrome
   app-mode window instead of a regular browser tab. → `progress.md` "Tray
   App: Open Pages in App-Mode Window Instead of Browser Tab"
