@@ -17,6 +17,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
   `design-critique` skills, corrected `docs/user-guide-plan.md` to match the
   existing `/guide` route, produced `docs/guide-inventory.md` and
   `docs/tooltip-data.md` (Stages 1-2). No app behaviour changed.
+- **2026-07-26** — User guide Stage 3: added `/guide/library`, `/guide/admin`,
+  `/guide/editor`, `/guide/editor-basic`, `/guide/editor-full` routes and shell
+  HTML pages, plus `frontend/css/guide.css`. Placeholder content only — Stage 4-6
+  write the actual guide text.
 
 - **2026-07-25** — `start.bat` launches the tray app detached (`start ""`)
   so its cmd host window closes itself immediately instead of staying open

@@ -1,0 +1,205 @@
+/* User Guide — layout, nav, and content typography specific to /guide/*.
+   Reuses the app's existing tokens (tokens-base/dark/light.css) and shares
+   .site-header/.container/.btn-admin-action with the rest of the app —
+   this file only adds what those don't already cover: the guide's own
+   static sidebar nav and long-form content styling (headings, callouts,
+   code spans) that the main app has no need for. */
+
+.guide-shell {
+  display: flex;
+  align-items: flex-start;
+}
+
+.guide-sidebar {
+  position: sticky;
+  top: var(--header-h);
+  align-self: flex-start;
+  height: calc(100vh - var(--header-h));
+  width: 220px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: var(--space-4) var(--space-2);
+}
+
+.guide-sidebar-section-label {
+  padding: 0 var(--space-2);
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.guide-sidebar-section-label:first-child {
+  margin-top: 0;
+}
+
+.guide-sidebar a {
+  display: block;
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+
+.guide-sidebar a:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.guide-sidebar a.active {
+  background: var(--accent-tint);
+  color: var(--accent-text);
+}
+
+.guide-sidebar a.guide-sub-link {
+  padding-left: var(--space-6);
+  font-weight: var(--weight-regular);
+}
+
+.guide-main {
+  flex: 1 1 0%;
+  min-width: 0;
+  max-width: 760px;
+  padding: 40px 32px 96px;
+}
+
+@media (max-width: 800px) {
+  .guide-shell {
+    flex-direction: column;
+  }
+  .guide-sidebar {
+    position: static;
+    height: auto;
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .guide-main {
+    max-width: none;
+    padding: 24px 20px 64px;
+  }
+}
+
+/* Content typography */
+.guide-main h1 {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-black);
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  margin: 0 0 8px;
+}
+
+.guide-main .guide-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-3);
+  margin: 0 0 32px;
+}
+
+.guide-main h2 {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--text);
+  margin: 40px 0 12px;
+  padding-top: 8px;
+  scroll-margin-top: calc(var(--header-h) + 12px);
+}
+
+.guide-main h2:first-of-type {
+  margin-top: 0;
+}
+
+.guide-main h3 {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  color: var(--text);
+  margin: 24px 0 8px;
+  scroll-margin-top: calc(var(--header-h) + 12px);
+}
+
+.guide-main p,
+.guide-main li {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed, 1.6);
+  color: var(--text-2);
+}
+
+.guide-main p {
+  margin: 0 0 14px;
+}
+
+.guide-main ul,
+.guide-main ol {
+  margin: 0 0 14px;
+  padding-left: 22px;
+}
+
+.guide-main li {
+  margin-bottom: 6px;
+}
+
+.guide-main strong {
+  color: var(--text);
+  font-weight: var(--weight-semibold);
+}
+
+.guide-main code {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 1px 5px;
+}
+
+.guide-main a {
+  color: var(--accent);
+}
+
+/* Tip / warning callouts — flagged in Stage 5 for irreversible admin actions */
+.guide-callout {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin: 16px 0 20px;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+
+.guide-callout p:last-child {
+  margin-bottom: 0;
+}
+
+.guide-callout-warning {
+  border-left-color: var(--danger);
+}
+
+.guide-callout-label {
+  display: block;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.guide-callout-warning .guide-callout-label {
+  color: var(--danger-text, var(--danger));
+}
+
+.guide-placeholder-note {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  color: var(--text-3);
+  font-size: 14px;
+}

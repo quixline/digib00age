@@ -177,6 +177,26 @@ if FRONTEND_DIR.exists():
     async def guide_page():
         return FileResponse(str(FRONTEND_DIR / "guide.html"))
 
+    @app.get("/guide/library", include_in_schema=False)
+    async def guide_library_page():
+        return FileResponse(str(FRONTEND_DIR / "guide-library.html"))
+
+    @app.get("/guide/admin", include_in_schema=False)
+    async def guide_admin_page():
+        return FileResponse(str(FRONTEND_DIR / "guide-admin.html"))
+
+    @app.get("/guide/editor", include_in_schema=False)
+    async def guide_editor_page():
+        return FileResponse(str(FRONTEND_DIR / "guide-editor.html"))
+
+    @app.get("/guide/editor-basic", include_in_schema=False)
+    async def guide_editor_basic_page():
+        return FileResponse(str(FRONTEND_DIR / "guide-editor-basic.html"))
+
+    @app.get("/guide/editor-full", include_in_schema=False)
+    async def guide_editor_full_page():
+        return FileResponse(str(FRONTEND_DIR / "guide-editor-full.html"))
+
     @app.get("/editor", include_in_schema=False)
     async def editor_full_page(request: Request):
         if not is_local_request(request) and not is_remote_admin_enabled():

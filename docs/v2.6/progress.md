@@ -6758,3 +6758,41 @@ later stages inherit accurate assumptions, then ran:
 future session, pending Tez's review of the inventory and tooltip data. No app
 code, HTML, CSS, or routes were touched this session; no live data was modified
 (read-only navigation only).
+
+**Update, same day — Stage 3 (Guide Structure & Shell Pages) built:** Tez reviewed
+the Stage 1/2 output and said to proceed. Added five sibling `FileResponse` routes
+in `backend/main.py` next to the existing `/guide` route: `/guide/library`,
+`/guide/admin`, `/guide/editor`, `/guide/editor-basic`, `/guide/editor-full` — same
+pattern as `/admin`/`/editor`, no `StaticFiles` mount. Made the Stage 6 editor-split
+call now rather than later: `/guide/editor` is a small hub page, with Basic Editor
+and Full Editor each getting their own page, since the inventory showed enough
+content in both to justify it up front.
+
+Rewrote `frontend/guide.html` (dropping its old "Full guide coming in V2"
+placeholder body) and added `frontend/guide-library.html`,
+`frontend/guide-admin.html`, `frontend/guide-editor.html`,
+`frontend/guide-editor-basic.html`, `frontend/guide-editor-full.html` — all
+shells only (`<!-- content: Stage N -->` placeholders), sharing a static
+`guide-sidebar` nav and reusing the app's existing token CSS + `style.css`
+directly (no per-page inline styles, no duplicated head boilerplate beyond the
+per-page title). Added `frontend/css/guide.css` for the guide-specific layout and
+typography the main stylesheet has no reason to carry (sidebar nav, content
+typography, tip/warning callout boxes) — linked alongside `style.css`, not
+replacing it.
+
+**Verification:** confirmed all six routes return 200 via `curl`; navigated all
+six pages live in Chrome, clicked every sidebar nav link and confirmed active-state
+highlighting and page titles update correctly; checked `read_console_messages` —
+no errors on load; confirmed `admin.html`'s existing "User Guide" button still
+opens `/guide` correctly (new tab). One caching wrinkle surfaced and resolved:
+the PWA service worker served stale cached HTML in an already-open/duplicated tab
+context until a hard refresh — confirmed via direct `curl` that the server itself
+was serving the new content correctly throughout, and that a plain hard reload
+(Ctrl+Shift+R) picked up the update immediately. This is the existing SW
+update-lag behaviour every page in the app already has (same content-hash-based
+cache versioning), not something specific to the guide — real users get the
+update on their next fresh load, same as any other deploy.
+
+Restarting the server to pick up the new `main.py` routes required Tez's
+manual restart — the `/api/admin/restart` call was blocked by the permission
+classifier (restarting a live service isn't something Claude does unprompted).
