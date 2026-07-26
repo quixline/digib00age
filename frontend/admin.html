@@ -23,7 +23,7 @@
         <img src="/static/images/lockup-dark.png" alt="digib00age" class="site-logo-img site-logo-img--light">
       </a>
       <span class="admin-page-label">Admin</span>
-      <a href="/admin" class="settings-btn settings-btn--active" title="Admin / Settings" aria-label="Settings">
+      <a href="/admin" class="settings-btn settings-btn--active" data-tooltip="Open admin settings" aria-label="Settings">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="3"/>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -79,7 +79,7 @@
     </div>
     <div class="admin-subitem-row">
       <div class="admin-nav-grid admin-nav-grid--sm" id="adminSubitemNav" hidden></div>
-      <label class="admin-lock-label admin-lock-label--compact" id="advancedLockWrap" hidden>
+      <label class="admin-lock-label admin-lock-label--compact" id="advancedLockWrap" data-tooltip="Unlock these fields for editing" hidden>
         <input type="checkbox" id="advancedLock" />
         <span>Unlock</span>
       </label>
@@ -162,7 +162,7 @@
           </div>
           <div class="admin-field-row">
             <label class="admin-field-label">Restore</label>
-            <button class="btn-admin-action" id="restoreBtn">Restore Database</button>
+            <button class="btn-admin-action" id="restoreBtn" data-tooltip="Replaces your entire database, including Custom Tabs and Home Strips, and restarts the server">Restore Database</button>
           </div>
           <p class="admin-card-hint">
             Replaces the entire database — including Custom Tabs and Home Page
@@ -181,7 +181,7 @@
             <div class="admin-field-input-wrap">
               <div class="admin-field-input-row">
                 <input type="text" class="admin-input" id="logsFolderPathInput" readonly />
-                <button class="btn-admin-action" id="copyLogsPathBtn">Copy</button>
+                <button class="btn-admin-action" id="copyLogsPathBtn" data-tooltip="Copy the logs folder path">Copy</button>
               </div>
             </div>
           </div>
@@ -462,7 +462,7 @@
             </div>
           </div>
 
-          <label class="admin-lock-label" id="authRemoteLabel">
+          <label class="admin-lock-label" id="authRemoteLabel" data-tooltip="Let non-local devices access Admin (requires a password)">
             <input type="checkbox" id="authRemoteToggle" disabled />
             <span>Allow Remote Administration (non-local access)</span>
           </label>
@@ -482,7 +482,7 @@
             <div class="admin-field-input-wrap">
               <div class="admin-field-input-row">
                 <input type="number" class="admin-input" id="serverPortInput" min="1" max="65535" style="max-width:120px;" />
-                <button class="btn-primary" id="savePortBtn">Save &amp; Restart</button>
+                <button class="btn-primary" id="savePortBtn" data-tooltip="Restarts the server and disconnects active users">Save &amp; Restart</button>
               </div>
               <p class="admin-field-hint">Changing this restarts the server and disconnects active users. Workaround for BUG-004 (Windows port-exclusion conflicts).</p>
             </div>
@@ -493,7 +493,7 @@
             <div class="admin-field-input-wrap">
               <div class="admin-field-input-row">
                 <input type="text" class="admin-input" id="readerLocationInput" placeholder="comicvault://read/" />
-                <button class="btn-primary" id="saveAdvancedBtn">Save Location</button>
+                <button class="btn-primary" id="saveAdvancedBtn" data-tooltip="Reserved for future use — has no effect yet">Save Location</button>
               </div>
               <p class="admin-field-hint">No functional effect in V1 — reserved for future reader configuration.</p>
             </div>
@@ -512,7 +512,7 @@
         <div class="admin-card">
           <div class="admin-field-row">
             <label class="admin-field-label">Clear Database</label>
-            <button class="btn-admin-action" id="clearDbBtn">Clear Database</button>
+            <button class="btn-admin-action" id="clearDbBtn" data-tooltip="Permanently deletes all issues, genres, credits and reading progress — not files or tabs">Clear Database</button>
           </div>
         </div>
       </div>
@@ -527,7 +527,7 @@
         <div class="admin-card">
           <div class="admin-field-row">
             <label class="admin-field-label">Clear Reading Progress</label>
-            <button class="btn-admin-action" id="clearProgressBtn">Clear Reading Progress</button>
+            <button class="btn-admin-action" id="clearProgressBtn" data-tooltip="Resets every issue to unread and erases saved page positions">Clear Reading Progress</button>
           </div>
         </div>
       </div>
@@ -572,26 +572,26 @@
                   <tr>
                     <td>Series</td>
                     <td><input type="text" class="admin-input" id="renameSeriesInput"></td>
-                    <td><input type="checkbox" id="renameSeriesFile"></td>
-                    <td><input type="checkbox" id="renameSeriesAll"></td>
+                    <td><input type="checkbox" id="renameSeriesFile" data-tooltip="Apply this edit only to the current file"></td>
+                    <td><input type="checkbox" id="renameSeriesAll" data-tooltip="Apply this edit to every loaded file, not just this one"></td>
                   </tr>
                   <tr>
                     <td>Issue</td>
                     <td><input type="text" class="admin-input" id="renameIssueInput"></td>
-                    <td><input type="checkbox" id="renameIssueFile"></td>
-                    <td><input type="checkbox" id="renameIssueAll"></td>
+                    <td><input type="checkbox" id="renameIssueFile" data-tooltip="Apply this edit only to the current file"></td>
+                    <td><input type="checkbox" id="renameIssueAll" data-tooltip="Apply this edit to every loaded file, not just this one"></td>
                   </tr>
                   <tr>
                     <td>Title</td>
                     <td><input type="text" class="admin-input" id="renameTitleInput"></td>
-                    <td><input type="checkbox" id="renameTitleFile"></td>
-                    <td><input type="checkbox" id="renameTitleAll"></td>
+                    <td><input type="checkbox" id="renameTitleFile" data-tooltip="Apply this edit only to the current file"></td>
+                    <td><input type="checkbox" id="renameTitleAll" data-tooltip="Apply this edit to every loaded file, not just this one"></td>
                   </tr>
                   <tr>
                     <td>Year</td>
                     <td><input type="text" class="admin-input" id="renameYearInput"></td>
-                    <td><input type="checkbox" id="renameYearFile"></td>
-                    <td><input type="checkbox" id="renameYearAll"></td>
+                    <td><input type="checkbox" id="renameYearFile" data-tooltip="Apply this edit only to the current file"></td>
+                    <td><input type="checkbox" id="renameYearAll" data-tooltip="Apply this edit to every loaded file, not just this one"></td>
                   </tr>
                 </tbody>
               </table>
@@ -602,7 +602,7 @@
           <div class="pt-rename-row">
             <div class="pt-rename-col-buttons">
               <button type="button" class="btn-admin-action" id="renameClearPreviewBtn">Clear Preview</button>
-              <button type="button" class="btn-primary" id="renameApplyBtn">Apply Rename</button>
+              <button type="button" class="btn-primary" id="renameApplyBtn" data-tooltip="Renames all queued files on disk — no undo, review first">Apply Rename</button>
             </div>
             <div class="pt-rename-col-list">
               <h4 class="pt-preview-heading">Queued Files</h4>
@@ -611,7 +611,7 @@
             <div class="pt-rename-col-fields">
               <div class="pt-rename-batch-options">
                 <span class="pt-preview-heading">Batch Rename Options</span>
-                <label><input type="checkbox" id="renameAutoIncrement" disabled> Auto-Increment Issue Numbers (only when Issue → All is checked)</label>
+                <label><input type="checkbox" id="renameAutoIncrement" data-tooltip="Increase each file's issue number by one, in list order" disabled> Auto-Increment Issue Numbers (only when Issue → All is checked)</label>
                 <div class="pt-rename-case-style">
                   <label><input type="radio" name="renameCaseStyle" value="" checked> No case change</label>
                   <label><input type="radio" name="renameCaseStyle" value="title"> Title Case</label>
@@ -651,7 +651,7 @@
           </div>
           <div class="pt-rename-filelist" id="convertFileList"></div>
           <div class="pt-toolbar">
-            <button type="button" class="btn-primary" id="convertRunBtn">Run Conversion</button>
+            <button type="button" class="btn-primary" id="convertRunBtn" data-tooltip="Converts loaded files to CBZ; keeps a .bak only if pages were skipped">Run Conversion</button>
           </div>
           <div id="convertProgressWrap" hidden>
             <p class="admin-card-hint" id="convertProgressLabel"></p>
@@ -670,10 +670,10 @@
         </p>
         <div class="admin-card">
           <div class="pt-rename-batch-options pt-rename-batch-options--row">
-            <label><input type="checkbox" id="convertImagesLossless"> Lossless</label>
+            <label><input type="checkbox" id="convertImagesLossless" data-tooltip="Preserve full image quality (larger file size)"> Lossless</label>
             <div class="pt-rename-case-style">
               <label for="convertImagesQuality">Quality</label>
-              <input type="range" id="convertImagesQuality" min="1" max="100" value="95">
+              <input type="range" id="convertImagesQuality" min="1" max="100" value="95" data-tooltip="Compression quality, 1–100 — higher keeps more detail">
               <span id="convertImagesQualityValue">95</span>
             </div>
           </div>
@@ -684,7 +684,7 @@
           </div>
           <div class="pt-rename-filelist" id="convertImagesFileList"></div>
           <div class="pt-toolbar">
-            <button type="button" class="btn-primary" id="convertImagesRunBtn">Run Conversion</button>
+            <button type="button" class="btn-primary" id="convertImagesRunBtn" data-tooltip="Converts images to WebP and repacks the archive">Run Conversion</button>
           </div>
           <div id="convertImagesProgressWrap" hidden>
             <p class="admin-card-hint" id="convertImagesProgressLabel"></p>
@@ -717,13 +717,13 @@
           </div>
 
           <div class="admin-field-row">
-            <label class="admin-field-label"><input type="checkbox" id="pfCtSaveLowConfidence" checked> Save on Low Confidence</label>
+            <label class="admin-field-label"><input type="checkbox" id="pfCtSaveLowConfidence" data-tooltip="Tag files even when the ComicVine match confidence is low" checked> Save on Low Confidence</label>
           </div>
 
           <div class="admin-field-row">
             <label class="admin-field-label" for="pfCtMatchThreshold">Match Ratio Threshold</label>
             <div class="pt-rename-case-style">
-              <input type="range" id="pfCtMatchThreshold" min="10" max="100" value="80">
+              <input type="range" id="pfCtMatchThreshold" min="10" max="100" value="80" data-tooltip="Minimum match confidence required to accept a ComicVine tag">
               <span id="pfCtMatchThresholdValue">80</span>%
             </div>
           </div>
@@ -733,14 +733,14 @@
             <div class="admin-field-input-wrap">
               <div class="admin-field-input-row">
                 <input type="password" class="admin-input" id="pfComicVineKey" placeholder="Optional — uses shared rate-limited key if blank" autocomplete="off">
-                <button class="btn-admin-action" id="pfComicVineKeyTestBtn">Save &amp; Test</button>
+                <button class="btn-admin-action" id="pfComicVineKeyTestBtn" data-tooltip="Save the API key and verify it works with ComicVine">Save &amp; Test</button>
               </div>
               <span class="admin-card-hint" id="pfComicVineKeyResult"></span>
             </div>
           </div>
 
           <div class="pt-toolbar">
-            <button type="button" class="btn-primary" id="xtRunBtn">Run</button>
+            <button type="button" class="btn-primary" id="xtRunBtn" data-tooltip="Match files against ComicVine and write tags to ComicInfo.xml">Run</button>
           </div>
           <div id="xtProgressWrap" hidden>
             <p class="admin-card-hint">Running…</p>
@@ -786,7 +786,7 @@
           </div>
 
           <div class="pt-toolbar">
-            <button type="button" class="btn-primary" id="fsRunBtn">Run</button>
+            <button type="button" class="btn-primary" id="fsRunBtn" data-tooltip="Run the selected script — scan the library afterward to see changes">Run</button>
           </div>
           <div id="fsProgressWrap" hidden>
             <p class="admin-card-hint">Running…</p>
@@ -868,7 +868,7 @@
           <p class="admin-card-hint" id="pfNextRunHint"></p>
 
           <div class="pt-toolbar">
-            <button type="button" class="btn-primary" id="pfRunNowBtn">Run Now</button>
+            <button type="button" class="btn-primary" id="pfRunNowBtn" data-tooltip="Run enabled steps now: Convert Archives → CT Auto-Tag → Convert Images">Run Now</button>
           </div>
           <div id="pfProgressWrap" hidden>
             <p class="admin-card-hint" id="pfProgressLabel"></p>
@@ -981,8 +981,8 @@
       </div>
       <div class="fe-picker-breadcrumb" id="ptPickerBreadcrumb"></div>
       <div class="fe-picker-controls">
-        <button type="button" class="btn-admin-action" id="ptPickerHomeBtn">Home</button>
-        <button type="button" class="btn-admin-action" id="ptPickerUpBtn">Up One Level</button>
+        <button type="button" class="btn-admin-action" id="ptPickerHomeBtn" data-tooltip="Go to the starting folder">Home</button>
+        <button type="button" class="btn-admin-action" id="ptPickerUpBtn" data-tooltip="Go up one folder level (this picker can browse any drive)">Up One Level</button>
         <button type="button" class="btn-admin-action" id="ptPickerSelectAllBtn">Select All</button>
         <button type="button" class="btn-admin-action" id="ptPickerDeselectAllBtn">Deselect All</button>
         <span class="fe-picker-selected-count" id="ptPickerSelectedCount">0 items selected</span>
@@ -1009,6 +1009,7 @@
   </div>
 
   <script src="/static/js/pwa.js"></script>
+  <script src="/static/js/tooltip.js"></script>
   <script src="/static/js/admin.js"></script>
   <script src="/static/js/filePicker.js"></script>
   <script src="/static/js/processingTools.js"></script>

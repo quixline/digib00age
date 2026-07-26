@@ -24,6 +24,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 - **2026-07-26** — User guide Stages 4-6: wrote full content for all guide pages
   (Library, Admin, Basic/Full Editor, plus the Overview index). Guide is now
   content-complete; tooltip wiring (Stage 7) and final review (Stage 8) remain.
+- **2026-07-26** — User guide Stages 7-8, project closed out: built a vanilla-JS
+  tooltip system (`frontend/js/tooltip.js` + `.db-tooltip` CSS) and wired
+  `data-tooltip` across the whole app per `docs/tooltip-data.md`; fixed two
+  real content bugs found along the way (Folder View's guide text described a
+  Back/Mark-all-read row removed from the app 2026-07-17; Full Editor's guide
+  was missing the fuzzy-credit-match dialog and the double-click-to-confirm
+  ComicVine search gesture). All 9 plan stages done — see `v2.6/progress.md`.
 
 - **2026-07-25** — `start.bat` launches the tray app detached (`start ""`)
   so its cmd host window closes itself immediately instead of staying open

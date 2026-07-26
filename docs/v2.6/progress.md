@@ -6831,3 +6831,120 @@ errors. Confirmed no page contains the string "ComicVault" (grepped each file).
 tooltip system from `docs/tooltip-data.md` onto the live app, not just the guide
 pages) and Stage 8 (final review/polish pass) remain — this update covers guide
 *content* only, the tooltip implementation is separate follow-up work.
+
+## Session — 2026-07-26 — User guide project finished: Stage 7 (tooltips) and Stage 8 (review/polish) done, `docs/user-guide-plan.md` closed out
+
+Continued `docs/user-guide-plan.md` from Stage 7. Both remaining stages built,
+verified (including a manual pass by Tez), and closed out same session.
+
+**Stage 7 — Tooltip Implementation:**
+
+- Built `frontend/js/tooltip.js` — a single delegated `mouseover`/`focusin`
+  listener on `document.body`, ~500ms show delay, flips below the anchor when
+  there's no room above, dismissed on scroll/resize/Escape, skipped entirely
+  after a touch `pointerdown`. Styled via a new `.db-tooltip` block in
+  `frontend/css/style.css` (reuses existing tokens, same visual language as
+  `.admin-toast`). Loaded on `index.html`, `series.html`, `issue.html`,
+  `admin.html`, `editor_full.html` (not on guide pages — nothing to tooltip
+  there — or `editor_basic.html`, a fragment fetched into `issue.html`, which
+  already loads it).
+- Worked through every row in `docs/tooltip-data.md` and wired `data-tooltip`
+  onto the real element — almost none of the original Stage 2 selector guesses
+  matched the actual DOM (wrong class names throughout: e.g. the sidebar nav
+  uses `[data-surface]`/`[data-quick-status]`, not `[data-nav]`/`[data-status]`;
+  the selection bar is `#selectionToolbar` with real ids like `#selFavorite`,
+  not guessed `.sel-action[data-action=...]`). Corrected the whole file's
+  selector-hint column to match, rather than leaving the guesses in place.
+- Found two elements Stage 2 had targeted that don't actually exist as
+  described: the Custom Tab/Home Strip folder picker (`#ctPickerOverlay`) has
+  no Home/Up buttons at all (navigation is breadcrumb + drive-root buttons
+  only); and Search ComicVine's "confirm issue" step has no dedicated confirm
+  button — confirming is a double-click on the results-table row. Added a
+  tooltip to the row itself ("Double-click to apply...") since that gesture
+  isn't otherwise discoverable, and corrected the picker entry to note the
+  buttons don't exist.
+- Hit a real Chromium behaviour while wiring the Basic Editor's Save button and
+  Full Editor's Process Queue/Clear Queue/Process All buttons: a native
+  `disabled` button doesn't fire `mouseover` at all, so a `data-tooltip` on the
+  button itself would silently never show while disabled. Fixed by wrapping
+  each in a `<span data-tooltip="...">` and toggling the wrap's tooltip
+  text/presence alongside the existing disabled toggle (`editorSaveWrap` in
+  `editor_basic.js`, `.fe-queue-action-wrap` — a new CSS class added to keep
+  the 3-button equal-width flex layout intact — in `editor_full.html`). Full
+  Editor's 8 viewer/thumb-strip buttons hit the same issue but were
+  deliberately left on their existing native `title` instead, since converting
+  would have been a real regression (tooltip goes silent while disabled) for a
+  purely cosmetic consistency win.
+- Replaced old native `title` attributes with `data-tooltip` everywhere they
+  overlapped (no double-tooltips), and added explicit `aria-label`s to the
+  handful of icon-only sidebar controls that would otherwise have lost their
+  accessible name once `title` was removed (the label text is `display:none`
+  in the collapsed sidebar state).
+- Found and fixed a real content bug in the process: `frontend/guide-library.html`'s
+  Folder View section (written in Stage 4, this same project) claimed a "←
+  Back" button and a folder-level "Mark all read" button exist there. Neither
+  does — both were part of a back-nav/mark-all-read row removed from Folder
+  View on 2026-07-17, before Stage 1's inventory pass even ran (so the
+  inaccuracy was in `docs/guide-inventory.md` from the very start, not
+  introduced later). Fixed the guide text, the inventory, and dropped the
+  corresponding tooltip-data.md entry.
+
+**Stage 8 — Review & Polish:**
+
+- Ran a programmatic crawl of all 6 guide pages (fetched each, parsed with
+  `DOMParser`, checked every `<a href>` — including `#anchor` targets — against
+  the actual `id` attributes present on the target page): zero broken links,
+  zero missing anchor targets, all 6 routes return 200.
+- Confirmed no guide page contains the literal string "ComicVault" (checked in
+  the same crawl).
+- Confirmed `frontend/admin.html`'s "User Guide" button still opens `/guide` in
+  a new tab.
+- Visual spot-checks via screenshot (guide index, Library guide, Full Editor
+  guide, an issue detail page, the Full Editor 4-column layout) — styling
+  consistent with the rest of the app, no layout breakage from the Stage 7
+  wrapper-span additions.
+- Resolved all 3 outstanding `[UNCLEAR]` items from `docs/guide-inventory.md`'s
+  Stage 1 pass: the fuzzy-credit-match `confirm()` dialog's exact wording
+  (read from source — identical in both editors); confirmed Search ComicVine
+  itself has no confirm dialog at all, just an inline error when Series is
+  empty; and confirmed (now that Chrome automation isn't hitting the
+  stuck-viewport issue Stage 1 had) that card badges/layout render as already
+  described. The `comicvault://`-with-no-reader-installed case stays
+  unverified — inherently untestable from a dev machine that already has the
+  reader registered — and is accepted as low-risk, already framed as a caveat
+  in the guide text.
+- Content-completeness pass surfaced two real gaps in `frontend/guide-editor-full.html`
+  (Stage 6 content): the fuzzy-credit-match confirm dialog was documented for
+  the Basic Editor but not the Full Editor, even though the same function
+  fires there too (on **＋ Queue** and on **Process All** when a Writer/Penciller
+  field is checked "Apply to All" — not per-file in the queue, since each
+  queued file's credits were already checked at add-time); and the Search
+  ComicVine issue-select step never actually said *how* to confirm a match
+  (single-click previews, double-click confirms). Both fixed with a new tip
+  callout and an inline sentence respectively.
+- `design-critique` skill not invoked — nothing surfaced during the pass
+  suggested a usability/clarity problem worth a dedicated review.
+
+**Verification:** Tez manually spot-checked tooltips across several pages
+(sort-direction arrow, Basic Editor's disabled Save button, Admin Processing
+Tools controls) and confirmed no issues before this doc update — per the
+manual-test gate, this is the confirmation the close-of-session checklist was
+waiting on. Also confirmed via direct JS dispatch (not just the `computer`
+tool's synthetic hover, which doesn't reliably fire real `mouseover` events in
+this environment) that the tooltip show/hide/positioning logic and the
+disabled-button wrapper workaround both function correctly, and that no
+console errors appear on any of the five app pages `tooltip.js` loads on.
+
+**Known caveat, not a bug:** hit stale content from the PWA service worker
+several times while iterating this session (same class of issue noted in this
+file's Stage 3 update) — `pwa.js` re-registers the service worker on every
+page load, so a plain `fetch()` from within an already-open tab can return a
+cached response even with `cache: 'no-store'`, while a real hard reload
+(Ctrl+Shift+R) of the page itself always got fresh content. Existing app
+behaviour, not something this session changed.
+
+`docs/user-guide-plan.md`'s Stage 9 completion table is filled in — the guide
+project (all 9 stages) is done. Deferred: `docs/meta/build-plan.html` doesn't
+exist despite being referenced by `docs/INDEX.md`/`CLAUDE.md` as where
+build-plan items get marked done — noted as a doc/reality gap rather than
+invented from scratch this session.

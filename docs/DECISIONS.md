@@ -4,6 +4,29 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Tooltips on disabled buttons need a wrapping element, not the attribute on the button itself
+
+**Decided:** 2026-07-26 (Stage 7, `docs/user-guide-plan.md`).
+
+**Why:** A native HTML `disabled` button doesn't fire `mouseover`/`mouseenter`
+in Chromium — confirmed empirically while wiring the tooltip system, not
+assumed. A `data-tooltip` attribute placed directly on a button that's
+sometimes disabled (Basic Editor's Save button, Full Editor's Process
+Queue/Clear Queue/Process All) would silently never show while disabled,
+which is exactly when the explanatory tooltip matters most (e.g. "Save is
+enabled once a genre, format and age rating are set"). Fixed by wrapping the
+button in a `<span data-tooltip="...">` instead, and toggling the wrap's
+tooltip text/presence in the same place the disabled state itself gets
+toggled (`editorSaveWrap` in `frontend/js/editor_basic.js`; the new
+`.fe-queue-action-wrap` CSS class in `frontend/editor_full.html`, added so
+the wrapper doesn't break the 3-button equal-width flex layout). Full
+Editor's 8 viewer/thumb-strip buttons hit the identical issue but were
+deliberately left on their pre-existing native `title` instead of wrapped —
+they already worked correctly via `title`, so converting to `data-tooltip`
+would have been a net regression (silent while disabled) purely for visual
+consistency, not worth the trade. Future tooltip work on any control that's
+sometimes `disabled` should check this first rather than re-discovering it.
+
 ### User guide extends the existing `/guide` `FileResponse` route, not a new `StaticFiles` mount
 
 **Decided:** 2026-07-26.

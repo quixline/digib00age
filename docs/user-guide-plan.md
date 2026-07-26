@@ -506,24 +506,24 @@ Every page, every section, every button. If an element's behaviour is unclear fr
 
 ## Stage 9 — Completion Notes
 
-> This section is written by Claude Code at the end of Stage 8. Do not fill this in before Stage 8 is complete.
-
 | Stage | Status | Notes |
 |---|---|---|
-| Stage 1 — Discovery & Inventory | | |
-| Stage 2 — Tooltip Data List | | |
-| Stage 3 — Guide Structure & Shell Pages | | |
-| Stage 4 — Write: Library | | |
-| Stage 5 — Write: Admin | | |
-| Stage 6 — Write: Editor | | |
-| Stage 7 — Tooltip Implementation | | |
-| Stage 8 — Review & Polish | | |
+| Stage 1 — Discovery & Inventory | done with caveats | `docs/guide-inventory.md` produced (2026-07-25/26); its 3 `[UNCLEAR]` items and one outright wrong entry (Folder View's "← Back"/"Mark all read" — removed from the app 2026-07-17, before this pass ran) all resolved during Stage 7/8 (2026-07-26). |
+| Stage 2 — Tooltip Data List | done | `docs/tooltip-data.md` produced (101 entries); rewritten during Stage 7 once real selectors were verified — see that stage's notes. |
+| Stage 3 — Guide Structure & Shell Pages | done | 6 routes (`/guide`, `/guide/library`, `/guide/admin`, `/guide/editor`, `/guide/editor-basic`, `/guide/editor-full`) added to `backend/main.py`; shells built reusing existing token CSS + `style.css`, plus a small `frontend/css/guide.css` addendum. |
+| Stage 4 — Write: Library | done with caveats | Content written and verified 2026-07-26; the Folder View section's two false claims (see Stage 1) were corrected during Stage 8, same day. |
+| Stage 5 — Write: Admin | done | ~2,800–3,000 words, every settings category + Processing Tools sub-tool covered, warning callouts on destructive actions. |
+| Stage 6 — Write: Editor | done with caveats | Split into hub + Basic + Full pages as planned; Stage 8 added two gaps found during tooltip verification to `guide-editor-full.html`: the fuzzy-credit-match confirm dialog (Basic Editor's guide already had it; Full Editor's didn't) and the undocumented double-click-to-confirm gesture in the ComicVine issue-search step. |
+| Stage 7 — Tooltip Implementation | done | `frontend/js/tooltip.js` (delegated, ~500ms delay, flip-below near viewport top) + `.db-tooltip` CSS in `style.css`; wired across every page in `tooltip-data.md`. Almost every original selector guess was wrong and got corrected against the live DOM/source. Manually spot-checked and confirmed by Tez 2026-07-26. |
+| Stage 8 — Review & Polish | done | Programmatic link/anchor crawl across all 6 guide pages (0 broken links, 0 missing anchor targets); confirmed no literal "ComicVault" on any guide page; confirmed the Admin "User Guide" button opens `/guide` in a new tab; visual spot-checks via screenshot. `design-critique` skill not invoked — no usability/clarity concerns surfaced during the pass. |
 
-**Deferred items (if any):**
-<!-- List anything that was not completed and why. -->
+**Deferred items:**
+- `docs/meta/build-plan.html` — referenced by `docs/INDEX.md`/`CLAUDE.md` as the place to mark build-plan items done, but the file doesn't exist in `docs/meta/` (only `about-me.md`, `roadmap.html`, `voice-and-style.md`, `working-rules.md` do). Not created as part of this close-out — flagging the doc/reality mismatch rather than guessing at a format for a file that was never actually made.
+- Full Editor's 8 viewer/thumb-strip controls (`#feZoomInBtn` etc.) deliberately kept their native `title` instead of `data-tooltip` — see `tooltip-data.md`'s implementation notes for why (disabled-by-default, converting would've been a regression).
+- Folder Processing's script `<select>` options have no tooltip — not technically possible for native dropdown options; the info already lives in the admin-card-hint text and the guide.
 
-**Guide URL summary (confirm final structure):**
-<!-- List the actual final URLs, e.g. /guide, /guide/library, /guide/admin, /guide/editor -->
+**Guide URL summary (final structure):**
+`/guide`, `/guide/library`, `/guide/admin`, `/guide/editor` (hub), `/guide/editor-basic`, `/guide/editor-full` — 6 routes total, all `FileResponse`-served from `backend/main.py`, same pattern as `/`, `/admin`, `/editor`.
 
 ---
 

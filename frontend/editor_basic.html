@@ -2,7 +2,7 @@
   <div class="editor-modal">
     <div class="editor-modal-header">
       <h2 class="editor-modal-title">Edit Metadata</h2>
-      <button type="button" class="editor-close-btn" id="editorCloseBtn" aria-label="Close">&times;</button>
+      <button type="button" class="editor-close-btn" id="editorCloseBtn" aria-label="Close" data-tooltip="Close without saving">&times;</button>
     </div>
 
     <div class="editor-tabs">
@@ -101,7 +101,9 @@
 
       <div class="editor-actions">
         <button type="button" class="btn-status-toggle" id="editorCancelBtn">Cancel</button>
-        <button type="submit" class="btn-primary" id="editorSaveBtn" disabled>Save</button>
+        <span class="editor-save-wrap" id="editorSaveWrap">
+          <button type="submit" class="btn-primary" id="editorSaveBtn" disabled>Save</button>
+        </span>
       </div>
     </form>
   </div>

@@ -115,6 +115,7 @@ function buildSelectDot(id, kind = 'issue') {
   const dot = el('span', 'select-dot');
   dot.setAttribute('role', 'checkbox');
   dot.setAttribute('aria-label', 'Select');
+  dot.dataset.tooltip = 'Select this item';
   dot.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -275,10 +276,11 @@ function ensureSelectionToolbar() {
   bar.appendChild(count);
 
   const actions = el('div', 'selection-actions');
-  const mkBtn = (id, label, handler) => {
+  const mkBtn = (id, label, handler, tooltip) => {
     const b = el('button', 'selection-action-btn', label);
     b.id   = id;
     b.type = 'button';
+    if (tooltip) b.dataset.tooltip = tooltip;
     b.addEventListener('click', handler);
     actions.appendChild(b);
     return b;
@@ -295,7 +297,7 @@ function ensureSelectionToolbar() {
     });
     const path = allFavorited ? '/progress/bulk/unfavorite' : '/progress/bulk/favorite';
     runBulkAction(path, {}, idsApplied => applyFavoriteToDom(idsApplied, !allFavorited));
-  });
+  }, 'Favourite selected items, or un-favourite if all already are');
   mkBtn('selQueueReading', '📖 Queue Reading', () => {
     const ids = Array.from(selectedIds.keys());
     const allQueued = ids.length > 0 && ids.every(id => {
@@ -304,7 +306,7 @@ function ensureSelectionToolbar() {
     });
     const path = allQueued ? '/progress/bulk/unqueue-reading' : '/progress/bulk/queue-reading';
     runBulkAction(path, {}, idsApplied => applyQueueReadingToDom(idsApplied, !allQueued));
-  });
+  }, 'Add selected to Reading Queue, or remove if already queued');
   mkBtn('selFlagReview', '🏷 Flag for Review', () => {
     const ids = Array.from(selectedIds.keys());
     const allFlagged = ids.length > 0 && ids.every(id => {
@@ -313,7 +315,7 @@ function ensureSelectionToolbar() {
     });
     const path = allFlagged ? '/progress/bulk/unflag-review' : '/progress/bulk/flag-review';
     runBulkAction(path, {}, idsApplied => applyFlagReviewToDom(idsApplied, !allFlagged));
-  });
+  }, 'Flag selected for review, or unflag if already flagged');
   mkBtn('selSendToFullEditor', '→ Send to Full Editor', async () => {
     const originalIds = Array.from(selectedIds.keys());
     if (!originalIds.length) return;
@@ -335,19 +337,20 @@ function ensureSelectionToolbar() {
     } catch (_) {
       showLibraryToast('Failed to send files to Full Editor', true);
     }
-  });
+  }, 'Open selected issues in Full Editor for XML editing');
 
   const rateWrap = el('div', 'selection-rate');
   const clearStar = el('button', 'rating-star rating-clear', '✕');
   clearStar.type  = 'button';
-  clearStar.title = 'Clear rating';
+  clearStar.dataset.tooltip = 'Clear rating for all selected items';
   clearStar.addEventListener('click', () =>
     runBulkAction('/progress/bulk/rate', { rating: 0 }, ids => applyRatingToDom(ids, 0)));
   rateWrap.appendChild(clearStar);
   for (let i = 1; i <= 5; i++) {
     const star = el('button', 'rating-star', '★');
     star.type  = 'button';
-    star.title = `Rate ${i}`;
+    star.dataset.value = i;
+    star.dataset.tooltip = 'Set rating for selected items; click again to clear';
     star.addEventListener('click', () => {
       // Clicking a star that already matches every selected card's rating
       // clears it instead — mirrors the issue-page rating control's
@@ -370,15 +373,18 @@ function ensureSelectionToolbar() {
   const deleteBtn  = el('button', 'selection-action-btn selection-action-btn--danger', '🗑 Delete');
   deleteBtn.id     = 'selDelete';
   deleteBtn.type   = 'button';
+  deleteBtn.dataset.tooltip = 'Permanently deletes selected files and their data — no going back';
   deleteBtn.addEventListener('click', () => openDeleteConfirmModal());
   endWrap.appendChild(deleteBtn);
   const deselectBtn = el('button', 'selection-action-btn', 'Deselect');
   deselectBtn.id     = 'selDeselect';
   deselectBtn.type   = 'button';
+  deselectBtn.dataset.tooltip = 'Clear selection but stay in selection mode';
   deselectBtn.addEventListener('click', () => clearSelection());
   const doneBtn    = el('button', 'selection-done-btn', 'Done');
   doneBtn.id       = 'selDone';
   doneBtn.type     = 'button';
+  doneBtn.dataset.tooltip = 'Exit selection mode';
   doneBtn.addEventListener('click', () => exitSelectionMode());
   endWrap.append(deselectBtn, doneBtn);
   bar.appendChild(endWrap);
@@ -962,7 +968,8 @@ async function loadCustomTabsNav() {
     (nav.custom_tabs || []).forEach((tab) => {
       const btn = el('button', 'app-sidebar-item');
       btn.dataset.tabSurface = `tab-${tab.id}`;
-      btn.title = tab.name;
+      btn.setAttribute('aria-label', tab.name);
+      btn.dataset.tooltip = `Open ${tab.name}`;
       btn.appendChild(el('span', 'app-sidebar-lib-badge', libraryBadgeChar(tab.name)));
       btn.appendChild(el('span', 'app-sidebar-item-label', tab.name));
       container.appendChild(btn);
@@ -1240,6 +1247,7 @@ function buildHomeStrip(strip) {
   if (viewAllHref) {
     const heading = el('a', 'section-label section-label--link', strip.title);
     heading.href = viewAllHref;
+    heading.dataset.tooltip = 'View the full filtered list';
     section.appendChild(heading);
   } else {
     section.appendChild(el('p', 'section-label', strip.title));
@@ -1252,6 +1260,8 @@ function buildHomeStrip(strip) {
   btnRight.innerHTML = '&#8250;';  // ›
   btnLeft.setAttribute('aria-label', 'Scroll left');
   btnRight.setAttribute('aria-label', 'Scroll right');
+  btnLeft.dataset.tooltip  = 'Scroll left';
+  btnRight.dataset.tooltip = 'Scroll right';
 
   const scrollArea = el('div', 'continue-strip');
   for (const item of strip.items) scrollArea.appendChild(buildStripCard(item));
@@ -2013,12 +2023,14 @@ function bindFilterEvents() {
   // Grid / list toggle — sync initial state from localStorage then persist on change
   const viewBtn = document.getElementById('viewToggle');
   viewBtn.textContent = viewMode === 'list' ? '⊞' : '☰';
+  viewBtn.dataset.tooltip = viewMode === 'list' ? 'Switch to grid layout' : 'Switch to list layout';
   document.getElementById('coverGrid').classList.toggle('list-view', viewMode === 'list');
   viewBtn.addEventListener('click', () => {
     viewMode = viewMode === 'grid' ? 'list' : 'grid';
     localStorage.setItem('cv_view_mode', viewMode);
     document.getElementById('coverGrid').classList.toggle('list-view', viewMode === 'list');
     viewBtn.textContent = viewMode === 'list' ? '⊞' : '☰';
+    viewBtn.dataset.tooltip = viewMode === 'list' ? 'Switch to grid layout' : 'Switch to list layout';
   });
 
   // Card size is set via Admin → Pagination; just apply whatever's stored.
@@ -2327,6 +2339,7 @@ function buildSeriesHeader(data) {
 
   const markBtn = el('button', 'btn-primary series-mark-btn', 'Mark all read');
   markBtn.id = 'markAllBtn';
+  markBtn.dataset.tooltip = 'Mark every unread issue in this series as read';
   markBtn.addEventListener('click', () => markAllRead(data.issues));
   topRow.appendChild(markBtn);
   hero.appendChild(topRow);
@@ -2482,7 +2495,7 @@ function buildIssueRow(issue) {
 function buildStatusButton(issue, row) {
   const STATUS_ICON = { read: '✓', reading: '▶', unread: '' };
   const btn = el('button', `status-btn ${issue.read_status}`, STATUS_ICON[issue.read_status] || '');
-  btn.title = `Status: ${issue.read_status}`;
+  btn.dataset.tooltip = 'Toggle read/unread status';
 
   btn.addEventListener('click', async (e) => {
     e.preventDefault();
@@ -2496,7 +2509,6 @@ function buildStatusButton(issue, row) {
       issue.read_status    = next;
       btn.className        = `status-btn ${next}`;
       btn.textContent      = STATUS_ICON[next] || '';
-      btn.title            = `Status: ${next}`;
       if (row) row.className = issueRowClass(issue);
     } catch (_) {}
   });
@@ -2526,7 +2538,6 @@ async function markAllRead(issues) {
   document.querySelectorAll('.status-btn').forEach(b => {
     b.className   = 'status-btn read';
     b.textContent = '✓';
-    b.title       = 'Status: read';
   });
   document.querySelectorAll('.issue-row').forEach(row => {
     row.classList.remove('state-reading');
@@ -2612,6 +2623,7 @@ function buildIssueDetail(data) {
   // could catch or report on from here.
   const coverLink = el('a', 'issue-cover-link issue-cover-link--redesign');
   coverLink.href = `comicvault://read/${data.id}`;
+  coverLink.dataset.tooltip = 'Opens in the digib00age reader app, if installed';
 
   // Collector-card frame: three nested layers (metallic bezel, state-mat,
   // dark inner frame) around the art — see style.css .cc-frame-* for why
@@ -2699,6 +2711,7 @@ function buildIssueDetail(data) {
   const secondaryRow = el('div', 'issue-actions-row');
   const editXmlBtn = el('button', 'btn-edit-xml', 'Edit XML');
   editXmlBtn.type = 'button';
+  editXmlBtn.dataset.tooltip = "Edit this issue's metadata (title, genre, credits, etc)";
   editXmlBtn.onclick = () => openEditorModal(data.id, () => initIssue());
   secondaryRow.appendChild(editXmlBtn);
   secondaryRow.appendChild(buildFlagReviewToggle(data, flagBadge));
@@ -2724,9 +2737,13 @@ function buildIssueDetail(data) {
     // go to that series' own page; everything else (single-issue formats,
     // or a lone "Series"-format issue with no siblings) falls back to the
     // same fieldview filter the genre tags below use.
-    formatBadge.href = (data.format === 'Series' && data.count > 1)
+    const linksToSeries = data.format === 'Series' && data.count > 1;
+    formatBadge.href = linksToSeries
       ? `/series/${data.id}`
       : `/?surface=fieldview&field=format&value=${encodeURIComponent(data.format)}`;
+    formatBadge.dataset.tooltip = linksToSeries
+      ? "Go to this issue's series"
+      : 'Browse other issues in this format';
     badges.appendChild(formatBadge);
   }
   if (data.black_and_white) {
@@ -2953,7 +2970,7 @@ function buildRatingControl(data) {
     const star = el('button', 'rating-star', '★');
     star.type = 'button';
     star.dataset.value = i;
-    star.title = `Rate ${i}`;
+    star.dataset.tooltip = 'Rate this issue 1–5 stars; click again to clear';
     star.addEventListener('click', async () => {
       // Clicking the already-highlighted star clears to Unrated (BUG-009).
       const newRating = data.personal_rating === i ? 0 : i;

@@ -263,7 +263,7 @@ function renderScanSection(scanState, missingCount, logStatus) {
   scanCard.className = 'stat-card scan-now-card';
   scanCard.id = 'scanNowCard';
   scanCard.innerHTML = `
-    <button class="btn-primary" id="scanNowBtn">Scan Now</button>
+    <button class="btn-primary" id="scanNowBtn" data-tooltip="Scan the entire library for new and changed files">Scan Now</button>
     <div class="scan-progress" id="scanProgress" hidden>
       <div class="scan-bar-wrap"><div class="scan-bar" id="scanBar"></div></div>
       <div class="scan-status-text" id="scanStatusText"></div>
@@ -293,7 +293,7 @@ function renderScanSection(scanState, missingCount, logStatus) {
     card.innerHTML = `
       <div class="stat-label">${c.label}</div>
       <div class="stat-value stat-value--md">${c.value}</div>
-      ${c.logName ? `<button class="btn-admin-action log-btn" data-log="${c.logName}">Logs</button>` : ''}
+      ${c.logName ? `<button class="btn-admin-action log-btn" data-log="${c.logName}" data-tooltip="View recent log entries for this scan category">Logs</button>` : ''}
     `;
     grid.appendChild(card);
   }
@@ -309,7 +309,7 @@ function renderScanSection(scanState, missingCount, logStatus) {
     <div class="stat-value stat-value--md" id="missingCountVal">${mc.toLocaleString()}</div>
     <button class="btn-admin-action" id="cleanupBtn"${mc === 0 ? ' disabled' : ''}>Clean Up</button>
     <div class="scan-status-text" id="cleanupResult"></div>
-    <button class="btn-admin-action log-btn" data-log="missing">Logs</button>
+    <button class="btn-admin-action log-btn" data-log="missing" data-tooltip="View recent log entries for this scan category">Logs</button>
   `;
   grid.appendChild(missingCard);
   document.getElementById('cleanupBtn').addEventListener('click', doCleanup);
@@ -979,11 +979,13 @@ function makeCustomTabRow(tab) {
   const toggleBtn = document.createElement('button');
   toggleBtn.className = `ct-visible-toggle${tab.visible ? ' is-visible' : ''}`;
   toggleBtn.textContent = tab.visible ? 'Visible' : 'Hidden';
+  toggleBtn.dataset.tooltip = 'Show or hide this library in the sidebar';
   toggleBtn.addEventListener('click', () => toggleCustomTabVisible(tab));
 
   const delBtn = document.createElement('button');
   delBtn.className = 'folder-remove-btn';
   delBtn.textContent = 'Delete';
+  delBtn.dataset.tooltip = 'Removes this tab definition only — comic files and library data are untouched';
   delBtn.addEventListener('click', () => deleteCustomTab(tab));
 
   row.append(info, viewModeSelect, toggleBtn, delBtn);
@@ -1312,12 +1314,14 @@ function makeHomeStripRow(strip, isFirst, isLast) {
   upBtn.className = 'hs-arrow-btn';
   upBtn.textContent = '▲';
   upBtn.disabled = isFirst;
+  upBtn.dataset.tooltip = 'Move this strip up';
   upBtn.addEventListener('click', () => moveHomeStrip(strip, -1));
   const downBtn = document.createElement('button');
   downBtn.type = 'button';
   downBtn.className = 'hs-arrow-btn';
   downBtn.textContent = '▼';
   downBtn.disabled = isLast;
+  downBtn.dataset.tooltip = 'Move this strip down';
   downBtn.addEventListener('click', () => moveHomeStrip(strip, 1));
   arrows.append(upBtn, downBtn);
 
@@ -1330,6 +1334,7 @@ function makeHomeStripRow(strip, isFirst, isLast) {
     const badge = document.createElement('span');
     badge.className = 'ct-hidden-badge';
     badge.textContent = 'Default';
+    badge.dataset.tooltip = 'Default strips can be reordered but not edited or removed';
     nameLine.appendChild(badge);
   } else if (!strip.visible) {
     const badge = document.createElement('span');
@@ -1571,7 +1576,9 @@ function renderEditableValueList(containerId, items, kind) {
     delBtn.className = 'folder-remove-btn';
     delBtn.textContent = 'Delete';
     delBtn.disabled = items.length <= 1;
-    delBtn.title = items.length <= 1 ? 'At least one value must remain' : '';
+    delBtn.dataset.tooltip = items.length <= 1
+      ? 'At least one value must remain'
+      : 'Remove from the list — issues keep their current value';
     delBtn.addEventListener('click', () => deleteEditableValue(kind, item.name, item.count));
 
     row.append(info, delBtn);

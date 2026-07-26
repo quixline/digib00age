@@ -121,7 +121,11 @@ async function checkAuthStatus() {
   // than being removed, so the Login/Logout button next to it doesn't shift.
   const settingsBtn = document.querySelector('.settings-btn');
   if (settingsBtn) {
-    settingsBtn.classList.toggle('settings-btn--disabled', !status.is_local && !status.remote_admin_enabled);
+    const disabled = !status.is_local && !status.remote_admin_enabled;
+    settingsBtn.classList.toggle('settings-btn--disabled', disabled);
+    settingsBtn.dataset.tooltip = disabled
+      ? 'Admin access is off for remote sessions'
+      : 'Open admin settings';
   }
 
   return status;

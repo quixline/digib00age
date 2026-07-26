@@ -105,6 +105,7 @@ function renderGenreChips() {
     x.className = 'fe-genre-chip-x';
     x.textContent = '✕';
     x.setAttribute('aria-label', `Remove ${g}`);
+    x.dataset.tooltip = 'Remove this genre';
     x.onclick = () => removeGenre(g);
     chip.appendChild(x);
     wrap.appendChild(chip);
@@ -463,7 +464,7 @@ function renderQueueList() {
     removeBtn.type = 'button';
     removeBtn.className = 'fe-queue-remove';
     removeBtn.textContent = '✕';
-    removeBtn.title = 'Remove';
+    removeBtn.dataset.tooltip = 'Remove this file from the queue';
     removeBtn.onclick = () => removeFromQueue(entry.id);
 
     card.appendChild(check);
@@ -1221,6 +1222,7 @@ function openMultiXmlModal(fileId, candidates) {
     keepBtn.type = 'button';
     keepBtn.className = 'btn-primary';
     keepBtn.textContent = 'Keep this one';
+    keepBtn.dataset.tooltip = 'Keep this ComicInfo.xml and delete the other(s) from the archive';
     keepBtn.onclick = () => resolveMultiXml(candidate.filename);
 
     card.appendChild(header);
@@ -1416,6 +1418,7 @@ function renderSoIssueTable(issues) {
   for (const issue of issues) {
     const row = document.createElement('tr');
     row.innerHTML = `<td>${escapeHtml(issue.number)}</td><td>${escapeHtml(issue.date)}</td><td>${escapeHtml(issue.title)}</td>`;
+    row.dataset.tooltip = "Double-click to apply this issue's data, overwriting all current fields";
     row.addEventListener('click', () => previewSoIssue(issue, row));
     row.addEventListener('dblclick', () => confirmSoIssue(issue.issue_id));
     tbody.appendChild(row);

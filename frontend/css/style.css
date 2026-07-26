@@ -4529,6 +4529,13 @@ select.filter-select:focus,
   padding: 16px 20px 20px;
 }
 
+/* Tooltip anchor for the disabled Save button (Basic Editor) — see
+   updateSaveButtonState()'s comment in editor_basic.js for why the tooltip
+   lives on this wrapper instead of the button itself. */
+.editor-save-wrap {
+  display: inline-flex;
+}
+
 .page-ellipsis {
   min-width: 28px;
   text-align: center;
@@ -5362,6 +5369,13 @@ select.fe-genre-add:focus {
   gap: 8px;
 }
 
+/* Tooltip anchor for these buttons — see .editor-save-wrap's comment
+   (frontend/js/editor_basic.js) for why disabled buttons need a wrapper. */
+.fe-queue-action-wrap {
+  display: inline-flex;
+  flex: 1;
+}
+
 .fe-queue-actions .btn-primary {
   flex: 1;
 }
@@ -5911,4 +5925,39 @@ select.fe-genre-add:focus {
   color: var(--text-2);
   max-height: 240px;
   overflow-y: auto;
+}
+
+/* ── Tooltips (Stage 7, docs/user-guide-plan.md) ─────────────────────────────
+   Single shared element (frontend/js/tooltip.js), positioned via inline
+   top/left. Sits above modals (.editor-overlay is 1000) since tooltips can
+   anchor to controls inside a modal too (e.g. Basic Editor's Save button). */
+.db-tooltip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2000;
+  max-width: 240px;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  box-shadow: var(--shadow-pop);
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
+  pointer-events: none;
+  white-space: normal;
+}
+
+.db-tooltip--below {
+  transform: translateY(-2px);
+}
+
+.db-tooltip--visible {
+  opacity: 1;
+  transform: translateY(0);
 }

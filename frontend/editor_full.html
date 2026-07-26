@@ -24,9 +24,9 @@
       </a>
       <span class="fe-header-brand"><span class="fe-header-glyph">&lt;/&gt;</span> XML Editor</span>
       <div class="fe-header-actions">
-        <button type="button" class="btn-admin-action" id="feSearchOnlineBtn">Search ComicVine</button>
-        <a href="https://www.goodreads.com" target="_blank" rel="noopener noreferrer" class="btn-admin-action btn-admin-action--ghost">Search GoodReads</a>
-        <a href="/admin" class="settings-btn" title="Admin / Settings" aria-label="Settings">
+        <button type="button" class="btn-admin-action" id="feSearchOnlineBtn" data-tooltip="Search ComicVine using this file's Series, Issue #, Year">Search ComicVine</button>
+        <a href="https://www.goodreads.com" target="_blank" rel="noopener noreferrer" class="btn-admin-action btn-admin-action--ghost" data-tooltip="Opens goodreads.com — does not search using this file's data">Search GoodReads</a>
+        <a href="/admin" class="settings-btn" data-tooltip="Open admin settings" aria-label="Settings">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -47,8 +47,8 @@
           <span class="fe-panel-title">Load / Select Files</span>
         </div>
         <div class="fe-panel-toolbar">
-          <button type="button" class="btn-admin-action fe-btn-block" id="feSelectFolderBtn">📁 Select Folder</button>
-          <button type="button" class="btn-admin-action btn-admin-action--ghost" id="feClearListBtn">Clear</button>
+          <button type="button" class="btn-admin-action fe-btn-block" id="feSelectFolderBtn" data-tooltip="Load files from one folder only — subfolders aren't included">📁 Select Folder</button>
+          <button type="button" class="btn-admin-action btn-admin-action--ghost" id="feClearListBtn" data-tooltip="Clear all loaded files and reset the form">Clear</button>
         </div>
         <div class="fe-lib-path" id="feLibPath" title="">🗀 <span id="feLibPathText">No folder loaded</span></div>
 
@@ -92,14 +92,14 @@
                 <label for="fe-series">Series Title</label>
                 <input type="text" id="fe-series" name="Series">
               </div>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Series" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Series" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
             <div class="fe-field-row">
               <div class="fe-field">
                 <label for="fe-title">Issue Title</label>
                 <input type="text" id="fe-title" name="Title">
               </div>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Title" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Title" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
             <div class="fe-field-row">
               <div class="fe-field">
@@ -107,14 +107,14 @@
                 <input type="text" id="fe-number" name="Number">
               </div>
               <label class="fe-increment-label" for="fe-increment">Increment #</label>
-              <div class="fe-apply-cell"><input type="checkbox" id="fe-increment"></div>
+              <div class="fe-apply-cell"><input type="checkbox" id="fe-increment" data-tooltip="Increase issue number by one for each file, in list order"></div>
             </div>
             <div class="fe-field-row">
               <div class="fe-field">
                 <label for="fe-year">Year</label>
                 <input type="text" id="fe-year" name="Year" inputmode="numeric">
               </div>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Year" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Year" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
             <div class="fe-field-row">
               <div class="fe-field">
@@ -124,32 +124,32 @@
                   <select class="fe-genre-add" id="fe-genre-add"></select>
                 </div>
               </div>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Genre" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Genre" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
             <div class="fe-field-row">
               <div class="fe-field">
                 <label for="fe-format">Format <span class="editor-required">*</span></label>
                 <select id="fe-format" name="Format"></select>
               </div>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Format" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Format" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
             <div class="fe-field-row">
               <div class="fe-field">
                 <label for="fe-agerating">Age Rating <span class="editor-required">*</span></label>
                 <select id="fe-agerating" name="AgeRating"></select>
               </div>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="AgeRating" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="AgeRating" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
             <div class="fe-field-row">
               <div class="fe-field">
                 <label for="fe-summary">Summary</label>
                 <textarea id="fe-summary" name="Summary" rows="4"></textarea>
               </div>
-              <div class="fe-apply-cell fe-apply-cell--top"><input type="checkbox" class="fe-apply-all" data-field="Summary" title="Apply to all"></div>
+              <div class="fe-apply-cell fe-apply-cell--top"><input type="checkbox" class="fe-apply-all" data-field="Summary" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
             <div class="fe-field-row">
               <label class="fe-inline-check fe-inline-check--wide"><input type="checkbox" id="fe-bw" name="BlackAndWhite"> Black &amp; White</label>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="BlackAndWhite" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="BlackAndWhite" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
           </div>
 
@@ -166,8 +166,8 @@
                 </div>
               </div>
               <div class="fe-apply-cell fe-apply-cell--dual">
-                <input type="checkbox" class="fe-apply-all" data-field="Count" title="Apply Count to all">
-                <input type="checkbox" class="fe-apply-all" data-field="PageCount" title="Apply Page Count to all">
+                <input type="checkbox" class="fe-apply-all" data-field="Count" data-tooltip="Include Count when Process All runs on every loaded file">
+                <input type="checkbox" class="fe-apply-all" data-field="PageCount" data-tooltip="Include Page Count when Process All runs on every loaded file">
               </div>
             </div>
             <div class="fe-field-row">
@@ -175,28 +175,28 @@
                 <label for="fe-writer">Writer</label>
                 <input type="text" id="fe-writer" name="Writer">
               </div>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Writer" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Writer" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
             <div class="fe-field-row">
               <div class="fe-field">
                 <label for="fe-penciller">Penciller</label>
                 <input type="text" id="fe-penciller" name="Penciller">
               </div>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Penciller" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Penciller" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
             <div class="fe-field-row">
               <div class="fe-field">
                 <label for="fe-publisher">Publisher</label>
                 <input type="text" id="fe-publisher" name="Publisher">
               </div>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Publisher" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Publisher" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
             <div class="fe-field-row">
               <div class="fe-field">
                 <label for="fe-storyarc">Story Arc</label>
                 <input type="text" id="fe-storyarc" name="StoryArc">
               </div>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="StoryArc" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="StoryArc" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
             <div class="fe-field-row">
               <div class="fe-field">
@@ -210,21 +210,21 @@
                   <option value="Dutch">
                 </datalist>
               </div>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Language" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Language" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
             <div class="fe-field-row">
               <div class="fe-field">
                 <label for="fe-notes">Notes</label>
                 <input type="text" id="fe-notes" name="Notes">
               </div>
-              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Notes" title="Apply to all"></div>
+              <div class="fe-apply-cell"><input type="checkbox" class="fe-apply-all" data-field="Notes" data-tooltip="Include this field when Process All runs on every loaded file"></div>
             </div>
           </div>
 
           <div class="editor-error" id="feError" hidden></div>
         </form>
 
-        <div class="fe-panel-foot">
+        <div class="fe-panel-foot" data-tooltip="Add this file to the queue with its current edits">
           <button type="button" class="btn-admin-action" id="feQueueBtn">＋ Queue</button>
         </div>
       </section>
@@ -270,9 +270,15 @@
         <div class="fe-panel-foot fe-panel-foot--col">
           <div class="fe-queue-actions-label">Queue Actions</div>
           <div class="fe-queue-actions">
-            <button type="button" class="btn-primary" id="feProcessQueueBtn" disabled>Process Queue</button>
-            <button type="button" class="btn-primary" id="feClearQueueBtn" disabled>🗑 Clear Queue</button>
-            <button type="button" class="btn-primary" id="feProcessAllBtn" disabled>Process All</button>
+            <span class="fe-queue-action-wrap" data-tooltip="Save XML to every queued file — this is the save action">
+              <button type="button" class="btn-primary" id="feProcessQueueBtn" disabled>Process Queue</button>
+            </span>
+            <span class="fe-queue-action-wrap" data-tooltip="Empty the queue without saving any changes">
+              <button type="button" class="btn-primary" id="feClearQueueBtn" disabled>🗑 Clear Queue</button>
+            </span>
+            <span class="fe-queue-action-wrap" data-tooltip="Save checked fields to every loaded file, bypassing the queue">
+              <button type="button" class="btn-primary" id="feProcessAllBtn" disabled>Process All</button>
+            </span>
           </div>
           <div class="fe-status-indicator" id="feStatusIndicator">Files will be updated with edited ComicInfo.xml.</div>
         </div>
@@ -305,8 +311,8 @@
       </div>
       <div class="fe-picker-breadcrumb" id="fePickerBreadcrumb"></div>
       <div class="fe-picker-controls">
-        <button type="button" class="btn-admin-action" id="fePickerHomeBtn">Home</button>
-        <button type="button" class="btn-admin-action" id="fePickerUpBtn">Up One Level</button>
+        <button type="button" class="btn-admin-action" id="fePickerHomeBtn" data-tooltip="Go to the starting folder">Home</button>
+        <button type="button" class="btn-admin-action" id="fePickerUpBtn" data-tooltip="Go up one folder level (this picker can browse any drive)">Up One Level</button>
         <button type="button" class="btn-admin-action" id="fePickerSelectAllBtn">Select All</button>
         <button type="button" class="btn-admin-action" id="fePickerDeselectAllBtn">Deselect All</button>
         <span class="fe-picker-selected-count" id="fePickerSelectedCount">0 items selected</span>
@@ -379,7 +385,7 @@
             <div class="editor-actions">
               <button type="button" class="btn-admin-action" id="feSoCancelBtn">Cancel</button>
               <button type="button" class="btn-admin-action" id="feSoIssuesBtn">Issues</button>
-              <button type="button" class="btn-primary" id="feSoOkBtn">Ok</button>
+              <button type="button" class="btn-primary" id="feSoOkBtn" data-tooltip="Use the top match and skip straight to its issue list">Ok</button>
             </div>
           </div>
         </div>
@@ -403,6 +409,7 @@
   </div>
 
   <script src="/static/js/pwa.js"></script>
+  <script src="/static/js/tooltip.js"></script>
   <script src="/static/js/editor_full.js"></script>
   <script src="/static/js/auth.js"></script>
 </body>

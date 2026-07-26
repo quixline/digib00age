@@ -301,13 +301,20 @@ Tez 2026-07-05:
    in `docs/v2.6/comicvault-changes-v2.6.md` Item 4 and
    `docs/v2.6/progress.md`. `meta/roadmap.html`'s Now lane card removed
    2026-07-13 (item complete).
-5. **Add: user guide** (v2.6, moved from v2.5 2026-07-05). Not yet scoped at
-   all. `ADMIN_SPEC.md` §7.1.7's Password Recovery popup (v2.3 Item 10) already
-   explicitly said the guide, once built, should link to that popup rather than
-   duplicating its instructions — worth checking for any other place a spec
-   already assumes a guide exists before scoping this from scratch.
-6. **Add: tooltips (mouseover) site-wide** (v2.6, moved from v2.5 2026-07-05).
-   Low priority, fits naturally alongside the UI redesign work.
+5. **Add: user guide — scoped, built, and closed 2026-07-26.** (v2.6, moved
+   from v2.5 2026-07-05). Built per `docs/user-guide-plan.md` (9 stages) —
+   `/guide`, `/guide/library`, `/guide/admin`, `/guide/editor` (+ `-basic`/
+   `-full`), reusing the existing `/guide` `FileResponse` route rather than a
+   new `StaticFiles` mount (see `DECISIONS.md`). Full detail in
+   `docs/v2.6/progress.md`. `meta/roadmap.html`'s Now lane card removed
+   2026-07-26 (item complete).
+6. **Add: tooltips (mouseover) site-wide — scoped, built, and closed
+   2026-07-26.** (v2.6, moved from v2.5 2026-07-05). Built as Stage 7 of the
+   same `docs/user-guide-plan.md` effort (a shared tooltip-text pass made
+   sense alongside the guide's own feature inventory) — vanilla-JS delegated
+   tooltip system, `docs/tooltip-data.md` wired across the whole app. Full
+   detail in `docs/v2.6/progress.md`. `meta/roadmap.html`'s Now lane card
+   removed 2026-07-26 (item complete).
 7. **Scope: installer — Windows, Mac, and Linux** (v2.6, moved from v2.5
    2026-07-05). Expanded scope, 2026-06-29 — previously Windows-only and
    unprioritized (`SPEC.md` §20.14: "setup is manual, `config.json` +

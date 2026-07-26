@@ -95,7 +95,16 @@ function updateSaveButtonState() {
   const anyGenreChecked = document.querySelectorAll('#ed-genre-grid input:checked').length > 0;
   const formatSet = document.getElementById('ed-format').value !== '';
   const ratingSet = document.getElementById('ed-agerating').value !== '';
-  document.getElementById('editorSaveBtn').disabled = !(anyGenreChecked && formatSet && ratingSet);
+  const ready = anyGenreChecked && formatSet && ratingSet;
+  document.getElementById('editorSaveBtn').disabled = !ready;
+  // Tooltip lives on the wrapping span, not the button itself — a native
+  // `disabled` button suppresses hover/mouseover events in Chromium, so a
+  // data-tooltip on the button alone would never fire while it's disabled.
+  const saveWrap = document.getElementById('editorSaveWrap');
+  if (saveWrap) {
+    if (ready) delete saveWrap.dataset.tooltip;
+    else saveWrap.dataset.tooltip = 'Save is enabled once a genre, format and age rating are set';
+  }
 }
 
 function setField(id, value) {

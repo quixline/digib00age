@@ -132,9 +132,8 @@ Reached via a Libraries sidebar entry whose `view_mode` is `folder` (Admin → A
 
 - Same menu bar as Flat View, minus Grouping (folders already group by directory) and the "# of Pages" sort option; all other sort/filter/favourite/flag/search controls behave the same, scoped to the current folder level.
 - Mixed grid at each folder level: subfolders render as folder cards (recursive issue count across everything underneath, a random representative thumbnail re-rolled every visit, year range if available), loose files render as normal flat issue cards.
-- Clicking a folder card drills one level down; a "← Back" button (not a breadcrumb) goes up one level, reusing browser history.
+- Clicking a folder card drills one level down; there is no in-page Back/breadcrumb control — going up a level means using the browser's own Back button (reuses `history.pushState`). **Correction 2026-07-26:** an earlier pass of this inventory claimed a "← Back" button and a folder-level "Mark all read" button here; neither exists in the current code — both were part of a back-nav/mark-all-read row removed from Folder View on 2026-07-17 (see `frontend/css/style.css` comment above `.folder-search-label`), before this inventory was written. Fixed here and in `frontend/guide-library.html` during Stage 7.
 - Search inside a Folder View tab replaces the current folder's grid with flat, depth-agnostic results across the whole tab's subtree, each showing its folder path; clearing the search returns to the folder level that was active before.
-- "Mark all read" at any folder level marks every issue anywhere underneath that folder as read (recursive).
 - A folder card stays visible under the Favourites/Flagged filters if anything anywhere underneath it matches, even if nothing at the folder's own root does.
 
 ---
@@ -287,7 +286,30 @@ Currently a static placeholder page (pre-dates this guide-build project): a shor
 
 ## [UNCLEAR — check source / live-verify] items
 
-- **Full Editor Search ComicVine / Basic Editor fuzzy-credit confirm dialogs** — both use native `confirm()`/blocked-by-empty-Series-guard behaviour; couldn't be triggered live this session (browser automation viewport became unusably small mid-session — see note below), confirmed from source only. Low risk, but worth a quick live click-through in Stage 2/4/6 before writing tooltip copy for them.
-- **`comicvault://` Read link behaviour on a machine with no Flutter reader installed** — per source, nothing happens (browser's own "can't open this link" affordance). Not verified live this session since the dev machine's actual reader-registration state wasn't checked.
-- **Live visual confirmation of card badge positions/colours** (favourite heart, flag icon, read-state dot, progress bar) — confirmed structurally via `app.js` and by an early live screenshot of the All surface, but a Chrome automation issue (browser window/viewport got stuck at 323×293 partway through this session, `resize_window` calls reported success but had no visible effect) prevented later full-resolution screenshots of Series/Issue/Admin/Editor pages. Everything in this document is still confirmed via either an early full-size screenshot, `get_page_text`, or direct source reading — nothing here is guessed — but a fresh live pass with a healthy browser window is worth doing before Stage 2 tooltip work, purely as a visual sanity check.
+- ~~Full Editor Search ComicVine / Basic Editor fuzzy-credit confirm dialogs~~ —
+  **resolved, Stage 8 (2026-07-26):** the fuzzy-credit dialog is a real native
+  `confirm()`, identical wording in both editors (`editor_full.js`/
+  `editor_basic.js`, `warnOnFuzzyCredits()`): `"{name}" is close to an existing
+  {writer/artist}: "{closest_match.name}".\n\nOK = use "{closest_match.name}"
+  instead\nCancel = save "{name}" as typed`. Search ComicVine itself has **no**
+  confirm dialog at all — attempting a search with no Series value shows an
+  inline `.editor-error` message ("Need to enter a series name to search."),
+  not a native popup (`openSearchOnline()`, `editor_full.js`). Confirmed from
+  source, consistent with how every other native-dialog entry in this
+  inventory was resolved (native `confirm()` popups freeze Chrome automation,
+  so these are always read from source rather than triggered live).
+- **`comicvault://` Read link behaviour on a machine with no Flutter reader
+  installed** — per source, nothing happens (browser's own "can't open this
+  link" affordance). Still not independently verified live — the dev machine
+  used for every Chrome-automation pass this project has run on on does have
+  the reader registered, so the "not installed" case can't be reproduced from
+  here regardless of automation health. Accepted as low-risk and left as-is;
+  the guide already frames it as a heads-up ("if that app isn't installed...
+  clicking Read won't do anything visible").
+- ~~Live visual confirmation of card badge positions/colours~~ — **resolved,
+  Stage 8 (2026-07-26):** the browser-automation viewport issue that blocked
+  this during Stage 1 didn't recur in later sessions. Confirmed via live
+  screenshots (Library/All grid, an issue detail page) during Stage 7's
+  tooltip-verification pass — cover cards, badges, and the issue-page layout
+  all render as this document already described.
 - ~~Exact wording of native `confirm()` dialogs~~ — resolved by reading `admin.js` directly (not opened live, since native `confirm()` popups freeze Chrome automation — per this project's standing working notes): Restart Server → "This will restart the server and disconnect active users. Continue?"; Restore Database → "Restore database from "{filename}"? This replaces your ENTIRE database — including Custom Tabs and Home Page Strips — and restarts the server. A safety snapshot is taken first."; Clear Reading Progress → "Clear all reading progress? This resets every issue to unread and erases all saved page positions for your entire library. Issue metadata and comic files are not affected."; Clear Database → "Clear the entire database? This permanently deletes all issues, genres, credits, and reading progress — your whole library record — and also removes cached thumbnails. Comic files on disk and Custom Tabs/Home Strips are not affected."; Custom Tab Delete → "Delete tab "{name}"? This only removes the tab definition — it will not touch any comic files or library data."; Home Strip Delete → same wording, "strip" in place of "tab"; Genre/Format List delete-while-in-use → "\"{name}\" is used by N issue(s) — remove it from the {Genre/Format} list anyway? Existing issues keep their current value; this only removes \"{name}\" from future selection."
