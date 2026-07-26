@@ -55,7 +55,7 @@ the same: both span every version by design.
 | `ROADMAP.md` | Paused/future work, explicitly out of scope until unblocked | Active |
 | `INBOX.md` | Raw, untriaged capture (bugs/changes/features) before they're placed in the docs above | Active — see `meta/working-rules.md` for the full workflow |
 | `TESTING.md` | Standing verification approach/runbook | Active |
-| `PERFORMANCE.md` | Standing performance-diagnostics baseline + reusable methodology (parallel to `TESTING.md`, for speed/load rather than correctness) | Active — two baselines: §1 (2026-07-09, first) and §1B (2026-07-18, post-2000 AD move / post-rebuild). Raw data for the 2026-07-18 run is in `archive/perf-2026-07-18/`; scripts in `.claude/skills/perf-diagnostics/scripts/`. Baselines append as §1B/§1C so §2–§4 references stay stable |
+| `PERFORMANCE.md` | Standing performance-diagnostics baseline + reusable methodology (parallel to `TESTING.md`, for speed/load rather than correctness) | Active — three baselines: §1 (2026-07-09, first), §1B (2026-07-18, post-2000 AD move / post-rebuild), §1C (2026-07-26, scanner commit-batching fix + new CT issue-list finding). Raw data for the 2026-07-18 run is in `archive/perf-2026-07-18/`; scripts in `.claude/skills/perf-diagnostics/scripts/`. Baselines append as §1B/§1C so §2–§4 references stay stable |
 | `CHANGELOG.md` | Terse one-line-per-entry index, points back to the current version's `progress.md` | Active |
 
 **`admin-spec-section-12-processing-tools.md` retired 2026-07-01** — folded into

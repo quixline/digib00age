@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-26** — Scanner batches `db.commit()` every 50 files instead of
+  once per file (`backend/scanner.py`); per-file callers (editor rescans,
+  `POST /api/scan/file`) unchanged. → `v2.6/progress.md` "Scanner
+  commit-batching fix + CT issue-list slowness diagnosed"
 - **2026-07-26** — User guide project kicked off: built `discovery`/`ux-copy`/
   `design-critique` skills, corrected `docs/user-guide-plan.md` to match the
   existing `/guide` route, produced `docs/guide-inventory.md` and

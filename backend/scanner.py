@@ -62,6 +62,10 @@ class ScanProgress:
 # Module-level singleton — the API status endpoint reads this
 scan_progress = ScanProgress()
 
+# How many files scan_library() processes per DB commit (PERFORMANCE.md
+# finding #14) — batched instead of one commit per file.
+COMMIT_BATCH_SIZE = 50
+
 # Tracks changes to EXISTING issues — metadata updates (editor rescans + full
 # scan) and rename/move matches — since the last full scan completed. New-file
 # inserts don't count here; they have their own New Files stat/log. Mirrors
@@ -473,7 +477,8 @@ def _ensure_progress(db: Session, issue: Issue):
 # Scan a single file (also used by POST /api/scan/file)
 # ---------------------------------------------------------------------------
 
-def scan_single_file(file_path: str, db: Session, details: dict | None = None) -> str:
+def scan_single_file(file_path: str, db: Session, details: dict | None = None,
+                      commit: bool = True) -> str:
     """
     Scan or rescan one CBZ or CBR file.
     Returns one of: "new", "updated", "skipped", "error"
@@ -481,6 +486,12 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
     `details`, if passed, is filled in with extra info the caller may want —
     currently just `change_type` for "updated" results (changed_files log,
     2.3-fixes.md Fix 8). Other callers don't need it and can omit it.
+
+    `commit`, if False, flushes but does not commit the transaction — used by
+    scan_library()'s per-file loop to batch commits across many files instead
+    of one per file (PERFORMANCE.md finding #14). Every other caller (editor
+    post-save rescans, POST /api/scan/file) is single-file and needs the
+    immediate, synchronous commit the default preserves.
     """
     file_path = str(Path(file_path).resolve())
 
@@ -493,7 +504,10 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
         issue = db.query(Issue).filter(Issue.file_path == file_path).first()
         if issue:
             issue.missing = True
-            db.commit()
+            if commit:
+                db.commit()
+            else:
+                db.flush()
         return "error"
     except Exception as exc:
         logger.error("Cannot stat %s: %s", file_path, exc)
@@ -516,7 +530,10 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
                 thumb = _generate_thumbnail(file_path, existing.id)
                 if thumb:
                     existing.cover_path = thumb
-                    db.commit()
+                    if commit:
+                        db.commit()
+                    else:
+                        db.flush()
                 else:
                     scan_progress.errors += 1
                     scan_progress.add_log(f"THUMBNAIL ERROR: {Path(file_path).name}")
@@ -551,7 +568,10 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
         else:
             scan_progress.errors += 1
             scan_progress.add_log(f"THUMBNAIL ERROR: {Path(file_path).name}")
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
         _since_scan_count += 1
         return "updated"
     else:
@@ -569,7 +589,10 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None) -
         else:
             scan_progress.errors += 1
             scan_progress.add_log(f"THUMBNAIL ERROR: {Path(file_path).name}")
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
         return "new"
 
 
@@ -711,13 +734,21 @@ def scan_library(db: Session):
         scan_progress.add_log(f"Detected {len(renamed_paths)} moved/renamed file(s)")
 
     # ---- Process each file ----
+    # Commits are batched (every COMMIT_BATCH_SIZE files) rather than one per
+    # file — PERFORMANCE.md finding #14 measured 5,452 per-file commits at
+    # 35.1ms median (18.3% of a full scan's wall clock). scan_single_file()
+    # still flushes every call, so IDs/within-session visibility are
+    # unaffected; only the transaction-commit boundary moves. A crash
+    # mid-batch loses at most COMMIT_BATCH_SIZE files' worth of work, which a
+    # subsequent scan simply re-detects as new/changed.
+    since_commit = 0
     for file_path in sorted(disk_paths):
         if file_path in renamed_paths:
             scan_progress.processed += 1
             continue
 
         details: dict = {}
-        result = scan_single_file(file_path, db, details)
+        result = scan_single_file(file_path, db, details, commit=False)
         scan_progress.processed += 1
 
         if result == "new":
@@ -735,6 +766,14 @@ def scan_library(db: Session):
         elif result == "error":
             scan_progress.errors += 1
             scan_progress.add_log(f"ERROR: {Path(file_path).name}")
+
+        since_commit += 1
+        if since_commit >= COMMIT_BATCH_SIZE:
+            db.commit()
+            since_commit = 0
+
+    if since_commit > 0:
+        db.commit()
 
     # ---- Handle files in DB that are no longer on disk ----
     # Also silently delete any records whose path falls inside an excluded folder —

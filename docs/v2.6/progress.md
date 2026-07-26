@@ -6948,3 +6948,80 @@ project (all 9 stages) is done. Deferred: `docs/meta/build-plan.html` doesn't
 exist despite being referenced by `docs/INDEX.md`/`CLAUDE.md` as where
 build-plan items get marked done — noted as a doc/reality gap rather than
 invented from scratch this session.
+
+## Session — 2026-07-26 — Scanner commit-batching fix + CT issue-list slowness diagnosed
+
+Picked up `docs/INBOX.md`'s "Scanner speedups" line — two separate asks: batch
+the scanner's per-file commits (the `PERFORMANCE.md` §1B finding #14 "easy
+win"), and recheck why the Full Editor's ComicTagger "Search Online" flow
+feels slower than the standalone ComicTagger desktop app.
+
+**Scanner — built and verified.** `scan_single_file()` (`backend/scanner.py`)
+gained a `commit: bool = True` parameter; its 4 internal `db.commit()` calls
+now respect it. `scan_library()`'s per-file loop calls it with `commit=False`
+and commits every `COMMIT_BATCH_SIZE` (50) files instead of once per file,
+plus a final commit after the loop. The three other callers (editor post-save
+rescans in `editor_basic.py`/`editor_full.py`, `POST /api/scan/file` in
+`admin.py`) are unchanged — they keep the default `commit=True` since they're
+single-file and need an immediate, synchronous commit.
+
+Also updated `.claude/skills/perf-diagnostics/scripts/7_instrumented_scan.py`
+to match the new signature — its per-file commit timing is now a global
+wrap around the whole run (individual `scan_single_file()` calls no longer
+commit during a full scan, so the old per-call swap-in/out would have always
+read zero).
+
+**Verified two ways, never touching the real library or Processing folder:**
+a scratch test (120 synthetic `.cbz` files in an isolated scratch DB/folder,
+script kept in the session scratchpad, not committed) confirmed commits drop
+from a would-be 121 to 4, and that new/skipped/updated detection across three
+passes (from-scratch, unchanged rescan, one file touched) all still behave
+correctly. Then a real live scan against the actual library (5,453 files,
+triggered via `POST /api/scan` after Tez restarted the tray app to pick up
+the change): `new=0 updated=0 skipped=5453 errors=0` in ~16s — matches the
+historical no-op-scan baseline, no regression. A full from-scratch timing run
+against the real 5,452-file library (to directly confirm the ~4 min wall-clock
+saving) wasn't re-run this session — the scratch test's commit-count math
+(ceil(N/50) vs N) is deterministic enough that the ~4 min estimate from
+`PERFORMANCE.md` finding #14 should hold; see `PERFORMANCE.md` for the
+re-baseline entry.
+
+**CT issue-list slowness — root cause found, fix scoped but not built (Tez's
+call: "scope it for now").** Built
+`.claude/skills/perf-diagnostics/scripts/11_ct_series_issue_timing.py`
+(read-only, times `backend/ct_bridge.py` calls directly) and ran it live
+against real ComicVine data. Two different steps of the Search Online modal
+have very different costs:
+
+- **Select Series** (`search_series()`) is fast — Postal 2.5s cold/0.08s warm,
+  2000 AD 0.09s (search itself doesn't scale with series size). Tez's own
+  live timing of this exact step (open editor → Search Online → series list
+  appears) was ~4s first click, ~1.5s second — consistent with this being the
+  fine part of the flow, not the reported bottleneck.
+- **Select Issue** (`list_issues_for_series()`, the "Issues" button) is where
+  the real cost lives, and it scales with series size: Postal (25 issues)
+  3.0s cold/0.08s warm, but **2000 AD (2,492 issues) took 221s (3.7 min) cold
+  and still 80s on an immediate warm repeat.** Root cause, found by reading
+  the vendored `comictalker/talkers/comicvine.py`: the warm-cache fast path
+  only fires when the cached issue count exactly matches ComicVine's own
+  reported `count_of_issues` for the series — for 2000 AD that's 2,489
+  reported vs 2,492 actually returned, so the mismatch defeats the fast path
+  every time, and the full per-issue reprocessing pass (including a redundant
+  per-issue series re-lookup the library itself does inside
+  `_fetch_issues_in_series()`) reruns in full on every call, warm or not.
+  Tez didn't click "Issues" during his own live timing, so this specific step
+  wasn't independently confirmed against the standalone desktop app this
+  session — the ComicVault-side numbers above stand on their own regardless.
+
+Not built this session, per Tez's explicit "scope it for now" — see
+`PERFORMANCE.md` §3 for the scoped candidate fixes (tolerate the count
+mismatch, or short-circuit the redundant per-issue re-lookup via a runtime
+monkeypatch in `ct_bridge.py`, same pattern the perf-diagnostics scripts
+already use for the scanner). Revisit as its own session when picked up.
+
+**Docs:** `PERFORMANCE.md` gets a re-baseline entry for finding #14 (fixed)
+and a new finding + open follow-up for the CT issue-list cost. `CHANGELOG.md`
+gets one line for the scanner fix (shipped) — the CT diagnostic isn't a
+shipped change, so it's not separately changelogged, just tracked in
+`PERFORMANCE.md`. `docs/INBOX.md`'s line is left as-is per standing
+process — Claude doesn't triage/edit that file unprompted.
