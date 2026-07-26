@@ -6710,3 +6710,51 @@ double-click would (`Start-Process`), and confirmed via `Get-Process` that
 the cmd host left no lingering process while the dummy pythonw process
 kept running for its full sleep duration. Killed the dummy process and
 deleted the scratch files afterward.
+
+## Session — 2026-07-26 — User guide project kicked off: 3 skills built, Stage 1 + Stage 2 done
+
+Started executing `docs/user-guide-plan.md` (a 9-stage plan for building an in-app
+user guide, written 2026-07-25, not yet started). Before running any stage,
+planning surfaced that the plan's assumptions didn't match the current repo:
+
+- Three skills it invokes (`discovery`, `design:ux-copy`, `design:design-critique`)
+  didn't exist anywhere — built them as `.claude/skills/discovery/SKILL.md`,
+  `.claude/skills/ux-copy/SKILL.md`, `.claude/skills/design-critique/SKILL.md`
+  (flat names — no plugin namespace exists in this repo, so the `design:` prefix
+  was dropped).
+- The plan assumed a greenfield guide (`backend/static/guide/` StaticFiles mount +
+  new `guide.css`). A `/guide` route already exists in `backend/main.py`
+  (`FileResponse`-based, same pattern as `/admin`/`/editor`), already serving a
+  real stub `frontend/guide.html`, already linked from `frontend/admin.html:41`.
+  Tez chose to build on the existing route pattern rather than replace it — see
+  `DECISIONS.md` entry below.
+- File paths in the plan (`frontend/static/js/`, `frontend/static/css/`) were
+  wrong — real paths are `frontend/js/` and `frontend/css/`.
+- The plan framed digib00age as a "rebrand in progress" — it already shipped
+  2026-07-13 (UI-visible-copy only; see `DECISIONS.md`'s existing entry).
+
+Corrected `docs/user-guide-plan.md`'s Quick Reference table and Stage 3 in place so
+later stages inherit accurate assumptions, then ran:
+
+- **Stage 1 (Discovery & Feature Inventory):** invoked the new `discovery` skill to
+  scope the effort, then navigated every page of the live app (library home/browse,
+  series, issue, folder view, admin — every section — basic editor, full editor,
+  selection-bar states) plus read all `frontend/js/*.js`/`frontend/css/*.css` and
+  the spec docs. Produced `docs/guide-inventory.md` (293 lines, ~200+ elements
+  across 12 top-level sections), including verbatim wording for every native
+  `confirm()` dialog in the app (pulled from `admin.js` source rather than
+  triggered live, since those native dialogs freeze browser automation). A few
+  items
+  flagged `[UNCLEAR]` (Search ComicVine/fuzzy-credit confirm dialogs, live badge
+  colours) after a Chrome automation viewport issue mid-session cut short visual
+  screenshot verification on the later pages — worth a live sanity pass before
+  content-writing stages.
+- **Stage 2 (Tooltip Data List):** invoked the new `ux-copy` skill, worked through
+  the inventory page by page. Produced `docs/tooltip-data.md` (101 tooltip
+  entries, ~55-60 elements deliberately skipped as self-labelled/unambiguous, 2
+  flagged `[NEEDS VERIFICATION]` for Stage 7 DOM-checking).
+
+**Stopped after Stage 2 per plan** — Stage 3 (shell pages) onward is deferred to a
+future session, pending Tez's review of the inventory and tooltip data. No app
+code, HTML, CSS, or routes were touched this session; no live data was modified
+(read-only navigation only).

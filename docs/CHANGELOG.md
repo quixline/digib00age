@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-26** — User guide project kicked off: built `discovery`/`ux-copy`/
+  `design-critique` skills, corrected `docs/user-guide-plan.md` to match the
+  existing `/guide` route, produced `docs/guide-inventory.md` and
+  `docs/tooltip-data.md` (Stages 1-2). No app behaviour changed.
+
 - **2026-07-25** — `start.bat` launches the tray app detached (`start ""`)
   so its cmd host window closes itself immediately instead of staying open
   for the app's whole runtime. → `progress.md` "Tray App: Open Pages in

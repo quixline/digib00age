@@ -4,6 +4,24 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### User guide extends the existing `/guide` `FileResponse` route, not a new `StaticFiles` mount
+
+**Decided:** 2026-07-26.
+
+**Why:** `docs/user-guide-plan.md` (written 2026-07-25) assumed a greenfield
+build — a new `backend/static/guide/` directory mounted via FastAPI's
+`StaticFiles`, with fresh multi-page HTML and its own `guide.css`. Investigation
+before starting Stage 1 found a `/guide` route already exists in `backend/main.py`
+(`FileResponse`-based, the same pattern used by `/`, `/admin`, `/editor`), already
+serving a real stub `frontend/guide.html`, already linked from
+`frontend/admin.html:41`. Tez chose to extend that existing route/pattern (sibling
+routes like `/guide/library`, new HTML files directly in `frontend/`, reusing the
+app's existing token CSS with no separate guide stylesheet) rather than build the
+plan's parallel structure — it matches how every other page in the app is served,
+and avoids maintaining two separate static-serving mechanisms for no functional
+gain. `docs/user-guide-plan.md` was corrected in place (Quick Reference table,
+Stage 3) so later stages inherit this instead of the original assumption.
+
 ### Admin "Open Editor" link opens in the same tab, not a new one
 
 **Decided:** 2026-07-25.
