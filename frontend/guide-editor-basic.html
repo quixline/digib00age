@@ -49,7 +49,84 @@
       <p class="guide-subtitle">Quick metadata edits for a single issue, right from the reader.</p>
 
       <!-- content: Stage 6 -->
-      <div class="guide-placeholder-note">Basic Editor content coming in Stage 6.</div>
+
+      <h2 id="opening-basic-editor">Opening the Basic Editor</h2>
+      <p>From any issue's page (<code>/issue/{id}</code>), click the <strong>Edit
+      XML</strong> button in the metadata column. The Basic Editor opens as a modal
+      overlay right on top of the issue page — there's no navigation away and no new
+      tab, so you're back where you started the moment you close it.</p>
+      <p>It only ever edits the single issue you opened it from. There's no folder
+      picker and no batch option here — for editing several files at once, or files
+      that aren't in your library yet, see the <a href="/guide/editor-full">Full
+      Editor</a> instead.</p>
+
+      <h2 id="basic-editor-fields">Fields — Main and More tabs</h2>
+      <p>The form is split across two tabs so the fields you'll touch most often aren't
+      crowded by the ones you'll rarely need.</p>
+
+      <h3 id="main-tab">Main tab</h3>
+      <ul>
+        <li><strong>Series Title</strong> and <strong>Issue Title</strong> — plain text.</li>
+        <li><strong>Issue Number</strong> and <strong>Year</strong> — plain text/number
+        fields. (There's no Increment Number control here — auto-incrementing an issue
+        number only makes sense across a batch of files, so that control lives in the
+        Full Editor only.)</li>
+        <li><strong>Genre</strong> — a multi-select checkbox grid, drawn from the Genre
+        list Admin → Editor Options manages. <strong>Required</strong> — at least one
+        box must be ticked before you can save.</li>
+        <li><strong>Format</strong> — a dropdown, also Admin-managed, and
+        <strong>required</strong>.</li>
+        <li><strong>Age Rating</strong> — a dropdown of eight fixed values (Everyone,
+        Early Childhood, Everyone 10+, PG, Adult, Teen, Teen+, Mature) — this list is
+        locked and isn't editable from Admin. <strong>Required</strong>.</li>
+        <li><strong>Black &amp; White</strong> — a plain checkbox.</li>
+        <li><strong>Summary</strong> — a multi-line textarea.</li>
+      </ul>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>If an issue's existing Genre, Format, or Age Rating value doesn't match the
+        currently-enforced list (usually because it was tagged before that list existed,
+        or the value was later removed from the list in Admin), that field loads
+        <strong>blank</strong> rather than pre-selected — you have to actively pick a
+        valid value for it before you can save. This applies per field, so a stale Genre
+        won't block saving if Format and Age Rating are already fine.</p>
+      </div>
+
+      <h3 id="more-tab">More tab</h3>
+      <ul>
+        <li><strong>Count</strong> — total issue count for the series, if known.</li>
+        <li><strong>Page Count</strong> — auto-counted from the archive's actual image
+        count, but editable if you need to override it.</li>
+        <li><strong>Writer</strong> and <strong>Penciller</strong> — free-text, comma-
+        separated for multiple names.</li>
+        <li><strong>Publisher</strong> — plain text.</li>
+        <li><strong>Story Arc</strong> — plain text.</li>
+        <li><strong>Language</strong> — free text, backed by a datalist of common
+        languages so it autocompletes as you type without restricting you to the list.</li>
+        <li><strong>Notes</strong> — plain text; defaults to "Modified with the CAPT" if
+        you leave it blank.</li>
+      </ul>
+
+      <h2 id="basic-editor-saving">Saving, validation, and canceling</h2>
+      <p>The <strong>Save</strong> button stays disabled until Genre, Format, and Age
+      Rating are all validly set — there's no way to submit the form with any of those
+      three left unresolved.</p>
+      <p>Saving is asynchronous: the modal closes immediately once your edits are
+      validated and merged into the file's XML, and a toast notification tracks the rest
+      of the work in the background ("Saving in background…", then "Saved" once the
+      archive rebuild and library rescan finish). You're free to keep browsing while that
+      happens. If you try to save the same issue again while a save is still in flight,
+      the second attempt is blocked until the first one finishes.</p>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>If the Writer or Penciller name you typed is a close match to someone already
+        credited elsewhere in your library, a confirmation popup offers to use that
+        existing spelling instead — a small guard against near-duplicate credits (e.g.
+        "Alan Moore" vs. "Allan Moore") splitting one person into two. It doesn't block
+        the save either way; you can decline and keep what you typed.</p>
+      </div>
+      <p><strong>Cancel</strong>, the <strong>×</strong> button, or clicking outside the
+      modal all close it without saving anything.</p>
     </main>
   </div>
 

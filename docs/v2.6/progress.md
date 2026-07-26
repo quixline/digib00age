@@ -6796,3 +6796,38 @@ update on their next fresh load, same as any other deploy.
 Restarting the server to pick up the new `main.py` routes required Tez's
 manual restart — the `/api/admin/restart` call was blocked by the permission
 classifier (restarting a live service isn't something Claude does unprompted).
+
+**Update, same day — Stages 4-6 (Library/Admin/Editor content) written, guide
+effectively content-complete:**
+
+- **Stage 4 (Library):** `frontend/guide-library.html` filled in (~850 words) —
+  library index, Folder View, series page, issue page, and selection-bar bulk
+  actions, each its own anchored `<h2>`. Verified against the live app (Series
+  browse, a series page, an issue page, and a Folder View library) to match exact
+  on-screen wording.
+- **Stage 5 (Admin):** `frontend/guide-admin.html` filled in (~2,800-3,000 words,
+  the largest section) — every settings category and Processing Tools sub-tool,
+  with `.guide-callout-warning` boxes on every destructive/irreversible action
+  (Restore DB, Wipe Database, Wipe Reading State, Change Server Port's restart,
+  Custom Tab/Home Strip delete, Filename Editor's no-undo rename). Labels verified
+  directly against `frontend/admin.html`'s DOM.
+- **Stage 6 (Editor):** three files — `frontend/guide-editor.html` (short hub,
+  ~250 words, explains which editor to use and links to both),
+  `frontend/guide-editor-basic.html` (~590 words), `frontend/guide-editor-full.html`
+  (~1,600 words, covering all four columns, the Increment#/Apply-to-All
+  distinction, and a `.guide-callout` flagging that confirming a ComicVine search
+  result does a full overwrite rather than a merge).
+- Also wrote `frontend/guide.html`'s own overview content (previously just a
+  shell with a placeholder) — a short intro plus three linked sections and a
+  "where to start" tip callout.
+
+**Verification:** hard-reloaded and visually reviewed all five content pages
+(`/guide`, `/guide/library`, `/guide/admin`, `/guide/editor`,
+`/guide/editor-basic`, `/guide/editor-full`) live in Chrome — rendering, heading
+hierarchy, and callout styling all correct; `read_console_messages` showed no
+errors. Confirmed no page contains the string "ComicVault" (grepped each file).
+
+**Not yet done:** Stage 7 (wiring `data-tooltip` attributes + the vanilla-JS
+tooltip system from `docs/tooltip-data.md` onto the live app, not just the guide
+pages) and Stage 8 (final review/polish pass) remain — this update covers guide
+*content* only, the tooltip implementation is separate follow-up work.

@@ -21,6 +21,9 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
   `/guide/editor`, `/guide/editor-basic`, `/guide/editor-full` routes and shell
   HTML pages, plus `frontend/css/guide.css`. Placeholder content only — Stage 4-6
   write the actual guide text.
+- **2026-07-26** — User guide Stages 4-6: wrote full content for all guide pages
+  (Library, Admin, Basic/Full Editor, plus the Overview index). Guide is now
+  content-complete; tooltip wiring (Stage 7) and final review (Stage 8) remain.
 
 - **2026-07-25** — `start.bat` launches the tray app detached (`start ""`)
   so its cmd host window closes itself immediately instead of staying open

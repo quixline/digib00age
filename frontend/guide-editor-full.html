@@ -49,7 +49,182 @@
       <p class="guide-subtitle">Batch metadata tagging for files before — or after — they join your library.</p>
 
       <!-- content: Stage 6 -->
-      <div class="guide-placeholder-note">Full Editor content coming in Stage 6.</div>
+
+      <h2 id="what-is-full-editor">What the Full Editor is for</h2>
+      <p>The Full Editor is a batch metadata-tagging workspace, built mainly as a
+      <strong>pre-library staging tool</strong> — a place to tag a folder of freshly
+      acquired comics (art scanned from a "Processing" folder excluded from your library
+      scan, say) before they ever join your library, rather than something you use on
+      issues that are already catalogued. Because it works directly against files on
+      disk, it can also be pointed at a folder of comics that were tagged incorrectly the
+      first time round, with no library involvement at all.</p>
+      <p>It's also useful the other way: select one or more issues already in your
+      library and choose <strong>Send to Full Editor</strong> from the selection bar to
+      load them in for a batch retag. That's the one case where the Full Editor does
+      touch your library — an issue loaded this way gets an automatic rescan the moment
+      you save it, so the corrected metadata shows up back in the library right away.</p>
+      <p>Open it from <strong>Admin → Open Editor</strong> (loads with nothing selected —
+      you pick a folder yourself), or from a library selection's <strong>→ Send to Full
+      Editor</strong> action (skips the folder picker entirely and loads your selection
+      straight in).</p>
+
+      <h2 id="full-editor-layout">Layout at a glance</h2>
+      <p>The Full Editor is the densest screen in digib00age — a four-column workspace
+      plus a header and a footer status bar, all built to keep loading files, editing
+      their tags, viewing pages, and queuing saves visible at the same time:</p>
+      <ul>
+        <li><strong>Column 1 — Load / Select Files</strong>: pick a folder and browse the
+        files you've loaded.</li>
+        <li><strong>Column 2 — Edit ComicInfo.xml</strong>: the actual tagging form for
+        whichever file is currently focused.</li>
+        <li><strong>Column 3 — Comic Viewer</strong>: page-by-page preview of the focused
+        file, so you can check a cover or credits page while you tag it.</li>
+        <li><strong>Column 4 — Edited Files Queue</strong>: files you've finished editing
+        and queued up, ready to save.</li>
+      </ul>
+      <p>The header carries two extra controls not present elsewhere in digib00age:
+      <strong>Search ComicVine</strong> (looks up the focused file's series/issue online
+      and can fill the form for you) and <strong>Search GoodReads</strong> (a plain
+      external link). The footer is a status bar showing the currently selected file's
+      name, its XML status, a running low-confidence count, and how many files are
+      currently queued.</p>
+
+      <h2 id="full-editor-columns">The four columns in detail</h2>
+
+      <h3 id="loading-files">Column 1 — Load / Select Files</h3>
+      <p><strong>Select Folder</strong> opens digib00age's own in-app folder browser (a
+      breadcrumb-and-tree picker, not your OS's native file dialog) — it isn't restricted
+      to your library's root, so you can point it anywhere on the machine the server is
+      running on. It loads only that one folder's direct contents; subfolders aren't
+      included and there's no recursive option, so a folder full of nested series
+      subfolders needs to be loaded one level at a time. Multi-select within a single
+      folder is supported. <strong>Clear</strong> wipes the whole loaded set and resets
+      the form back to empty.</p>
+      <p>Loaded files render as an expandable <strong>folder → series → issue tree</strong>,
+      grouped by each file's nearest two directory levels. Issue rows carry an
+      <strong>XML</strong> badge when a <code>ComicInfo.xml</code> is already present
+      inside the archive, and a red-border <strong>needs-review</strong> indicator on any
+      file flagged by an earlier low-confidence auto-tag pass (from Admin's XML Tagging
+      or Auto Processing tools) — a visual cue for which files still need a human look.
+      Everything is natural-sorted, so issue numbers order correctly (<code>001 &lt; 002
+      &lt; 010</code>) instead of alphabetically.</p>
+      <p>Clicking an issue — or moving keyboard focus onto it with the up/down arrow
+      keys — loads its XML into Column 2 and its cover into Column 3; this is the same
+      unified focus/load action either way. A stats line at the bottom of the column
+      tracks <strong>Files Found</strong>, <strong>With XML</strong>, and <strong>Without
+      XML</strong> for the currently loaded set.</p>
+
+      <h3 id="editing-fields">Column 2 — Edit ComicInfo.xml</h3>
+      <p>The same Main and More tab fields as the <a href="/guide/editor-basic">Basic
+      Editor</a> — Series Title, Issue Title, Issue Number, Year, Genre, Format, Age
+      Rating, Black &amp; White, Summary on Main; Count, Page Count, Writer, Penciller,
+      Publisher, Story Arc, Language, Notes on More — with a few differences that only
+      make sense in a batch context:</p>
+      <ul>
+        <li><strong>Increment #</strong> — a checkbox next to Issue Number. When
+        checked, digib00age auto-increments the issue number across the loaded list in
+        display order as you tag through it, so you don't have to type each number by
+        hand. This is the <strong>one field with no "Apply to All" checkbox</strong> —
+        it doesn't need one, since incrementing across files is already its whole job.</li>
+        <li><strong>Apply to All</strong> — every other field gets its own checkbox in a
+        column alongside it. Only fields whose box is checked get bulk-applied when you
+        run <strong>Process All</strong> (below); unchecked fields keep each file's own
+        individual value untouched. Leave everything unchecked and Process All changes
+        nothing but what's genuinely per-file.</li>
+        <li><strong>Genre</strong> is removable chips plus a <strong>＋ Add genre</strong>
+        dropdown, rather than the checkbox grid the Basic Editor uses — a layout better
+        suited to a field you're likely to reuse across many files in a row.</li>
+      </ul>
+      <p>A <strong>＋ Queue</strong> button at the bottom adds the currently-focused file
+      to the Edited Files Queue (Column 4) using whatever's currently in the form.</p>
+
+      <h3 id="comic-viewer">Column 3 — Comic Viewer</h3>
+      <p>A page-by-page preview of the focused file: <strong>Zoom in</strong>/<strong>Zoom
+      out</strong>, <strong>Fit</strong> (resets to fit the frame), Prev/Next page with an
+      "X / Y" counter, and <strong>Fullscreen</strong>. Once you've zoomed past 100%, the
+      page becomes click-drag-pannable so you can look around it without hunting for
+      scrollbars. A lazy page-thumbnail strip sits below the main view — thumbnails load
+      on demand as you scroll through them, the current page is highlighted, and clicking
+      one jumps straight to it. The cover loads automatically the moment a file is
+      focused; every other page loads only when you actually navigate to it.</p>
+
+      <h3 id="queue-and-saving">Column 4 — Edited Files Queue, and saving</h3>
+      <p>Every file you've clicked <strong>＋ Queue</strong> on shows up here as a card
+      (a checkmark, the filename, an "Edited" tag, and a <strong>✕</strong> to remove it
+      from the queue). A running <strong>"N files in queue"</strong> count sits above the
+      cards, with a <strong>"⚠ counts differ"</strong> warning if the number of files
+      you've loaded doesn't match the number you've queued — a quick completeness check
+      for a batch session, so you don't accidentally save 40 of 42 files and move on.</p>
+      <ul>
+        <li><strong>Process Queue</strong> is the actual save action for queued files —
+        there's no separate "Save" button anywhere in the Full Editor. It writes each
+        queued file's edited XML back into its archive, and the queue empties itself
+        automatically once processing finishes successfully.</li>
+      </ul>
+      <div class="guide-callout guide-callout-warning">
+        <span class="guide-callout-label">Warning</span>
+        <p><strong>Clear Queue</strong> abandons everything currently queued
+        <strong>without saving any of it</strong> — none of those edits reach disk. Use
+        it to start a batch session over, not as a way to "clean up" after a successful
+        Process Queue (that already happens automatically).</p>
+      </div>
+      <div class="guide-callout guide-callout-warning">
+        <span class="guide-callout-label">Warning</span>
+        <p><strong>Process All</strong> is a separate action that bypasses the queue
+        entirely: it writes XML to <strong>every file currently loaded</strong> in
+        Column 1 — not just the ones you've queued — applying only the fields whose
+        "Apply to All" checkbox is ticked, batch-wide, on top of each file's own existing
+        values. It's powerful for something like stamping the same Publisher and Genre
+        across an entire loaded folder in one click, but double-check which boxes are
+        actually ticked before running it, since there's no per-file preview step
+        first.</p>
+      </div>
+
+      <h2 id="comicvine-search">Searching ComicVine</h2>
+      <p>The <strong>Search ComicVine</strong> button in the header looks up metadata for
+      whichever file is currently focused in Column 2, using that file's own form fields —
+      there's no separate search box. <strong>Series</strong> is required; if it's empty,
+      the search is blocked with a message asking you to fill it in first. Issue Number,
+      Year, and Issue Count (if already filled in) are read along as filters to help
+      narrow the results, but <strong>Title is not used</strong> in the search at all.</p>
+      <p>The search opens as a two-step modal:</p>
+      <ul>
+        <li><strong>Select Series</strong> — a results table (Series / Year / Issues /
+        Publisher) with a cover preview and description. It defaults to <strong>Best
+        Match</strong> ordering — digib00age's own fuzzy title-match-plus-issue-count
+        ranking, not simply whatever order ComicVine happened to return — though you can
+        re-sort by any column instead. <strong>Cancel</strong> closes the modal,
+        <strong>Issues</strong> proceeds to the issue list for the highlighted series
+        (same as double-clicking it), and <strong>Ok</strong> fast-paths straight past
+        the issue list onto that series' first issue — handy for one-shots and graphic
+        novels where there's only ever going to be one result anyway.</li>
+        <li><strong>Select Issue</strong> — a natural-sorted issue list (Issue # / Date /
+        Title) with its own cover preview and description. <strong>← Back to Series</strong>
+        returns to the series results you already fetched, with no re-fetch needed.</li>
+      </ul>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>Confirming an issue match <strong>fully overwrites</strong> the mapped fields
+        in the form — it's a replace, not a merge with whatever you'd already typed. If
+        you've hand-edited a field you want to keep (a custom Notes entry, say), do that
+        after confirming the ComicVine match, not before.</p>
+      </div>
+      <p><strong>Search GoodReads</strong>, next to it in the header, is just a plain link
+      to goodreads.com — it opens in a new tab and isn't wired to any of the form's fields
+      or to ComicVine at all, it's there purely as a quick manual lookup shortcut.</p>
+
+      <h2 id="multi-xml-and-errors">When something needs your attention</h2>
+      <p>Two modals surface only when something's actually gone sideways with a file or a
+      batch, rather than as part of normal use:</p>
+      <ul>
+        <li>If a loaded archive contains <strong>more than one <code>ComicInfo.xml</code></strong>
+        file inside it, a resolution modal shows both side by side (read-only) and asks
+        you to pick which one to keep — the other(s) are deleted from the archive the
+        next time that file is saved.</li>
+        <li>If a <strong>Process All</strong> batch save runs into trouble on some files,
+        an error summary modal lists each failure so you can see exactly which files
+        didn't make it through and why, without having to guess from a partial result.</li>
+      </ul>
     </main>
   </div>
 

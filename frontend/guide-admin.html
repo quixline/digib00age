@@ -49,7 +49,434 @@
       <p class="guide-subtitle">Setting up and managing your digib00age server.</p>
 
       <!-- content: Stage 5 -->
-      <div class="guide-placeholder-note">Admin content coming in Stage 5.</div>
+
+      <h2 id="admin-overview">Overview and stats</h2>
+      <p>The <strong>Admin</strong> page (the gear icon in the header) is where you
+      set up and maintain your digib00age server — scanning, backups, appearance,
+      and a set of pre-ingest processing tools for preparing files before they join
+      your library. Everything below it is organized as a row of category cards
+      (Library Management, Library Appearance, Processing Tools, Editor Options,
+      Advanced Settings); clicking one expands a row of sub-item cards, and picking
+      a sub-item swaps in that panel's controls below. Two areas stay visible above
+      that navigation at all times: Library Stats and Library Scan.</p>
+
+      <p><strong>Library Stats</strong> is a row of read-only summary cards: Total
+      Files, Series, Singles, Total Read (a count and a percentage), and In Progress
+      (issues currently marked "reading"). These update as your library changes —
+      there's nothing to configure here.</p>
+
+      <p><strong>Library Scan</strong> sits just below the stats: three cards —
+      <strong>Last Scan</strong> (the date of the most recent completed scan),
+      <strong>Files Found</strong>, and <strong>New Files</strong> — each with its
+      own <strong>Logs</strong> button that opens a modal showing that category's
+      recent entries. A card's border turns green when its log has entries you
+      haven't viewed yet; opening the Logs modal clears that indicator. The modal
+      shows only the most recent scan's entries — the log file on disk keeps the
+      full accumulated history, viewable with a text editor via the folder path in
+      Library Management → Access Logs.</p>
+
+      <p>Next to the stat cards is the <strong>Scan Now</strong> action card. Click
+      it to trigger an immediate full library rescan — it expands inline with a live
+      progress bar and log output while the scan runs, and reports an error count at
+      the end if any thumbnails failed to generate (the affected files still scan
+      into the library correctly; only their cover thumbnail failed). A scan looks
+      for new files, changed files, and files that have gone missing from disk since
+      the last scan — it's the action that actually gets anything you've added to
+      your library folders showing up in digib00age.</p>
+
+      <h2 id="admin-top-actions">Top action row</h2>
+      <p>A row of buttons above the stats handles a handful of one-off actions:</p>
+      <ul>
+        <li><strong>Back</strong> — returns to the library.</li>
+        <li><strong>User Guide</strong> — opens this guide in a new tab.</li>
+        <li><strong>Open Editor</strong> — opens the Full Editor (the pre-library
+        staging tool covered in the Editor section of this guide) in the same
+        tab.</li>
+        <li><strong>Backup Database</strong> — triggers an immediate, on-demand
+        backup of the database to whatever folder you've configured under Library
+        Management → DB Backup Schedule. Use this for a quick manual snapshot
+        outside the regular schedule — before a big library reorganization, for
+        example.</li>
+        <li><strong>Password Reset</strong> — opens a change-password form (current
+        password + new password). Only does anything once a password is already
+        set up in Advanced Settings.</li>
+        <li><strong>Forgot Password?</strong> — always available, whether or not a
+        password is set. Opens an information popup explaining the manual recovery
+        procedure: stop the server, clear the stored password fields directly in
+        <code>config.json</code>, restart. There's no in-app recovery flow or
+        recovery email — this is a self-hosted app with no external account
+        system, so recovery is a local-disk operation by design.</li>
+        <li><strong>Donate</strong> — opens a "Coming soon" placeholder.</li>
+        <li><strong>Install App</strong> — installs digib00age as a standalone app
+        (a Progressive Web App) on this device. This button only appears when your
+        browser considers the site installable and it isn't already installed —
+        if you don't see it, either your browser doesn't support the feature, or
+        you've already installed it.</li>
+      </ul>
+
+      <h2 id="library-management">Library Management</h2>
+      <p>Everything to do with scanning schedule, backups, and which folders on
+      disk actually make up your library.</p>
+
+      <h3 id="auto-scan-settings">Auto Scan Settings</h3>
+      <p>Controls automatic rescanning so you don't have to remember to click Scan
+      Now every time you add comics. A frequency dropdown (Off, 1 hour, 6 hours, 12
+      hours, 1 day, 3 days, 7 days, 1 month) sets how often the server scans on its
+      own; a separate <strong>Scan on launch</strong> checkbox triggers one
+      additional scan every time the server starts up, regardless of the frequency
+      setting. Both are independent — you can have one, the other, both, or
+      neither.</p>
+
+      <h3 id="db-backup-schedule">DB Backup Schedule</h3>
+      <p>Sets up automatic, scheduled backups of your database file. Pick a
+      destination folder (a native folder-picker dialog — this only works from a
+      local session, since the dialog opens on whichever machine the server process
+      is running on) and a frequency (Off, day, week, month, 6 months, year). A
+      <strong>Last Backup</strong> line shows the timestamp of the most recent
+      successful backup, or "Never" if none has run yet; if a scheduled attempt
+      fails, a red error line appears here until the next successful backup clears
+      it.</p>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>Pointing the destination folder at a cloud-sync client's local folder
+        (Google Drive Desktop, Dropbox, etc.) gives you off-site backup coverage
+        with no extra setup — digib00age just writes to a normal folder, and
+        whatever syncs that folder handles the rest.</p>
+      </div>
+
+      <h3 id="restore-db">Restore DB</h3>
+      <p>Pick a previously-saved <code>.db</code> backup file (native file picker,
+      defaults to your configured backup folder but can browse anywhere) and click
+      <strong>Restore Database</strong> to roll your entire database back to that
+      snapshot.</p>
+      <div class="guide-callout guide-callout-warning">
+        <span class="guide-callout-label">Warning</span>
+        <p>Restoring replaces your <strong>entire</strong> database — including
+        Custom Tabs and Home Page Strips (what the UI calls Libraries and Home Page
+        Strips) — with whatever's in the chosen backup file, and restarts the
+        server. A safety snapshot of your current database is taken automatically
+        first, but there's no confirmation step beyond the one dialog — double
+        check you've picked the right file before confirming. Local sessions
+        only.</p>
+      </div>
+
+      <h3 id="access-logs">Access Logs</h3>
+      <p>Shows the on-disk folder path where all the scan and processing log files
+      live (with a Copy button for the path) and a <strong>Log Size Limit</strong>
+      (in MB) input with its own Save button, capping how large each scan log file
+      is allowed to grow before old entries are trimmed.</p>
+
+      <h3 id="library-folders">Library Folders</h3>
+      <p>Defines what actually gets scanned. <strong>Scan Roots</strong> is the list
+      of top-level folders digib00age looks inside when scanning — add or remove
+      entries here to change what's covered. <strong>Exclude Patterns</strong> is a
+      separate list of folder names or patterns to skip during a scan even if
+      they're inside a scan root — useful for keeping a staging folder (e.g. one
+      named "Processing") out of the library entirely while you're still preparing
+      files in it.</p>
+
+      <h2 id="library-appearance">Library Appearance</h2>
+      <p>Controls that shape how the library itself looks and is organized — none
+      of these are behind the Advanced Settings unlock gate, they're editable
+      directly.</p>
+
+      <h3 id="home-page-strips">Home Page Strips</h3>
+      <p>Manages the scrollable strips shown on the Home page. Four defaults —
+      Continue Reading, Recently Added, Random Unread, Random Genre — are always
+      present, marked "Default" in the list; you can reorder them with the up/down
+      arrows but can't edit or delete them. Beyond the defaults, you can add up to
+      <strong>5 custom strips</strong> via the Add Strip form:</p>
+      <ul>
+        <li>Give the strip a name.</li>
+        <li>Choose its basis — <strong>Field-basis</strong> (pick one of nine
+        fields — Genre, Publisher, Writer, Artist, Format, Decade, Year, Rating,
+        B&amp;W — then pick a specific value from that field, e.g. Genre =
+        "Horror") or <strong>Folder-basis</strong> (a specific folder path via a
+        Browse picker).</li>
+        <li>Choose its ordering — <strong>Random</strong> (reshuffles on every
+        visit) or <strong>Fixed</strong>, which then offers Title, Newest, or
+        Recent as the sort.</li>
+      </ul>
+      <p>A custom strip's heading is a clickable link to the full filtered list
+      behind it; the default strips' headings are plain text.</p>
+      <div class="guide-callout guide-callout-warning">
+        <span class="guide-callout-label">Warning</span>
+        <p>Deleting a strip only removes the strip definition — it doesn't touch
+        any comic files or library data. There's a confirmation prompt before it
+        takes effect, but there's no way to undo it afterward except recreating the
+        strip from scratch.</p>
+      </div>
+
+      <h3 id="add-remove-libraries">Add/Remove Libraries</h3>
+      <p>This is the settings panel for what the <strong>Library</strong> section
+      of this guide calls "Libraries" in the left sidebar — the internal/spec name
+      for the same feature is <strong>Custom Tabs</strong>, so if you ever see that
+      term in older documentation or API references, it's this same thing. Each
+      entry in the list shows its name, its folder path, a visible/hidden toggle
+      (controls whether it shows up in the sidebar without deleting it), and a
+      Delete button.</p>
+      <p>To add one manually, use the <strong>Add Tab</strong> form: a name, a
+      folder path (Browse picker or typed manually), and a view mode —
+      <strong>Flat</strong> (one continuous filtered grid, same as Series/Singles/
+      All) or <strong>Folder View</strong> (mirrors the actual on-disk folder
+      structure, drilling down level by level — see the Folder View section of the
+      Library guide page for how that browsing experience works).</p>
+      <p>Three one-click shortcut buttons cover common cases without going through
+      the manual form: <strong>Add Genre Library</strong> (pick from genres that
+      don't already have a tab), <strong>Add Favourites Library</strong>, and
+      <strong>Add Reading Queue Library</strong> — the latter two grey themselves
+      out once one already exists, since there's only ever one Favourites and one
+      Reading Queue library.</p>
+      <div class="guide-callout guide-callout-warning">
+        <span class="guide-callout-label">Warning</span>
+        <p>Deleting a library only removes the tab definition — it will not touch
+        any comic files or library data underneath it. Confirmed via a prompt
+        first, but not reversible afterward except by recreating it.</p>
+      </div>
+
+      <h3 id="theme-selection">Theme Selection</h3>
+      <p>A dropdown with three options: <strong>Match Windows</strong> (follows
+      your OS/browser's light-or-dark preference automatically), <strong>Light</strong>,
+      or <strong>Dark</strong>. Applies site-wide, immediately.</p>
+
+      <h3 id="card-size">Card Size</h3>
+      <p>A dropdown from 30% to 100% controlling how large cover cards render in
+      every grid across the app — Series, Singles, All, search results, Home
+      strips, Folder View, everywhere a cover grid appears. Smaller values fit more
+      covers on screen at once; larger values make individual covers easier to see
+      at a glance.</p>
+
+      <h3 id="pagination">Pagination</h3>
+      <p>Sets how many items load per page on browse surfaces (Series, Singles,
+      All, search results) — 25, 50, 100, 200, or 500, default 50. Home page strips
+      always show a fixed count regardless of this setting, since they're meant to
+      be a quick-scroll preview, not a paginated list.</p>
+
+      <h2 id="editor-options">Editor Options</h2>
+      <p>Controls the enforced value lists both the Basic Editor and Full Editor
+      use for tagging metadata.</p>
+
+      <h3 id="genre-list">Genre List</h3>
+      <p>Add or remove entries from the Genre list offered in both editors' Genre
+      picker. At least one value must always remain in the list.</p>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>Removing a genre from this list doesn't retag any issue currently using
+        it — those issues keep their existing genre value untouched. It only stops
+        that value from being offered to pick again going forward. If a value is
+        still in use, digib00age tells you how many issues use it and asks you to
+        confirm before removing it anyway.</p>
+      </div>
+
+      <h3 id="format-list">Format List</h3>
+      <p>The same add/remove behaviour as Genre List, applied to the Format
+      dropdown instead. Same rule: removing a Format value in use doesn't retag
+      existing issues, it only removes that value from future selection, and
+      you're warned first if anything currently uses it.</p>
+
+      <h2 id="advanced-settings">Advanced Settings</h2>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>Every field in this category is greyed out and uneditable until you tick
+        the <strong>Unlock</strong> checkbox next to the sub-item row. This is a
+        deliberate speed bump — the settings here range from server-restarting to
+        genuinely destructive, so they're not left editable by accident.</p>
+      </div>
+
+      <h3 id="password-protection">Password Protection</h3>
+      <p>Turning on <strong>Require a password</strong> and setting the password
+      itself happen together, in one action — you can't enable protection without
+      also setting a password in the same step. Once protection is on, the Admin
+      page, the Full Editor, the Basic Editor, and their underlying API endpoints
+      all require that password to access, from any device. Turning protection back
+      off requires re-entering the current password, and — like every change in
+      this panel — can only be done from a local (same-machine) session, even if
+      you're currently logged in remotely.</p>
+      <p>A second checkbox, <strong>Allow Remote Administration</strong>, only
+      becomes available once password protection is on — it opens up Admin/Editor
+      access to other devices on your home network (still gated behind the same
+      password). Turning password protection off automatically disables Remote
+      Administration too, since it can't be left on with nothing backing it.</p>
+
+      <h3 id="change-server-port">Change Server Port</h3>
+      <p>A numeric field for the port digib00age listens on, plus a
+      <strong>Save &amp; Restart</strong> button. A separate <strong>Reader
+      Location</strong> text field and Save Location button sit alongside it but
+      are currently reserved for future use and have no functional effect yet.</p>
+      <div class="guide-callout guide-callout-warning">
+        <span class="guide-callout-label">Warning</span>
+        <p>Saving a new port restarts the server immediately and disconnects any
+        currently-connected users. After changing it, fully quit and relaunch the
+        tray app (not just "stop the server" from its menu) so it picks up the new
+        port for its own menu links.</p>
+      </div>
+
+      <h3 id="wipe-database">Wipe Database</h3>
+      <p>The <strong>Clear Database</strong> button, behind a confirmation
+      dialog.</p>
+      <div class="guide-callout guide-callout-warning">
+        <span class="guide-callout-label">Warning</span>
+        <p>This permanently deletes all issues, genres, credits, and reading
+        progress — your entire library record — and also removes cached
+        thumbnails. It does <strong>not</strong> touch the comic files on disk, and
+        it does <strong>not</strong> touch your Custom Tabs (Libraries) or Home
+        Page Strips configuration — those are treated as settings, not library
+        data. Local sessions only. There is no undo; the confirmation dialog
+        itself points you at the Backup Database button as the safety net to use
+        first.</p>
+      </div>
+
+      <h3 id="wipe-reading-state">Wipe Reading State</h3>
+      <p>The <strong>Clear Reading Progress</strong> button, behind its own
+      confirmation dialog.</p>
+      <div class="guide-callout guide-callout-warning">
+        <span class="guide-callout-label">Warning</span>
+        <p>This resets every issue in your library to unread and erases every
+        saved page position — but nothing else. Issue metadata and the comic files
+        themselves are not affected. Narrower and less destructive than Wipe
+        Database above, but still not reversible. Local sessions only.</p>
+      </div>
+
+      <h2 id="processing-tools">Processing Tools</h2>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>The entire Processing Tools category is <strong>local-sessions only</strong>
+        — every tool here is greyed out with an explanatory hint if you're accessing
+        Admin remotely, even with Remote Administration turned on. These tools
+        perform real, irreversible filesystem changes and mostly work on files
+        <strong>before</strong> they enter your scanned library — typically staging
+        folders you're preparing comics in, not the library itself. None of them
+        write to the database or trigger a scan on their own.</p>
+      </div>
+
+      <h3 id="filename-editor">Filename Editor</h3>
+      <p>Batch-renames arbitrary files (any file type, not just comic archives)
+      based on parsed or edited Series / Issue / Title / Year values. Use
+      <strong>Browse</strong> to load files from one folder (no subfolders, no
+      native OS dialog — this is digib00age's own in-app folder picker so it works
+      the same whether you're local or on the same network). Selecting a file
+      auto-parses its filename into the edit panel's four fields.</p>
+      <p>Each of the four fields — Series, Issue, Title, Year — has two independent
+      checkboxes: <strong>File</strong> (apply this field's value to just the
+      currently-selected file) and <strong>All</strong> (apply it across every
+      loaded file). They're fully independent, so you can, for example, set Series
+      across the whole batch while still editing Issue numbers one file at a time.
+      <strong>Auto-Increment Issue Numbers</strong> becomes available only when
+      Issue→All is checked — it treats the typed issue number as a starting point
+      and increments it down the list in display order. A <strong>Case
+      style</strong> radio group (No change / Title Case / ALL UPPER / all lower)
+      applies to the Series and Title text only.</p>
+      <p>Editing fields doesn't send anything to the server by itself — click
+      <strong>Add to Queue</strong> to commit the current edit-panel state for the
+      selected file (single-file mode) or the whole batch (when an All box is
+      checked). The <strong>Queued Files</strong> list doubles as your preview,
+      showing each file's resulting new name; each row has its own remove control,
+      and <strong>Clear Preview</strong> empties the whole queue at once.</p>
+      <div class="guide-callout guide-callout-warning">
+        <span class="guide-callout-label">Warning</span>
+        <p><strong>Apply Rename</strong> renames every file in the queue on disk —
+        there is no undo. Review the Queued Files preview carefully before
+        clicking it; this tool has no transaction log to roll back from, only a
+        plain audit-log record of what was renamed.</p>
+      </div>
+      <p>No library scan is triggered by a rename — if any of the renamed files
+      were already in your library, run Scan Now afterward to pick up the new
+      names.</p>
+
+      <h3 id="converter">Converter: Archives &amp; Images</h3>
+      <p>Two related sub-tools sharing one panel.</p>
+      <p><strong>Convert Archives</strong> turns CBR or PDF files into CBZ. Choose
+      a <strong>From CBR</strong> or <strong>From PDF</strong> source (the target is
+      always CBZ), Browse to load files, then <strong>Run Conversion</strong> —
+      a live progress bar tracks the batch as it works, since conversion can take
+      real time per file.</p>
+      <p><strong>Convert Images</strong> converts a CBZ or CBR's internal images to
+      WebP and repacks the archive (a CBR input always rebuilds as CBZ — CBR is
+      never written back out). A <strong>Lossless</strong> checkbox and a
+      <strong>quality slider</strong> (1–100, default 95) control the conversion;
+      Lossless overrides the slider when checked.</p>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>Both converters follow the same backup rule: if a conversion completes
+        cleanly with nothing skipped, the original file's <code>.bak</code> backup
+        is deleted automatically. If some pages or images had to be skipped
+        (corrupted or unreadable), the <code>.bak</code> is kept permanently, since
+        it's the only way to recover the content that didn't make it into the
+        converted file. If conversion fails validation entirely, nothing happens
+        to the original at all — no rename, no <code>.bak</code>, no partial
+        output left behind.</p>
+      </div>
+
+      <h3 id="xml-tagging">XML Tagging</h3>
+      <p>Matches comic files in a chosen folder against ComicVine and writes the
+      matched metadata straight into each file's <code>ComicInfo.xml</code>. Pick a
+      folder, then <strong>Run</strong> — a result summary breaks down tagged / no
+      match / low-confidence-skipped / failed counts, with per-file detail you can
+      expand for anything that didn't go cleanly.</p>
+      <p>Controls: a <strong>Save on Low Confidence</strong> checkbox (when on, a
+      low-confidence match still gets written with a "needs review" flag rather
+      than being skipped entirely — you can resolve flagged issues later in the
+      Full Editor), a <strong>Match Ratio Threshold</strong> slider (10–100%,
+      default 80%) setting how confident a match needs to be to count as
+      confident, and a <strong>ComicVine API Key</strong> field with its own
+      <strong>Save &amp; Test</strong> button — this immediately saves whatever key
+      you've typed and separately tests it against ComicVine, showing a pass/fail
+      result. Saving isn't blocked on the test passing, so a key that turns out to
+      be wrong is easy to correct afterward.</p>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>These three settings (Save on Low Confidence, Match Ratio Threshold, and
+        the ComicVine API key) are <strong>shared</strong> with Auto Processing's
+        CT Auto-Tag stage below, not separate copies — changing one here changes
+        it there too. A personal ComicVine API key is worth setting up before
+        running any batch: without one, matching falls back to a shared default
+        key that's far more rate-limited and will make a large batch stall for
+        hours.</p>
+      </div>
+
+      <h3 id="folder-processing">Folder Processing</h3>
+      <p>A dropdown of one-off folder-organizing scripts, run against a chosen
+      folder:</p>
+      <ul>
+        <li><strong>Sort by Filename</strong> — moves every loose CBZ/CBR sitting
+        directly in the chosen folder into its own new subfolder named after the
+        file itself.</li>
+        <li><strong>Move Series Folders</strong> and <strong>Move Singles
+        Folders</strong> — move each immediate subfolder of the chosen folder into
+        its correct alphabetical/format location in your library's actual folder
+        structure, merging into an existing destination folder if one's already
+        there.</li>
+      </ul>
+      <p>Pick the script, pick a folder, click <strong>Run</strong>; a result
+      summary with per-file/per-folder detail follows.</p>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>None of these scripts trigger a library scan on their own — run Scan
+        Now (or wait for Auto Scan) afterward so anything they moved actually
+        shows up in your library.</p>
+      </div>
+
+      <h3 id="auto-processing">Auto Processing</h3>
+      <p>Chains three of the tools above into one automatic pipeline against a
+      single configured <strong>Processing Folder</strong>, either on a schedule or
+      via a <strong>Run Now</strong> button. Each stage has its own enable
+      checkbox and inline sub-options: <strong>Convert Archives</strong> (with its
+      own From CBR/PDF choice), <strong>CT Auto-Tag</strong> (a note pointing at
+      XML Tagging above for its detailed settings — nothing duplicated here), and
+      <strong>Convert Images</strong> (Lossless + quality slider, same as the
+      Converter panel). A <strong>Schedule</strong> dropdown (Off / Daily / Weekly)
+      plus a time picker and day-of-week dropdown set up unattended runs; a hint
+      text shows when the next scheduled run will fire.</p>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>The pipeline always runs in a <strong>fixed order</strong> — Convert
+        Archives, then CT Auto-Tag, then Convert Images — regardless of which
+        stages you've enabled; you can't reorder it. <strong>File Rename is
+        deliberately excluded</strong> from this pipeline: its only safety net is
+        a human reviewing the live preview before committing, which an unattended
+        automated run can't provide, so renaming stays a manual, one-at-a-time
+        step via the Filename Editor above.</p>
+      </div>
     </main>
   </div>
 

@@ -49,7 +49,119 @@
       <p class="guide-subtitle">Browsing, reading, and organizing your comics.</p>
 
       <!-- content: Stage 4 -->
-      <div class="guide-placeholder-note">Library content coming in Stage 4.</div>
+
+      <h2 id="library-index">The library index</h2>
+      <p>The <strong>Home</strong> page greets you with a set of scrollable strips —
+      Continue Reading (when you have something in progress), Recently Added, Random
+      Unread, Random Genre, and any custom strips your admin has added. Click a strip's
+      heading (where it's a link) to open the full filtered list behind it, or use the
+      left sidebar to jump straight to <strong>Series</strong> (multi-issue titles
+      only), <strong>Singles</strong> (one-shots), or <strong>All</strong> (everything
+      together). The <strong>Unread</strong>, <strong>Reading</strong>, and
+      <strong>Read</strong> shortcuts in the sidebar each open the All view
+      pre-filtered to that status.</p>
+
+      <p>Every browse surface shares the same toolbar above the cover grid:</p>
+      <ul>
+        <li><strong>Search</strong> — live search scoped to whichever surface you're on.</li>
+        <li><strong>Sort</strong> (A–Z, Newest, Recent, Issues, Pages) with an
+        ascending/descending toggle next to it.</li>
+        <li>A <strong>grid/list</strong> view toggle — list view adds genre tags,
+        publisher/writer, a summary snippet, and a "% Read" figure in place of the
+        progress bar.</li>
+        <li><strong>Rated</strong>, <strong>Favourites</strong>, and
+        <strong>Flagged</strong> filters, plus secondary filters for
+        <strong>Genre</strong>, <strong>Format</strong>, <strong>Decade</strong>,
+        <strong>Year</strong>, <strong>Rating</strong>, and <strong>B&amp;W</strong>.</li>
+        <li><strong>Group By</strong> (Year, Genre, Publisher, Writer, Format) —
+        available on the flat Series/Singles/All surfaces.</li>
+        <li>A <strong>Clear Filter</strong> pill that resets every active filter, sort,
+        search, and grouping at once — it only appears once something is actually
+        active.</li>
+      </ul>
+      <p>A live item count sits at the top-right of the toolbar, and once a filter is
+      active it's replaced by a banner showing what you're filtered to, with its own
+      Clear link.</p>
+
+      <p>Each cover card shows the title, year, a genre tag, and either an issue count
+      (series) or page count (singles), along with your star rating if you've set one.
+      A small dot badge in the corner marks an issue as fully read, a flag badge marks
+      one flagged for review, and a progress bar along the bottom fills in as you work
+      through a series or a single issue — an empty bar means unread, a partial bar
+      means you're mid-way through, and a full bar (or the read-state dot) means
+      finished.</p>
+
+      <h2 id="folder-view">Folder View</h2>
+      <p>Some libraries in the sidebar are set up as a <strong>Folder View</strong>
+      instead of a flat list — rather than one long grid, they mirror the actual folder
+      structure on disk. Subfolders show up as their own cards (with a representative
+      cover and a recursive issue count for everything inside), and clicking one drills
+      down a level; a <strong>← Back</strong> button takes you back up. It's the same
+      toolbar as everywhere else, minus Group By and the Pages sort option, since
+      neither means much once things are split across folders.</p>
+      <p>Searching inside a Folder View library replaces the current folder's grid with
+      a flat list of matches from anywhere in that library, each showing its folder
+      path — clearing the search brings back the folder you were browsing.
+      <strong>Mark all read</strong> at any folder level marks every issue underneath
+      that folder as read, no matter how many levels deep it goes.</p>
+
+      <h2 id="series-page">The series page</h2>
+      <p>Opening a series shows a header with its publisher, year, genre tags, and
+      issue count, plus a <strong>Mark all read</strong> button that marks every
+      currently-unread issue in the series done in one go. Below that is the full issue
+      list — each row shows a thumbnail, issue number and title, year and page count,
+      genre tags, and a short summary. Click the status icon on a row (○ unread /
+      ▶ reading / ✓ read) to toggle that single issue's read state without opening it.</p>
+      <p>Click an issue row's title or cover to open it for reading. To edit its
+      metadata instead, open the issue and use its <strong>Edit XML</strong> button,
+      which opens the Basic Editor.</p>
+
+      <h2 id="issue-page">The issue page</h2>
+      <p>The issue page shows the cover, the series title, issue number, format and
+      B&amp;W badges, publisher/year/language, genre tags, a summary, story arc (if
+      set), and Writer/Artist credits — each credit name links to everything else by
+      that person.</p>
+      <p>The cover art and the <strong>Start Reading</strong> / <strong>Continue
+      Reading</strong> / <strong>Read Again</strong> button both do the same thing:
+      they hand off to the digib00age reader app to actually open the pages.</p>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>Reading opens in the separate digib00age reader app (Windows or Android). If
+        that app isn't installed on the device you're using, clicking Read won't do
+        anything visible — install the reader app first.</p>
+      </div>
+      <p>From here you can also toggle <strong>Mark as Read</strong>, add the issue to
+      <strong>Favorites</strong> or the <strong>Reading Queue</strong>, set a
+      <strong>1–5 star rating</strong> (click your current rating again to clear it),
+      <strong>Flag for Review</strong>, or open <strong>Edit XML</strong> to change its
+      metadata. A prev/next bar at the bottom moves between neighbouring issues in the
+      series, when one exists.</p>
+
+      <h2 id="selection-bar">Selecting items and bulk actions</h2>
+      <p>You can act on several issues (or whole series) at once. Start a selection by
+      long-pressing any card or row, clicking the select-dot that appears on hover
+      (grid view), or Shift-clicking a second card to select a range. Selecting a
+      series card (not a Singles card) selects every issue in that series. Once
+      selection mode is active, a floating toolbar gives you:</p>
+      <ul>
+        <li><strong>Mark Read / Mark Unread</strong> — bulk status change.</li>
+        <li><strong>★ Favorite</strong> — favourites everything selected, or
+        un-favourites if all of it already was.</li>
+        <li><strong>📖 Queue Reading</strong> — same on/off logic, for the Reading Queue.</li>
+        <li><strong>🏷 Flag for Review</strong> — same logic, for the review flag.</li>
+        <li><strong>→ Send to Full Editor</strong> — opens the selected issues in the
+        Full Editor for XML editing.</li>
+        <li>A <strong>star rating row</strong> — sets a rating across the whole
+        selection; clicking a rating everything already has clears it instead.</li>
+        <li><strong>Deselect</strong> — clears the current selection but stays in
+        selection mode; <strong>Done</strong> exits selection mode entirely.</li>
+      </ul>
+      <div class="guide-callout guide-callout-warning">
+        <span class="guide-callout-label">Warning</span>
+        <p><strong>Delete</strong> permanently removes the selected file(s) from disk
+        and their database record(s) — there's a confirmation prompt first, but once
+        confirmed, there's no going back.</p>
+      </div>
     </main>
   </div>
 
