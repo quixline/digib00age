@@ -102,15 +102,6 @@ def read_last_scan_timestamp() -> str | None:
     return lines[-1] if lines else None
 
 
-def read_log(log_name: str, max_lines: int = 1000) -> tuple[str, bool]:
-    path = log_path(log_name)
-    if not path.exists():
-        return "", False
-    with open(path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    return "".join(lines[-max_lines:]), True
-
-
 def read_recent_log(log_name: str) -> tuple[str, bool]:
     """Just the most recent scan's entries, not the full accumulated history —
     full history is still on disk and viewable via a text editor (View Logs Folder)."""

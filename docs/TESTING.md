@@ -1,4 +1,4 @@
-# ComicVault — Testing & Verification Standard
+# digib00age — Testing & Verification Standard
 
 Standing verification approach for any Claude Code session on this repo. Expands
 `CLAUDE.md` Section 6 into a concrete runbook. Every close-of-session checklist
@@ -24,7 +24,7 @@ Standing verification approach for any Claude Code session on this repo. Expands
 
 ## Backend verification pattern: diff against a pre-test backup, byte-for-byte
 
-For any change that writes to a file ComicVault depends on (`genres.json`,
+For any change that writes to a file digib00age depends on (`genres.json`,
 `formats.json`, `config.json`, etc.), don't just check the *content* round-trips —
 check the *bytes* do too:
 

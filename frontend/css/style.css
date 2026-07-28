@@ -1094,13 +1094,6 @@ select.filter-select:focus,
   box-shadow: 0 0 0 1px var(--favourite), 0 0 0 3px var(--danger);
 }
 
-/* NeedsReview indicator (Full Editor Column 1) — reuses the favourited-card
-   box-shadow-ring technique above, red instead of gold, different condition
-   (a low-confidence CT Auto-Tag match, not a favourite). EDITOR_SPEC.md §9.3. */
-.fe-file-row.needs-review {
-  box-shadow: 0 0 0 1px var(--danger);
-}
-
 /* Reading Queue ring — same box-shadow-ring technique, blue (--accent)
    instead of gold/red. CUSTOM_TABS_SPEC.md §10.10. All four card corners are
    already spoken for (favourite/unread/flag-review/rating), so this doesn't
@@ -2012,78 +2005,6 @@ select.filter-select:focus,
   margin-top: 2px;
 }
 
-/* ── Search results ──────────────────────────────────────────────────────── */
-.search-section {
-  padding-bottom: 48px;
-}
-
-.search-header {
-  font-size: 14px;
-  color: var(--text-2);
-  padding: 4px 0 14px;
-}
-
-.result-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 9px 10px;
-  background: var(--surface-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  margin-bottom: 6px;
-  transition: border-color 0.15s;
-}
-
-.result-row:hover {
-  border-color: var(--accent);
-}
-
-.result-thumb {
-  width: 38px;
-  height: 57px;
-  object-fit: cover;
-  border-radius: 3px;
-  flex-shrink: 0;
-  background: var(--surface-2);
-}
-
-.result-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.result-series {
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.result-meta {
-  font-size: 12px;
-  color: var(--text-2);
-}
-
-.status-pip {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 2px solid var(--text-3);
-  flex-shrink: 0;
-}
-
-.status-pip.reading {
-  background: var(--blue);
-  border-color: var(--blue);
-}
-
-.status-pip.read {
-  background: var(--green);
-  border-color: var(--green);
-}
-
 /* ── Loading / empty states ──────────────────────────────────────────────── */
 .loading-state,
 .empty-state {
@@ -2092,11 +2013,6 @@ select.filter-select:focus,
   padding: 48px 16px;
   color: var(--text-2);
   font-size: 14px;
-}
-
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
 }
 
 .empty-logo {
@@ -2119,19 +2035,6 @@ select.filter-select:focus,
   position: relative;
   z-index: 1;
   padding: 14px 0 0;
-}
-
-.back-link {
-  font-size: 14px;
-  color: var(--text-2);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: color 0.15s;
-}
-
-.back-link:hover {
-  color: var(--accent);
 }
 
 /* ── Series page header with backdrop (Section 20.6) ────────────────────── */
@@ -2190,19 +2093,6 @@ select.filter-select:focus,
   align-items: center;
   justify-content: space-between;
   margin-bottom: 14px;
-}
-
-.series-back {
-  font-size: 14px;
-  color: var(--text-2);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  transition: color 0.15s;
-}
-
-.series-back:hover {
-  color: var(--accent);
 }
 
 .series-mark-btn {
@@ -2336,17 +2226,6 @@ select.filter-select:focus,
   }
 }
 
-.arc-label {
-  grid-column: 1 / -1;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--accent);
-  padding: 4px 0 8px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 4px;
-}
 
 /* Card frame — each issue its own card, 2-up in .arc-group. Permanent white
    glow ring at rest, drop shadow + lift on hover — same treatment as the
@@ -3201,21 +3080,6 @@ select.filter-select:focus,
   border-bottom-color: var(--accent);
 }
 
-.csv-tags {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.csv-tag {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  font-size: 12px;
-  padding: 3px 10px;
-  color: var(--text-2);
-}
-
 .issue-extras {
   font-size: 12px;
   color: var(--text-3);
@@ -4020,10 +3884,6 @@ select.filter-select:focus,
   margin-top: 4px;
 }
 
-.admin-field-actions {
-  padding-top: 4px;
-}
-
 /* Toast */
 .admin-toast {
   position: fixed;
@@ -4343,30 +4203,6 @@ select.filter-select:focus,
   gap: 14px;
 }
 
-.fe-number-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.fe-number-row .editor-field-checkbox {
-  white-space: nowrap;
-}
-
-.fe-number-row .editor-field {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-}
-
-.fe-number-row .editor-field:last-child {
-  margin-left: auto;
-}
-
-.fe-number-row .editor-field label {
-  white-space: nowrap;
-}
-
 .editor-field label {
   font-size: 12px;
   font-weight: 600;
@@ -4375,41 +4211,6 @@ select.filter-select:focus,
 
 .editor-required {
   color: var(--accent);
-}
-
-/* EDITOR_SPEC.md §5.2 amended note — per-field "Apply to: All" checkbox for
-   Process All (default unchecked). Sits opposite the field's own label;
-   Issue Number has no equivalent, it's covered by the separate Increment #
-   checkbox/mechanism instead. */
-.editor-field-head {
-  display: flex;
-  flex-direction: row;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.fe-apply-all-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-3);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.fe-apply-all-label input {
-  cursor: pointer;
-}
-
-/* Beats #feForm .editor-field-checkbox label's specificity so the BlackAndWhite
-   row's "Apply to: All" label keeps the same muted styling as every other field's. */
-#feForm .editor-field-checkbox label.fe-apply-all-label {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-3);
 }
 
 .editor-field input[type="text"],
@@ -4961,19 +4762,6 @@ select.filter-select:focus,
 .fe-field textarea:focus {
   border-color: var(--accent);
   outline: none;
-}
-
-.fe-field--split {
-  flex-direction: row;
-  align-items: flex-end;
-  gap: 14px;
-}
-
-.fe-field--split>div:first-child {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
 }
 
 .fe-field--two {

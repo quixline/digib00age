@@ -237,7 +237,6 @@ def get_admin_config():
 
 @router.post("/admin/config")
 def save_admin_config(data: dict):
-    cfg = get_config()
     update: dict = {}
 
     if "library_roots" in data:

@@ -1,6 +1,6 @@
 # About Me
 
-I'm Tez — sole developer, owner, and only user of ComicVault, a self-hosted
+I'm Tez — sole developer, owner, and only user of digib00age, a self-hosted
 personal comic library server. This started from managing a large CBZ
 collection (~5,500 issues across ~750 series and ~1,800 singles) and grew into
 a full application suite. I'm not a professional developer by trade; I act as
@@ -22,7 +22,7 @@ heavy lifting.
 - Repo: `quixline/comicvault_v2` (private).
 
 ## Where the project actually is
-ComicVault's original brief (V1, all phases) is complete, the CAPT editor
+digib00age's original brief (V1, all phases) is complete, the CAPT editor
 integration is complete, and Custom Tabs / Home Strips / Taskbar App are all
 complete. Mobile Reader changes are deliberately parked — the reader already
 works fine day to day, and I may end up using a third-party reader instead of

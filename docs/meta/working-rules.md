@@ -191,7 +191,7 @@ required upstream stage Code waits on.
 - Version labels (`comicvault-changes-vN.M.md`) stay coarse — one number per build
   queue, no finer-grained SemVer-style scheme (`v2.4.545` etc.). That granularity
   exists to help multiple independent consumers track compatibility across releases
-  of something they depend on; ComicVault has one deployment and one user, so there's
+  of something they depend on; digib00age has one deployment and one user, so there's
   no compatibility surface to track and no one to read the extra precision.
 - The version label is tied to an actual git ref via a lightweight tag at close-out
   time — see `CLAUDE.md` Section 7 for the convention. This is the one piece that's

@@ -8,7 +8,6 @@ GET /api/issue/{id}/download  Serve the whole CBZ/CBR file (mobile offline downl
 
 from __future__ import annotations
 
-import io
 import os
 from pathlib import Path
 

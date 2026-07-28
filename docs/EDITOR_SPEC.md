@@ -1,9 +1,9 @@
-# ComicVault — EDITOR_SPEC.md (V2)
+# digib00age — EDITOR_SPEC.md (V2)
 
 > **How to use this document**
 > Paste this entire file into any AI coding session (Claude Code) before writing any code,
 > alongside `SPEC.md` for context on the existing V1 system this plugs into.
-> This is the single source of truth for the CAPT → ComicVault editor integration.
+> This is the single source of truth for the CAPT → digib00age editor integration.
 > Record any deviations at the bottom of this file (Section 12, Change Log), same convention
 > as `SPEC.md`.
 >
@@ -23,16 +23,16 @@
 
 ## 1. Overview & Goals
 
-ComicVault currently relies on a separate, pre-existing Flask app ("CAPT") to edit
+digib00age currently relies on a separate, pre-existing Flask app ("CAPT") to edit
 ComicInfo.xml metadata inside CBZ files. CAPT was investigated in detail (see
-`ComicVault_V2_CAPT_Investigation.md` / `v2_investigation_report.md`) and its editing logic —
+`digib00age_V2_CAPT_Investigation.md` / `v2_investigation_report.md`) and its editing logic —
 XML read/parse, field merge, archive rebuild — is sound and is being ported wholesale.
 Its Flask shell, in-memory data model, CBR support, dead dependencies, and several
 discovered bugs are **not** being carried forward.
 
 **The goal of this build round:** retire CAPT as a separate app entirely. Fold its proven
-editing logic into ComicVault's existing FastAPI backend, expose it through two purpose-built
-UIs that match ComicVault's design language, and fix the data-hygiene problem (free-text
+editing logic into digib00age's existing FastAPI backend, expose it through two purpose-built
+UIs that match digib00age's design language, and fix the data-hygiene problem (free-text
 genre/format/rating values) at the root by making those fields enforced dropdowns.
 
 **Two views, one shared backend core:**
@@ -51,7 +51,7 @@ a CBZ," not two.
 ## 2. Architecture
 
 ```
-ComicVault (FastAPI, port 8000)
+digib00age (FastAPI, port 8000)
   backend/
     editor/                      ← NEW shared core (no FastAPI/Flask dependency)
       xml_parser.py              ← ported from utils/xml_parser.py
@@ -96,7 +96,7 @@ reintroducing a manual move/download step that doesn't exist in CAPT today and i
 wanted here either.
 - The two hardcoded-path bugs (`"L:\Comics Archives"` typo vs `"L:\Comic Archives"`, and the
   mismatched venv path in `start_xml_editor.bat`) — moot, since the new code reads
-  `library_root` from `config.json` like everything else in ComicVault; no hardcoded path
+  `library_root` from `config.json` like everything else in digib00age; no hardcoded path
   exists to typo
 
 ---
@@ -167,7 +167,7 @@ manually verified via all three paths this session. Reason:
 RAR archive *creation* requires a paid WinRAR install (`arc_conv_helpers.py`'s
 `create_rar_archive()` shells out to a `rar` CLI and errors without it) — not a
 viable app dependency, especially given the possible-public-release direction. CBR is
-therefore read-only at the archive level throughout ComicVault; editing it is what
+therefore read-only at the archive level throughout digib00age; editing it is what
 moves a file from CBR to CBZ, not a separate conversion step the user has to ask for.
 
 ### 3.3 Field write logic — selective overwrite, not a smart merge
@@ -187,7 +187,7 @@ moves a file from CBR to CBZ, not a separate conversion step the user has to ask
 - `BlackAndWhite`: checkbox semantics preserved exactly as today — checked → literal text
   `"on"`, unchecked → tag removed entirely. Matches `SPEC.md` Section 9's parsing rule exactly.
 - `Genre`: single CSV string written to one `<Genre>` tag, same as today — no per-genre
-  tag-splitting on write (that split only happens on ComicVault's *read* side, into the
+  tag-splitting on write (that split only happens on digib00age's *read* side, into the
   `issue_genres` junction table).
 - `Notes`: default text stays **`"Modified with the CAPT"`** for continuity with the large
   number of files already carrying that exact string. Not changed to reflect the new tool name.
@@ -197,7 +197,7 @@ moves a file from CBR to CBZ, not a separate conversion step the user has to ask
 - Sequential: start at issue N, +1 per file in current list order.
 - **No collision guardrail** — confirmed acceptable, this is Full Editor only and the
   workflow is "tag a fresh run of issues before they ever reach the library," so there's
-  nothing in ComicVault's DB yet to collide with.
+  nothing in digib00age's DB yet to collide with.
 - This feature does not exist in the Basic editor at all (single file, nothing to increment
   against) — omit the control entirely from that UI, not just disable it.
 - **"List order" is the Column 1 tree's natural-sorted display order, always
@@ -229,7 +229,7 @@ fails silently rather than being surfaced.
     same extract → modify → rebuild → replace mechanism as a normal save) and proceeds with
     the kept file as the active ComicInfo.xml for that card.
 - **Full Editor only.** Not needed in the Basic editor — it operates exclusively on files
-  already in ComicVault's library, which by definition went through this check (or simply
+  already in digib00age's library, which by definition went through this check (or simply
   never had the problem) on their way in.
 > **Correction, 2026-06-20 (`DECISIONS.md` — "ComicInfo.xml is the sole source of
 > truth when MetronInfo.xml also exists"):** the line below claiming "the existing
@@ -240,9 +240,9 @@ fails silently rather than being surfaced.
 > **ComicInfo.xml is the sole authoritative source wherever multiple XML files
 > exist**, MetronInfo.xml is ignored. Already-affected library files are being
 > identified and cleaned up via a one-off script run outside this project, not a
-> ComicVault feature.
+> digib00age feature.
 
-- Confirmed out of scope: ComicVault's library *scanner* does not get equivalent detection
+- Confirmed out of scope: digib00age's library *scanner* does not get equivalent detection
   logic. This is treated as purely a pre-library intake concern; the existing library is
   already known to be clean, and the scanner's behaviour on this point is left as-is.
 
@@ -280,7 +280,7 @@ already-tagged files is untouched; it simply stops being editable).
 
 `ScanInformation` is removed from both UIs. No other fields are added beyond CAPT's existing
 set — Characters/Teams/Locations/Inker/Colorist/Letterer/CoverArtist remain editor-invisible,
-preserved-on-write only, same as ComicVault's issue-detail display rule (`SPEC.md` 20.8).
+preserved-on-write only, same as digib00age's issue-detail display rule (`SPEC.md` 20.8).
 
 ### 4.1 Genre — enforced, backend-served, editable list
 - **Fully enforced select-only dropdown.** No free text, no escape hatch. This is the direct
@@ -351,7 +351,7 @@ ComicTagger first, then through this editor second to fix/add metadata, then get
 moved into the real `L:\Comic Archives\` structure where the next library scan picks them up
 for the first time.
 
-**This means the Full Editor never touches files already in ComicVault's database, and
+**This means the Full Editor never touches files already in digib00age's database, and
 therefore needs zero rescan-trigger logic of any kind.** Library rescanning stays exactly as
 it is today (manual "Scan Now" on the Admin page, or the existing single-file webhook used
 by the Basic editor — see Section 6). This was a correction made mid-planning; earlier
@@ -370,7 +370,7 @@ Instead, CAPT's existing file picker is **ported, not replaced**:
 - `POST /files/add` — add one or more specific files by path.
 - `POST /folders/add` — recursively add every comic archive under a given folder path.
 - `file_mgmnt.html`'s breadcrumb + tree view + multi-select UI, re-skinned to match
-  ComicVault's styling (Section 5.2) but functionally unchanged — navigate folders, tick the
+  digib00age's styling (Section 5.2) but functionally unchanged — navigate folders, tick the
   files/folders you want, "Add Selected Files/Folder."
 
 This is **server-side, path-based I/O throughout**: the server opens each file directly off
@@ -467,7 +467,7 @@ bypasses the Queue entirely and isn't covered by this indicator.
   - Zoom in / zoom out buttons
   - "Page X of Y" counter
   - Cover (page 1) auto-loads when a file is focused; subsequent pages load on demand via the
-    same on-demand single-page extraction approach already used elsewhere in ComicVault
+    same on-demand single-page extraction approach already used elsewhere in digib00age
     (mirrors `GET /api/page/{issue_id}/{page_number}`'s pattern, but operating on a file not
     yet in the DB — needs its own lightweight equivalent reading directly from the
     in-progress/temp file).
@@ -554,7 +554,7 @@ tray-server restart (the strip works without it, just heavier).
 **Access:** the Edit button on `/issue/{id}` — **already present in the existing UI**,
 confirmed it just needs its backend connected; no new frontend button to design.
 
-**Scope:** exactly one issue, already in ComicVault's database. No file picker — the popup
+**Scope:** exactly one issue, already in digib00age's database. No file picker — the popup
 already knows which issue it's editing from page context (the issue ID is already known;
 no ambiguity to resolve).
 
@@ -592,7 +592,7 @@ loads blank and must be actively set before save is permitted.
 ### 6.4 Remote access
 Works correctly from any device on the home network (e.g. Tez's laptop), with no special
 handling needed: the popup is just HTML/JS served by the same FastAPI app the rest of
-ComicVault already serves to remote devices, and all file I/O happens server-side. The
+digib00age already serves to remote devices, and all file I/O happens server-side. The
 client only ever sends field values over HTTP; it never needs to know or handle the file's
 actual path on disk. This was explicitly checked during planning and confirmed to already
 work by the same mechanism the rest of the web UI uses.
@@ -762,7 +762,7 @@ Search Online again. There is no separate re-search input inside the modal.
   `search_series()` now computes its own best-match ranking (fuzzy
   title-similarity to the search term, tiebroken by issue count) before
   returning results, so "Best match" is a real, deterministic ranking
-  ComicVault computes itself rather than an assumption about pass-through
+  digib00age computes itself rather than an assumption about pass-through
   order.
 - **Built 2026-07-19: Cancel / Issues / Ok buttons.** **Reworked 2026-07-23:**
   moved from a left-aligned row below the results table to stacked, centred

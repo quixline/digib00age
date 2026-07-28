@@ -1,4 +1,4 @@
-# ComicVault — V1 Project Specification
+# digib00age — V1 Project Specification
 
 > **How to use this document**
 > Paste this entire file into any AI coding session (Claude, Copilot, etc.) before writing any code.
@@ -18,13 +18,13 @@
 
 > **Visible brand name (added 2026-07-07, v2.6 Item 1 Phase A):** the web UI's
 > displayed product name is now **digib00age** (header logo, page titles,
-> favicon) — see `docs/v2.6/comicvault-changes-v2.6.md` Item 1. **ComicVault**
+> favicon) — see `docs/v2.6/comicvault-changes-v2.6.md` Item 1. **digib00age**
 > remains the repo/internal/codebase name throughout this doc, the DB, API
 > routes, `config.json`, and the tray app — nothing below changes meaning, this
 > note just explains why the running app's UI no longer literally says
-> "ComicVault" anywhere.
+> "digib00age" anywhere.
 
-**ComicVault** is a personal, local comic book server for a single user on a home network.
+**digib00age** is a personal, local comic book server for a single user on a home network.
 It serves a collection of up to 10,000 CBZ files with rich metadata from embedded ComicInfo.xml files.
 
 | Property | Value |
@@ -46,7 +46,7 @@ Two independent servers sharing one SQLite database. One system tray app manages
 A Flutter app (Android + Windows) connects to the reader server over the home network.
 
 ```
-ComicVault Tray App  (pystray, starts on Windows login)
+digib00age Tray App  (pystray, starts on Windows login)
         |
         |--- Reader Server   FastAPI + Uvicorn   localhost:8000   (home network accessible)
         |--- Editor Server   Flask (existing)    localhost:8001   (localhost only)
@@ -93,7 +93,7 @@ The reader rescans that single file and updates the DB immediately.
   - **Admin** → `webbrowser.open("http://localhost:8000/admin")`
   - **Metadata Editor** → `webbrowser.open("http://localhost:8000/editor")` (same
     FastAPI app, no separate process/port — see `EDITOR_SPEC.md` Section 2)
-  - **Start ComicVault at login** (checkable) → creates/removes the Windows Startup
+  - **Start digib00age at login** (checkable) → creates/removes the Windows Startup
     shortcut; checked state reflects whether the shortcut currently exists
   - **Stop Server** → stops the reader subprocess only; the tray app keeps running
   - **Start Server** → restarts the reader subprocess; no-op if already running
@@ -104,7 +104,7 @@ The reader rescans that single file and updates the DB immediately.
 - **Icon base glyph (updated 2026-07-13):** the coloured dot sits over the
   digib00age favicon mark (`frontend/images/favicon.png`), not the original
   purple book glyph — see `DECISIONS.md` "Tray icon base glyph". Visual only;
-  the tray app's process/menu/log name stays "ComicVault" per Section 1.
+  the tray app's process/menu/log name stays "digib00age" per Section 1.
 - Context menu follows Windows' own "Apps use dark mode" setting (2026-06-19) — it
   cannot force dark independent of that OS setting
 - Health check every 30 seconds — restarts the reader if it has died, unless it was
@@ -209,7 +209,7 @@ any CBR-dependent code was written. Shared dispatch lives in
 by `scanner.py`, `reader.py`, and `backend/editor/archive_io.py` so the
 zipfile-vs-rarfile branch isn't repeated three times.
 
-**CBR is read-only at the archive level — ComicVault (scanner, editor, any
+**CBR is read-only at the archive level — digib00age (scanner, editor, any
 future tool) never writes a `.cbr` file.** RAR archive *creation* requires a paid
 WinRAR install (CAPT's `create_rar_archive()` shells out to a `rar` CLI tool and
 errors if missing) — not viable as an app dependency, especially given the
@@ -545,12 +545,12 @@ cBook_Server/                    ← actual root folder name (spec uses comicvau
     lib/
       main.dart          # App entry point, routing
       screens/
-        library_screen.dart    # Browse ComicVault collection
+        library_screen.dart    # Browse digib00age collection
         series_screen.dart     # Series detail
         reader_screen.dart     # Comic reader (server + local)
         settings_screen.dart   # Server URL, preferences
       services/
-        api_service.dart       # All calls to ComicVault REST API
+        api_service.dart       # All calls to digib00age REST API
         local_cbz_service.dart # Open and read local CBZ files
       models/
         issue.dart             # Issue data model
@@ -584,7 +584,7 @@ rarfile          # CBR extraction — added v2.4 Item 5 (2026-06-30), requires a
 ```
 
 Extraction-only — no archive-creation dependency. RAR archive creation needs a
-paid WinRAR install and is deliberately never done by ComicVault (see §6.1);
+paid WinRAR install and is deliberately never done by digib00age (see §6.1);
 editing a CBR's metadata rebuilds it as `.cbz` instead.
 Flask is used by the existing editor app — managed separately.
 
@@ -592,7 +592,7 @@ Flask is used by the existing editor app — managed separately.
 
 ## 14. Windows Startup
 
-A shortcut named `ComicVault.lnk`, targeting `start.bat`, in the Windows Startup folder:
+A shortcut named `digib00age.lnk`, targeting `start.bat`, in the Windows Startup folder:
 ```
 %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
 ```
@@ -606,7 +606,7 @@ pythonw tray\tray_app.py
 
 The tray app then launches the reader server as a subprocess and sits in the system tray.
 
-**(2026-06-19) Self-service toggle:** the tray menu's checkable "Start ComicVault at
+**(2026-06-19) Self-service toggle:** the tray menu's checkable "Start digib00age at
 login" item creates/removes this shortcut directly — no manual creation needed
 anymore. The shortcut's own existence on disk is the source of truth for whether the
 checkbox shows checked; there's no separate config flag to fall out of sync.
@@ -616,7 +616,7 @@ checkbox shows checked; there's no separate config flag to fall out of sync.
 ## 15. Device Access
 
 ### Home network (primary use)
-The Flutter app connects to the ComicVault server over the home network:
+The Flutter app connects to the digib00age server over the home network:
 ```
 http://<host-pc-ip>:8000/api
 ```
@@ -704,7 +704,7 @@ All credit fields store raw CSV — never split for filtering.
 
 | Mode | When active | Data source |
 |---|---|---|
-| Server mode | ComicVault server reachable on home network | REST API at `http://<ip>:8000/api` |
+| Server mode | digib00age server reachable on home network | REST API at `http://<ip>:8000/api` |
 | Local mode | Server unreachable (travel) | CBZ files stored on device |
 
 App detects server availability on launch and when resuming from background.
@@ -816,7 +816,7 @@ was the same same-machine-only caveat flagged when the feature was first
 scoped and parked (`ROADMAP.md`).
 
 ### Progress sync
-- Server mode: all progress written back to ComicVault DB via REST API in real time
+- Server mode: all progress written back to digib00age DB via REST API in real time
 - Local mode: progress stored in local app database
 - No automatic sync of local progress to server (V1)
 

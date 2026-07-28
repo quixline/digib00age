@@ -31,12 +31,3 @@ def _truncate_if_oversized(path) -> None:
     drop_count = max(1, len(lines) // 10)
     with open(path, "w", encoding="utf-8") as f:
         f.writelines(lines[drop_count:])
-
-
-def read_lines(filename: str, max_lines: int = 1000) -> tuple[str, bool]:
-    path = LOGS_DIR / filename
-    if not path.exists():
-        return "", False
-    with open(path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-    return "".join(lines[-max_lines:]), True

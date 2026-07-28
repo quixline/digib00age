@@ -1,4 +1,4 @@
-# ComicVault — HOME_STRIPS_SPEC.md (V2.1)
+# digib00age — HOME_STRIPS_SPEC.md (V2.1)
 
 > **How to use this document**
 > Paste this entire file into a Claude Code session alongside `SPEC.md` for context on the

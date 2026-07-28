@@ -13,6 +13,19 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-29** — Code cleanup pass (Inbox item): removed 6 confirmed-dead
+  Python functions/vars (backend), 1 dead JS function + 12 orphaned CSS
+  rule blocks (frontend), 1 dead Dart model class (Flutter); fixed 5
+  unused-import/f-string lint issues. Verified clean via pyflakes/vulture/
+  `flutter analyze` + repo-wide reference grep after each change. →
+- **2026-07-29** — digib00age rebrand: docs/ sweep completed for
+  current-state reference docs (SPEC.md, ADMIN_SPEC.md, EDITOR_SPEC.md,
+  CUSTOM_TABS_SPEC.md, HOME_STRIPS_SPEC.md, MENU_BAR_SPEC.md, INDEX.md,
+  BUGS.md, TESTING.md, meta/about-me.md, meta/roadmap.html,
+  meta/working-rules.md) — ~50 occurrences renamed. Narrative/rationale
+  logs (progress.md, DECISIONS.md, CHANGELOG.md, INBOX.md) and
+  docs/archive/ deliberately left as "ComicVault" — historical record of
+  what was true when written, per Tez's explicit scoping call. →
 - **2026-07-29** — digib00age rebrand: fixed missed `start_server.py`
   console banner (`_sep("ComicVault")` → `_sep("digib00age")`), the one
   genuine miss found in a spot-check of remaining `ComicVault` string

@@ -1,4 +1,4 @@
-# ComicVault — ADMIN_SPEC.md
+# digib00age — ADMIN_SPEC.md
 
 > **How to use this document**
 > Paste this file into a Claude Code session alongside `SPEC.md` and `EDITOR_SPEC.md`
@@ -43,9 +43,9 @@
 > thresholds now user-configurable (80% default), a missing-credits bug in
 > the tagging write path, and a misleading-results-summary bug caught
 > during a real 5-file low-confidence test pass). A minor open question
-> (why Tez's standalone ComicTagger install underperformed ComicVault's own
+> (why Tez's standalone ComicTagger install underperformed digib00age's own
 > matching on that same 5-file test) was investigated but not conclusively
-> resolved — not treated as a ComicVault defect, see `v2.5/progress.md`.
+> resolved — not treated as a digib00age defect, see `v2.5/progress.md`.
 >
 > **Note on authority:** `SPEC.md` §11 and §20.13 contain earlier admin descriptions.
 > Where they conflict with this file, **this file is authoritative** — it consolidates
@@ -783,7 +783,7 @@ backend endpoint.
 
 ## 11. Processing Tools
 
-Reserved section for CAPT's remaining standalone desktop tools, brought into ComicVault
+Reserved section for CAPT's remaining standalone desktop tools, brought into digib00age
 one at a time per `ROADMAP.md`'s "CAPT extra tools" entry. Each tool gets its own
 sub-section below (§11.1, §11.2, …) as it's scoped and built. All Processing Tools
 sections live at the bottom of the `/admin` page, in the existing single scrolling
@@ -830,7 +830,7 @@ parsed/edited Series, Issue, Title, and Year values.
 - No restriction to any particular folder (e.g. `Processing/`) — the picker can browse
   anywhere the server process can see, any drive. In practice this will mostly be used
   on pre-ingest staging folders, but nothing in the implementation assumes that.
-- Filenames matter to ComicVault only as a fallback parser (`scanner.py`'s
+- Filenames matter to digib00age only as a fallback parser (`scanner.py`'s
   `_parse_filename()`) used when a file lacks `ComicInfo.xml` — once a file is tagged
   and scanned, the filename is purely cosmetic. Renaming here never touches the DB and
   never needs to.
@@ -1106,7 +1106,7 @@ Ported from CAPT's standalone Archive Converter (`gui/convert_window.py`,
   `convert_archive()` / `FORMAT_MAP['CBR']` branch only — the CBZ → CBR branch
   and its `create_rar_archive()` dependency (shells out to a `rar` CLI /
   requires paid WinRAR) is **not ported**. This confirms RAR creation is never
-  required anywhere in ComicVault — consistent with `EDITOR_SPEC.md`'s CBR-edit
+  required anywhere in digib00age — consistent with `EDITOR_SPEC.md`'s CBR-edit
   path, which also never writes RAR.
 - **macOS AppleDouble sidecars dropped on rebuild (BUGS.md BUG-028, fixed
   2026-07-18).** `._`-prefixed and `__MACOSX/` entries — junk left behind by

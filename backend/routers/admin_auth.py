@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import secrets
 
-from fastapi import APIRouter, Body, HTTPException, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from backend.auth import (

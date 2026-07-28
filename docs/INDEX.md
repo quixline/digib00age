@@ -1,4 +1,4 @@
-# ComicVault — Documentation Index
+# digib00age — Documentation Index
 
 One-page map of every doc in this repo and what it governs. See `CLAUDE.md` Section 2
 for the authority-order rule this index follows: a more specific doc wins over a more

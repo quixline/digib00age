@@ -1,4 +1,4 @@
-# ComicVault — MENU_BAR_SPEC.md
+# digib00age — MENU_BAR_SPEC.md
 
 > **How to use this document**
 > Paste this file into a Claude Code session alongside `SPEC.md`, `CUSTOM_TABS_SPEC.md`,

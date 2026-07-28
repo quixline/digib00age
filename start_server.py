@@ -18,7 +18,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from backend.config import (
     READER_PORT,
     DB_PATH, LIBRARY_ROOT, THUMBNAIL_DIR, THUMBNAIL_SIZE,
-    get_config,
 )
 from backend.database import init_db
 
@@ -46,11 +45,11 @@ def main():
         print(f"\n  [!!]  library_root not found: {LIBRARY_ROOT}")
         print("     Edit config.json and set the correct path, then re-run.")
         sys.exit(1)
-    print(f"\n  [OK] library_root found")
+    print("\n  [OK] library_root found")
 
     # Verify / create thumbnail dir
     os.makedirs(THUMBNAIL_DIR, exist_ok=True)
-    print(f"  [OK] thumbnail_dir ready")
+    print("  [OK] thumbnail_dir ready")
 
     # Initialise DB (creates tables if they don't exist yet)
     _sep("Database")
@@ -62,7 +61,7 @@ def main():
     print(f"  Starting on http://0.0.0.0:{READER_PORT}")
     print(f"  Library UI  ->  http://localhost:{READER_PORT}/")
     print(f"  API docs    ->  http://localhost:{READER_PORT}/docs")
-    print(f"  Press Ctrl+C to stop.\n")
+    print("  Press Ctrl+C to stop.\n")
 
     import uvicorn
     uvicorn.run(

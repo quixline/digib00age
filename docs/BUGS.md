@@ -1,4 +1,4 @@
-# ComicVault — Known Bugs Log
+# digib00age — Known Bugs Log
 
 Tracks real, currently-open defects. Separate from `SPEC.md` (which is for
 applied changes/decisions) and `EDITOR_SPEC.md` (which is for editor-integration

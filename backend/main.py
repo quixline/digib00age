@@ -6,7 +6,6 @@ All paths come from config.json — nothing is hardcoded here.
 
 import hashlib
 import json
-import os
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path

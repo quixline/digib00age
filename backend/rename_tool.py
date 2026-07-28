@@ -140,7 +140,7 @@ def parse_comic_filename(filename: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Filename building / rename application — build_filename(), rename_files()
+# Filename building
 # ---------------------------------------------------------------------------
 
 def apply_title_style(text: str, style: str = 'title') -> str:
@@ -206,24 +206,3 @@ def preview_renames(file_list: list[str], rename_data: dict, batch_options: dict
 
         previews.append(build_filename(series, issue_title, issue_num, year, ext))
     return previews
-
-
-def rename_files(file_list: list[str], preview_names: list[str]) -> list[dict]:
-    """
-    Rename each file in file_list to its corresponding preview_names entry,
-    same directory. Returns one result dict per attempted file —
-    {old_path, new_path, success, error} — every attempted file is
-    accounted for (§12.1.6, no partial-silent-failure).
-    """
-    results = []
-    for old_path_str, new_name in zip(file_list, preview_names):
-        old_path = Path(old_path_str)
-        new_path = old_path.parent / new_name
-        try:
-            if new_path.exists():
-                raise FileExistsError(f"{new_name} already exists")
-            old_path.rename(new_path)
-            results.append({"old_path": str(old_path), "new_path": str(new_path), "success": True, "error": None})
-        except Exception as exc:
-            results.append({"old_path": str(old_path), "new_path": str(new_path), "success": False, "error": str(exc)})
-    return results

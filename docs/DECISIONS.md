@@ -4,6 +4,47 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### docs/ rebrand sweep: current-state docs only, narrative logs and archive/ left as "ComicVault"
+
+**Decided:** 2026-07-29.
+
+**Why:** the 2026-07-28 rebrand close-out deliberately deferred the full
+`docs/` text sweep as a separate future pass (see the rebrand entry
+below). When that pass came up this session, a blind find-replace turned
+out to be the wrong shape: `docs/` mixes two very different kinds of text
+under the same "ComicVault" string — living reference docs describing
+what the app *is* today, and narrative/rationale logs (`progress.md`,
+`DECISIONS.md`, dated "Change Log" sections embedded inside `SPEC.md`/
+`ADMIN_SPEC.md`/`EDITOR_SPEC.md`) recording what was *true when written*.
+Rewriting the latter would misrepresent history — e.g. a 2026-06-17
+changelog entry describing the original Windows Startup shortcut as
+`ComicVault.lnk` is a factual record of what that file was actually
+named that day; silently changing it to `digib00age.lnk` would directly
+contradict `tray_app.py`'s own migration-function comment, which exists
+specifically to explain why an old `ComicVault.lnk` needed removing.
+
+**Scope — renamed:** `SPEC.md`, `ADMIN_SPEC.md`, `EDITOR_SPEC.md` (each
+minus their own embedded dated Change Log section), `CUSTOM_TABS_SPEC.md`,
+`HOME_STRIPS_SPEC.md`, `MENU_BAR_SPEC.md`, `INDEX.md`, `BUGS.md`,
+`TESTING.md`, `meta/about-me.md`, `meta/roadmap.html`,
+`meta/working-rules.md`. `ROADMAP.md` and `PERFORMANCE.md` were checked
+line-by-line and needed no edits — every occurrence in both sat inside a
+closed/dated-historical section already.
+
+**Scope — deliberately left as "ComicVault":** `progress.md` (all
+versions), `DECISIONS.md` (this file), `CHANGELOG.md`, `INBOX.md`, the
+Change Log sections inside the three specs above, and all of
+`docs/archive/`. If a future pass wants full historical rewrite (treating
+this as pure branding regardless of when the text was written), that's a
+distinct, larger decision — not something to infer from this entry.
+
+**One current-state fix fell out of this pass, not just a text swap:**
+`SPEC.md` §14 described the Startup shortcut as `ComicVault.lnk` and the
+tray menu item as "Start ComicVault at login" — both were actually stale
+against the live code (the 2026-07-28 rebrand session had already renamed
+both in `tray_app.py`), corrected to match reality rather than swept
+along mechanically.
+
 ### ComicVault → digib00age rebrand: close-out pass, brand strings only
 
 **Decided:** 2026-07-28.

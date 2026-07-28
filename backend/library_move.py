@@ -287,7 +287,7 @@ def move_folders(folder: str, group: str) -> LibraryMoveResult:
         # Folder stays exactly where it is in Stage 3, logged as a failure.
         exact_dup = _find_exact_duplicate(folder_name, existing_folders)
         if exact_dup:
-            dup_name, dup_path = exact_dup
+            _, dup_path = exact_dup
             results.append(LibraryMoveFolderResult(
                 folder_name=folder_name,
                 destination=target_folder,
@@ -299,7 +299,7 @@ def move_folders(folder: str, group: str) -> LibraryMoveResult:
 
         near_miss = _find_near_miss(folder_name, existing_folders)
         if near_miss:
-            nm_name, nm_path = near_miss
+            _, nm_path = near_miss
             near_misses.append(NearMissWarning(
                 folder_name=folder_name,
                 destination=target_folder,

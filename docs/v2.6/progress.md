@@ -7355,3 +7355,149 @@ and the `flutter install`-reuses-stale-APK deploy gotcha.
   and remove the literal old `ComicVault.lnk` filename — not misses.
   No further action taken; not a full sweep, just confirming nothing else
   user-visible was missed.
+
+## Session — 2026-07-29 — Code cleanup (Inbox item: dead code / lint) + docs/ rebrand sweep
+
+Picked up the standing `INBOX.md` item ("scan code base - clean, removal
+of dead code, fix linting issues... do in focused sessions or overview
+then specific - rebranding to docs"). Scoped via `/discovery` first:
+confirmed with Tez to run an overview pass across the whole codebase (not
+one area at a time), fix obviously-safe findings this session, and defer
+riskier/judgment-call items to a follow-up. Also confirmed the docs/
+rebrand sweep (left open since the 2026-07-28 rebrand close-out) would run
+as a second block in the same session.
+
+**Tooling:** no lint infrastructure existed for Python or JS (no flake8/
+eslint config anywhere in the repo). Installed `pyflakes` + `vulture`
+(pip, dev-only, not added to `requirements.txt`) for real Python signal
+instead of manual-only review. Flutter already had `analysis_options.yaml`
+— ran `flutter analyze` directly (came back clean, 0 issues).
+
+**Backend (Python) — pyflakes + vulture, triaged by an Explore agent
+against the whole repo (not just backend/) to rule out FastAPI-route /
+SQLAlchemy-event / Pydantic-validator false positives:**
+- Fixed 5 unused-import / dead-local-variable lint hits: `backend/main.py`
+  (unused `import os`), `backend/routers/admin.py:240` (`cfg = get_config()`
+  assigned, never read), `backend/routers/admin_auth.py` (unused `Body`
+  import), `backend/routers/reader.py` (unused `import io` — corrected
+  mid-session after an initial edit removed the wrong import by misreading
+  pyflakes' own line-column output; caught by re-running pyflakes after
+  every batch of edits, which is why that re-run discipline matters),
+  `start_server.py` (unused `get_config` import + 3 no-op f-strings with no
+  placeholders).
+- Deleted 6 confirmed-dead functions/locals, each verified with a
+  repo-wide grep before removal (all either superseded by a same-purpose
+  function elsewhere, or fully duplicated inline at their only real call
+  site): `backend/editor/batch.py` `process_files()` (plus its now-orphaned
+  `write_comicinfo_to_cbz`/`build_xml_from_fields` imports and `logger`),
+  `backend/library_move.py` two unused tuple-unpack locals (`dup_name`,
+  `nm_name` → `_`), `backend/rename_tool.py` `rename_files()` (dead since
+  `routers/rename.py`'s `apply_rename()` reimplements the same logic
+  inline), `backend/scan_logs.py` `read_log()` (superseded by
+  `read_recent_log()`), `backend/tool_logs.py` `read_lines()` (zero
+  callers anywhere).
+- **3 items found but deliberately left alone — public API surface, not a
+  same-session judgment call:** `GET /api/browse/arcs`, `GET
+  /api/reading/unread`, and `POST /api/scan/file` (a legacy webhook,
+  docstring says it was called by a since-replaced standalone Flask
+  editor) all have zero callers in `frontend/js/*` or `flutter_app/lib/**`.
+  Flagging for Tez to decide — possibly-planned-but-unbuilt UI vs.
+  genuinely dead surface, not something to guess at. (Separately, `POST
+  /library/tab/{id}/folder/mark-read` also has no caller but already has
+  an explicit "keep it, harmless" decision on record — not re-flagged.)
+
+**Frontend (JS/CSS) — manual review (no lint tooling exists), Explore
+agent inventoried every top-level function against all callers in
+`frontend/js/*` and inline `onclick=`/`<script>` handlers in the HTML:**
+- Deleted 1 dead JS function (`app.js` `buildCsvSection()`, zero callers)
+  and its now-orphaned `.csv-tags`/`.csv-tag` CSS rules.
+- Deleted 11 more CSS-only dead rule blocks in `style.css` — all
+  confirmed via whole-repo grep (zero JS/HTML references) and all fit the
+  same pattern: an earlier redesign iteration replaced the markup/class
+  but never deleted the old rule. Full list: `.search-section` block (old
+  list-row search results UI, superseded by reusing the cover-card grid),
+  `.empty-icon` (superseded by `.empty-logo`), `.back-link`/`.series-back`
+  (both superseded by reusing `.btn-primary`), `.arc-label` (an
+  arc-grouping display idea that was never wired up), `.admin-field-actions`
+  (unused wrapper), `.fe-number-row` block (superseded by
+  `.fe-field-row`/`.fe-field`), `.editor-field-head` +
+  `.fe-apply-all-label` block (superseded by `.fe-apply-cell` +
+  `input.fe-apply-all`), `.fe-field--split` (superseded by `.fe-field--two`),
+  `.fe-file-row.needs-review` (the NeedsReview ring moved to a dot-badge
+  approach — `.fe-tree-lowconf` — but the old ring rule was never removed).
+- No leftover `console.log`/`console.debug` debug scaffolding found
+  anywhere in `frontend/js/*` or inline HTML `<script>` blocks.
+- **Left alone, not dead just duplicated:** `editor_basic.js` and
+  `editor_full.js` each define their own near-identical
+  `setField()`/`populateStaticSelects()`/`warnOnFuzzyCredits()` — by
+  design (each file loads standalone on its own page), but a candidate for
+  extracting into a shared helper if a future session wants to reduce
+  duplication. Not acted on this session — out of scope for "delete
+  obviously-dead code."
+
+**Flutter (Dart) — `flutter analyze` (0 issues) + Explore agent's manual
+dead-code pass:**
+- Deleted `flutter_app/lib/models/issue.dart`'s `IssueSummary` class
+  (full model + `fromJson` + `displayTitle` getter) — its own comment
+  claimed it was "used in series list and continue-reading strip" but
+  grep found zero actual references; `series_detail_screen.dart` parses
+  its issue list as a raw `Map` instead.
+- **Left alone, flagged for Tez:** `CoverCardData.unreadCount`
+  (`cover_card.dart`) is write-only — `browse_screen.dart` populates it,
+  but neither `CoverCard` nor `CoverListRow` ever reads it in `build()`.
+  Could be a half-finished unread-count badge rather than leftover cruft;
+  didn't want to guess and delete a planned feature.
+- Also noted (not acted on): `_AccentPill`/`_Tag` widgets duplicated
+  privately across `series_detail_screen.dart` and
+  `issue_detail_screen.dart` — same "candidate for a shared widget,
+  not urgent" bucket as the JS editor duplication above.
+
+**Verified:** re-ran `pyflakes`/`vulture` after every backend edit (caught
+the reader.py misread above), `node --check` on the edited JS file, a
+repo-wide grep for every deleted symbol/class name (all clean, one stale
+comment reference in `rename_tool.py` also fixed), and a final
+`flutter analyze` (still 0 issues) after the Dart deletion. Not manually
+exercised in the browser this session — these are all subtractive changes
+to code paths already confirmed to have zero callers, and the standing
+dev-server-already-running constraint (Tez's tray app owns port 9424)
+means live verification needs Tez's own browser; flagged for him to spot
+check the pages that lost CSS (issue detail, series, search results,
+Full Editor) look unchanged next time he's in the app.
+
+**docs/ rebrand sweep (second block, same session):** scoped with Tez —
+237 "ComicVault" hits existed across 38 files in `docs/`. Rather than a
+blind sweep, split by what the text was describing: docs that describe
+the app's *current* state (the `*_SPEC.md` files, `INDEX.md`, `BUGS.md`,
+`ROADMAP.md`, `TESTING.md`, `meta/about-me.md`, `meta/roadmap.html`,
+`meta/working-rules.md`) got renamed; narrative/rationale logs
+(`progress.md`, `DECISIONS.md`, `CHANGELOG.md`, `INBOX.md`) and all of
+`docs/archive/` were left as "ComicVault" — they're records of what was
+literally true when written, and rewriting them would misrepresent
+history (e.g. `DECISIONS.md`'s 2026-07-04 CT-vs-ComicVault comparison
+entry happened before the product had any other name).
+
+Within the renamed files, `SPEC.md`/`ADMIN_SPEC.md`/`EDITOR_SPEC.md` each
+embed their own dated "Change Log" section at the bottom (the same
+narrative-log pattern as `progress.md`, just inline) — those sections were
+excluded from the rename for the same reason, even though the rest of
+each file was in scope. One genuine current-state correction fell out of
+this: `SPEC.md` §14 said the Windows Startup shortcut is named
+`ComicVault.lnk` and the tray menu item reads "Start ComicVault at
+login" — both were stale (the 2026-07-28 rebrand session actually
+renamed the shortcut/menu item to `digib00age.lnk` /"Start digib00age at
+login" in `tray_app.py`), confirmed against the live code before fixing,
+not just swept along with the blanket text rename.
+
+`ROADMAP.md` (4 hits) and `PERFORMANCE.md` (2 hits) were checked
+individually — every occurrence fell inside a "closed"/dated-baseline
+section (historical record), so neither file needed any edit despite
+being on the "current-state" list in principle.
+
+**Docs:** `CHANGELOG.md` — two one-line entries (cleanup + rebrand sweep).
+`DECISIONS.md` — new entry recording the current-state-vs-historical split
+rationale for the docs sweep, so a future session doesn't re-litigate it
+or assume the sweep was simply incomplete. `INBOX.md` — this session was
+Tez's explicit "work through this Inbox item" instruction (the exception
+to the standing no-triage-unprompted rule), so the line gets struck
+through per the normal triage mechanics, annotated with what landed here
+vs. what's deferred.

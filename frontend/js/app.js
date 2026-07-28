@@ -2991,19 +2991,6 @@ function buildRatingControl(data) {
   return wrap;
 }
 
-// ── CSV block (characters, teams, locations) ──────────────────────────────────
-
-function buildCsvSection(label, csv) {
-  const sec  = el('div', 'meta-section');
-  sec.appendChild(el('p', 'meta-label', label));
-  const tags = el('div', 'csv-tags');
-  for (const item of csv.split(',').map(s => s.trim()).filter(Boolean)) {
-    tags.appendChild(el('span', 'csv-tag', item));
-  }
-  sec.appendChild(tags);
-  return sec;
-}
-
 // ── Prev / Next issue navigation ──────────────────────────────────────────────
 
 function buildIssueNav(data) {
