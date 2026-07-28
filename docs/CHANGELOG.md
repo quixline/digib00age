@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-28** — digib00age rebrand: re-registered `comicvault://`
+  protocol handler at the rebuilt exe; confirmed PWA manifest/icons are
+  fully rebranded server-side (Brave's stale install is a browser-side
+  caching limitation, needs manual reinstall). → `v2.6/progress.md`
+  "protocol handler + PWA icon follow-up"
 - **2026-07-28** — ComicVault → digib00age rebrand: commit + rebuild all
   four Flutter artifacts (Windows debug/release, Android debug/release) with
   new branding, verified by mtime and embedded exe version info. →

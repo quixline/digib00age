@@ -7295,21 +7295,42 @@ and the `flutter install`-reuses-stale-APK deploy gotcha.
   `AndroidManifest.xml`'s `android:label="digib00age"` that the release
   build was compiled from (no `aapt` available locally to decode the
   built APK's binary manifest directly).
-- **Not done — flagged back to Tez, needs a manual/live step:**
-  - Re-registering the `comicvault://` Windows protocol handler (Settings
-    screen's reader-registration tile) — requires launching the desktop
-    app interactively; `ProtocolHandlerService.isRegistered()` will
-    correctly report "not registered" post-rebuild rather than pointing at
-    a dead path, so this is safe to leave until Tez next opens the app.
-  - Any manually-pinned Desktop/Start Menu/taskbar shortcut to the old
-    `comicvault.exe` path still needs manual recreation pointing at the new
-    `digib00age.exe` output path — the tray app's own Startup shortcut
-    migration is unaffected (separate mechanism, already handled in
-    `tray_app.py`).
-  - The three items already logged as open decisions in `DECISIONS.md`
-    (Android `applicationId`/package rename, `comicvault://` URI scheme
-    rename, full `docs/` sweep) remain unactioned, as intended — no new
-    information changes those.
 - Deleted `docs/HANDOFF_digib00age_rebrand.md` — its steps are done and
   folded into this entry and the commit above, per its own header
   instruction.
+- The three items already logged as open decisions in `DECISIONS.md`
+  (Android `applicationId`/package rename, `comicvault://` URI scheme
+  rename, full `docs/` sweep) remain unactioned, as intended.
+
+## Session — 2026-07-28 — digib00age rebrand: protocol handler + PWA icon follow-up
+
+- **Protocol handler re-registration, done directly:** confirmed via Tez
+  that `comicvault.exe`/`digib00age.exe` is only ever launched by Windows
+  via the `comicvault://` URI scheme when a comic cover is clicked in the
+  web UI (see `protocol_handler_service.dart`,
+  `_ReaderRegistrationTile` in `settings_screen.dart`) — it's never pinned
+  or launched standalone. This retracts the earlier "recreate any
+  manually-pinned shortcut" flag from the prior entry above; there is no
+  such shortcut by design.
+  - Checked `HKCU\SOFTWARE\Classes\comicvault\shell\open\command`: still
+    pointed at the now-deleted `...\Debug\comicvault.exe`. Rather than
+    have Tez open the app and click "Register as this PC's comic reader",
+    wrote the same value directly via `Set-ItemProperty` — it's the exact
+    one-line HKCU registry write that button performs
+    (`ProtocolHandlerService.register()`), no admin rights involved.
+    Verified the key now reads `...\Debug\digib00age.exe`.
+- **PWA name/icon in Brave — not a bug, checked live:** `curl`'d the
+  running server's `/static/manifest.json` and `/sw.js` directly — both
+  are fully `digib00age` (name/short_name, both icon files already the new
+  glyph, SW cache-bust hash reflects current file contents). A **new**
+  install in any browser will read this and show "digib00age" correctly.
+  Tez's *existing* Brave install shows stale "ComicVault" branding because
+  Chromium snapshots an installed PWA's name/icon at install time and
+  doesn't auto-rename it just because the manifest changed later — a
+  platform limitation, not something fixable from this codebase. Fix is
+  manual and Tez's to do: `brave://apps` → remove the existing install →
+  revisit the site → "Install app" again.
+- **Doc sweep:** Tez logged the full `docs/` ComicVault→digib00age sweep
+  to `docs/INBOX.md` for a later session — noted, no action taken here per
+  the standing Inbox workflow (Claude doesn't triage or build from Inbox
+  unprompted).

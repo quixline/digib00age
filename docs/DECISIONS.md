@@ -86,6 +86,27 @@ Section 1's 2026-07-07 scope note") that kept the tray process/menu name as
 "ComicVault" while only the icon glyph rebranded — that carve-out no longer
 applies.
 
+### Installed PWAs don't pick up a manifest name/icon change automatically
+
+**Decided (process gotcha, not a code decision):** 2026-07-28.
+
+**Why:** after the digib00age rebrand, `frontend/manifest.json` and both
+icon files were confirmed correct server-side (checked live via
+`curl localhost:9424/static/manifest.json`), yet Tez's already-installed
+Brave PWA still showed "ComicVault" with the old icon. Chromium-family
+browsers snapshot an installed PWA's name/icon at install time for the
+OS-level shortcut/taskbar entry and don't re-read it just because the
+manifest changed later — this is a browser platform limitation, not a
+caching bug in this app's service worker (`sw.js`'s cache-bust hash
+correctly rotated, confirmed).
+
+**How to apply:** a manifest name/icon change only shows correctly for
+*new* installs going forward. Any already-installed PWA needs a manual
+uninstall + reinstall (`brave://apps` or `chrome://apps` → remove →
+revisit site → "Install app" again) to pick up the new branding — there
+is no code-side fix. Don't spend time trying to force this via SW/cache
+changes if it recurs.
+
 ### `flutter install` can silently reinstall a stale prebuilt APK instead of rebuilding
 
 **Decided (process gotcha, not a code decision):** 2026-07-28.
