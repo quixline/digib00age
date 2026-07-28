@@ -7,6 +7,73 @@ Append-only; entries kept exactly as they were in `BUGS.md` at the time of move.
 
 ---
 
+### BUG-032 — HTML/CSS page routes send no `Cache-Control` header; browser can silently serve a stale page on normal navigation
+
+**Found:** 2026-07-20, during manual testing of the CSS theme-token refactor
+(`docs/v2.6/code-handoffs/css-theme-token-refactor-plan.md`).
+
+**Closed:** 2026-07-28.
+
+**Where:** `backend/main.py` — the 6 page routes (`/`, `/admin`, `/guide`,
+`/editor`, `/series/{id}`, `/issue/{id}`) all used plain `FileResponse`; the
+`/static` mount used plain `StaticFiles`. Neither set `Cache-Control` — only
+`Last-Modified`/`ETag` were sent (FastAPI/Starlette defaults). Also
+`frontend/sw.js` — the Service Worker's `fetch` handler.
+
+**What happened:** After editing all 6 HTML pages (adding new `<link>` tags
+for the CSS token split) and `style.css` itself, navigating between pages
+(e.g. home → issue detail) sometimes rendered with only the *old* cached
+HTML — missing the new stylesheet links entirely, so theme CSS variables
+resolved to nothing and the page rendered unstyled/washed-out. A hard
+refresh (bypassing both HTTP and Service Worker caching) always fixed it.
+
+**Root cause (revised on fix — the original diagnosis was incomplete):**
+the original investigation attributed this to missing `Cache-Control`
+letting the *browser's native HTTP cache* serve stale pages. That header was
+genuinely missing and worth adding, but it isn't what actually caused the
+symptom — this app registers a Service Worker (`frontend/sw.js`) that used a
+**cache-first** strategy for every non-`/api/` request, including page
+navigations. `caches.match()` intercepts a request before HTTP
+`Cache-Control` semantics are ever consulted, so the header was never the
+deciding factor for a controlled client (i.e. any normal repeat visit).
+The real mechanism: `frontend/js/pwa.js` calls
+`navigator.serviceWorker.register('/sw.js')` on every page load with no
+explicit `.update()`, which does trigger the browser's SW update check each
+time — but the new worker's install → activate → `clients.claim()` sequence
+completes *asynchronously*, too late to control the very navigation that
+triggered the check. That navigation is served by the previous SW/cache;
+only the *next* navigation (or a full reload) picks up the update. Found by
+driving the live app via the `claude-in-chrome` extension and introspecting
+`navigator.serviceWorker`/`caches` state directly rather than relying on
+Network-panel screenshots alone, which couldn't distinguish a cache-served
+response from a real network fetch — see the new `browser-verify` skill,
+written directly out of this investigation.
+
+**Fix:** two changes, both needed:
+1. `backend/main.py` — added `Cache-Control: no-cache` to all 6 page routes
+   (via `FileResponse(..., headers=...)`) and to the `/static` mount (a new
+   `NoCacheStaticFiles(StaticFiles)` subclass overriding `file_response()`).
+   Forces revalidation via the existing ETag for any request that does reach
+   HTTP caching semantics (uncontrolled clients, the SW's own network
+   fallback) — still allows 304 Not Modified for genuinely unchanged
+   content, not a full cache-disable.
+2. `frontend/sw.js` — page navigations (`event.request.mode === 'navigate'`)
+   now use network-first with cache fallback (only on fetch failure, i.e.
+   offline), instead of cache-first. Static assets (CSS/JS/images) are
+   unchanged — still cache-first, since those aren't what caused the
+   observed symptom and the existing content-hash `CACHE_NAME` versioning
+   already keeps them eventually consistent.
+
+**Verified:** live against the real running server via the `claude-in-chrome`
+extension (not a scratch instance) — confirmed the active, controlling
+Service Worker's own script text contains the new navigate-first branch,
+`caches.keys()` held exactly one cache key matching the current content
+hash (no stale leftover cache), a real navigation to `/issue/5469` produced
+a genuine network hit alongside its `/api/issue/5469` call, and the page
+response carried `cache-control: no-cache` with a live `etag`/
+`last-modified`. Tez separately confirmed via his own DevTools Network tab
+after restarting the tray app.
+
 ### BUG-016 — Restore Database: restore completes but does not revert DB to backup state
 
 **Found:** 2026-06-28, manual test pass (Items 10–13).

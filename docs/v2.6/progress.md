@@ -7025,3 +7025,69 @@ gets one line for the scanner fix (shipped) — the CT diagnostic isn't a
 shipped change, so it's not separately changelogged, just tracked in
 `PERFORMANCE.md`. `docs/INBOX.md`'s line is left as-is per standing
 process — Claude doesn't triage/edit that file unprompted.
+
+## Session — 2026-07-28 — BUG-032 fixed (stale pages after edits); new `browser-verify` skill
+
+Picked up BUG-032 (open since 2026-07-20): after editing HTML/CSS files,
+navigating between pages sometimes served an old cached HTML shell missing
+the new changes, requiring a hard refresh to fix. The original bug entry's
+diagnosis attributed this to missing `Cache-Control` headers on the page
+routes/`/static` mount, allowing the browser's native HTTP cache to serve
+stale responses.
+
+**Built the header fix first** (`backend/main.py`): all 6 page routes
+(`/`, `/admin`, `/guide`, `/editor`, `/series/{id}`, `/issue/{id}`) now send
+`Cache-Control: no-cache` via `FileResponse(headers=...)`, and the `/static`
+mount got a `NoCacheStaticFiles(StaticFiles)` subclass doing the same for
+every static asset — same pattern the `/sw.js` route already used.
+Confirmed at the code level against a scratch `uvicorn` instance on port
+9425 (never touching the real tray-app server on 9424): all three response
+types correctly carried the header alongside their existing `ETag`.
+
+**Manual test revealed the diagnosis was incomplete.** Tez restarted the
+tray app and sent Network-panel screenshots — nearly every request's
+Initiator was `sw.js`/`(ServiceWorker)`. Reading `frontend/sw.js` confirmed
+why: it uses a **cache-first** strategy for everything except `/api/*`,
+including HTML page navigations. `caches.match()` intercepts a request
+before `Cache-Control` is ever consulted, so the header fix was inert for
+any already-controlled client — which is every normal repeat visit. The
+actual mechanism: `pwa.js` calls `register('/sw.js')` on every load (no
+explicit `.update()`), which does trigger an update check each time, but a
+newly-installed worker's activate/`clients.claim()` sequence completes
+asynchronously — too late to control the very navigation that triggered it.
+That navigation gets served by the previous SW/cache; only the next one
+picks up the change. This matches "hard refresh always fixes it" exactly
+(a hard refresh bypasses the SW/HTTP cache entirely).
+
+**Fix:** `frontend/sw.js`'s fetch handler now uses network-first (falling
+back to cache only on fetch failure, i.e. offline) specifically for
+navigation requests (`event.request.mode === 'navigate'`). Static assets
+(CSS/JS/images) are unchanged — still cache-first, since they weren't the
+source of the symptom and are already kept eventually consistent by the
+existing content-hash `CACHE_NAME` versioning. See `DECISIONS.md` for why
+the split wasn't made global.
+
+**Verified live via the `claude-in-chrome` extension**, driving the actual
+already-running server (never a second instance) rather than relying on
+screenshots alone — screenshots couldn't distinguish "served from the SW's
+own cache" from "went to network," so this needed direct runtime
+introspection: confirmed the active, controlling SW's own script text
+contained the new navigate-first branch, `caches.keys()` held exactly one
+cache (no stale leftover), a real navigation to `/issue/5469` produced a
+genuine network hit alongside its `/api/issue/5469` call, and the response
+carried `cache-control: no-cache` with a live `etag`. Tez separately
+confirmed via his own DevTools after the tray-app restart.
+
+**New skill:** `.claude/skills/browser-verify/SKILL.md` — captures this
+verification pattern (navigate the real running app via the extension,
+introspect Service Worker/Cache Storage/response-header state directly via
+`javascript_tool` rather than trusting the Network panel alone, cross-check
+against `read_network_requests`) as a reusable methodology for future
+runtime-state verification, separate from `perf-diagnostics` (timing) and a
+not-yet-built stress-test skill (load/concurrency) — Tez's request, prompted
+by this exact investigation.
+
+**Docs:** `BUGS.md` — BUG-032 removed (0 open again), full write-up moved to
+`archive/bugs-fixed-archive.md` with the corrected root cause. `DECISIONS.md`
+— new entry for the navigate-first-only split. `INDEX.md` — `BUGS.md` row
+updated. `CHANGELOG.md` — one line for the fix.

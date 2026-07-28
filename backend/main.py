@@ -145,24 +145,38 @@ app.include_router(library_move.router,      prefix="/api/admin", dependencies=_
 # ---------------------------------------------------------------------------
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
 if FRONTEND_DIR.exists():
+    # BUG-032: browsers apply heuristic freshness caching to responses with no
+    # explicit Cache-Control, and can silently reuse a stale cached page/asset
+    # on normal navigation even after the underlying file changed. no-cache
+    # forces revalidation via the Last-Modified/ETag FileResponse/StaticFiles
+    # already send — a 304 still comes back for genuinely unchanged content,
+    # so this isn't a full cache-disable, just a correctness fix.
+    class NoCacheStaticFiles(StaticFiles):
+        def file_response(self, *args, **kwargs):
+            response = super().file_response(*args, **kwargs)
+            response.headers["Cache-Control"] = "no-cache"
+            return response
+
     # Serve /static/* from frontend/
-    app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
+    app.mount("/static", NoCacheStaticFiles(directory=str(FRONTEND_DIR)), name="static")
 
     # Serve the HTML pages at their short URLs
     from fastapi.responses import FileResponse, Response
     from fastapi import HTTPException, Request
 
+    _NO_CACHE_HEADERS = {"Cache-Control": "no-cache"}
+
     @app.get("/", include_in_schema=False)
     async def home():
-        return FileResponse(str(FRONTEND_DIR / "index.html"))
+        return FileResponse(str(FRONTEND_DIR / "index.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/series/{issue_id}", include_in_schema=False)
     async def series_page(issue_id: int):
-        return FileResponse(str(FRONTEND_DIR / "series.html"))
+        return FileResponse(str(FRONTEND_DIR / "series.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/issue/{issue_id}", include_in_schema=False)
     async def issue_page(issue_id: int):
-        return FileResponse(str(FRONTEND_DIR / "issue.html"))
+        return FileResponse(str(FRONTEND_DIR / "issue.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/admin", include_in_schema=False)
     async def admin_page(request: Request):
@@ -171,37 +185,37 @@ if FRONTEND_DIR.exists():
         # off gets no page at all, matching require_admin_auth's API-level block.
         if not is_local_request(request) and not is_remote_admin_enabled():
             raise HTTPException(status_code=403, detail={"error": "remote_admin_disabled"})
-        return FileResponse(str(FRONTEND_DIR / "admin.html"))
+        return FileResponse(str(FRONTEND_DIR / "admin.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/guide", include_in_schema=False)
     async def guide_page():
-        return FileResponse(str(FRONTEND_DIR / "guide.html"))
+        return FileResponse(str(FRONTEND_DIR / "guide.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/guide/library", include_in_schema=False)
     async def guide_library_page():
-        return FileResponse(str(FRONTEND_DIR / "guide-library.html"))
+        return FileResponse(str(FRONTEND_DIR / "guide-library.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/guide/admin", include_in_schema=False)
     async def guide_admin_page():
-        return FileResponse(str(FRONTEND_DIR / "guide-admin.html"))
+        return FileResponse(str(FRONTEND_DIR / "guide-admin.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/guide/editor", include_in_schema=False)
     async def guide_editor_page():
-        return FileResponse(str(FRONTEND_DIR / "guide-editor.html"))
+        return FileResponse(str(FRONTEND_DIR / "guide-editor.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/guide/editor-basic", include_in_schema=False)
     async def guide_editor_basic_page():
-        return FileResponse(str(FRONTEND_DIR / "guide-editor-basic.html"))
+        return FileResponse(str(FRONTEND_DIR / "guide-editor-basic.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/guide/editor-full", include_in_schema=False)
     async def guide_editor_full_page():
-        return FileResponse(str(FRONTEND_DIR / "guide-editor-full.html"))
+        return FileResponse(str(FRONTEND_DIR / "guide-editor-full.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/editor", include_in_schema=False)
     async def editor_full_page(request: Request):
         if not is_local_request(request) and not is_remote_admin_enabled():
             raise HTTPException(status_code=403, detail={"error": "remote_admin_disabled"})
-        return FileResponse(str(FRONTEND_DIR / "editor_full.html"))
+        return FileResponse(str(FRONTEND_DIR / "editor_full.html"), headers=_NO_CACHE_HEADERS)
 
     def _frontend_asset_version() -> str:
         # Hash of every file under frontend/ (path + size + mtime) — changes

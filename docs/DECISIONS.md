@@ -4,6 +4,29 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Service Worker: page navigations go network-first, static assets stay cache-first
+
+**Decided:** 2026-07-28 (BUG-032 fix).
+
+**Why:** `frontend/sw.js` originally used cache-first for everything except
+`/api/*`, including the HTML page itself. That's what actually caused
+BUG-032's stale-page symptom — not the missing `Cache-Control` header the
+bug was originally filed against (see `archive/bugs-fixed-archive.md`
+BUG-032 for the full mechanism: an SW update installs/activates/claims
+asynchronously, so cache-first can still serve the *previous* HTML shell on
+the very navigation that should have picked up an edit). The fix only
+changes the strategy for navigation requests
+(`event.request.mode === 'navigate'`); CSS/JS/image requests are untouched
+and stay cache-first. Deliberately not made global: navigations are cheap,
+single requests where "always try network first, fall back to cache only
+if offline" costs nothing noticeable and directly fixes the freshness
+problem; static assets are numerous, already eventually-consistent via the
+existing content-hash `CACHE_NAME` versioning, and don't benefit from the
+same treatment enough to justify losing their offline-cache-first
+performance. If a similar staleness complaint ever surfaces for CSS/JS
+specifically (not just HTML), revisit this split rather than assuming it
+still holds.
+
 ### Tooltips on disabled buttons need a wrapping element, not the attribute on the button itself
 
 **Decided:** 2026-07-26 (Stage 7, `docs/user-guide-plan.md`).

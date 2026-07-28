@@ -1,7 +1,7 @@
 // ComicVault — sw.js
 // Minimal service worker: app-shell cache-first for static assets,
-// network-first for API calls. Served at /sw.js via a dedicated FastAPI
-// route so it controls the full / scope.
+// network-first for page navigations and API calls. Served at /sw.js via a
+// dedicated FastAPI route so it controls the full / scope.
 
 // The placeholder token below is substituted server-side (backend/main.py's
 // /sw.js route) with a hash of every file under frontend/ — changes
@@ -55,7 +55,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// ── Fetch: cache-first for static, network-first for API ─────────────────────
+// ── Fetch: network-first for navigations/API, cache-first for static assets ──
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
@@ -68,7 +68,27 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for everything else (static assets + HTML shells)
+  // Network-first for page navigations (BUG-032): a newly-installed SW
+  // activates and claims clients asynchronously, so cache-first here could
+  // still serve the *previous* HTML shell — e.g. missing a <link> tag added
+  // in the same edit that triggered this update — on the very navigation
+  // that should have picked it up. Falls back to cache only when offline.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Cache-first for everything else (static assets)
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
