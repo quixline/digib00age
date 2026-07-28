@@ -7091,3 +7091,130 @@ by this exact investigation.
 `archive/bugs-fixed-archive.md` with the corrected root cause. `DECISIONS.md`
 — new entry for the navigate-first-only split. `INDEX.md` — `BUGS.md` row
 updated. `CHANGELOG.md` — one line for the fix.
+
+## Session — 2026-07-28 — flutter-ui-sync-plan.md closed out; two Flutter reading-progress bugs fixed
+
+Reviewed `docs/flutter-ui-sync-plan.md` (a Flutter/web card-UI gap analysis
+generated 2026-07-23, never checked back against the codebase) line by line
+against current `flutter_app/` source — `cover_card.dart`, `browse_screen.dart`,
+`folder_screen.dart`, `folder_entry.dart`, `custom_tab.dart`, `series.dart`,
+`tokens.dart`, `shell_screen.dart`, `api_service.dart`.
+
+**Most of the doc's scope had already shipped** — largely through Tez's own
+direct ask (`mobile-reader-changes.txt`, closed via `INBOX.md` 2026-07-24)
+rather than by working the doc's own priority list, and in several cases
+differently than the doc proposed (e.g. a plain 1px card border instead of
+the doc's dark-gradient-plus-glow-ring — matches what Tez actually asked
+for). Folder View — the doc's largest item — is fully built: `FolderEntry`
+with the year-range calc Tez wanted, `FolderScreen` with drill-down nav,
+routed from `shell_screen.dart`. Several of the doc's own web-parity ideas
+(genre ribbon, card rating stars, flag-for-review badge, compact card tier,
+two-column list view) were never actually requested by Tez and were
+confirmed left unbuilt on purpose — not gaps.
+
+**Two real bugs found and fixed during the review:**
+
+1. `CoverListRow` (list view) still carried the full-image green read-state
+   overlay that the grid `CoverCard` had already dropped in favour of a
+   small corner badge — list view was missed when that change was made.
+   Fixed: same 14×14 green circle badge (top-right, white border) as grid,
+   full overlay removed. (`flutter_app/lib/widgets/cover_card.dart`)
+
+2. Tez flagged that a partially-read issue's percentage "doesn't seem to be
+   reporting correctly." Root cause: `Series.progressPercent`
+   (`flutter_app/lib/models/series.dart`) always computed
+   `read_count / issue_count`, which can only ever be 0% or 100% for a
+   Singles card (exactly one issue) — reading halfway through a single
+   never moved the number. The web already handles this: it special-cases
+   Singles to use real page-level progress
+   (`current_page / page_count`, `frontend/js/app.js:1812-1821`), and the
+   backend already sends `current_page` in the `/api/library` response for
+   exactly this reason (`backend/routers/library.py:242-245`, comment
+   present since before this session). The Flutter `Series` model simply
+   never parsed `current_page`. Fixed: added the field, and
+   `progressPercent` now branches the same way the web does — page-level
+   for Singles, issue-count aggregate for Series. Affects both grid and
+   list (both read the same getter) — not list-view-specific as first
+   suspected, Tez just happened to notice it there.
+
+**Verified:** `dart analyze` on both changed files — no issues. Not
+exercised live on-device this session (no Flutter build/run step taken);
+Tez to confirm on the tablet next time he's reading a Singles issue and
+checking Home/Browse/list view.
+
+**Docs:** `flutter-ui-sync-plan.md` moved to `docs/archive/` with a new
+"Closing status" section recording what shipped, what shipped differently,
+what was fixed, and what was deliberately never built. `INDEX.md`'s archive
+table gets an entry. `docs/mobile-reader-changes.txt` (Tez's own raw request
+list, superseded by the now-closed `INBOX.md` entry) left as-is — not
+Claude's file to triage unprompted.
+
+## Session — 2026-07-28 (cont'd) — Favourite badge polish, Android adaptive launcher icon
+
+Two small UI requests plus a proper Android Adaptive Icon setup, all built,
+deployed to the connected Lenovo tablet (`HGR3SJY1`), and manually confirmed
+by Tez on-device across several iterations.
+
+**Favourite badge** (`flutter_app/lib/widgets/cover_card.dart`, `CoverCard`
+and `CoverListRow`): removed the black `Border.all()` ring around the
+heart's circle backing, and shifted the ♥ glyph down within the circle (net
++1px from the original — tried +2px first, Tez asked for 1px back up once
+he could see the gap against the circle's edge clearly). Done via asymmetric
+`EdgeInsets` padding (top/bottom split) rather than `Transform.translate`, so
+the circle's own footprint/position never changes, only the glyph inside it.
+
+**App launcher icon.** Found the actual cause of "the icon looks small
+compared to Settings/Clock": this app was shipping a single flat legacy PNG
+(`assets/logo/app_icon.png`) as its Android icon, not a proper Adaptive Icon
+(separate background + foreground layers, the format Android 8+/API 26+
+expects). Android auto-wraps non-adaptive icons in its own safe-zone
+shrink-and-backdrop treatment, compounding whatever padding the source
+image already had — confirmed via a live screenshot showing our icon,
+Settings, and Clock all wrapped in the same white rounded-square backdrop,
+with Clock's glyph filling far more of it because Clock ships adaptive
+layers and this app didn't.
+
+Fix: added `adaptive_icon_background`/`adaptive_icon_foreground` (+
+`adaptive_icon_foreground_inset: 0`) to `flutter_launcher_icons` config in
+`pubspec.yaml`. Background is a flat `#0A5FFF` (matches `AppColors.accent`)
+so the OS applies its own current mask shape with no baked-in corner
+rounding to conflict with it. Foreground (`assets/logo/app_icon_foreground.png`,
+new file) is the white "00" glyph only, extracted at native resolution from
+the original `app_icon.png` (not upscaled from the smaller, lower-res
+`icon-oo.png`) onto a transparent 1024×1024 canvas. `app_icon.png` itself
+was reverted to its original committed state after an initial too-aggressive
+crop attempt — it's still used as-is for the Windows icon and the
+API<26 legacy-icon fallback, both unaffected by the adaptive-icon change.
+
+Glyph sizing took several build-and-check rounds directly against the
+tablet, since neither synthetic mask previews (Python-rendered circle/
+rounded-square crops of the composited icon) nor a manual GIMP measurement
+of the original flat artwork's margins reliably predicted how this
+launcher actually renders adaptive icons — a 75%-width foreground (matching
+Tez's own GIMP measurement of the original) visibly overflowed the masked
+container on-device despite passing every synthetic clipping check. What
+actually worked, confirmed twice by Tez looking at the live tablet: **57.2%
+glyph width** (30.8% height, uniform scale, no aspect distortion). Treat
+that number — not any formula — as the source of truth if this needs
+touching again; see `DECISIONS.md` for the adaptive-icon-sizing gotcha this
+produced.
+
+**A real deploy mistake, caught mid-session:** the first build-and-push
+round used `flutter install -d HGR3SJY1 --debug`, which reported success but
+had silently reinstalled a **4-day-old prebuilt APK** already sitting in
+`build/app/outputs/flutter-apk/` — none of that round's source changes were
+actually on the device, which is why Tez initially reported seeing no
+changes at all after a full tablet restart. Caught by comparing the
+installed package's `lastUpdateTime` (fresh — proves *install* happened)
+against the APK file's own mtime (4 days old — proves it was never
+*rebuilt*). Every round after that used an explicit `flutter build apk
+--debug` followed by `adb install -r <path>` instead, verifying the APK's
+mtime postdates the source edits before each install. See `DECISIONS.md`.
+
+**Verified:** `dart analyze` clean on every changed file; every round
+installed on the real tablet and confirmed by Tez looking at the actual
+device, not a simulator or a static preview.
+
+**Docs:** `CHANGELOG.md` one-liner. `DECISIONS.md` — two entries: the
+adaptive-icon-sizing gotcha (empirical sizing beat any calculated approach)
+and the `flutter install`-reuses-stale-APK deploy gotcha.

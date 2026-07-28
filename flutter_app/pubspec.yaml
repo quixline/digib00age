@@ -38,6 +38,19 @@ flutter_launcher_icons:
   android: true
   image_path: "assets/logo/app_icon.png"
   min_sdk_android: 21
+  # Android 8+ (API 26+) uses these instead of image_path — a flat legacy
+  # icon gets auto-shrunk and re-padded by the OS on top of whatever
+  # padding the source already has, which is why the flat app_icon.png
+  # looked small next to properly-adaptive icons like Clock/Settings.
+  # Background fills the full canvas (no baked-in corner rounding — the
+  # launcher applies its own mask shape); foreground is glyph-only on a
+  # transparent canvas, sized within Android's safe zone.
+  adaptive_icon_background: "#0A5FFF"
+  adaptive_icon_foreground: "assets/logo/app_icon_foreground.png"
+  # Default is 16 — the tool would otherwise shrink our already-sized-to-68%
+  # foreground by another 16% per side on top of its own padding. Our source
+  # image already builds in the intended safe margin, so this stays 0.
+  adaptive_icon_foreground_inset: 0
   windows:
     generate: true
     image_path: "assets/logo/app_icon.png"

@@ -4,6 +4,49 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### `flutter install` can silently reinstall a stale prebuilt APK instead of rebuilding
+
+**Decided (process gotcha, not a code decision):** 2026-07-28.
+
+**Why:** `flutter install -d <device> --debug` reported "Success" and even
+showed "Uninstalling old version... Installing..." — but it had reused a
+4-day-old APK already sitting in `build/app/outputs/flutter-apk/` rather
+than rebuilding from current source. It does not appear to reliably trigger
+a rebuild the way `flutter run` does. This produced a real false-confidence
+incident: multiple source changes appeared "deployed and verified" on the
+tablet when none of them were actually present in the running app, and it
+wasn't caught until the installed package's `lastUpdateTime` (fresh) was
+compared against the built APK file's own mtime (stale) via `adb shell
+dumpsys package` and a plain file timestamp check.
+
+**How to apply:** for any Flutter tablet deploy going forward, always run
+`flutter build apk --debug` explicitly first, confirm the resulting APK's
+mtime postdates every source file being tested, and only then
+`adb install -r build/app/outputs/flutter-apk/app-debug.apk`. Don't trust
+`flutter install`'s own "Success" output as proof a rebuild happened —
+verify the artifact's timestamp, not the command's exit status.
+
+### Adaptive icon glyph sizing: trust the on-device check, not the calculation
+
+**Decided:** 2026-07-28 (Android launcher icon fix, same session as above).
+
+**Why:** Three different ways of predicting how big the icon's foreground
+glyph would render — a synthetic circle-mask crop, a synthetic
+rounded-square-mask crop, and a manual GIMP measurement of the original
+flat artwork's margins (which implied ~75% width) — all turned out wrong
+once checked on the actual tablet: 75% width visibly overflowed the masked
+container on-device despite clearing every synthetic clipping check. The
+value that actually worked (57.2% width / 30.8% height) was reached by
+directly building, installing, and looking at the real device, twice,
+after the calculated approaches failed.
+
+**How to apply:** if this icon (or any Android adaptive icon on this
+project) needs resizing again, don't re-derive a target percentage from
+first principles or from measuring the source artwork — build, install on
+a real device, and look. The gap between "correct by the adaptive-icon
+spec" and "correct on this specific launcher" was large enough here that
+calculation wasn't a reliable shortcut.
+
 ### Service Worker: page navigations go network-first, static assets stay cache-first
 
 **Decided:** 2026-07-28 (BUG-032 fix).

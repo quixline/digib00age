@@ -13,6 +13,17 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-28** — Favourite badge polish (border removed, heart nudged
+  1px) and a proper Android Adaptive Icon (was a flat legacy icon, which is
+  why it looked small next to Settings/Clock) — built and pushed to the
+  Lenovo tablet, confirmed on-device. → `v2.6/progress.md` "Favourite badge
+  polish, Android adaptive launcher icon"
+- **2026-07-28** — `flutter-ui-sync-plan.md` closed out (archived); fixed two
+  Flutter reading-progress bugs found during review: list-view read overlay
+  not dropped like grid's, and Singles progress % stuck at 0/100 (now uses
+  page-level progress like the web does). → `v2.6/progress.md`
+  "flutter-ui-sync-plan.md closed out; two Flutter reading-progress bugs
+  fixed"
 - **2026-07-28** — BUG-032 fixed: page routes/`/static` send `Cache-Control:
   no-cache`, and `frontend/sw.js` switched page navigations to network-first
   (the actual cause of the stale-page symptom). New `browser-verify` skill.

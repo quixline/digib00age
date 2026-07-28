@@ -14,6 +14,7 @@ class Series {
   final String formatGroup; // "Series" or "Singles"
   final String? summary;
   final int? pageCount; // singles only
+  final int currentPage; // singles only — page-level reading position
   final List<String> writers;
 
   const Series({
@@ -32,6 +33,7 @@ class Series {
     required this.formatGroup,
     this.summary,
     this.pageCount,
+    this.currentPage = 0,
     required this.writers,
   });
 
@@ -52,6 +54,7 @@ class Series {
       formatGroup: json['format_group'] as String? ?? 'Series',
       summary: json['summary'] as String?,
       pageCount: json['page_count'] as int?,
+      currentPage: json['current_page'] as int? ?? 0,
       writers: List<String>.from(json['writers'] as List? ?? []),
     );
   }
@@ -64,6 +67,14 @@ class Series {
     return 'unread';
   }
 
-  int get progressPercent =>
-      issueCount == 0 ? 0 : ((readCount / issueCount) * 100).round();
+  // Mirrors frontend/js/app.js:1812-1821 — a Singles card's read_count/
+  // issue_count can only ever be 0% or 100% (there's only one issue), so it
+  // uses real page-level progress instead. Series cards keep the
+  // issue-count aggregate.
+  int get progressPercent {
+    if (formatGroup == 'Singles' && pageCount != null && pageCount! > 0) {
+      return ((currentPage / pageCount!) * 100).round().clamp(0, 100);
+    }
+    return issueCount == 0 ? 0 : ((readCount / issueCount) * 100).round();
+  }
 }

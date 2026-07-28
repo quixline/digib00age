@@ -126,11 +126,10 @@ class _CoverCardState extends State<CoverCard> {
                           top: 6,
                           left: 6,
                           child: Container(
-                            padding: const EdgeInsets.all(2),
+                            padding: const EdgeInsets.fromLTRB(2, 3, 2, 1),
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.35),
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.black, width: 1),
                             ),
                             child: const Text(
                               '♥',
@@ -268,22 +267,28 @@ class _CoverListRowState extends State<CoverListRow> {
                               ),
                             ),
                           if (isRead)
-                            Container(
-                              color: colors.readGreen.withValues(alpha: 0.5),
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Container(
+                                width: 14,
+                                height: 14,
+                                decoration: BoxDecoration(
+                                  color: colors.readGreen,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                ),
+                              ),
                             ),
                           if (d.favourite)
                             Positioned(
                               top: 6,
                               left: 6,
                               child: Container(
-                                padding: const EdgeInsets.all(2),
+                                padding: const EdgeInsets.fromLTRB(2, 3, 2, 1),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withValues(alpha: 0.35),
                                   shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.black,
-                                    width: 1,
-                                  ),
                                 ),
                                 child: const Text(
                                   '♥',
