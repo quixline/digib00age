@@ -7501,3 +7501,18 @@ Tez's explicit "work through this Inbox item" instruction (the exception
 to the standing no-triage-unprompted rule), so the line gets struck
 through per the normal triage mechanics, annotated with what landed here
 vs. what's deferred.
+
+**Same-session follow-on: pushed the release build to the tablet.** The
+committed `IssueSummary` deletion post-dated the release APK already
+sitting in `build/app/outputs/flutter-apk/` (built 2026-07-28 during the
+rebrand close-out), so rebuilt fresh (`flutter build apk --release`)
+rather than assume the stale one was close enough. Installed to the
+Lenovo tablet (`HGR3SJY1`) via `adb install -r`. Verified past the
+installer's own "Success" line, per the standing `flutter
+install`-reuses-stale-APK gotcha (`DECISIONS.md`, 2026-07-28): the
+installed package's `lastUpdateTime` (2026-07-29 00:48:19) matches the
+freshly built APK's mtime, and launching it (`adb shell monkey`) put
+`com.comicvault.comicvault/.MainActivity` in the foreground. Version
+stayed `1.0.0+1` — no functional change to verify beyond confirming the
+app still opens, since the only source change was removing an
+already-unreferenced model class.
