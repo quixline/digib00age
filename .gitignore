@@ -82,3 +82,6 @@ logs/
 
 # /graphify skill output (knowledge-graph cache/report) — regenerable, not source
 graphify-out/
+
+# docs\INBOX.md is just my scratchpad - maintained by mefor keeping notes / todo's
+inbox.md
