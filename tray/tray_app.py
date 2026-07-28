@@ -1,5 +1,5 @@
 """
-ComicVault Tray App — launches the reader server and sits in the system tray.
+digib00age Tray App — launches the reader server and sits in the system tray.
 
 Run from the project root:
     python tray\\tray_app.py        (console visible, for debugging)
@@ -9,7 +9,7 @@ Tray icon (left or right click) shows a menu with:
     - Open Library                  (opens in an app-mode window, see open_app_window())
     - Admin                         (same)
     - Metadata Editor               (same; opens the URL only — does not launch/manage that process)
-    - Start ComicVault at login     (checkable — creates/removes the Windows Startup shortcut)
+    - Start digib00age at login     (checkable — creates/removes the Windows Startup shortcut)
     - Stop Server                   (stops the reader subprocess only; tray keeps running)
     - Start Server                  (restarts it; no-op if already running)
     - Close                         (stops the reader, then exits the tray app)
@@ -45,6 +45,17 @@ HEALTH_CHECK_INTERVAL = 30  # seconds
 STARTUP_WAIT_TIMEOUT = 15  # seconds to wait for the port to open after launch
 
 STARTUP_SHORTCUT_PATH = os.path.join(
+    os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "digib00age.lnk"
+)
+# Pre-rebrand shortcut filename (2026-07-28 rebrand, DECISIONS.md). Still a
+# valid, functioning Startup entry on any machine that enabled autostart
+# before this change — Windows runs it by presence in the Startup folder,
+# not by name. Left in place it would keep launching a second tray instance
+# once the new-named shortcut is created via a toggle, since
+# is_autostart_enabled() only checks the new path. Cleaned up once at
+# startup (see _migrate_legacy_startup_shortcut()) rather than requiring
+# Tez to manually re-toggle autostart after updating.
+LEGACY_STARTUP_SHORTCUT_PATH = os.path.join(
     os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "ComicVault.lnk"
 )
 START_BAT_PATH = os.path.join(PROJECT_ROOT, "start.bat")
@@ -116,9 +127,11 @@ def open_app_window(url):
 # digib00age brand mark (frontend/images/favicon.png) — reused here as the
 # tray icon's base glyph. Square with a transparent background, unlike
 # icon-oo.png/logo1.png (166x100 horizontal logotype), which don't fit a
-# square tray icon. Visual only: the tray app's process/menu name stays
-# "ComicVault" (SPEC.md Section 1's 2026-07-07 scope note still holds for
-# everything except this glyph).
+# square tray icon. As of the 2026-07-28 rebrand close-out (DECISIONS.md)
+# the tray app's process/menu name also reads "digib00age" — this comment
+# previously carved out an exception (SPEC.md Section 1's 2026-07-07 scope
+# note) keeping the name as "ComicVault" while only the glyph changed; that
+# exception is superseded now that the rebrand covers all three surfaces.
 FAVICON_PATH = os.path.join(PROJECT_ROOT, "frontend", "images", "favicon.png")
 _base_icon_cache = None
 
@@ -274,6 +287,19 @@ def is_autostart_enabled(item=None):
     return os.path.exists(STARTUP_SHORTCUT_PATH)
 
 
+def _migrate_legacy_startup_shortcut():
+    """One-time cleanup: removes the pre-rebrand ComicVault.lnk Startup entry
+    if present, so it can't fire alongside a freshly created digib00age.lnk
+    and double-launch the tray app. Safe no-op if it was never created or
+    was already removed."""
+    if os.path.exists(LEGACY_STARTUP_SHORTCUT_PATH):
+        try:
+            os.remove(LEGACY_STARTUP_SHORTCUT_PATH)
+            log("Removed legacy ComicVault.lnk Startup shortcut (superseded by digib00age.lnk).")
+        except OSError as e:
+            log(f"Failed to remove legacy autostart shortcut: {e}")
+
+
 def toggle_autostart(icon=None, item=None):
     """Creates or removes the Windows Startup shortcut. The shortcut's own
     existence is the source of truth for the menu checkbox — no config.json
@@ -313,18 +339,18 @@ def build_menu():
     # calling icon.update_menu() on a timer, which could race with the menu
     # being open concurrently. The real rule is: never call update_menu()
     # from a background thread (update_icon_loop, health_check_loop) — not
-    # "never call it at all." This is why "Start ComicVault at login" below
+    # "never call it at all." This is why "Start digib00age at login" below
     # can safely be a checkable item: its checkmark updates correctly on the
     # very next click with no extra code, since pystray already rebuilds the
     # menu after every click via the mechanism above.
     return pystray.Menu(
-        pystray.MenuItem("ComicVault", None, enabled=False),
+        pystray.MenuItem("digib00age", None, enabled=False),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Open Library", open_library),
         pystray.MenuItem("Admin", open_admin),
         pystray.MenuItem("Metadata Editor", open_editor),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem("Start ComicVault at login", toggle_autostart, checked=is_autostart_enabled),
+        pystray.MenuItem("Start digib00age at login", toggle_autostart, checked=is_autostart_enabled),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Stop Server", stop_server),
         pystray.MenuItem("Start Server", start_server),
@@ -363,16 +389,18 @@ def main():
     _enable_dark_menu_support()
 
     log("=" * 40)
-    log("ComicVault tray app starting.")
+    log("digib00age tray app starting.")
+
+    _migrate_legacy_startup_shortcut()
 
     start_reader()
     health_thread = threading.Thread(target=health_check_loop, daemon=True)
     health_thread.start()
 
     icon = pystray.Icon(
-        "ComicVault",
+        "digib00age",
         make_icon_image("starting"),
-        "ComicVault",
+        "digib00age",
         menu=build_menu(),
     )
 

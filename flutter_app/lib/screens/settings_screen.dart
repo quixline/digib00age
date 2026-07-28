@@ -73,7 +73,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           TextField(
             controller: _urlController,
             decoration: const InputDecoration(
-              labelText: 'ComicVault server URL',
+              labelText: 'digib00age server URL',
               hintText: 'http://192.168.1.10:9424',
               border: OutlineInputBorder(),
             ),
@@ -129,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
           const Divider(height: 32),
           Text(
-            'ComicVault v1.0',
+            'digib00age v1.0',
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 24),

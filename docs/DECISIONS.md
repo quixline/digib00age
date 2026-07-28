@@ -4,6 +4,88 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### ComicVault → digib00age rebrand: close-out pass, brand strings only
+
+**Decided:** 2026-07-28.
+
+**Why:** the rebrand had already landed piecemeal and undocumented — new
+brand assets (`frontend/images/lockup-dark.png`/`lockup-light.png`,
+`favicon.png`, `icon-192.png`/`icon-512.png`) existed, and most frontend
+page `<title>` tags and logo references already read "digib00age", along
+with `Runner.rc`'s `FileDescription`/`ProductName`. But this had happened
+inline during other feature sessions with no tracking, so it was
+inconsistent: the tray app, Flutter app, PWA manifest, README, and
+`CLAUDE.md` still said "ComicVault", and `tray_app.py` even carried a
+comment from a prior session explicitly deciding to *keep* "ComicVault" as
+the tray's process/menu name while only its glyph changed (that decision is
+superseded by this entry — the rebrand now covers every surface). A full
+repo audit (session 2026-07-28, prior to this one) confirmed zero
+occurrences of "digib00age" anywhere in code at that point, which is what
+surfaced the gap in the first place.
+
+**Scope — what changed:** every user-facing string that displayed
+"ComicVault" now reads "digib00age": `frontend/manifest.json`
+(name/short_name), `frontend/admin.html` password-recovery help text,
+`tray/tray_app.py` (menu items, tooltip, log lines, Start Menu shortcut
+filename), `flutter_app/lib/main.dart` (window title), `shell_screen.dart`
+(app bar), `settings_screen.dart` (server-URL label, version string),
+`flutter_app/pubspec.yaml` (description), `flutter_app/android/app/src/main/AndroidManifest.xml`
+(`android:label`, the Android home-screen/app-drawer name), README.md
+(title), and this file's own project-context lines in `CLAUDE.md`.
+
+**Scope — deliberately left alone (internal identifiers, not brand text):**
+- Repo folder name (`comicvault_v2`), git history, db filename
+  (`comicvault_v2.db`), the `CustomTab` model/table name — all pre-existing
+  exclusions, unchanged from the original scoping conversation.
+- The `comicvault://` custom URI scheme (both Windows registry
+  registration in `protocol_handler_service.dart` and the matching Android
+  intent-filter `android:scheme="comicvault"`) — this is a functional
+  protocol identifier, not a displayed string. Renaming it would require
+  also updating whatever web-frontend code generates
+  `comicvault://read/{id}` links and re-registering the Windows handler;
+  treated as out of scope for this pass, not silently decided either way —
+  flagging it back to Tez as a real open question if full-surface
+  consistency is wanted later.
+- Flutter's Dart class names (`ComicVaultApp`, `_ComicVaultAppState`) and
+  the `pubspec.yaml` `name:` package key (`comicvault`) — internal
+  identifiers, same bucket as `CustomTab`.
+- Android `applicationId`/`namespace` (`com.comicvault.comicvault`) and the
+  Kotlin package directory (`android/app/src/main/kotlin/com/comicvault/comicvault/`)
+  — deliberately *not* renamed here. Unlike the Windows exe rename below,
+  Android treats an `applicationId` change as a different app entirely: any
+  existing install on a phone would need to be uninstalled (losing local
+  downloads/sync state) rather than updated in place. Flagged back to Tez
+  rather than assumed; needs an explicit yes before touching it.
+- Every other project doc under `docs/` (SPEC.md, EDITOR_SPEC.md, INDEX.md,
+  this file's own title, etc.) still says "ComicVault" in places — Tez only
+  confirmed CLAUDE.md and README.md for this pass; a full docs/ sweep is a
+  separate, larger job not attempted here.
+
+**Accepted, not avoided — the Windows exe/app-identity rename:**
+`flutter_app/windows/CMakeLists.txt` (`project()`, `BINARY_NAME`) and
+`Runner.rc` (`CompanyName`, `InternalName`, `LegalCopyright`,
+`OriginalFilename`) were renamed from `comicvault`/`com.comicvault` to
+`digib00age`/`com.digib00age`. This changes the on-disk name of the built
+Windows executable from `comicvault.exe` to `digib00age.exe` on the next
+build. Real consequences Tez should know about, not just a code diff:
+- Any existing Desktop/Start Menu/taskbar shortcut pointing at the old
+  `comicvault.exe` path will break (file not found) after the next build
+  replaces it with `digib00age.exe` at a new path — needs manual
+  recreation.
+- The `comicvault://` protocol handler registered in the Windows registry
+  points at the *old* exe path. `protocol_handler_service.dart`'s
+  `isRegistered()` already checks whether the registered command contains
+  `Platform.resolvedExecutable`, so post-rebuild it will correctly report
+  "not registered" rather than silently pointing at a dead path — Tez just
+  needs to re-trigger registration (Settings screen's reader-registration
+  tile) once after the first rebuild. This is existing, pre-built-in
+  behavior, not something added for this change.
+
+**Superseded:** the `tray_app.py` comment (previously citing "SPEC.md
+Section 1's 2026-07-07 scope note") that kept the tray process/menu name as
+"ComicVault" while only the icon glyph rebranded — that carve-out no longer
+applies.
+
 ### `flutter install` can silently reinstall a stale prebuilt APK instead of rebuilding
 
 **Decided (process gotcha, not a code decision):** 2026-07-28.

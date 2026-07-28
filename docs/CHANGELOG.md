@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-28** — ComicVault → digib00age rebrand close-out: PWA manifest,
+  tray app (menu/tooltip/log/shortcut), Flutter app (window title, app bar,
+  settings, Android label), Windows exe identity (Runner.rc/CMakeLists),
+  README, CLAUDE.md. → `v2.6/progress.md` "digib00age rebrand close-out"
+
 - **2026-07-28** — Favourite badge polish (border removed, heart nudged
   1px) and a proper Android Adaptive Icon (was a flat legacy icon, which is
   why it looked small next to Settings/Clock) — built and pushed to the

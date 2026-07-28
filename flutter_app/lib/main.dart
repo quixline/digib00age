@@ -96,7 +96,7 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: widget.settings.themeModeNotifier,
       builder: (context, themeMode, _) => MaterialApp(
-        title: 'ComicVault',
+        title: 'digib00age',
         navigatorKey: _navigatorKey,
         navigatorObservers: [routeObserver],
         debugShowCheckedModeBanner: false,

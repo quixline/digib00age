@@ -177,7 +177,7 @@ class _ShellScreenState extends State<ShellScreen> with RouteAware {
     if (!_serverOnline) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('ComicVault'),
+          title: const Text('digib00age'),
           actions: [
             IconButton(
               icon: const Icon(Icons.settings),

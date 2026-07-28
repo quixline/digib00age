@@ -89,12 +89,12 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.comicvault" "\0"
+            VALUE "CompanyName", "com.digib00age" "\0"
             VALUE "FileDescription", "digib00age" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "comicvault" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.comicvault. All rights reserved." "\0"
-            VALUE "OriginalFilename", "comicvault.exe" "\0"
+            VALUE "InternalName", "digib00age" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 com.digib00age. All rights reserved." "\0"
+            VALUE "OriginalFilename", "digib00age.exe" "\0"
             VALUE "ProductName", "digib00age" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END

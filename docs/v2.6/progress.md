@@ -7218,3 +7218,43 @@ device, not a simulator or a static preview.
 **Docs:** `CHANGELOG.md` one-liner. `DECISIONS.md` — two entries: the
 adaptive-icon-sizing gotcha (empirical sizing beat any calculated approach)
 and the `flutter install`-reuses-stale-APK deploy gotcha.
+
+## Session — 2026-07-28 — digib00age rebrand close-out
+
+- Follow-on from the 2026-07-07 Phase A brand rename (see above): that
+  session's "visible brand rename to digib00age" only actually landed in
+  the frontend HTML page titles/logo images pulled from the design handoff.
+  A full repo audit this session (prompted by scoping a broader code
+  cleanup) found the rename hadn't propagated further — zero occurrences
+  of "digib00age" existed outside `frontend/`, while "ComicVault" remained
+  live in the tray app, Flutter app, PWA manifest, README, and CLAUDE.md.
+- Scoped via `/discovery` before touching anything: confirmed with Tez that
+  new brand assets already exist in `frontend/images/` (no asset creation
+  needed), that "digib00age" should fully replace "ComicVault" (no dual
+  branding), and that all three surfaces (web, tray, Flutter/Windows +
+  Android) should land together.
+- Closed the gap: `frontend/manifest.json`, `admin.html` help text,
+  `tray/tray_app.py` (menu/tooltip/log/Start Menu shortcut, with a one-time
+  migration that removes the old `ComicVault.lnk` so it can't double-launch
+  alongside a freshly created `digib00age.lnk`), `flutter_app/lib` (window
+  title, app bar, settings screen), `pubspec.yaml` description,
+  `AndroidManifest.xml`'s `android:label`, README.md, CLAUDE.md.
+- Also renamed the Windows build identity — `windows/CMakeLists.txt`
+  (`BINARY_NAME`) and `Runner.rc` (CompanyName/InternalName/
+  LegalCopyright/OriginalFilename) — so the built exe itself becomes
+  `digib00age.exe` rather than just its version-info metadata. Explicitly
+  flagged and confirmed with Tez first, since this breaks any existing
+  shortcut pointing at the old `comicvault.exe` path until recreated.
+- Deliberately left alone, flagged in `DECISIONS.md` rather than decided
+  silently: the `comicvault://` protocol scheme (functional identifier, not
+  display text), Android `applicationId`/package directory (renaming that
+  is an app-identity change on Android, not a safe in-place update), Dart
+  class names, the `comicvault_v2` repo folder/db filename, and the rest of
+  `docs/` (still says ComicVault outside CLAUDE.md/README.md — separate
+  future pass).
+- **Verified:** grepped the full repo post-change for remaining
+  "ComicVault" occurrences outside the deliberately-excluded list (see
+  next entry / commit diff) before closing out.
+- **Docs:** `CHANGELOG.md` one-liner added. `DECISIONS.md` — new entry
+  covering full scope, exclusions, and the Windows exe-rename risk
+  accepted.

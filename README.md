@@ -1,4 +1,4 @@
-# ComicVault
+# digib00age
 
 A personal, local comic book server for a single user on a home network. Serves a CBZ
 collection with metadata read from embedded `ComicInfo.xml`.
