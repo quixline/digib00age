@@ -7334,3 +7334,24 @@ and the `flutter install`-reuses-stale-APK deploy gotcha.
   to `docs/INBOX.md` for a later session — noted, no action taken here per
   the standing Inbox workflow (Claude doesn't triage or build from Inbox
   unprompted).
+
+## Session — 2026-07-29 — digib00age rebrand: start_server.py banner miss
+
+- Confirmed Brave now shows "digib00age" correctly after Tez reinstalled
+  the PWA (per the platform-limitation fix noted above).
+- Tez had separately hand-edited `start_server.py`'s module docstring
+  (`ComicVault` → `digib00age`, already committed as pre-existing
+  unrelated-to-handoff work) but noticed and flagged `main()`'s
+  `_sep("ComicVault")` — the console banner printed at server startup —
+  as a second occurrence in the same file that the original sweep missed.
+- Fixed: `_sep("ComicVault")` → `_sep("digib00age")` (`start_server.py:35`).
+- Spot-checked the rest of the repo for remaining `ComicVault` string hits
+  outside `docs/` and build output to see if more had been missed. All
+  other ~35 hits are either the `# ComicVault — <filename>` file-header
+  comment convention used throughout the codebase (internal, not
+  user-facing — same bucket as the already-excluded internal identifiers)
+  or intentional old-name references inside `tray_app.py`'s
+  `_migrate_legacy_startup_shortcut()`, which specifically needs to find
+  and remove the literal old `ComicVault.lnk` filename — not misses.
+  No further action taken; not a full sweep, just confirming nothing else
+  user-visible was missed.

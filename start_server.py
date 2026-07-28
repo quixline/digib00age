@@ -1,5 +1,5 @@
 """
-start_server.py — Start the ComicVault reader server.
+start_server.py — Start the digib00age reader server.
 
 Run from the project root:
     python start_server.py
@@ -32,7 +32,7 @@ def _sep(title=""):
 
 
 def main():
-    _sep("ComicVault")
+    _sep("digib00age")
 
     _sep("Config")
     print(f"  library_root   : {LIBRARY_ROOT}")

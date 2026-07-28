@@ -13,6 +13,12 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-29** — digib00age rebrand: fixed missed `start_server.py`
+  console banner (`_sep("ComicVault")` → `_sep("digib00age")`), the one
+  genuine miss found in a spot-check of remaining `ComicVault` string
+  hits (rest were internal header comments / intentional old-name refs
+  in tray migration code, correctly out of scope). →
+  `v2.6/progress.md` "start_server.py banner miss"
 - **2026-07-28** — digib00age rebrand: re-registered `comicvault://`
   protocol handler at the rebuilt exe; confirmed PWA manifest/icons are
   fully rebranded server-side (Brave's stale install is a browser-side
