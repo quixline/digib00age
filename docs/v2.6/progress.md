@@ -7258,3 +7258,58 @@ and the `flutter install`-reuses-stale-APK deploy gotcha.
 - **Docs:** `CHANGELOG.md` one-liner added. `DECISIONS.md` — new entry
   covering full scope, exclusions, and the Windows exe-rename risk
   accepted.
+
+## Session — 2026-07-28 — digib00age rebrand: commit + rebuild (Code, closing out handoff)
+
+- Picked up `docs/HANDOFF_digib00age_rebrand.md` left by the Cowork session
+  above — it had made all 14 source edits and drafted the doc trail but
+  couldn't run `git commit`/`flutter build` itself.
+- **Commit:** found `.git/index.lock` was stale (no git process holding it,
+  confirmed via `Get-Process`), removed it, then staged and committed
+  exactly the 14 tracked paths the handoff specified (commit `5852cb1`).
+  `CLAUDE.md` was listed as a 15th changed file in the handoff but is (and
+  always was) untracked — `.gitignore` line 48 excludes it deliberately
+  ("Local tool config"), so there was nothing to stage there; not a bug.
+  `start_server.py` also showed modified (a `ComicVault` -> `digib00age`
+  docstring edit) but wasn't part of this handoff's scoped file list, so it
+  was left unstaged and unflagged for Tez rather than folded in silently.
+- **Builds:** all four stale artifacts flagged in the handoff were rebuilt.
+  First attempt at `flutter build windows --debug` failed with a CMake
+  error (`No target "comicvault"`) — the existing `build/windows/x64`
+  CMake cache was in a mixed state, half still configured for the old
+  `comicvault` project name, half for the new `digib00age` one. Ran
+  `flutter clean` (which also wiped the two stale old-named artifacts the
+  handoff had flagged for possible manual deletion — Jul 15 `app-release.apk`
+  and both `comicvault.exe` files — resolving that open cleanup question as
+  a side effect, no separate deletion needed) and rebuilt all four from
+  scratch: `flutter build windows --debug`, `--release`,
+  `flutter build apk --debug`, `--release`. All four succeeded.
+- **Verified by mtime, not by "Success" output** (per the standing gotcha
+  logged in `DECISIONS.md` about `flutter install` silently reinstalling a
+  stale APK): all four artifacts' mtimes (23:32–23:40) postdate the rebrand
+  commit (23:29). Also confirmed the Windows exe's embedded version info
+  directly (`Get-Item ... | .VersionInfo`) shows
+  `CompanyName=com.digib00age`, `ProductName=digib00age`,
+  `OriginalFilename=digib00age.exe` — not just a renamed file, the PE
+  metadata itself is correct. Android side verified via the source
+  `AndroidManifest.xml`'s `android:label="digib00age"` that the release
+  build was compiled from (no `aapt` available locally to decode the
+  built APK's binary manifest directly).
+- **Not done — flagged back to Tez, needs a manual/live step:**
+  - Re-registering the `comicvault://` Windows protocol handler (Settings
+    screen's reader-registration tile) — requires launching the desktop
+    app interactively; `ProtocolHandlerService.isRegistered()` will
+    correctly report "not registered" post-rebuild rather than pointing at
+    a dead path, so this is safe to leave until Tez next opens the app.
+  - Any manually-pinned Desktop/Start Menu/taskbar shortcut to the old
+    `comicvault.exe` path still needs manual recreation pointing at the new
+    `digib00age.exe` output path — the tray app's own Startup shortcut
+    migration is unaffected (separate mechanism, already handled in
+    `tray_app.py`).
+  - The three items already logged as open decisions in `DECISIONS.md`
+    (Android `applicationId`/package rename, `comicvault://` URI scheme
+    rename, full `docs/` sweep) remain unactioned, as intended — no new
+    information changes those.
+- Deleted `docs/HANDOFF_digib00age_rebrand.md` — its steps are done and
+  folded into this entry and the commit above, per its own header
+  instruction.

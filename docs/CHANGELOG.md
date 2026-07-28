@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-28** — ComicVault → digib00age rebrand: commit + rebuild all
+  four Flutter artifacts (Windows debug/release, Android debug/release) with
+  new branding, verified by mtime and embedded exe version info. →
+  `v2.6/progress.md` "commit + rebuild (Code, closing out handoff)"
 - **2026-07-28** — ComicVault → digib00age rebrand close-out: PWA manifest,
   tray app (menu/tooltip/log/shortcut), Flutter app (window title, app bar,
   settings, Android label), Windows exe identity (Runner.rc/CMakeLists),
