@@ -7686,3 +7686,74 @@ this also means the `docs/PERFORMANCE.md` §1D open follow-up (re-measure the
 virtualized component once built) no longer applies to this reader and can be
 dropped once the plan is actually built, since there won't be a scroll strip to
 measure.
+
+## Session — 2026-07-29 — Windows reader built: browser-popout replaces Flutter desktop reader
+
+Tez approved the plan from the same-day review session ("go ahead and build
+it") and this session executed it, following `the-windows-reader-is-lively-
+octopus.md` (Claude Code plan file).
+
+**Built:**
+- `frontend/reader.html` + `frontend/js/reader.js` — a standalone, page-nav-
+  only comic-page reader (single image, page slider, keyboard shortcuts,
+  toolbar auto-hide, next-issue prompt, zoom ported from the Full Editor's
+  comic-viewer pattern in `editor_full.js`). No Scroll mode, per the
+  2026-07-29 review decision.
+- `backend/main.py` — `GET /reader/{issue_id}` route, same pattern as the
+  existing `/issue/{id}` route. No other backend changes — `/api/issue/
+  {id}/pages`, `/api/page/{issue_id}/{n}`, and `/api/progress/{issue_id}`
+  were already reader-ready.
+- `frontend/css/style.css` — a new `reader-*` rule block, always-dark reading
+  surface regardless of site theme (`data-theme="dark"` forced in
+  `reader.html`), matching the Flutter reader's black background.
+- `frontend/js/app.js` — the two `comicvault://read/{id}` hrefs (cover image,
+  "Read"/"Continue Reading" button) replaced with a shared `launchReader()`
+  call.
+- `tray/tray_app.py` — gained `start_control_server()`, a local-only HTTP
+  listener (`127.0.0.1:9426`, never the LAN) handling `GET /open-reader?
+  id={issueId}` by calling the existing `open_app_window()` — added
+  specifically because plain `window.open(..., 'popup')` was found (live
+  test) to leave an address bar visible; the tray's own `--app=` launch is
+  the only way to suppress it. `launchReader()` tries this control server
+  first, falling back to the plain `window.open()` popup if it's
+  unreachable.
+
+**Verified, live, this session:**
+- Page nav (next/prev/slider), zoom (in/out/fit, drag-to-pan while zoomed),
+  keyboard shortcuts (confirmed via synthetic key dispatch — the automation
+  tool's real key-press didn't reliably reach page focus, a tooling
+  limitation, not a reader bug), progress persistence (`POST /api/progress/
+  {issue_id}` confirmed writing correct `status`/`current_page` to the real
+  dev DB, then reset back to unread since it wasn't an actual read), and the
+  next-issue prompt (correct label, correct link to the next issue).
+- **Found and fixed a real bug during verification:** `state.issue.manga` is
+  a ComicInfo-style string (`"No"`/`"Yes"`/`"YesAndRightToLeft"`), not a
+  bool — `Boolean("No")` is `true` in JS, so the initial manga-aware
+  left/right mapping had it backwards for every non-manga issue (next-page
+  clicks silently called `goPrev()`, which no-ops at page 0). Fixed to match
+  `Issue.isManga` in `flutter_app/lib/models/issue.dart`: only
+  `"YesAndRightToLeft"` reverses direction.
+- Tez confirmed live, via real clicks on a real issue page (not just my
+  automated tests): the tray-launched reader window is fully chromeless (no
+  tabs, no address bar) — the plan's one remaining open question, settled.
+- A long automation session reusing one browser tab served a stale disk-
+  cached `app.js` at one point (confirmed via `performance.getEntriesByType
+  ('resource')` showing `transferSize: 0`) despite `Cache-Control: no-cache`
+  — a hard reload (`ctrl+shift+r`) resolved it. Not a real bug, but cost
+  real debugging time; noted for future sessions.
+
+**Docs:** `docs/SPEC.md` §11 (reader.html now built, no longer "NOT built")
+and §19 (renamed "Deep link integration with web UI" → "Reader launch
+(Windows)", full mechanism rewritten). `docs/DECISIONS.md` — new entry
+covering the Scroll-mode-drop, the address-bar finding, and the tray
+control-server design. `docs/CHANGELOG.md` — one line. `docs/ROADMAP.md` —
+not touched; this was never a tracked roadmap item. `docs/BUGS.md` — not
+touched; BUG-021 (the original "no web reader" bug) was already closed and
+archived before this session.
+
+**Not done yet, deliberately:** the Flutter Windows-only pieces
+(`flutter_app/windows/`, `protocol_handler_service.dart`,
+`window_resize_service.dart`, the 4 Windows-only pubspec deps,
+`_ReaderRegistrationTile`) have **not** been deleted — the plan's own
+sequencing calls for a soak-test read-through of a few real issues first.
+Android's Flutter app was not touched at all this session.

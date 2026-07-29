@@ -430,17 +430,16 @@ These ComicInfo.xml fields are intentionally not stored:
 ## 11. Web UI Pages
 
 **Served by:** FastAPI static files
-**Files:** `frontend/index.html`, `series.html`, `issue.html`, `admin.html`
+**Files:** `frontend/index.html`, `series.html`, `issue.html`, `admin.html`, `reader.html`
 **Responsive:** Yes — works on desktop browser and mobile (phone/tablet)
-**Note:** The web UI covers browsing and issue detail. The reader is the Flutter app (Phase 5).
-`reader.html` is NOT built. `issue.html` originally had a "Read" button deep-linking
-into the Flutter app via `comicvault://read/{id}`; **removed 2026-07-09** (v2.6
-UI tweak pass — see `DECISIONS.md`) since the custom URL scheme had no handler on a
-plain desktop browser, so the button did nothing useful outside the Flutter app
-itself. **Restored 2026-07-14 in a different form (v2.6 Item 6)** — the actual
-gap (no Windows registration for the scheme) is now closed, so the Issue
-Detail cover image itself links to `comicvault://read/{id}`; see §19 "Deep
-link integration with web UI" for the full mechanism.
+**Note:** The web UI covers browsing, issue detail, and — as of 2026-07-29 —
+the Windows reader itself. `reader.html`/`reader.js` is a standalone,
+page-nav-only comic-page reader (no Scroll mode — see `DECISIONS.md`),
+launched from the Issue Detail cover/"Read" button as a popup window rather
+than a full page in the main app shell. It replaced the Windows Flutter
+desktop reader (v2.6 Items 5-6, 2026-07-14) entirely — Android keeps its own
+Flutter app unchanged; this only ever covered the Windows same-machine case.
+See §19 "Reader launch (Windows)" for the full launch mechanism.
 
 ### Library home (`/`)
 - Top strip: "Continue reading" — issues with status="reading"
@@ -465,10 +464,9 @@ link integration with web UI" for the full mechanism.
 - Credits block: writer, penciller, inker, colorist, letterer, cover artist
 - Characters list, teams, story arc
 - Age rating
-- ~~**"Read" button** → deep-links to Flutter app via custom URL scheme: `comicvault://read/{id}`~~
-  **Removed 2026-07-09.** **Restored 2026-07-14 as the cover image itself**
-  (not a separate button) — see §11's note above, §19 "Deep link
-  integration with web UI", and `DECISIONS.md`.
+- Cover image and "Read"/"Continue Reading" button both open the reader
+  (`frontend/reader.html`, §19 "Reader launch (Windows)") — replaced the old
+  `comicvault://` Flutter deep link 2026-07-29, see `DECISIONS.md`.
 - Mark read / unread toggle
 
 #### Admin page (/admin)
@@ -786,29 +784,34 @@ User can also switch manually in Settings.
 - Progress saved locally on device (SQLite), not synced to server
 - Recently opened local files listed on Library screen when in local mode
 
-### Deep link integration with web UI
-**Web-UI trigger restored 2026-07-14 (v2.6 Item 6), Windows only.** The
-"Read" button removed 2026-07-09 (`DECISIONS.md`, `BUGS.md` BUG-021 at the
-time, since closed) is back in a different form — `issue.html`'s cover image itself is
-now a link to `comicvault://read/{issue_id}` — because the actual gap
-(nothing on Windows had ever registered a handler for the scheme) is now
-closed, not because the Flutter app's own parsing of the scheme ever
-needed fixing:
-```
-comicvault://read/{issue_id}
-```
-The Flutter app registers this custom URL scheme on both Android and
-Windows, and always correctly handles it once registered/received.
-Android's registration is via `AndroidManifest.xml`'s intent-filter,
-present since V1. **Windows registration is now a deliberate, explicit
-step** — not automatic — via a "Register as this PC's comic reader" button
-in the Flutter app's Settings screen
-(`flutter_app/lib/services/protocol_handler_service.dart`, writing
-`HKEY_CURRENT_USER\Software\Classes\comicvault`). If the reader isn't
-already running, clicking the cover launches it straight into that issue
-(cold start). If it's already running, the existing window is brought to
-the front and navigated there instead of a second process spawning
-(`flutter_app/windows/runner/main.cpp`'s `SendAppLinkToInstance()`).
+### Reader launch (Windows)
+**Replaced 2026-07-29 — the Windows desktop reader is no longer the Flutter
+app.** `issue.html`'s cover image and "Read"/"Continue Reading" button now
+open `frontend/reader.html` (a standalone, page-nav-only comic-page reader —
+see §11) instead of deep-linking into Flutter via `comicvault://read/{id}`.
+This replaces the entire Windows Flutter desktop reader built 2026-07-14
+(v2.6 Items 5-6) — Android's Flutter app is unaffected and keeps its own
+`comicvault://` intent-filter handling for its own deep links; only the
+Windows launch path changed.
+
+Launch mechanism, in `launchReader()` (`frontend/js/app.js`):
+1. `fetch('http://127.0.0.1:9426/open-reader?id={issueId}', {mode:'no-cors'})`
+   — a local-only control server added to `tray/tray_app.py`
+   (`start_control_server()`, bound to `127.0.0.1` only, never the LAN).
+2. On success, the tray opens `http://localhost:{READER_PORT}/reader/{id}`
+   as its own chromeless `--app=` window via the existing `open_app_window()`
+   — identical style to the tray's Open Library/Admin/Editor windows (no
+   tabs, no address bar).
+3. If that fetch fails (tray not running the control server — e.g. the
+   backend was started some other way than via the tray), it falls back to
+   `window.open(url, 'cv-reader-window', 'popup,width=900,height=1100')` — a
+   plain popup window (no tabs, but *does* show an address bar; a
+   `window.open()` popup can't suppress that on its own, only an
+   `--app=`-launched window can).
+
+Each `--app=` launch spawns a fresh window rather than reusing one (matching
+existing Open Library/Admin/Editor behavior) — only the `window.open()`
+fallback path reuses/refocuses a single window via its repeated target name.
 
 **Inherent limitation, not solved:** a custom URI scheme only works when
 the browser and the registered reader are on the same Windows PC — this

@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-29** — Windows reader built: browser-popout reader
+  (`frontend/reader.html`/`reader.js`, page nav only) replaces the Windows
+  Flutter desktop reader; `tray/tray_app.py` gained a local control server so
+  it launches fully chromeless. → `progress.md` "Windows reader built:
+  browser-popout replaces Flutter desktop reader"
 - **2026-07-29** — Windows reader review: browser-popout-vs-Flutter plan
   written (no code built, review only) + a `perf-diagnostics` gate run on
   full-res page-image loading. → `progress.md` "Windows reader review:

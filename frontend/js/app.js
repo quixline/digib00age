@@ -2587,6 +2587,26 @@ async function initIssue() {
   }
 }
 
+// ── Reader launch ──────────────────────────────────────────────────────────
+// Replaces the old comicvault:// Flutter deep link (2026-07-29). Tries the
+// tray app's local-only control port first (127.0.0.1:9426, tray/tray_app.py
+// start_control_server()) so the reader opens as a fully chromeless --app=
+// window, same as the tray's own Library/Admin/Editor windows — a plain
+// window.open() popup can suppress the tab strip but not the address bar.
+// Falls back to window.open() (address bar visible, but still a dedicated
+// popup, not a full tab) when the tray isn't running the control server —
+// e.g. the backend was started some other way than via the tray.
+const READER_CONTROL_PORT = 9426;
+
+function launchReader(issueId) {
+  const readerUrl = `/reader/${issueId}`;
+  const controllerUrl = `http://127.0.0.1:${READER_CONTROL_PORT}/open-reader?id=${issueId}`;
+  fetch(controllerUrl, { mode: 'no-cors', signal: AbortSignal.timeout(400) })
+    .catch(() => {
+      window.open(readerUrl, 'cv-reader-window', 'popup,width=900,height=1100');
+    });
+}
+
 // ── Issue detail layout ───────────────────────────────────────────────────────
 
 function buildIssueDetail(data) {
@@ -2615,15 +2635,18 @@ function buildIssueDetail(data) {
   // Left: cover + actions
   const coverCol = el('div', 'issue-cover-col');
 
-  // Cover links to the Windows desktop reader via its registered
-  // comicvault:// protocol handler (Settings > Windows Reader in the
-  // Flutter app) — same-machine-only by nature of a custom URI scheme; if
-  // nothing has registered the handler on this PC, the browser's own
-  // "can't open this link" affordance is all that happens, no error we
-  // could catch or report on from here.
+  // Cover opens the browser-popout reader (frontend/reader.html/js) in a
+  // dedicated popup window — replaces the old comicvault:// Flutter deep
+  // link (2026-07-29). href stays a plain same-machine same-origin URL so
+  // middle-click/open-in-new-tab still works without JS; the click handler
+  // upgrades a left-click into a reused popup window instead.
   const coverLink = el('a', 'issue-cover-link issue-cover-link--redesign');
-  coverLink.href = `comicvault://read/${data.id}`;
-  coverLink.dataset.tooltip = 'Opens in the digib00age reader app, if installed';
+  coverLink.href = `/reader/${data.id}`;
+  coverLink.dataset.tooltip = 'Open in the reader';
+  coverLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    launchReader(data.id);
+  });
 
   // Collector-card frame: three nested layers (metallic bezel, state-mat,
   // dark inner frame) around the art — see style.css .cc-frame-* for why
@@ -2671,10 +2694,14 @@ function buildIssueDetail(data) {
   const actions = el('div', 'issue-actions');
 
   // "Read"/"Continue Reading" — a dedicated open-the-reader button ahead of
-  // Mark as Read, mirroring the cover art's own comicvault:// link so
+  // Mark as Read, mirroring the cover art's own reader-popup link so
   // there's a text affordance for the same action.
   const readActionBtn = el('a', 'btn-read-action', 'Read');
-  readActionBtn.href = `comicvault://read/${data.id}`;
+  readActionBtn.href = `/reader/${data.id}`;
+  readActionBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    launchReader(data.id);
+  });
   actions.appendChild(readActionBtn);
 
   // Live-syncs every read-state-dependent visual on this page (cover frame

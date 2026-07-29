@@ -177,6 +177,10 @@ if FRONTEND_DIR.exists():
     async def issue_page(issue_id: int):
         return FileResponse(str(FRONTEND_DIR / "issue.html"), headers=_NO_CACHE_HEADERS)
 
+    @app.get("/reader/{issue_id}", include_in_schema=False)
+    async def reader_page(issue_id: int):
+        return FileResponse(str(FRONTEND_DIR / "reader.html"), headers=_NO_CACHE_HEADERS)
+
     @app.get("/admin", include_in_schema=False)
     async def admin_page(request: Request):
         # v2.4 Item 1: page navigation itself is part of the gate, not just the

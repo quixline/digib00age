@@ -4,6 +4,65 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Windows desktop reader: replaced Flutter with a browser popout; Scroll mode dropped; tray gained a launch control server
+
+**Decided:** 2026-07-29.
+
+**Why:** Tez raised this as a git/package-simplification question, not a
+feature complaint — the Windows Flutter build (v2.6 Items 5-6, 2026-07-14)
+carried a native `flutter_app/windows/` platform folder, 4 Windows-only
+pubspec deps, and recurring friction (no installer, Debug/Release exe-path
+mismatches breaking the `comicvault://` registry entry after every rebuild).
+Reviewed as its own session (`the-windows-reader-is-lively-octopus.md` plan
+file) rather than folded into other work, since it revisits a founding
+architectural choice, not a bug fix.
+
+Investigation found the backend reader API (`GET /api/issue/{id}/pages`,
+`GET /api/page/{issue_id}/{n}`, `POST /api/progress/{issue_id}`) was already
+plain HTTP and fully reusable by a browser reader with **zero backend
+changes** — the Windows Flutter build's only real justification (matching
+Android's shared codebase) didn't extend to needing native Windows code at
+all, since the reader was already scoped same-machine-only from day one
+(unlike Android, which genuinely needs an installed app for offline/local-CBZ
+use — that reasoning, from the original 2026-06-12 web-reader-ruled-out call,
+never applied to Windows).
+
+**Scroll mode dropped entirely, Page nav only.** A `perf-diagnostics` gate
+(`docs/PERFORMANCE.md` §1D, run specifically because the plan required it
+before any go/no-go call) found naive eager-mounting of a full comic in
+Scroll mode isn't viable — the library's largest issue (1,220 pages) would be
+~2.6GB transfer / up to ~28GB decoded image memory — and would need an
+`IntersectionObserver`-virtualized windowed component to work safely. Rather
+than build that, Tez confirmed he rarely uses Scroll mode even on the tablet
+where it already exists, so the simpler call was to not build it at all.
+Android's Flutter app is unaffected and keeps both modes.
+
+**Launch mechanism needed more than the plan assumed.** The original plan bet
+on a plain `window.open(url, 'popup')` call reusing the tray's existing
+chromeless-window feel — live testing found this suppresses the tab strip but
+**not the address bar** (that's a property of how a window itself is
+launched via the `--app=` CLI flag, not something a script-opened child
+window inherits). Given the choice, Tez chose to close that gap rather than
+accept it: `tray/tray_app.py` gained a small local-only control server
+(`start_control_server()`, `127.0.0.1:9426`, loopback-only, never the LAN)
+that `app.js`'s `launchReader()` calls first; on success the tray opens the
+reader as its own `--app=` window (confirmed live — fully chromeless),
+falling back to the plain `window.open()` popup (address bar visible) if the
+control server isn't reachable. This reintroduces a small live local
+listener — the category of complexity the original plan was chosen partly to
+avoid — accepted deliberately in exchange for full visual parity with the
+old Flutter window. One accepted behavior change from the original plan: the
+`--app=` path spawns a fresh window per launch rather than reusing one
+(matching how Open Library/Admin/Editor already behave), where the
+`window.open()`-only design would have deduped via a repeated target name;
+only the fallback path still dedupes.
+
+**Not yet done as of this entry:** the Flutter Windows-only pieces
+(`flutter_app/windows/`, `protocol_handler_service.dart`,
+`window_resize_service.dart`, the 4 Windows-only pubspec deps,
+`_ReaderRegistrationTile`) are still in the repo — deletion is gated on a
+soak-test read-through first, per the plan's own sequencing.
+
 ### docs/ rebrand sweep: current-state docs only, narrative logs and archive/ left as "ComicVault"
 
 **Decided:** 2026-07-29.

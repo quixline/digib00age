@@ -21,6 +21,13 @@ for why the menu label is intentionally static.
 A background thread checks the reader server every 30 seconds and restarts
 it if the process has died — unless it was stopped deliberately via "Stop
 Server"/"Close" (see `manually_stopped`).
+
+A local-only control server (127.0.0.1:TRAY_CONTROL_PORT, see
+start_control_server()) also runs alongside the reader subprocess so the web
+UI's "Read"/cover-click action can ask the tray to open the browser-popout
+reader (frontend/reader.html/js) as its own chromeless --app= window,
+matching Open Library/Admin/Metadata Editor above — added 2026-07-29 to
+replace the old Windows Flutter reader's comicvault:// deep link.
 """
 
 import ctypes
@@ -31,6 +38,8 @@ import sys
 import threading
 import time
 import webbrowser
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse, parse_qs
 
 from PIL import Image, ImageDraw
 import pystray
@@ -43,6 +52,14 @@ from backend.config import READER_PORT  # noqa: E402
 LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tray.log")
 HEALTH_CHECK_INTERVAL = 30  # seconds
 STARTUP_WAIT_TIMEOUT = 15  # seconds to wait for the port to open after launch
+
+# Local-only control port the web UI calls to ask the tray to open the
+# browser-popout reader (frontend/reader.html/js) as its own chromeless
+# --app= window, same as Open Library/Admin/Metadata Editor below — added
+# 2026-07-29 when a plain window.open() popup was found to still show an
+# address bar (window.open can't suppress it; only an --app=-launched
+# window can). Bound to 127.0.0.1 only, never the LAN.
+TRAY_CONTROL_PORT = 9426
 
 STARTUP_SHORTCUT_PATH = os.path.join(
     os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "digib00age.lnk"
@@ -235,6 +252,39 @@ def open_editor(icon=None, item=None):
     open_app_window(f"http://localhost:{READER_PORT}/editor")
 
 
+class _ReaderControlHandler(BaseHTTPRequestHandler):
+    """Handles GET /open-reader?id=<issue_id> from the web UI (frontend/js/
+    app.js) — the only route this control server serves. Fire-and-forget:
+    the caller uses fetch(..., {mode: 'no-cors'}) and doesn't read the body,
+    it just needs to know whether the request reached a live listener at
+    all (network reachability is the actual signal, not the response)."""
+
+    def log_message(self, format, *args):
+        pass  # BaseHTTPRequestHandler logs every request to stderr by default; skip it
+
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        issue_id = parse_qs(parsed.query).get("id", [None])[0]
+        if parsed.path == "/open-reader" and issue_id and issue_id.isdigit():
+            open_app_window(f"http://localhost:{READER_PORT}/reader/{issue_id}")
+            self.send_response(200)
+            self.end_headers()
+        else:
+            self.send_response(400)
+            self.end_headers()
+
+
+def start_control_server():
+    try:
+        server = HTTPServer(("127.0.0.1", TRAY_CONTROL_PORT), _ReaderControlHandler)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        log(f"Reader-launch control server listening on 127.0.0.1:{TRAY_CONTROL_PORT}.")
+    except OSError as e:
+        # Non-fatal — app.js falls back to a plain window.open() popup (has
+        # an address bar, but still usable) if this port can't be reached.
+        log(f"Could not start reader-launch control server: {e}")
+
+
 def _terminate_reader_process():
     """Shared terminate/grace-period/kill logic for Stop Server and Close."""
     with state_lock:
@@ -396,6 +446,7 @@ def main():
     start_reader()
     health_thread = threading.Thread(target=health_check_loop, daemon=True)
     health_thread.start()
+    start_control_server()
 
     icon = pystray.Icon(
         "digib00age",
