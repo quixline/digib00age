@@ -7603,3 +7603,73 @@ unchanged after the session (last modified 2026-07-24, before this
 session started) and `git status` showed no changes under `backend/` or
 `config.json` — the scratch environment never touched either. Scratch
 environment (`%TEMP%\comicvault_stress_scratch`) removed at session end.
+
+## Session — 2026-07-29 — Windows reader review: browser-popout plan + perf gate (no code built)
+
+Tez asked whether the Windows desktop reader still needs to be a Flutter app,
+or whether a browser popout would be simpler — driven by wanting to reduce git
+surface and installed packages, not a feature complaint. **Review + plan only,
+per Tez's explicit framing — no reader code was written this session.**
+
+Confirmed the Windows Flutter build's actual footprint: 4 Windows-only pubspec
+deps (`win32`, `ffi`, `window_manager`, `screen_retriever`), the native
+`flutter_app/windows/` platform folder (~18 tracked files), `protocol_handler_
+service.dart` (registers the `comicvault://` Windows registry handler),
+`window_resize_service.dart`, and a manual register/unregister toggle in
+Settings — none of it needed for Android, confirmed via cross-import check.
+Also confirmed the backend reader API (`GET /api/issue/{id}/pages`, `GET
+/api/page/{issue_id}/{n}`, `POST /api/progress/{issue_id}`) is already plain
+HTTP and fully reusable by a browser reader with zero backend changes, and
+that `tray/tray_app.py`'s existing chromeless `--app=<url>` popup pattern
+(already used for admin/editor) is directly reusable as the launch mechanism
+in place of the `comicvault://` protocol handler.
+
+Recommended replacing the Windows Flutter target with a new `frontend/
+reader.html`/`reader.js` browser-popout reader, launched via `window.open(url,
+'cv-reader-window', 'popup,...')` — full migration plan (build → verify →
+cut over → soak → delete Windows-only Flutter pieces → docs) written to
+`the-windows-reader-is-lively-octopus.md` (Claude Code plan file, not part of
+this repo). Android's Flutter app is entirely unaffected either way.
+
+**Corrections from Tez's review of the draft plan** (see `[[feedback_verify_
+assumptions_before_plan_claims]]` memory): the "single-instance for free" via
+`window.open` target-name reuse does *not* mean the reader reuses the
+library's own window — it's a separate popup that reuses itself across
+repeat launches, not a merge with the main window; clarified in the plan.
+Whether a script-opened popup inherits the parent app-mode window's tabless
+style was asserted from Chromium's general `--app=` behaviour, not verified
+live — flagged as a pre-build check rather than a settled fact. Pinch-zoom
+was never intended for this reader (mouse/keyboard only); the plan now points
+at the Full Editor's existing comic-viewer zoom implementation
+(`frontend/js/editor_full.js` ~line 778-935 — zoom in/out/fit/fullscreen
+buttons, drag-to-pan) to port directly instead of designing new zoom UX.
+
+**Perf gate run, as the plan required before any go/no-go decision** — see
+`docs/PERFORMANCE.md` §1D for full data. Sampled real page-image bytes via
+the live server's existing `/api/page/{id}/{n}` endpoint (no code changes)
+and live-tested actual browser mount/load behaviour via a standalone scratch
+HTML page (session scratchpad, not committed) served on a throwaway port
+8899 static server — never a second instance of the app itself. Finding:
+full-resolution page images are large enough (up to 54MB decoded per page on
+the library's highest-resolution issues; the largest single issue, a
+1,220-page compendium, would be ~2.6GB / up to ~28GB decoded if every page
+were mounted eagerly) that naive "mount the whole issue" Scroll mode is not
+viable — confirmed live: a 20-image windowed mount loaded in 4.8s, a naive
+200-image eager mount took 14.4s for ~440MB. This doesn't block the
+recommendation, but adds a firm requirement to the plan's migration step 1:
+Scroll mode must be built as an `IntersectionObserver`-virtualized window
+(mount current page ± ~10, unmount far-scrolled pages) from the start, not
+as a later optimization. Page mode (one image at a time) is unaffected.
+
+**Docs:** `docs/PERFORMANCE.md` — new `§1D` baseline section, plus an open
+follow-up noting the virtualized component itself still needs to be built and
+re-measured at the real 1,220-page extreme once it exists. Plan file updated
+in place with all of Tez's corrections before this write-up. No `BUGS.md`/
+`ROADMAP.md`/build-queue entry yet — this is still an unapproved architecture
+review, not a scheduled build; Tez hasn't yet decided whether to proceed with
+Option B.
+
+**Verified:** confirmed no application code was edited (`git status` shows
+only doc changes from this session) and the scratch HTML test page + its
+throwaway static server live only in the session scratchpad/background task,
+not the repo.

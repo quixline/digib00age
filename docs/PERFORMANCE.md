@@ -338,6 +338,80 @@ approaches. **Not built this session** (scoped only, per Tez).
 
 ---
 
+## 1D. Reader scroll-mode load test — 2026-07-29
+
+**Why this run:** a decision gate, not a routine re-baseline. Tez is weighing
+replacing the Windows Flutter desktop reader with a browser-popout reader (new
+`frontend/reader.html`/`reader.js` consuming the existing `/api/issue/{id}/pages`
+and `/api/page/{issue_id}/{n}` endpoints) — see the plan at
+`the-windows-reader-is-lively-octopus.md`. Page mode (one image at a time) is a
+non-question — same cost the current Flutter reader already pays. Scroll mode
+(continuous vertical read-through) was the open question: does mounting many
+full-resolution comic-page images in a browser tab at once actually work, or does
+it need to be built as a virtualized/windowed component from day one. This run
+answers that before any reader code gets written, per the plan's explicit
+prerequisite gate.
+
+**No application code was touched.** Measurements: (1) a Python script sampling
+real page-image bytes via the live server's existing `/api/page/{id}/{n}`
+endpoint (no new endpoint, no code change), and (2) a standalone scratch HTML/JS
+test page (`session scratchpad`, not committed) served by a throwaway
+`python -m http.server` on port 8899 — a different port from the app's 9424, not
+a second instance of the app — loaded in a real browser tab via
+`claude-in-chrome` to measure actual mount/load/decode behaviour.
+
+### Finding — full-resolution page images are large enough that eager "mount the whole issue" scroll mode is not viable; a windowed/virtualized approach is required, not optional
+
+| Issue | Pages | Avg page size | Estimated total transfer if all pages mounted at once | Decoded (uncompressed) memory per page |
+| --- | --- | --- | --- | --- |
+| Four Horsemen #1 (id=11, typical single issue) | 25 | 2,140 KB | 52.3 MB | not sampled — pages this size aren't the risk case |
+| Starseeds #1 (id=4915, mid-large single issue) | 250 | 1,858 KB | 453.5 MB | 6.8 MB (1163×1538 PNG) |
+| East of West Compendium (id=3464, library's largest issue) | 1,220 | 2,218 KB | **2,642.7 MB (2.6 GB)** | 23.2 MB (1988×3056 JPEG) |
+| (for scale) id=11 page 0 | — | — | — | **54.2 MB** (3288×4320 WebP — largest sampled pixel dimensions in the library, despite a mid-size file) |
+
+Sampled 12 pages per issue via direct HTTP (`urllib`) against the live server;
+decoded-memory figures computed from actual pixel dimensions (`width × height ×
+4 bytes` for an RGBA bitmap) via Pillow, not inferred from file size — file size
+and decoded memory don't track each other (id=11's page 0 is a "moderate" 1.8MB
+JPEG file but decodes to 54MB in memory, because of its very high native
+resolution).
+
+**Live browser confirmation** (East of West compendium, id=3464):
+
+- **Windowed** (20 images mounted, matching a "≈±10 pages around current
+  position" virtualization window — the same recycling behaviour Flutter's
+  `ListView.builder` already gives the current reader for free): all 20 loaded
+  in **4.8s**, page stayed responsive throughout.
+- **Naive eager mount** (200 images mounted at once, simulating a "just render
+  the whole scroll strip" implementation): took **14.4s** just to finish
+  loading — before the reader would even be usable — for roughly 440MB of
+  network transfer. The full 1,220-page case (not run live — the math alone is
+  conclusive) would be ~6x that: an estimated 2.6GB transfer and, worse, up to
+  **~28GB of decoded image memory** if every mounted `<img>` stayed fully
+  decoded and resident, which is not a viable browser tab under any
+  circumstance.
+
+**Conclusion:** this is a real, numbers-backed constraint, not a hypothetical —
+but it doesn't kill Option B (the browser-popout reader) in the migration plan.
+It does add one concrete requirement to `reader.js`'s Scroll mode: it must be
+built as a **virtualized window** from the start (mount only the current page ±
+a small margin, e.g. ~10 pages either side, via `IntersectionObserver` — clearing
+`img.src`/removing the element once a page scrolls far enough out of view rather
+than relying on native `loading="lazy"` alone, since lazy-loading only defers the
+initial fetch and doesn't guarantee the browser releases decoded memory for
+images that are still in the DOM once they've scrolled off-screen). This is
+extra scope beyond "port `reader_screen.dart`'s two modes 1:1" and should be
+folded into migration step 1 of the plan, not treated as a later optimization
+pass — Scroll mode without it would be genuinely broken on the library's largest
+issues, not just slow.
+
+**Go/no-go read:** this does not block Option B. Page mode is unaffected and
+trivial. Scroll mode is buildable, just with virtualization as a first-class
+requirement rather than an afterthought — a well-understood pattern
+(`IntersectionObserver` mount/unmount window), not a research problem.
+
+---
+
 ## 2. Methodology (for re-running this baseline later)
 
 All measurements were taken with **zero application code changes** — every
@@ -396,6 +470,15 @@ shape for a future comparison:
 
 ## 3. Open follow-ups (not resolved this pass)
 
+- **Reader scroll-mode virtualization — design validated, not yet built or
+  measured at the full 1,220-page extreme.** §1D confirmed a 20-image windowed
+  mount loads in 4.8s and a naive 200-image eager mount takes 14.4s/~440MB: the
+  gap is large enough that virtualization is required, but the actual
+  `IntersectionObserver`-based windowed component doesn't exist yet (no
+  `reader.html`/`reader.js` has been built) and the full 1,220-page compendium
+  wasn't run live (only reasoned about via the byte/decoded-memory math, which
+  is unambiguous enough not to need a live run to justify the design
+  requirement). Re-measure once the real component exists, at the real extreme.
 - **Cold-idle drive effect is inconclusive.** Two valid post-idle samples
   (after fixing the cache-reuse mistake above): a 376MB file read at 39.3MB/s
   (roughly half the ~84-88MB/s expected for that size) and a 10.68MB file at

@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-29** — Windows reader review: browser-popout-vs-Flutter plan
+  written (no code built, review only) + a `perf-diagnostics` gate run on
+  full-res page-image loading. → `progress.md` "Windows reader review:
+  browser-popout plan + perf gate (no code built)"
 - **2026-07-29** — Stress test (load/concurrency): new `stress-test` skill
   built (mirrors `perf-diagnostics`'s shape), first baseline run against an
   isolated scratch copy of the app. Found and logged **BUG-033** (open) —
