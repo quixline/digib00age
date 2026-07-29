@@ -1,0 +1,24 @@
+{
+  "process_all_status": 200,
+  "process_all_elapsed_s": 1.353,
+  "process_all_body_processed": 19,
+  "process_all_body_errors": [],
+  "background_before_batch": {
+    "count": 20,
+    "errors": 0,
+    "max_elapsed_s": 0.0308,
+    "median_elapsed_s": 0.0272
+  },
+  "background_during_batch": {
+    "count": 22,
+    "errors": 0,
+    "max_elapsed_s": 0.0357,
+    "median_elapsed_s": 0.0107
+  },
+  "background_after_batch": {
+    "count": 22,
+    "errors": 0,
+    "max_elapsed_s": 0.033,
+    "median_elapsed_s": 0.0243
+  }
+}

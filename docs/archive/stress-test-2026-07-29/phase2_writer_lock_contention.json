@@ -1,0 +1,18 @@
+{
+  "total_requests": 650,
+  "total_elapsed_s": 3.417,
+  "error_count": 0,
+  "lock_error_count": 0,
+  "error_samples": [],
+  "lock_error_samples": [],
+  "contended_issue_final_state": {
+    "1": {
+      "current_page": 25,
+      "read_status": "reading"
+    },
+    "2": {
+      "current_page": 0,
+      "read_status": "reading"
+    }
+  }
+}

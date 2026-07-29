@@ -1,0 +1,18 @@
+{
+  "burst_seconds": 6,
+  "reader_threads": 6,
+  "total_reads": 1298,
+  "read_error_count": 2,
+  "read_error_samples": [
+    {
+      "endpoint": "cover",
+      "status": 599,
+      "body": "b'IncompleteRead: got 0 bytes, 512 more expected'"
+    },
+    {
+      "endpoint": "cover",
+      "status": 599,
+      "body": "b'IncompleteRead: got 0 bytes, 512 more expected'"
+    }
+  ]
+}

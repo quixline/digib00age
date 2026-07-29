@@ -3575,3 +3575,21 @@ depends on Edge or Chrome being installed (checked at runtime, falls back
 to a normal `webbrowser.open()` tab if neither is found).
 **Where:** `tray/tray_app.py` (`open_app_window()`,
 `_find_app_browser_exe()`).
+
+### `stress-test` skill deliberately runs a second server instance — an exception to `perf-diagnostics`'s "never start a second server" rule
+**Decided:** 2026-07-29, building the stress-test skill.
+**Why:** `perf-diagnostics`'s ground rules forbid starting a second server
+because that skill measures the *live* tray-app instance against the real
+DB — a second instance would be a different, uncomparable measurement.
+`stress-test` has the opposite requirement: it needs to fire concurrent
+scans/edits/rebuilds against data nobody cares about, which the live
+instance can't safely provide. So it runs a fully isolated second
+instance — its own copy of `backend`/`frontend` source, its own synthetic
+library, its own DB, port 9427 (never 9424) — built fresh by
+`0_setup_scratch.py` every run and torn down after. This isn't a relaxation
+of the "never touch the real DB/library" rule, it's the same rule applied
+via a different mechanism (isolation instead of avoidance), because this
+skill's entire purpose requires triggering real writes concurrently.
+**Where:** `.claude/skills/stress-test/SKILL.md` ("Ground rules" section
+states this explicitly, to head off a future session assuming it's an
+oversight).

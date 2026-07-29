@@ -13,6 +13,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-29** — Stress test (load/concurrency): new `stress-test` skill
+  built (mirrors `perf-diagnostics`'s shape), first baseline run against an
+  isolated scratch copy of the app. Found and logged **BUG-033** (open) —
+  reading a page/cover while an editor rebuild is in flight on the same
+  issue can 500 (`PermissionError` on the archive open) or truncate mid-
+  response (non-atomic thumbnail overwrite), reproduced in 4/5 runs. Full
+  findings in `STRESS_TEST.md` §1. →
 - **2026-07-29** — Code cleanup pass (Inbox item): removed 6 confirmed-dead
   Python functions/vars (backend), 1 dead JS function + 12 orphaned CSS
   rule blocks (frontend), 1 dead Dart model class (Flutter); fixed 5

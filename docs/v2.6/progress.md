@@ -7516,3 +7516,90 @@ freshly built APK's mtime, and launching it (`adb shell monkey`) put
 stayed `1.0.0+1` — no functional change to verify beyond confirming the
 app still opens, since the only source change was removing an
 already-unreferenced model class.
+
+## Session — 2026-07-29 — Stress test (load/concurrency): new skill built, first baseline run, one real bug found
+
+Scoped and built the `INBOX.md` "stress test" item — Tez's 2026-07-28
+request, prompted by that day's BUG-032 investigation. Confirmed goal with
+Tez via a quick clarifying question: **realistic concurrent-device usage**
+(tablet + browser + desktop reader + unattended background jobs), not raw
+throughput capacity, soak testing, or deliberate failure-injection — those
+stay out of scope unless a later session picks them up.
+
+**Architecture read first** (background investigation before planning):
+confirmed WAL mode is on (`backend/database.py`) but no `busy_timeout`
+beyond sqlite3's 5s default and no retry/backoff logic anywhere; uvicorn
+runs single-process with no `workers=`; `scan_progress.running` is only
+checked by the 3 scan-trigger call sites, never by Basic Editor save, Full
+Editor Process All, or Processing Folder Automation; Full Editor Process
+All runs synchronously in-request (unlike Basic Editor's backgrounded
+save); archive rebuild swaps files via `os.replace()`, which isn't
+guaranteed atomic against a concurrent reader on Windows. Five candidate
+risk areas came out of this read, each mapped to one of the new skill's
+phases.
+
+**Built `.claude/skills/stress-test/`** (`SKILL.md` + `scripts/`), modeled
+directly on `.claude/skills/perf-diagnostics/`'s shape — ground rules,
+phased scripts, dated findings doc — but for concurrency instead of speed.
+`0_setup_scratch.py` builds a fully isolated scratch environment every run:
+copies the real `backend/`/`frontend/` source (`.py`/`.json` only, never
+`__pycache__`, the real DB/backup files, or the real `thumbnails/` folder)
+into `%TEMP%\comicvault_stress_scratch`, generates a small synthetic
+library (19 fabricated CBZs, real ComicInfo.xml using the real enforced
+genre/format/age-rating lists so Editor saves validate cleanly), and writes
+a scratch `config.json` pointing at a fresh DB on port 9427 — never the
+real DB, `config.json`, or `L:\Comic Archives`. 6 phase scripts
+(`1_concurrent_read_load.py` through `6_combined_simulation.py`) run real
+concurrent HTTP load (stdlib `urllib`/`threading`/`concurrent.futures`, no
+new dependency) against a real second server instance built from that
+scratch copy, each targeting one of the 5 architecture-read risk areas plus
+a plain-read control and a combined realistic simulation.
+
+**First baseline run, all 6 phases** — full ranked findings in
+`docs/STRESS_TEST.md` §1, raw JSON + a traceback excerpt in
+`docs/archive/stress-test-2026-07-29/`. Four of six phases found nothing
+(plain concurrent reads, writer-lock contention on shared rows, scanner-vs-
+edit collision, Process All's writer-role hold time) — real gaps in the
+code the architecture read flagged, just not reproduced at this scratch
+library's small scale; documented as open follow-ups rather than implying
+they're cleared. **One phase found a real, reproducible bug**: hammering
+page/cover reads on an issue while repeatedly triggering an editor rebuild
+of that same issue reproduced in 4 of 5 runs (~0-0.5% error rate) — a
+`PermissionError` on `GET /api/page/{id}/{n}` when the reader's
+`zipfile.ZipFile()` open collided with the rebuild's `os.replace()`
+mid-swap, and a truncated response (`IncompleteRead`/`RuntimeError:
+Response content shorter than Content-Length`) on `GET /api/cover/{id}`
+because `_generate_thumbnail`'s `img.save()` overwrites the thumbnail file
+non-atomically, unlike the archive rebuild's temp-file-then-rename
+pattern. Logged as **BUG-033** (open) — plausible real-world trigger is a
+Process All batch or Basic Editor save running on a series while it's also
+being read elsewhere in the house. Candidate fixes noted in the bug entry,
+not built this session — this skill reports, it doesn't fix, same
+convention as `perf-diagnostics`.
+
+**One harness bug found and fixed mid-run**: `scripts/_common.py`'s
+`http_get` didn't catch `http.client.IncompleteRead`, so the first
+collision-reproduction run silently killed 2 of 6 reader threads instead of
+recording the error — fixed to catch it and report a synthetic `599`
+status; documented as a gotcha in `SKILL.md` so a future run doesn't
+mis-diagnose an undercount.
+
+**Docs:** `docs/STRESS_TEST.md` created (new, dated §1 baseline).
+`docs/BUGS.md` — BUG-033 added. `docs/INDEX.md` — new `STRESS_TEST.md` row,
+`BUGS.md` row updated. `docs/CHANGELOG.md` — one line. `docs/DECISIONS.md`
+— entry recording why this skill deliberately runs a second server
+instance, unlike `perf-diagnostics`. The new skill itself
+(`.claude/skills/stress-test/`) isn't a git-tracked change — `.claude/` is
+wholesale gitignored in this repo (same as `perf-diagnostics`/
+`browser-verify`, neither of which are in git history either), so it's
+local working tooling, not part of this commit. **`docs/INBOX.md`
+deliberately left untouched** — doing the work its "stress test" line
+described isn't the same as Tez opening a dedicated triage session; struck
+through/annotating that file without one would have been an unprompted
+triage, against the standing Inbox-workflow rule.
+
+**Verified:** confirmed the real `backend/comicvault_v2.db` mtime was
+unchanged after the session (last modified 2026-07-24, before this
+session started) and `git status` showed no changes under `backend/` or
+`config.json` — the scratch environment never touched either. Scratch
+environment (`%TEMP%\comicvault_stress_scratch`) removed at session end.
