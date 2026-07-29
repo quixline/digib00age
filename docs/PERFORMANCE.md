@@ -470,15 +470,15 @@ shape for a future comparison:
 
 ## 3. Open follow-ups (not resolved this pass)
 
-- **Reader scroll-mode virtualization — design validated, not yet built or
-  measured at the full 1,220-page extreme.** §1D confirmed a 20-image windowed
-  mount loads in 4.8s and a naive 200-image eager mount takes 14.4s/~440MB: the
-  gap is large enough that virtualization is required, but the actual
-  `IntersectionObserver`-based windowed component doesn't exist yet (no
-  `reader.html`/`reader.js` has been built) and the full 1,220-page compendium
-  wasn't run live (only reasoned about via the byte/decoded-memory math, which
-  is unambiguous enough not to need a live run to justify the design
-  requirement). Re-measure once the real component exists, at the real extreme.
+- ~~**Reader scroll-mode virtualization**~~ — **moot, 2026-07-29.** §1D's
+  finding (naive eager-mount isn't viable, a windowed component would be
+  required) directly informed a follow-up scope decision the same day: Scroll
+  mode is being dropped from the Windows browser reader entirely (Tez rarely
+  used it even on the tablet where it already exists), so no virtualized
+  component will be built and there's nothing to re-measure. Page mode (one
+  image at a time) was never affected by this finding. See `docs/v2.6/
+  progress.md`'s 2026-07-29 "Windows reader review" entry for the full
+  decision trail.
 - **Cold-idle drive effect is inconclusive.** Two valid post-idle samples
   (after fixing the cache-reuse mistake above): a 376MB file read at 39.3MB/s
   (roughly half the ~84-88MB/s expected for that size) and a 10.68MB file at

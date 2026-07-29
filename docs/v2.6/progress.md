@@ -7673,3 +7673,16 @@ Option B.
 only doc changes from this session) and the scratch HTML test page + its
 throwaway static server live only in the session scratchpad/background task,
 not the repo.
+
+**Follow-up decision, same session — Scroll mode dropped entirely.** Weighing
+the perf-gate finding above against actual value, Tez confirmed he rarely uses
+Scroll mode even on the tablet where it already exists, and it was the *only*
+reason the virtualized-window component would have been needed. Rather than
+build that component, the plan now drops Scroll mode from the Windows browser
+reader outright — Page mode only (single image, next/prev, same per-page cost
+the current Flutter reader already pays, no virtualization required). Android's
+Flutter app is unaffected and keeps both modes. Plan file updated accordingly;
+this also means the `docs/PERFORMANCE.md` §1D open follow-up (re-measure the
+virtualized component once built) no longer applies to this reader and can be
+dropped once the plan is actually built, since there won't be a scroll strip to
+measure.
