@@ -494,6 +494,16 @@ rationale on each:**
 
 ## Item 5 — Windows Desktop Reader
 
+> **Superseded 2026-07-29** — the Flutter Windows desktop reader built by
+> this item and Item 6 below was replaced entirely by a browser-popout
+> reader (`frontend/reader.html`/`reader.js`), and all Windows-only Flutter
+> pieces described here (`flutter_app/windows/`, `protocol_handler_service.dart`,
+> `window_resize_service.dart`, the "Windows Reader" Settings section) were
+> deleted. Left as-written below as the build record for what existed
+> 2026-07-14 through 2026-07-29 — see `docs/DECISIONS.md` and
+> `docs/v2.6/progress.md`'s 2026-07-29 entries for the replacement's full
+> rationale and build record. Android's Flutter app is unaffected.
+
 **Feature.** From `INBOX.md`: "rebuild desktop reader with new design"
 (tracked as `BUGS.md` BUG-021, now closed — see
 `archive/bugs-fixed-archive.md`). Added retroactively to this build queue,

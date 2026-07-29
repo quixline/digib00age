@@ -1,9 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/settings_service.dart';
-import '../services/protocol_handler_service.dart';
-import '../theme/tokens.dart';
 
 class SettingsScreen extends StatefulWidget {
   final SettingsService settings;
@@ -121,12 +118,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Text('Library', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
           _ItemsPerPageTile(settings: widget.settings),
-          if (Platform.isWindows) ...[
-            const Divider(height: 32),
-            Text('Windows Reader', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            const _ReaderRegistrationTile(),
-          ],
           const Divider(height: 32),
           Text(
             'digib00age v1.0',
@@ -136,71 +127,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           FilledButton(onPressed: _save, child: const Text('Save')),
         ],
       ),
-    );
-  }
-}
-
-// Lets Tez register/unregister this exe as the comicvault:// protocol
-// handler (HKEY_CURRENT_USER, no admin rights needed) — an explicit,
-// visible action rather than something the app does silently on launch,
-// since it writes to the Windows registry. Needed for the web UI's Issue
-// Detail cover link to actually launch this reader.
-class _ReaderRegistrationTile extends StatefulWidget {
-  const _ReaderRegistrationTile();
-
-  @override
-  State<_ReaderRegistrationTile> createState() => _ReaderRegistrationTileState();
-}
-
-class _ReaderRegistrationTileState extends State<_ReaderRegistrationTile> {
-  final _protocolHandler = ProtocolHandlerService();
-  late bool _registered;
-
-  @override
-  void initState() {
-    super.initState();
-    _registered = _protocolHandler.isRegistered();
-  }
-
-  void _toggle() {
-    if (_registered) {
-      _protocolHandler.unregister();
-    } else {
-      _protocolHandler.register();
-    }
-    setState(() => _registered = _protocolHandler.isRegistered());
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _registered
-              ? 'Registered — Issue Detail cover links will open this reader'
-              : 'Unregistered — cover links will no longer open this reader',
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _registered
-              ? 'This PC is registered — clicking a comic cover on the web UI opens it here.'
-              : 'Not registered — clicking a comic cover on the web UI does nothing yet.',
-          style: TextStyle(
-            color: _registered ? Colors.greenAccent : AppColors.of(context).textSecondary,
-            fontSize: 13,
-          ),
-        ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: _toggle,
-          icon: Icon(_registered ? Icons.link_off : Icons.link),
-          label: Text(_registered ? 'Unregister' : 'Register as this PC\'s comic reader'),
-        ),
-      ],
     );
   }
 }

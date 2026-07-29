@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-29** — Windows Flutter desktop reader deleted after soak-test
+  confirmation: `flutter_app/windows/`, protocol handler, window-resize
+  service, 4 Windows-only pubspec deps all removed; `flutter analyze` clean.
+  → `progress.md` "Windows reader cleanup: Flutter Windows-only pieces
+  deleted"
 - **2026-07-29** — Windows reader built: browser-popout reader
   (`frontend/reader.html`/`reader.js`, page nav only) replaces the Windows
   Flutter desktop reader; `tray/tray_app.py` gained a local control server so

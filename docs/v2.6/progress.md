@@ -7757,3 +7757,56 @@ archived before this session.
 `_ReaderRegistrationTile`) have **not** been deleted — the plan's own
 sequencing calls for a soak-test read-through of a few real issues first.
 Android's Flutter app was not touched at all this session.
+
+## Session — 2026-07-29 — Windows reader cleanup: Flutter Windows-only pieces deleted
+
+Tez read a few real issues through the new browser-popout reader and
+confirmed it's working — clears the plan's soak-test gate from the previous
+entry. Proceeded with the plan's step 5 deletion order (safest-first):
+
+1. `flutter_app/lib/screens/settings_screen.dart` — removed the
+   `Platform.isWindows`-gated "Windows Reader" section and the entire
+   `_ReaderRegistrationTile`/`_ReaderRegistrationTileState` classes; dropped
+   the now-unused `dart:io` and `theme/tokens.dart` imports (only
+   `AppColors`, used solely inside the deleted tile, needed the latter).
+2. `flutter_app/lib/services/protocol_handler_service.dart` — deleted
+   (confirmed no remaining imports anywhere first).
+3. `flutter_app/lib/services/window_resize_service.dart` — deleted, plus its
+   two call sites in `reader_screen.dart` (`ReaderScreen._load()`'s
+   `_resizeWindowForCover()` fire-and-forget call, and
+   `LocalReaderScreen._load()`'s equivalent for local/offline mode) and the
+   now-dead `_resizeWindowForCover()` method itself. Dropped the `dart:io`
+   (`Platform`), `package:http/http.dart`, and `dart:async` (`unawaited`)
+   imports this left unused.
+4. `flutter_app/lib/main.dart` — removed the `windowManager.ensureInitialized()`
+   init block and its `package:window_manager` + `dart:io` imports. The
+   `comicvault://read/{id}` deep-link handler in `_handleLink()` was left
+   untouched — it's shared with Android's own `comicvault://` intent-filter,
+   which still uses it.
+5. `flutter_app/pubspec.yaml` — removed the 4 Windows-only deps (`win32`,
+   `ffi`, `window_manager`, `screen_retriever`) and the now-moot
+   `flutter_launcher_icons.windows` icon-gen block (no Windows platform
+   folder left to generate an icon for).
+6. `flutter_app/windows/` — deleted last, the whole folder (18 tracked
+   files: CMakeLists, C++ runner, generated plugin registrants).
+
+**Verified:** `flutter pub get` confirms `win32`, `window_manager`, and
+`screen_retriever` (+ their platform-specific sub-packages) are no longer
+depended on at all; `ffi` survived as a transitive dependency of something
+else (no longer declared directly). `flutter analyze` — **no issues found**,
+confirming no dangling references to any deleted file/class/import anywhere
+in the Dart codebase. Android's Flutter app was not touched by any of this —
+none of the deleted code was ever reachable from Android (`local_cbz_service.dart`,
+`sync_service.dart`, `download_service.dart`, and `app_links` — used by
+Android's own shared-`.cbz`-file "Open With" handling — were all confirmed
+untouched).
+
+**Docs:** `docs/v2.6/comicvault-changes-v2.6.md` Item 5 got a "Superseded
+2026-07-29" callout pointing at this replacement (left the original build
+record below it unedited — it's an accurate account of what existed
+2026-07-14 through 2026-07-29). `docs/DECISIONS.md` — appended to the same
+2026-07-29 entry rather than writing a separate one, since this is the same
+decision's completion, not a new one. `docs/CHANGELOG.md` — one line.
+
+This closes out the Windows-reader migration end to end: reviewed, planned,
+built, verified live, and the old implementation removed — all in one day.

@@ -57,11 +57,18 @@ old Flutter window. One accepted behavior change from the original plan: the
 `window.open()`-only design would have deduped via a repeated target name;
 only the fallback path still dedupes.
 
-**Not yet done as of this entry:** the Flutter Windows-only pieces
-(`flutter_app/windows/`, `protocol_handler_service.dart`,
-`window_resize_service.dart`, the 4 Windows-only pubspec deps,
-`_ReaderRegistrationTile`) are still in the repo — deletion is gated on a
-soak-test read-through first, per the plan's own sequencing.
+**Update, same day — Flutter Windows-only pieces deleted.** Tez read a few
+real issues through the new reader and confirmed it's working, clearing the
+plan's soak-test gate. Deleted: `flutter_app/windows/` (18 tracked files),
+`protocol_handler_service.dart`, `window_resize_service.dart` (+ its two
+`Platform.isWindows` call sites in `reader_screen.dart`), the
+`_ReaderRegistrationTile` Settings UI, the `windowManager.ensureInitialized()`
+init block in `main.dart`, the 4 Windows-only pubspec deps (`win32`, `ffi`,
+`window_manager`, `screen_retriever` — `ffi` remains as a transitive
+dependency of something else, just no longer declared directly), and the
+now-moot `flutter_launcher_icons.windows` icon-gen config. `flutter analyze`
+clean, `flutter pub get` confirms all four packages are gone (or downgraded
+to transitive-only). Android's Flutter app untouched throughout.
 
 ### docs/ rebrand sweep: current-state docs only, narrative logs and archive/ left as "ComicVault"
 

@@ -1,14 +1,10 @@
-import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import '../models/issue.dart';
 import '../services/api_service.dart';
 import '../services/settings_service.dart';
 import '../services/local_cbz_service.dart';
 import '../services/sync_store.dart';
-import '../services/window_resize_service.dart';
 import '../widgets/comic_page_view.dart';
 import '../widgets/toolbar_overlay.dart';
 
@@ -73,24 +69,9 @@ class _ReaderScreenState extends State<ReaderScreen> {
         _currentPage = issue.currentPage.clamp(0, (pageCount - 1).clamp(0, 999999));
         _loading = false;
       });
-      if (Platform.isWindows && urls.isNotEmpty) {
-        unawaited(_resizeWindowForCover(urls.first));
-      }
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
-  }
-
-  // Fire-and-forget — must never block or delay opening the reader. Fetches
-  // the real first page (not /api/cover, which serves a resized thumbnail)
-  // so the window matches the comic's actual page dimensions.
-  Future<void> _resizeWindowForCover(String coverUrl) async {
-    try {
-      final res = await http.get(Uri.parse(coverUrl));
-      if (res.statusCode == 200 && mounted) {
-        await WindowResizeService.resizeForCoverBytes(res.bodyBytes, context);
-      }
-    } catch (_) {}
   }
 
   void _onPageChanged(int page) {
@@ -262,12 +243,6 @@ class _LocalReaderScreenState extends State<LocalReaderScreen> {
         _currentPage = saved?.currentPage ?? 0;
         _loading = false;
       });
-      if (Platform.isWindows && mounted) {
-        final coverBytes = widget.localCbz.readCover(widget.filePath);
-        if (coverBytes != null) {
-          unawaited(WindowResizeService.resizeForCoverBytes(coverBytes, context));
-        }
-      }
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
