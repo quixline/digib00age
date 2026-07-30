@@ -5739,6 +5739,7 @@ select.fe-genre-add:focus {
   transition: opacity var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
   pointer-events: none;
   white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .db-tooltip--below {

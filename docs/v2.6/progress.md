@@ -8215,3 +8215,45 @@ a caveat or removal pass whenever `PUBLIC_REPO_PLAN.md` is actually executed.
 **Docs:** `CHANGELOG.md` — one line. No spec-doc changes beyond the guide
 itself — `EDITOR_SPEC.md` already covers the underlying behaviour from the
 earlier sessions today.
+
+Tez noted the public-repo exclusion gap above and confirmed it's fine to pick
+up later in a separate session when `PUBLIC_REPO_PLAN.md` is actually
+executed — not something to solve now.
+
+## Session — 2026-07-30 (continued) — Fixed: tooltip text overflow on long unbroken strings
+
+Tez spotted the new "Paste from GR" button's tooltip text breaking out of its
+box on hover (screenshot: "Summary" spilling past the tooltip's right edge).
+
+**Root cause:** the shared tooltip system (`.db-tooltip`,
+`frontend/css/style.css` ~line 5722, positioned by `frontend/js/tooltip.js`)
+has `max-width: 240px` and `white-space: normal` but no `overflow-wrap` —
+fine for normal space-separated text, but the new tooltip's
+"Writer/Penciller/Publisher/Year/Language/Summary" is one unbroken
+slash-joined token with no whitespace for the browser to wrap on, so it had
+nowhere to break and overflowed the box. This is a latent gap in a shared
+component (`.db-tooltip` is used by every `data-tooltip` element app-wide) —
+it just happened to take an unusually long unbroken string to expose it.
+
+**Fixed:** added `overflow-wrap: break-word` to `.db-tooltip`
+(`frontend/css/style.css`) — the systemic fix, protects any future tooltip
+text with a similarly long unbroken run. Also reworded the extension's
+tooltip itself (`chrome-extension/content/editor-fill.js`) to
+"Writer / Penciller / Publisher / Year / Language / Summary" (spaces around
+the slashes) so it wraps at natural word boundaries instead of an
+`overflow-wrap` hard mid-word break — belt-and-suspenders, but the spaced
+version reads better regardless of the CSS fix.
+
+**Verified live:** confirmed via `claude-in-chrome` on the real running app —
+temporarily set the original (unspaced) long string as another button's
+`data-tooltip`, triggered the tooltip via a dispatched `mouseover`, measured
+`scrollWidth === clientWidth` (238px, no overflow) confirming the CSS fix
+alone resolves it (screenshot showed a mid-word break, "Langua-ge", proving
+`overflow-wrap` was doing the work). Then tested the actual spaced wording —
+same no-overflow result, wrapping cleanly at the slashes with no mid-word
+breaks. Restored the test button's original tooltip text afterward, no
+residue left on the live page.
+
+**Docs:** `CHANGELOG.md` — one line. Not logged as a `BUGS.md` entry — found
+and fixed within the same session, same precedent as other same-session
+fixes earlier today (the CSP block, the stale-storage no-op).

@@ -99,7 +99,7 @@ function injectButton() {
   grButton.className = 'btn-admin-action btn-admin-action--ghost';
   grButton.disabled = true;
   grButton.textContent = 'Paste from GR';
-  grButton.dataset.tooltip = 'Pastes the last GoodReads scrape into Writer/Penciller/Publisher/Year/Language/Summary and matching Genres (overwrites existing values)';
+  grButton.dataset.tooltip = 'Pastes the last GoodReads scrape into Writer / Penciller / Publisher / Year / Language / Summary and matching Genres (overwrites existing values)';
 
   grButton.addEventListener('click', async () => {
     const { grScrape } = await chrome.storage.local.get('grScrape');

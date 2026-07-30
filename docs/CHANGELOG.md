@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-30** — Fixed: shared tooltip (`.db-tooltip`) overflowed its box
+  on long unbroken strings (no `overflow-wrap`) — found via the new "Paste
+  from GR" tooltip. Added `overflow-wrap: break-word`, app-wide fix. →
+  `v2.6/progress.md` "Fixed: tooltip text overflow on long unbroken strings"
 - **2026-07-30** — Full Editor in-app guide (`/guide/editor-full`) updated
   for the GoodReads feature: prefilled-link behaviour corrected, new
   "GoodReads Chrome extension" section added (install + usage). →
