@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-30** — Reader window: fixed opening behind the library (forced
+  foreground via window-diff + `AttachThreadInput`) and restored
+  comic-shaped sizing (100% of the actual page-1 pixel size, capped to fit
+  the screen). → `progress.md` "Reader window: fixed opening behind the
+  library, restored comic-shaped sizing"
 - **2026-07-29** — Windows Flutter desktop reader deleted after soak-test
   confirmation: `flutter_app/windows/`, protocol handler, window-resize
   service, 4 Windows-only pubspec deps all removed; `flutter analyze` clean.

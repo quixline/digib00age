@@ -70,6 +70,56 @@ now-moot `flutter_launcher_icons.windows` icon-gen config. `flutter analyze`
 clean, `flutter pub get` confirms all four packages are gone (or downgraded
 to transitive-only). Android's Flutter app untouched throughout.
 
+**Update, 2026-07-30 — foreground + window-sizing gaps closed.** Using the
+browser-popout reader day to day surfaced two gaps the original build
+missed: the window opened *behind* the library instead of in front, and it
+no longer resized to the comic the way the deleted Flutter reader used to
+(`window_resize_service.dart` — 75%-of-cover, capped to screen, centered —
+never ported to the replacement). Tez also flagged separately that the
+reader opens in Edge rather than Brave (his actual default, and what the
+library itself opens in) — investigation found this isn't a default-browser
+question at all: `open_app_window()` never queries Windows' default
+browser, it probes a hardcoded install-path list (Edge, then Chrome; Brave
+was never a candidate). Left as-is — Tez didn't ask for it changed, just
+wanted to understand why.
+
+Both real fixes required more than they looked like on paper, found only by
+testing live against the real OS/browser state (Win32 API calls checking
+actual foreground window and geometry, not just code review):
+
+- `AllowSetForegroundWindow(-1)` alone (the standard fix for a background
+  process's spawned window not stealing focus) wasn't reliable enough by
+  itself. Needed a stronger fallback: snapshot the browser's top-level
+  windows before launch, diff after to find the genuinely new one (plain
+  "whichever browser window is foreground" isn't enough once more than one
+  reader window is open — Edge doesn't reuse a single app-mode window
+  across different `--app=` URLs the way Library/Admin/Editor's shared,
+  unchanging URL lets it appear to), then force it forward via
+  `AttachThreadInput`, reapplied for ~1.5s since a single call can land
+  mid-init and get silently overwritten by Chromium's own
+  restore-last-placement logic a beat later.
+- `--window-size`/`--window-position` launch flags are silently ignored
+  once the browser already has a running instance and the new `--app=`
+  launch gets forwarded to it via IPC instead of starting a fresh process —
+  true for essentially every real-world launch after the first. Sizing has
+  to be forced via `SetWindowPos` on the actual resulting window handle
+  instead, once found.
+- First sizing pass used `/api/cover`'s downscaled thumbnail at 75% (a
+  literal, but not fully thought through, port of the old Flutter ratio).
+  Tez's manual test caught it immediately — visibly smaller than the cover
+  on the issue page. Corrected to 100% of the actual full-resolution page-1
+  image (`/api/page/{id}/0`, not the thumbnail — "100% of the page" has to
+  mean true page pixels), capped to fit the screen's work area only when
+  the page is actually bigger, preserving aspect ratio. Reading that full
+  page fresh from disk/archive can take several seconds on slow/cold
+  storage (confirmed live), so the resize step runs decoupled from
+  foreground-forcing with a much more generous timeout — a late resize is
+  far less disruptive than either delaying the window's appearance or
+  missing the control server's 400ms fetch budget and triggering the
+  `window.open()` fallback alongside it (see the original entry above).
+
+See `SPEC.md` §19 "Reader launch (Windows)" for the resulting mechanism.
+
 ### docs/ rebrand sweep: current-state docs only, narrative logs and archive/ left as "ComicVault"
 
 **Decided:** 2026-07-29.

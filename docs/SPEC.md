@@ -801,17 +801,54 @@ Launch mechanism, in `launchReader()` (`frontend/js/app.js`):
 2. On success, the tray opens `http://localhost:{READER_PORT}/reader/{id}`
    as its own chromeless `--app=` window via the existing `open_app_window()`
    — identical style to the tray's Open Library/Admin/Editor windows (no
-   tabs, no address bar).
+   tabs, no address bar) — then brings it to the foreground and sizes it to
+   the comic (see "Foreground + window sizing" below).
 3. If that fetch fails (tray not running the control server — e.g. the
    backend was started some other way than via the tray), it falls back to
    `window.open(url, 'cv-reader-window', 'popup,width=900,height=1100')` — a
    plain popup window (no tabs, but *does* show an address bar; a
    `window.open()` popup can't suppress that on its own, only an
-   `--app=`-launched window can).
+   `--app=`-launched window can). This fallback path gets none of the
+   foreground/sizing behavior below.
 
 Each `--app=` launch spawns a fresh window rather than reusing one (matching
 existing Open Library/Admin/Editor behavior) — only the `window.open()`
 fallback path reuses/refocuses a single window via its repeated target name.
+
+**Foreground + window sizing (added 2026-07-30).** Two gaps found once Tez
+started using the browser-popout reader day to day: the window opened
+*behind* whatever already had focus, and it no longer resized itself to the
+comic like the old Flutter reader did (`window_resize_service.dart`,
+deleted 2026-07-29 along with the rest of the Flutter Windows reader — its
+resize behavior was never ported to the replacement until now). Both are
+handled in `tray/tray_app.py`, off the HTTP response path (in a background
+thread spawned by `open_app_window()`), so neither delays the reader
+opening or risks the control server's fetch missing its 400ms timeout (see
+DECISIONS.md for why that matters — a timeout there fires the
+`window.open()` fallback too, opening a second window):
+- **Foreground:** Windows denies a background process the right to steal
+  focus, which is what the control-server request is (triggered by a
+  `fetch()` from whichever tab has focus, not direct user input to the tray
+  process). The tray snapshots the launching browser's top-level windows
+  before spawning, diffs after to find the new one (needed once more than
+  one reader window is open — Edge doesn't reuse a single app-mode window
+  across different `--app=` URLs the way Library/Admin/Editor's unchanging
+  URL lets it appear to), then forces it forward via the
+  `AttachThreadInput` technique, reapplied briefly since a single call can
+  land mid-init and get silently overwritten by Chromium's own
+  restore-last-placement logic a moment later.
+- **Sizing:** the tray fetches the comic's actual page-1 image
+  (`GET /api/page/{id}/0` — the full-resolution page, not `/api/cover`'s
+  downscaled thumbnail, since "100% of the page" has to mean true page
+  pixels) to read its real pixel dimensions, then sizes the window's
+  *content* area (correcting for the title bar/border chrome via
+  `GetSystemMetrics`, same correction the old Flutter service made) to
+  100% of that, capped to fit the display's work area — preserving aspect
+  ratio — only when the page is actually bigger than the screen, and
+  centered. This runs as its own step after foreground-forcing, since
+  reading a full page fresh from disk/archive can occasionally take several
+  seconds (confirmed live on a large/cold archive) — a late resize is far
+  less disruptive than delaying the window appearing or its focus.
 
 **Inherent limitation, not solved:** a custom URI scheme only works when
 the browser and the registered reader are on the same Windows PC — this

@@ -31,14 +31,17 @@ replace the old Windows Flutter reader's comicvault:// deep link.
 """
 
 import ctypes
+from ctypes import wintypes
 import os
 import socket
 import subprocess
 import sys
 import threading
 import time
+import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from io import BytesIO
 from urllib.parse import urlparse, parse_qs
 
 from PIL import Image, ImageDraw
@@ -127,15 +130,240 @@ def _find_app_browser_exe():
     return _app_browser_exe
 
 
-def open_app_window(url):
-    """Opens `url` in a chromeless app-mode window rather than a browser tab."""
+def _get_work_area():
+    """Primary display's work area (excludes the taskbar), via SPI_GETWORKAREA."""
+    rect = wintypes.RECT()
+    ctypes.windll.user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(rect), 0)
+    return rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top
+
+
+def _get_window_chrome_size():
+    """Non-client size (title bar + resize borders) Windows adds around a
+    standard resizable app window's content area, via GetSystemMetrics — so
+    the reader window can be sized so its *content* area (not the outer
+    frame SetWindowPos actually controls) matches the comic page, the same
+    correction the old Flutter resize service made by comparing
+    windowManager.getSize() against MediaQuery.sizeOf(context)."""
+    gsm = ctypes.windll.user32.GetSystemMetrics
+    SM_CXSIZEFRAME, SM_CYSIZEFRAME, SM_CXPADDEDBORDER, SM_CYCAPTION = 32, 33, 92, 4
+    frame_x = gsm(SM_CXSIZEFRAME) + gsm(SM_CXPADDEDBORDER)
+    frame_y = gsm(SM_CYSIZEFRAME) + gsm(SM_CXPADDEDBORDER)
+    return frame_x * 2, frame_y * 2 + gsm(SM_CYCAPTION)
+
+
+def _compute_reader_window_geometry(issue_id, timeout=15):
+    """Ports the old Flutter reader's window-shape behaviour (deleted
+    2026-07-29 with window_resize_service.dart, never replaced when the
+    reader moved to a browser popout): size the window's content area to
+    100% of the comic's actual page-1 pixel dimensions, capped to fit the
+    display's work area (preserving aspect ratio) if that's too big,
+    centered. Reads the full-resolution page (not /api/cover's downscaled
+    thumbnail — Tez found the thumbnail-based 75% version visibly smaller
+    than the cover on the issue page, 2026-07-30) since "100% of the page"
+    has to mean actual page pixels. `timeout` defaults generously (some
+    archives sit on slow/networked storage — a cold first-page extraction
+    can take several seconds) since this always runs off the HTTP response
+    path; see _activate_and_resize_new_window. Best-effort: any failure
+    (page fetch, bad image, etc.) returns None and the caller applies no
+    resize rather than blocking the reader from opening.
+    """
+    try:
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{READER_PORT}/api/page/{issue_id}/0", timeout=timeout
+        ) as resp:
+            data = resp.read()
+        page_w, page_h = Image.open(BytesIO(data)).size
+        if page_w <= 0 or page_h <= 0:
+            return None
+
+        area_left, area_top, area_w, area_h = _get_work_area()
+        chrome_w, chrome_h = _get_window_chrome_size()
+        max_content_w = max(area_w - chrome_w, 1)
+        max_content_h = max(area_h - chrome_h, 1)
+
+        width, height = page_w, page_h
+        if width > max_content_w or height > max_content_h:
+            scale = min(max_content_w / width, max_content_h / height)
+            width *= scale
+            height *= scale
+
+        frame_width = int(width) + chrome_w
+        frame_height = int(height) + chrome_h
+        x = area_left + (area_w - frame_width) // 2
+        y = area_top + (area_h - frame_height) // 2
+        return frame_width, frame_height, x, y
+    except Exception as e:
+        log(f"Reader window geometry skipped ({e}).")
+        return None
+
+
+def _resolve_process_image_basename(pid):
+    """Lowercased exe basename for a PID (e.g. 'msedge.exe'), or None."""
+    try:
+        import win32api
+        import win32con
+        import win32process
+        handle = win32api.OpenProcess(
+            win32con.PROCESS_QUERY_INFORMATION | win32con.PROCESS_VM_READ, False, pid
+        )
+        try:
+            return os.path.basename(win32process.GetModuleFileNameEx(handle, 0)).lower()
+        finally:
+            win32api.CloseHandle(handle)
+    except Exception:
+        return None
+
+
+def _snapshot_top_level_hwnds(target_name):
+    """Visible, titled, top-level window handles currently owned by any
+    process named `target_name` (e.g. 'msedge.exe')."""
+    try:
+        import win32gui
+        import win32process
+    except ImportError:
+        return set()
+    hwnds = set()
+
+    def _cb(hwnd, _):
+        if win32gui.IsWindowVisible(hwnd) and win32gui.GetWindowText(hwnd):
+            _, pid = win32process.GetWindowThreadProcessId(hwnd)
+            if _resolve_process_image_basename(pid) == target_name:
+                hwnds.add(hwnd)
+        return True
+
+    win32gui.EnumWindows(_cb, None)
+    return hwnds
+
+
+def _find_new_window(before_hwnds, target_name, timeout=4.0, poll_interval=0.1):
+    """Diffs against `before_hwnds` (a snapshot taken right before Popen) to
+    find the browser window this launch just created. Matching "whichever
+    browser window is foreground" isn't enough once more than one reader
+    window is open (one per issue — Edge doesn't reuse a single app-mode
+    window across different --app= URLs the way Library/Admin/Editor's
+    shared, unchanging URLs let it appear to; confirmed live 2026-07-30)."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        fresh = _snapshot_top_level_hwnds(target_name) - before_hwnds
+        if fresh:
+            return next(iter(fresh))
+        time.sleep(poll_interval)
+    return None
+
+
+def _force_foreground(hwnd, timeout=1.5, poll_interval=0.1):
+    """Repeatedly forces `hwnd` to the foreground for `timeout` seconds.
+    Reapplying rather than a single call is needed because a single
+    SetForegroundWindow can land mid-init and get silently overwritten a
+    beat later by Chromium's own restore-last-placement/activation logic
+    (confirmed live 2026-07-29). The AttachThreadInput trick is needed
+    because Windows denies SetForegroundWindow to a thread that isn't
+    itself foreground and hasn't just received user input — the reader
+    launch arrives via a background HTTP request to the control server
+    (triggered by a fetch() from whichever browser tab currently has
+    focus), not direct user input to this tray process, so without it the
+    new window opens behind whatever's already focused (open_app_window's
+    AllowSetForegroundWindow(-1) call also targets this, but wasn't
+    reliable enough alone in testing)."""
+    import win32api
+    import win32con
+    import win32gui
+    import win32process
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            fg_hwnd = win32gui.GetForegroundWindow()
+            fg_thread = win32process.GetWindowThreadProcessId(fg_hwnd)[0] if fg_hwnd else 0
+            cur_thread = win32api.GetCurrentThreadId()
+            attached = fg_thread and fg_thread != cur_thread
+            if attached:
+                win32process.AttachThreadInput(cur_thread, fg_thread, True)
+            try:
+                win32gui.ShowWindow(hwnd, win32con.SW_SHOW)
+                win32gui.SetForegroundWindow(hwnd)
+            finally:
+                if attached:
+                    win32process.AttachThreadInput(cur_thread, fg_thread, False)
+        except Exception:
+            pass
+        time.sleep(poll_interval)
+
+
+def _activate_and_resize_new_window(before_hwnds, browser_exe, issue_id):
+    """Finds the browser window this launch just created, forces it to the
+    foreground, then (separately, since it can take much longer — reading
+    the full page-1 image off disk/archive to get its true pixel size, on
+    potentially slow/networked storage — confirmed live 2026-07-30 to
+    occasionally exceed several seconds) sizes it to that issue's page-1
+    dimensions once that resolves. Runs in its own thread — never blocks
+    the caller (the reader control server's HTTP response needs to return
+    well within the web UI's 400ms fetch timeout, see launchReader() in
+    app.js, or its fallback window.open() popup fires too and a second
+    window appears alongside this one). Foreground-forcing and resizing are
+    deliberately not the same wait: forcing focus is only meaningful right
+    when the window appears, while a resize is still worth applying late
+    even if the user's already looking at the window by then."""
+    try:
+        import win32con
+        import win32gui
+    except ImportError:
+        return
+
+    target_name = os.path.basename(browser_exe).lower()
+    hwnd = _find_new_window(before_hwnds, target_name)
+    if hwnd is None:
+        return
+
+    _force_foreground(hwnd)
+
+    geometry = _compute_reader_window_geometry(issue_id)
+    if geometry and win32gui.IsWindow(hwnd):
+        try:
+            width, height, x, y = geometry
+            win32gui.SetWindowPos(hwnd, 0, x, y, width, height, win32con.SWP_NOZORDER | win32con.SWP_NOACTIVATE)
+        except Exception:
+            pass
+
+
+def open_app_window(url, issue_id=None):
+    """Opens `url` in a chromeless app-mode window rather than a browser tab.
+    `issue_id`, if given (the reader launch path only), triggers a
+    background pass that forces the window to the foreground and sizes it
+    to that issue's page-1 dimensions — see _activate_and_resize_new_window."""
     exe = _find_app_browser_exe()
+
+    # Windows denies SetForegroundWindow to a process that isn't itself
+    # foreground and hasn't just received user input. The reader launch
+    # path arrives via a background HTTP request to the control server
+    # (triggered by a fetch() from whichever browser tab currently has
+    # focus — the library), not direct user input to this tray process, so
+    # without this the new window opens behind whatever's already focused.
+    # Lifting the restriction for any process covers it regardless of
+    # whether --app= spawns a fresh browser process or gets forwarded to an
+    # already-running instance via IPC (the usual case once the browser's
+    # already open, where the Popen'd PID isn't the one that ends up owning
+    # the window anyway). Kept as a first line of defense even though
+    # _activate_and_resize_new_window's AttachThreadInput-based force is the
+    # one that's actually reliable — see its docstring.
+    try:
+        ctypes.windll.user32.AllowSetForegroundWindow(-1)  # ASFW_ANY
+    except Exception:
+        pass
+
     if exe:
+        before_hwnds = _snapshot_top_level_hwnds(os.path.basename(exe).lower()) if issue_id else None
+        args = [exe, f"--app={url}"]
         try:
             subprocess.Popen(
-                [exe, f"--app={url}"],
+                args,
                 creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0,
             )
+            if issue_id:
+                threading.Thread(
+                    target=_activate_and_resize_new_window,
+                    args=(before_hwnds, exe, issue_id),
+                    daemon=True,
+                ).start()
             return
         except OSError as e:
             log(f"App-mode launch failed ({e}), falling back to webbrowser.open().")
@@ -266,7 +494,7 @@ class _ReaderControlHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         issue_id = parse_qs(parsed.query).get("id", [None])[0]
         if parsed.path == "/open-reader" and issue_id and issue_id.isdigit():
-            open_app_window(f"http://localhost:{READER_PORT}/reader/{issue_id}")
+            open_app_window(f"http://localhost:{READER_PORT}/reader/{issue_id}", issue_id=issue_id)
             self.send_response(200)
             self.end_headers()
         else:

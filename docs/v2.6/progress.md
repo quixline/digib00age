@@ -7810,3 +7810,64 @@ decision's completion, not a new one. `docs/CHANGELOG.md` — one line.
 
 This closes out the Windows-reader migration end to end: reviewed, planned,
 built, verified live, and the old implementation removed — all in one day.
+
+## Session — 2026-07-30 — Reader window: fixed opening behind the library, restored comic-shaped sizing
+
+Tez reported two problems using the new browser-popout reader day to day:
+the window opened *behind* the library instead of in front, and it no
+longer resized to match the comic the way the old Flutter reader used to.
+He also asked why it opens in Edge rather than Brave (his default browser,
+and what the library itself is open in) — answered but not changed:
+`open_app_window()` in `tray/tray_app.py` never queries the OS default
+browser, it probes a hardcoded list of install paths (Edge, then Chrome;
+Brave was never on it). Left as-is, not part of what was asked to fix.
+
+**Foreground fix.** The reader launch arrives at the tray via a background
+HTTP request (the control server, triggered by a `fetch()` from whichever
+browser tab has focus), not direct user input to the tray process, so
+Windows denies it the right to steal focus. `AllowSetForegroundWindow(-1)`
+alone wasn't reliable enough in live testing. Added a stronger mechanism:
+snapshot the launching browser's top-level windows right before `Popen`,
+diff against a fresh snapshot afterward to find the window this specific
+launch created (needed because Edge doesn't reuse one app-mode window
+across different reader URLs — confirmed live, more than one reader window
+can be open at once), then force it to the foreground via the
+`AttachThreadInput` technique, reapplied for ~1.5s since a single call can
+land mid-init and get silently overwritten by Chromium's own
+restore-last-placement logic a beat later.
+
+**Sizing fix.** The old Flutter reader resized its window to 75% of the
+comic's cover dimensions on open (`window_resize_service.dart`, deleted
+2026-07-29) — that behavior was never rebuilt for the browser popout. First
+attempt ported the 75%-of-cover-thumbnail ratio literally; Tez's manual
+test caught it immediately as visibly smaller than the cover shown on the
+issue page. Corrected per his direction: 100% of the comic's actual page-1
+pixel dimensions (fetched via `GET /api/page/{id}/0`, the full-resolution
+page — not `/api/cover`'s downscaled thumbnail, since "100%" has to mean
+true page pixels), capped to fit the screen's work area (preserving aspect
+ratio) only when the page is actually bigger than the screen, and centered.
+Also found live: `--window-size`/`--window-position` launch flags are
+silently ignored once the browser already has a window open and the launch
+gets forwarded to it via IPC — true for nearly every real launch after the
+first — so sizing is force-applied via `SetWindowPos` on the actual
+resulting window handle instead. Reading the full page fresh from
+disk/archive can take several seconds on slow/cold storage (confirmed
+live), so the resize runs as a separate, longer-timeout step after
+foreground-forcing rather than blocking it — and both run off the control
+server's HTTP response path entirely, so neither risks missing the web
+UI's 400ms fetch timeout (a miss there fires the `window.open()` fallback
+too, opening a second window alongside the first).
+
+**Verified live** (not just code review — checked actual OS window state
+via Win32 API calls against real Edge windows): computed target geometry
+matched the observed window rect exactly for two different real comic
+pages (2048×1583 → 1311×1040 frame, height-capped; 1988×3056 → 667×1040
+frame, height-capped — both centered, both foreground on arrival). Tez
+then manually confirmed several more issues, including one he specifically
+flagged as a good aspect-ratio test case, and confirmed the size now
+matches the page instead of the old undersized box.
+
+**Docs:** `SPEC.md` §19 "Reader launch (Windows)" — new "Foreground +
+window sizing" subsection. `DECISIONS.md` — appended to the 2026-07-29
+browser-popout entry (same decision's follow-up, not a new one).
+`CHANGELOG.md` — one line.
