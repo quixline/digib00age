@@ -40,6 +40,7 @@ import threading
 import time
 import urllib.request
 import webbrowser
+import winreg
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import BytesIO
 from urllib.parse import urlparse, parse_qs
@@ -108,25 +109,83 @@ READER_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "read
 
 # App-mode launch: Edge/Chrome's --app=<url> opens a chromeless window (no
 # tabs/address bar) instead of a tab in the user's regular browser session.
-# Edge preferred (Windows default, virtually always present); Chrome as
-# fallback; plain webbrowser.open() (a normal tab) if neither is found.
+# The real default browser is resolved from the registry (see
+# _resolve_default_browser_exe()) whenever possible; this hardcoded list is
+# only the fallback for when that lookup fails (registry unreadable, default
+# is a non-Chromium browser, etc.) — Edge first since it's virtually always
+# present, then Chrome, then Brave (both Program Files and the common
+# per-user install location), then plain webbrowser.open() (a normal tab) if
+# none of these exist either.
 _APP_BROWSER_CANDIDATES = [
     os.path.join(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"), "Microsoft", "Edge", "Application", "msedge.exe"),
     os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), "Microsoft", "Edge", "Application", "msedge.exe"),
     os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), "Google", "Chrome", "Application", "chrome.exe"),
     os.path.join(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"), "Google", "Chrome", "Application", "chrome.exe"),
+    os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
+    os.path.join(os.environ.get("LOCALAPPDATA", ""), "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
 ]
 _app_browser_exe = None  # resolved lazily; False once probed with nothing found
+
+# Chromium-family browsers all support the --app=<url> chromeless-window
+# flag; anything else (e.g. Firefox) doesn't, so a resolved default outside
+# this set is treated as "no opinion" and falls through to the hardcoded list.
+_CHROMIUM_APP_MODE_EXES = {"msedge.exe", "chrome.exe", "brave.exe", "vivaldi.exe", "opera.exe", "chromium.exe"}
+
+
+def _resolve_default_browser_exe():
+    """Resolve the real executable Windows launches for https:// links —
+    i.e. the user's actual registered default browser — instead of guessing
+    install paths. `HKCU\\...\\UrlAssociations\\https\\UserChoice`'s ProgId
+    value (e.g. "BraveHTML", "ChromeHTML", "MSEdgeHTML") is what Windows'
+    own "Choose default apps" UI writes; HKEY_CLASSES_ROOT is Windows' own
+    merged view of HKCU/HKLM Software\\Classes, so one lookup resolves that
+    ProgId's real command regardless of whether the browser is installed
+    per-user (e.g. Chrome/Brave under %LOCALAPPDATA%) or machine-wide.
+    Returns the exe path only if it's a Chromium-family browser (supports
+    --app=) and the path exists; returns None otherwise so the caller can
+    fall back to the hardcoded candidate list."""
+    try:
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\Shell\Associations\UrlAssociations\https\UserChoice",
+        ) as key:
+            prog_id, _ = winreg.QueryValueEx(key, "ProgId")
+    except OSError:
+        return None
+
+    try:
+        with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, rf"{prog_id}\shell\open\command") as key:
+            command, _ = winreg.QueryValueEx(key, None)
+    except OSError:
+        return None
+
+    command = command.strip()
+    if command.startswith('"'):
+        exe_path = command[1:].split('"', 1)[0]
+    else:
+        exe_path = command.split(" ", 1)[0]
+
+    if os.path.basename(exe_path).lower() not in _CHROMIUM_APP_MODE_EXES:
+        return None
+    if not os.path.exists(exe_path):
+        return None
+    return exe_path
 
 
 def _find_app_browser_exe():
     global _app_browser_exe
     if _app_browser_exe is None:
+        default_exe = _resolve_default_browser_exe()
+        if default_exe:
+            _app_browser_exe = default_exe
+            log(f"App-mode browser: {_app_browser_exe} (Windows default, via registry)")
+            return _app_browser_exe
+
         _app_browser_exe = next((p for p in _APP_BROWSER_CANDIDATES if os.path.exists(p)), False)
         if _app_browser_exe:
-            log(f"App-mode browser: {_app_browser_exe}")
+            log(f"App-mode browser: {_app_browser_exe} (default-browser lookup failed, using fallback list)")
         else:
-            log("App-mode browser: none found (Edge/Chrome), falling back to webbrowser.open().")
+            log("App-mode browser: none found (registry lookup + Edge/Chrome/Brave fallback), falling back to webbrowser.open().")
     return _app_browser_exe
 
 

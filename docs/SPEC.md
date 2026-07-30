@@ -850,6 +850,31 @@ DECISIONS.md for why that matters — a timeout there fires the
   seconds (confirmed live on a large/cold archive) — a late resize is far
   less disruptive than delaying the window appearing or its focus.
 
+**Browser selection (added 2026-07-30).** `open_app_window()` — shared by
+the reader launch above and Open Library/Admin/Editor alike — picks which
+browser to launch via `_find_app_browser_exe()` in `tray/tray_app.py`.
+Previously this just probed a hardcoded list of install paths (Edge, then
+Chrome; Brave was never on it), so it opened Edge regardless of the user's
+actual default, and reader windows opened by that mismatch could land
+behind the library. It now resolves the real Windows-registered default
+browser first: `_resolve_default_browser_exe()` reads
+`HKCU\...\UrlAssociations\https\UserChoice`'s `ProgId` and resolves that
+ProgId's real install command via `HKEY_CLASSES_ROOT\<ProgId>\shell\open\command`
+(Windows' own merged view of per-user and machine-wide registrations, so it
+finds the exe correctly whether the browser is installed under Program
+Files or a per-user `%LOCALAPPDATA%` path). The resolved exe is only used if
+it's a Chromium-family browser that supports `--app=` (`msedge.exe`,
+`chrome.exe`, `brave.exe`, `vivaldi.exe`, `opera.exe`, `chromium.exe`);
+otherwise (registry lookup fails, or the default is something like Firefox
+with no `--app=` equivalent) it falls back to the original hardcoded
+candidate list — which now also includes Brave's install paths — and
+finally to a plain `webbrowser.open()` tab if nothing resolves. The
+foreground-forcing/resizing mechanism above needed no changes: it already
+matches windows by whichever `browser_exe` gets resolved, not by what was
+previously focused, so it follows the corrected browser (and correctly
+comes to front even when the library itself is open via a separately
+installed Chrome PWA rather than the tray's own launcher).
+
 **Inherent limitation, not solved:** a custom URI scheme only works when
 the browser and the registered reader are on the same Windows PC — this
 was the same same-machine-only caveat flagged when the feature was first

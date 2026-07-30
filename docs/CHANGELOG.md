@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-30** — Tray app now detects the real Windows default browser via
+  the registry (was a hardcoded Edge→Chrome guess) for Library/Admin/Editor
+  and the reader alike; fixes reader opening in Edge instead of Brave,
+  including when opened from an installed Chrome PWA. → `progress.md` "Tray
+  app now detects the real default browser"
 - **2026-07-30** — Reader window: fixed opening behind the library (forced
   foreground via window-diff + `AttachThreadInput`) and restored
   comic-shaped sizing (100% of the actual page-1 pixel size, capped to fit

@@ -7871,3 +7871,55 @@ matches the page instead of the old undersized box.
 window sizing" subsection. `DECISIONS.md` — appended to the 2026-07-29
 browser-popout entry (same decision's follow-up, not a new one).
 `CHANGELOG.md` — one line.
+
+## Session — 2026-07-30 — Tray app now detects the real default browser
+
+Follow-up to the same day's earlier session above: Tez came back asking for
+the "opens in Edge, not Brave" gap (left as-is that session) to actually be
+fixed, generalized to "detect and launch the real OS default browser," and
+confirmed the specific trigger — the reader landing behind the library
+specifically when ComicVault is opened via a separately-installed Chrome
+PWA, not merely "Chrome happens to be installed."
+
+**Fix:** added `_resolve_default_browser_exe()` to `tray/tray_app.py` —
+reads Windows' actual default-browser registration
+(`HKCU\...\UrlAssociations\https\UserChoice`'s `ProgId`, resolved to its
+real install command via `HKEY_CLASSES_ROOT\<ProgId>\shell\open\command`,
+which is Windows' own merged view of per-user and machine-wide
+registrations) instead of guessing install paths. Only accepted if the
+resolved exe is a Chromium-family browser (`msedge.exe`, `chrome.exe`,
+`brave.exe`, `vivaldi.exe`, `opera.exe`, `chromium.exe` — the ones that
+support `--app=`); anything else (e.g. Firefox) or a failed lookup falls
+through to the existing hardcoded candidate list, to which Brave's install
+paths (Program Files and the common per-user `%LOCALAPPDATA%` location)
+were also added as a safety net. `_find_app_browser_exe()` tries the
+registry resolution first, then that fallback list, then `webbrowser.open()`
+— same overall shape as before, just with a real detection step in front.
+No changes needed to the foreground-forcing/resize mechanism
+(`_snapshot_top_level_hwnds`/`_find_new_window`/`_force_foreground`/
+`_activate_and_resize_new_window`) — it already keys off whichever
+`browser_exe` gets resolved and matches by process name, not by what was
+previously focused, so it followed the corrected browser automatically.
+
+**Verified live:** registry lookup correctly resolved Brave
+(`C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe`) as
+Tez's actual default. Tez confirmed Library/Admin/Editor and the reader all
+now open in Brave, and the reader opens in front and correctly sized —
+including from the Chrome-PWA-installed library, the specific case that
+prompted this session.
+
+**Unrelated hiccup during testing, self-inflicted and resolved same
+session:** restarting the tray app for testing used `taskkill /F` on just
+the tray's PID, which killed the tray process but left its child reader-
+server subprocess running as an orphan still bound to port 9424. The
+freshly-started tray's own reader subprocess then failed to bind that port
+every ~30s health-check cycle until the orphaned process was found and
+killed, after which it settled immediately. Not a defect in the browser-
+detection change itself — just a reminder to stop the reader via the tray's
+own "Stop Server" menu action (or kill the process tree, not just the
+parent PID) before force-restarting it for testing in a future session.
+
+**Docs:** `SPEC.md` §19 — browser-selection description updated to reflect
+registry-based detection. `DECISIONS.md` — new entry superseding the
+"left as-is" note from the earlier 2026-07-30 session above. `CHANGELOG.md`
+— one line.

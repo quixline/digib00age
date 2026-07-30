@@ -120,6 +120,26 @@ actual foreground window and geometry, not just code review):
 
 See `SPEC.md` §19 "Reader launch (Windows)" for the resulting mechanism.
 
+**Update, same day — default-browser detection built (supersedes the
+"left as-is" note above).** Tez came back asking for the Edge-vs-Brave gap
+to actually be fixed, generalized to "detect and launch the real OS default
+browser" rather than special-casing Brave — and clarified the specific
+trigger he'd hit: the reader landing behind the library specifically when
+ComicVault is opened via a separately-installed Chrome PWA, not merely
+"Chrome happens to be installed alongside Edge." `_find_app_browser_exe()`
+now tries a new `_resolve_default_browser_exe()` first — reads Windows'
+actual default-browser registration (`HKCU\...\UserChoice`'s `ProgId`,
+resolved via `HKEY_CLASSES_ROOT` to its real install command, which covers
+per-user and machine-wide installs alike) instead of guessing paths — and
+only falls back to the old hardcoded Edge→Chrome list (now with Brave's
+paths added too) if that lookup fails or resolves to a non-Chromium browser
+(no `--app=` support). No change was needed to the foreground-forcing/
+resize mechanism from the entry above — it was already parameterized on
+whichever browser gets resolved, so it started working correctly for Brave,
+and for the Chrome-PWA scenario, automatically. Verified live: registry
+resolution correctly found Brave; Tez confirmed Library/Admin/Editor and
+the reader all open in Brave now, in front, including from the Chrome PWA.
+
 ### docs/ rebrand sweep: current-state docs only, narrative logs and archive/ left as "ComicVault"
 
 **Decided:** 2026-07-29.
