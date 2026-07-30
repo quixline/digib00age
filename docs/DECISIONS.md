@@ -4,6 +4,41 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Continue Reading strip: removed the render-time pin-to-top; now a normal reorderable default
+
+**Decided:** 2026-07-30.
+
+**Why:** Tez noticed reordering Continue Reading via the admin arrows had no
+effect on the home page — because `GET /api/home/strips` (`backend/routers/home.py`)
+always spliced it to the front, overriding its stored `position` for every other
+row. That behaviour was deliberate at build time (`HOME_STRIPS_SPEC.md` Section
+4.4, 2026-06-19) and was explicitly verified working-as-designed then
+(`archive/v2.3/progress.md`, "V2.1 — Home Strips Built" — "Continue Reading's
+pin-first behaviour surviving a deliberate position reorder" was a pass
+condition, not a bug). Asked Tez directly (AskUserQuestion) rather than
+assuming the pin should go, since it was a spec'd, tested decision, not an
+oversight. Tez confirmed: remove it — he wants admin reorder changes to
+always be reflected on the home page, full stop, with no row treated as an
+exception.
+
+**What changed:** `get_home_strips()` no longer splices a `continue_row` to
+index 0; all rows (default + added) now flow through one
+`position`-ordered loop, `builtin` rows dispatching to `_resolve_builtin_strip`
+uniformly regardless of name. Continue Reading's *conditional visibility*
+(only rendered when a "reading"-status issue exists) is untouched — that
+rule lives in `_strip_continue_reading` returning an empty `items` list,
+which the frontend already skips, and was never part of the pin-to-top
+rule being removed here.
+
+**Supersedes:** the 2026-06-19 verification in
+`archive/v2.3/progress.md` ("V2.1 — Home Strips Built") that treated the
+pin-survives-reorder result as correct — that was correct *for that spec*,
+not a permanent invariant. `HOME_STRIPS_SPEC.md` Section 1/4.4/Change Log
+updated to match.
+
+**Where:** `backend/routers/home.py` (`get_home_strips`), `frontend/js/admin.js`
+(`hsBasisSummary`), `docs/HOME_STRIPS_SPEC.md` §1/§2/§4.4/Change Log.
+
 ### Donate button + placeholder modal removed from Admin
 
 **Decided:** 2026-07-30.

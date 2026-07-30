@@ -7954,3 +7954,53 @@ Donate list entry dropped, User Guide description no longer claims a new
 tab. `guide-inventory.md`, `tooltip-data.md` — Donate/User-Guide-new-tab
 references updated to match. `DECISIONS.md` — new entry for the Donate
 removal. `CHANGELOG.md` — one line.
+
+---
+
+### 2026-07-30 — Continue Reading: removed render-time pin-to-top
+
+**Bug/UX report:** Tez reordering Continue Reading via the admin Home Page
+Strips arrows saw no change on the home page — root cause traced to
+`GET /api/home/strips` (`backend/routers/home.py`) unconditionally
+splicing the Continue Reading row to index 0 whenever it had matching
+issues, overriding its stored `position`. This was deliberate, spec'd
+(`HOME_STRIPS_SPEC.md` §4.4), and verified-as-correct behaviour at build
+time (2026-06-19) — not a bug in the original sense, but Tez wants it
+changed now that it visibly conflicts with the reorder UI.
+
+Confirmed via AskUserQuestion before changing anything, since this
+reverses a previously-tested, deliberate decision: Tez confirmed removing
+the pin — Continue Reading should be a fully normal reorderable strip.
+
+**Fix:** `get_home_strips()` no longer special-cases Continue Reading —
+single `position`-ordered loop over all visible rows, `builtin` rows
+(including Continue Reading) all dispatched through `_resolve_builtin_strip`
+uniformly. Conditional visibility (only rendered when a "reading"-status
+issue exists, via `_strip_continue_reading` returning `[]` otherwise) is
+untouched — frontend `loadHome()` already skips empty strips.
+
+`frontend/js/admin.js` `hsBasisSummary()`'s Continue-Reading-specific
+`'pinned first when active'` text removed — it now shows `'default'`,
+same as the other 3 default rows.
+
+**Verified live:** with 7 issues in "reading" status (real dev-DB data,
+not scratch), moved Continue Reading down one position via the admin
+arrows (swapped with Recently Added), reloaded the home page, confirmed
+Recently Added now rendered first and Continue Reading second — matching
+the new stored order rather than always leading. Confirmed the admin
+list's Continue Reading row now reads "default" instead of "pinned first
+when active". No console errors on either Admin or the home page. Moved
+the order back to the original (Continue Reading first) afterward so the
+library's live state was left unchanged.
+
+`HOME_STRIPS_SPEC.md` §1/§2/§4.4/§5.1 updated to describe the new
+behaviour, Change Log row added recording the removal and its reason.
+`DECISIONS.md` entry added, superseding the original 2026-06-19
+pin-verification note in `archive/v2.3/progress.md`.
+
+No seeding change: `backend/database.py`'s `_seed_default_home_strips`
+only sets initial `position` 0-3 — the render-time override was the only
+Continue-Reading-specific logic anywhere, so seeding is unaffected.
+
+**Docs:** `HOME_STRIPS_SPEC.md` §1/§2/§4.4/§5.1/Change Log. `DECISIONS.md`
+— new entry. `CHANGELOG.md` — one line.

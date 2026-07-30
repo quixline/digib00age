@@ -1274,7 +1274,7 @@ function renderHomeStrips() {
 }
 
 function hsBasisSummary(strip) {
-  if (strip.basis_type === 'builtin') return strip.name === 'Continue Reading' ? 'pinned first when active' : 'default';
+  if (strip.basis_type === 'builtin') return 'default';
   if (strip.basis_type === 'field') {
     const label = HS_FIELD_LABELS[strip.field_name] || strip.field_name;
     // writer/artist field_value is a Person.id (Tier 4 Item 3) — show the

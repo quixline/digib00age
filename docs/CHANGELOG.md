@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-30** — Home page: Continue Reading strip no longer force-pinned
+  to the top — it's now a normal reorderable default like the other three,
+  so admin reorder changes always show up on the home page. Conditional
+  visibility (hidden with no "reading"-status issues) unchanged. →
+  `v2.6/progress.md` "Continue Reading: removed render-time pin-to-top"
 - **2026-07-30** — Admin page: "User Guide" link now stays in the same
   window (was the only nav link using `target="_blank"`); Donate button +
   placeholder modal removed (Tez's call, may reintroduce); GoodReads link

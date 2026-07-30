@@ -30,15 +30,16 @@ missed.
 
 **Existing default strips (unchanged content/logic), in order:**
 1. **Continue Reading** — issues with status "reading". **Conditionally visible**: only
-   rendered at all when at least one such issue exists. When present, it is always
-   pinned to the top, ahead of every other strip (default or added).
+   rendered at all when at least one such issue exists. Ordered by stored `position`
+   like every other strip — no longer pinned to the top (pin removed 2026-07-30, see
+   Change Log and `DECISIONS.md`).
 2. **Recently Added** — most recently imported.
 3. **Random Unread** — a random unstarted comic. Refreshes each visit.
 4. **Random Genre** — a genre picked at random; heading shows the plain genre name.
 
 These keep their current behaviour exactly as built. The only new capability applied to
-them is **reordering** (see Section 5) — though Continue Reading's "always pinned to
-top when present" rule takes precedence over its stored `position` (see Section 4.4).
+them is **reordering** (see Section 5) — Continue Reading now reorders exactly like the
+other three (see Section 4.4 for the removed pin-to-top history).
 
 **New capability — admin-added strips:**
 - Up to **5** additional strips (cap chosen for performance — each strip is a query
@@ -66,7 +67,7 @@ column every row has.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | INTEGER PRIMARY KEY | |
-| `is_default` | BOOLEAN NOT NULL | `true` for the 4 existing strips, seeded once via migration. Locks `name`, `basis_type`, `field_name`, `field_value`, `folder_path` from editing or deletion — only `position` is mutable for these rows (and for the Continue Reading row specifically, `position` is stored but overridden at render time per Section 4.4). |
+| `is_default` | BOOLEAN NOT NULL | `true` for the 4 existing strips, seeded once via migration. Locks `name`, `basis_type`, `field_name`, `field_value`, `folder_path` from editing or deletion — only `position` is mutable for these rows, and (as of 2026-07-30) it's respected identically for all 4, including Continue Reading — see Section 4.4. |
 | `name` | TEXT NOT NULL | Heading shown on the home page. Admin-set for added strips; fixed text for defaults ("Random Genre" still computes its displayed genre name live per SPEC.md 20.4 — this column is the static heading label, not the dynamic per-visit genre name). |
 | `basis_type` | TEXT NOT NULL | `'builtin'` (the 5 defaults, logic lives in existing code, not driven by the columns below), `'field'`, or `'folder'` |
 | `field_name` | TEXT NULLABLE | One of: `genre`, `publisher`, `writer`, `artist`, `format`, `decade`, `year`, `rating`, `bw`. Only set when `basis_type = 'field'` |
@@ -128,9 +129,8 @@ resolve under a configured library root (warn, don't block, if outside).
   `is_default = true`.
 - `GET /api/home/strips` — the actual home-page data endpoint (likely already exists
   per SPEC.md's `backend/routers/home.py`; extend it). Returns all `visible` strips
-  (non-Continue-Reading defaults always included) in `position` order, with Continue
-  Reading rendered first whenever it has any matching issues (per 4.4), each resolved
-  to up to 25 covers:
+  in `position` order (defaults always included; Continue Reading conditionally per
+  4.4), each resolved to up to 25 covers:
   - `builtin` → existing per-strip logic, unchanged
   - `field` + `random` → 25 random matching issues, computed fresh on every request
     (cadence = every visit, confirmed — no session caching needed, this simplifies
@@ -139,7 +139,7 @@ resolve under a configured library root (warn, don't block, if outside).
   - `folder` + `random` → 25 random issues under that folder path, fresh every request
   - `folder` + `fixed` → 25 issues under that folder path, ordered by `sort_field`
 
-### 4.4 Default-row visibility and pin behaviour
+### 4.4 Default-row visibility
 
 Three of the four default strips (Recently Added, Random Unread, Random Genre) are
 always shown — no hide control for them in this build, matching "current default
@@ -147,16 +147,14 @@ strips can't be removed or edited" (reordering is the only capability available 
 these rows). Don't expose a visibility toggle for these `is_default = true` rows in
 the admin UI; `visible` is functionally always-true for them and can be ignored.
 
-**Continue Reading is the one exception**, and existing, unchanged behaviour — not a
-new rule introduced by this feature:
+**Continue Reading is a partial exception**, in one respect only:
 - It only renders when at least one issue has status "reading." This is existing logic
   in `builtin` strip resolution, not driven by the `visible` column.
-- When it renders, it is **always pinned first**, ahead of every other strip regardless
-  of stored `position`. Its `position` value still exists in the table (so the reorder
-  list, Section 5.1, can display it at whatever position the admin last dragged it to —
-  useful for if/when this pin rule is ever revisited), but `GET /api/home/strips`
-  should render it first whenever present, overriding the position-sort for every
-  other row.
+- **Update, 2026-07-30:** it is no longer pinned to the top when present. The original
+  build pinned it ahead of every other strip regardless of stored `position` (see
+  Change Log below); that rule has been removed. Its `position` is now respected
+  exactly like the other 3 defaults and every added strip — reordering it via
+  Section 5.1's arrows now has a visible effect on the home page, like any other row.
 
 ---
 
@@ -170,9 +168,9 @@ rest of Advanced Settings.
 Contents:
 - **Ordered list of all 9 possible rows** (4 default + up to 5 added), drag-reorderable
   (or up/down buttons if drag-and-drop is more than this needs) — calls the bulk
-  `reorder` endpoint on change. Continue Reading's row should carry a note in this list
-  (e.g. "pinned first when active") so the admin isn't confused when dragging it
-  elsewhere has no visible effect while a reading-status issue exists.
+  `reorder` endpoint on change. Continue Reading's row shows the same "default" summary
+  as the other 3 defaults (no more "pinned first when active" note — see Section 4.4,
+  pin removed 2026-07-30) since it's now a fully normal reorderable row.
 - Default rows show name + a "Default" badge, **no edit or delete controls**, just
   their position in the reorder list.
 - Added rows show: name, basis summary (e.g. "Genre: Horror" or folder path), order
@@ -238,3 +236,4 @@ building a new listing page type).
 | 2026-06-19 | Section 5.1 reorder UI built as up/down arrow buttons, not drag-and-drop. | Tez's explicit choice between the two options the spec allows — matches this codebase's existing preference for plain controls over custom widgets (e.g. Custom Tabs' visible/hidden toggle button). |
 | 2026-06-19 | Section 5.2's "clickable heading → full listing page" implemented as two new transient browse surfaces, `fieldview` and `folderview` (`?surface=fieldview&field=&value=` / `?surface=folderview&folder=`), reusing the existing All-tab rendering pipeline (filters, sort, grouping, pagination) scoped server-side via new `field`/`value`/`folder_path` query params on `GET /api/library`. Applied **only to admin-added (field/folder) strips** — the 4 default strips' headings remain plain, non-clickable text, unchanged from their current behaviour. | 5.2's wording ("same mechanism already in place for the default strips") assumes defaults already have clickable headings; they don't — that capability was never actually built despite `SPEC.md` §20.4 describing it. Building it for defaults too would be new scope this feature doesn't require (§6: "no change to the existing default strips' own ... logic"), so left as a separate, unfixed gap rather than absorbed into this session. |
 | 2026-06-19 | Continue Reading's resolution logic now lives in `backend/routers/home.py` (`_strip_continue_reading`), duplicating the query already in `backend/routers/library.py`'s standalone `GET /api/reading/continue` rather than calling it. | No cross-router imports exist anywhere else in this codebase; the query is ~6 lines. The standalone endpoint is left completely unmodified since the Flutter app depends on it and is explicitly out of scope (§6). |
+| 2026-07-30 | Continue Reading's render-time "always pinned first" rule (Section 1/4.4, original build) removed. It's now a fully normal reorderable default row — stored `position` is respected identically to the other 3 defaults and any added strip. Conditional visibility (only rendered when a "reading"-status issue exists) is unchanged. | Tez's explicit request (confirmed via AskUserQuestion): reordering Continue Reading via the admin arrows had no visible effect on the home page, which read as broken even though it matched the original spec. Tez wants admin reorder changes to always be reflected on the home page — see `DECISIONS.md` for the full rationale, superseding the original 2026-06-19 "pin verified as correct" note in `archive/v2.3/progress.md`'s "V2.1 — Home Strips Built" session. |

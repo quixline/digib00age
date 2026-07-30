@@ -232,23 +232,20 @@ def _resolve_builtin_strip(row: HomeStrip, db: Session, pm: dict[int, str], pr: 
 def get_home_strips(db: Session = Depends(get_db)):
     """
     All visible home_strips rows (default + admin-added), in position order,
-    each resolved to up to 15 covers. Continue Reading (a default row) is
-    rendered first whenever it has any matching issues, ahead of stored
-    position — per HOME_STRIPS_SPEC.md Section 4.4, this overrides ordering
-    for every other row, not just its own.
+    each resolved to up to 15 covers. Continue Reading is a normal reorderable
+    default row, same as the other three — no render-time pin-to-top (removed
+    2026-07-30, see DECISIONS.md; it previously overrode stored `position`,
+    making reordering it a no-op). Still conditionally rendered, unchanged:
+    when there's no "reading"-status issue, _strip_continue_reading returns an
+    empty items list, and the frontend (app.js loadHome()) skips empty strips.
     """
     pm, pr = _load_progress_map(db)
 
     rows = db.query(HomeStrip).order_by(HomeStrip.position).all()
     rows = [r for r in rows if r.is_default or r.visible]  # visible is ignored/always-true for defaults
 
-    continue_row = next((r for r in rows if r.is_default and r.name == "Continue Reading"), None)
-    ordered_rows = [r for r in rows if r is not continue_row]
-
     strips = []
-    if continue_row:
-        strips.append(_resolve_builtin_strip(continue_row, db, pm, pr))
-    for row in ordered_rows:
+    for row in rows:
         if row.basis_type == "builtin":
             strips.append(_resolve_builtin_strip(row, db, pm, pr))
         else:
