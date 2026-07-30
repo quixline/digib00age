@@ -4,6 +4,22 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### Donate button + placeholder modal removed from Admin
+
+**Decided:** 2026-07-30.
+
+**Why:** Tez's call — not enough usage of the "Coming soon." placeholder
+(built V2.3 Item 9, 2026-06-24) to justify keeping it on the page. Not a
+statement that donations are off the table permanently — Tez may
+reintroduce it later if that changes, at which point `ADMIN_SPEC.md` §10
+already documents what existed (button, modal, no backend endpoint) as a
+reference for rebuilding it.
+
+**How to apply:** Don't treat the removal as evidence Tez doesn't want a
+Donate feature at all — if it comes up again, ask whether to rebuild the
+same placeholder shell or scope real content this time, rather than
+assuming the prior placeholder approach is still right.
+
 ### Windows desktop reader: replaced Flutter with a browser popout; Scroll mode dropped; tray gained a launch control server
 
 **Decided:** 2026-07-29.

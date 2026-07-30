@@ -128,7 +128,7 @@ covers (folder/file cards are plain click-throughs, not ambiguous).
 
 ### Top action row
 
-No tooltips written — every control here is a self-labelled text button/link (Back, User Guide, Open Editor, Backup Database, Password Reset, Forgot Password?, Donate, Install App) whose action is already clear from its visible label.
+No tooltips written — every control here is a self-labelled text button/link (Back, User Guide, Open Editor, Backup Database, Password Reset, Forgot Password?, Install App) whose action is already clear from its visible label.
 
 ### Library Scan
 

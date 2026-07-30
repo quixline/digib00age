@@ -7923,3 +7923,34 @@ parent PID) before force-restarting it for testing in a future session.
 registry-based detection. `DECISIONS.md` — new entry superseding the
 "left as-is" note from the earlier 2026-07-30 session above. `CHANGELOG.md`
 — one line.
+
+---
+
+### 2026-07-30 — Admin nav consistency, Donate removed, GoodReads link fix
+
+Three small Admin-page fixes, same session:
+
+- **User Guide link now stays in the same window.** Admin's "User Guide"
+  button (`admin.html`) was the only one of the three top-row navigation
+  links (Admin, Editor, Guide) that used `target="_blank"` — Admin and
+  Editor already navigate in the same window, so Guide was the odd one
+  out. Dropped `target="_blank" rel="noopener"`; it now navigates in place
+  like the other two. Verified live: clicking it in a single-tab session
+  replaced that tab's URL with `/guide` rather than opening a second tab.
+- **Donate button + modal removed.** Tez's call — not enough usage to
+  justify the placeholder; may reintroduce later if that changes. Removed
+  the button and its "Coming soon." modal from `admin.html`, `initDonate()`
+  and its call site from `admin.js`, and the Donate list entry from
+  `guide-admin.html`. See `DECISIONS.md` for the rationale note.
+- **GoodReads link now points at search, not the homepage.** `editor_full.html`'s
+  "Search GoodReads" link changed from `https://www.goodreads.com` to
+  `https://www.goodreads.com/search?` — same plain external link, still
+  `target="_blank"`, just a more useful landing page. Verified live via
+  `find` on the rendered `/editor` page.
+
+**Docs:** `ADMIN_SPEC.md` §10 — marked removed, rationale noted.
+`EDITOR_SPEC.md` — GoodReads link URL corrected. `guide-admin.html` —
+Donate list entry dropped, User Guide description no longer claims a new
+tab. `guide-inventory.md`, `tooltip-data.md` — Donate/User-Guide-new-tab
+references updated to match. `DECISIONS.md` — new entry for the Donate
+removal. `CHANGELOG.md` — one line.

@@ -142,12 +142,11 @@ Reached via a Libraries sidebar entry whose `view_mode` is `folder` (Admin → A
 
 ### Top action row
 - Back — returns to the library.
-- User Guide — opens `/guide` in a new tab (currently a placeholder page; this is what Stage 3+ of the guide plan replaces).
+- User Guide — navigates to `/guide` in the same tab (was `target="_blank"` until 2026-07-30, made consistent with the Admin/Editor links alongside it).
 - Open Editor — navigates to `/editor` (Full Editor) in the same tab.
 - Backup Database — triggers an immediate manual DB backup to the configured backup folder.
 - Password Reset — opens a Change Password modal (current + new password); only functional once a password is already set.
 - Forgot Password? — always-available info modal explaining the manual/local-disk-only recovery procedure (stop server, clear `admin_password_hash`/`admin_password_salt` in `config.json`, restart).
-- Donate — opens a "Coming soon." modal.
 - Install App — hidden unless the browser fires `beforeinstallprompt` (site installable, not already installed); triggers the native PWA install prompt.
 
 ### Library Stats (always visible, top of page)
@@ -198,7 +197,7 @@ Category cards (Library Management, Library Appearance, Processing Tools, Editor
 - Choose Folder picker (Add/Remove Libraries, Home Strips) — breadcrumb + tree view, restricted to under a configured library root.
 - Shared Processing Tools file/folder picker — breadcrumb + tree, Home/Up-one-level/Select All/Deselect All, not restricted to the library root (can browse any drive), no recursion (loads only the chosen folder's direct contents).
 - Processing Tools result/summary modal — generic "X of Y" outcome + per-file error list, reused by Rename/Convert Archives/Convert Images.
-- Change Password modal, Password Recovery modal, Donate modal (all described above).
+- Change Password modal, Password Recovery modal (both described above).
 
 ---
 

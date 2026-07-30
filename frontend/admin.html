@@ -38,12 +38,11 @@
     <!-- ── Top action row ──────────────────────────────────────────────────── -->
     <div class="admin-action-row">
       <a href="/" class="btn-primary" id="adminBackLink">&#x2190; Back</a>
-      <a href="/guide" target="_blank" rel="noopener" class="btn-admin-action">User Guide</a>
+      <a href="/guide" class="btn-admin-action">User Guide</a>
       <a href="/editor" class="btn-admin-action">Open Editor</a>
       <button class="btn-admin-action" id="backupBtn">Backup Database</button>
       <button class="btn-admin-action" id="passwordResetBtn">Password Reset</button>
       <button class="btn-admin-action" id="passwordRecoveryBtn">Forgot Password?</button>
-      <button class="btn-admin-action" id="donateBtn">Donate</button>
       <button class="btn-admin-action" id="pwaInstallBtn" hidden>Install App</button>
     </div>
 
@@ -958,17 +957,6 @@
           physical/local access to the machine, which is the same trust boundary
           password protection itself relies on.</p>
       </div>
-    </div>
-  </div>
-
-  <!-- ── Donate modal (ADMIN_SPEC.md §10 — content TBC) ──────────────────── -->
-  <div id="donateOverlay" class="editor-overlay" hidden>
-    <div class="editor-modal">
-      <div class="editor-modal-header">
-        <h2 class="editor-modal-title">Donate</h2>
-        <button type="button" class="editor-close-btn" id="donateCloseBtn" aria-label="Close">&times;</button>
-      </div>
-      <p class="admin-card-hint" style="margin: 0 20px 20px;">Coming soon.</p>
     </div>
   </div>
 

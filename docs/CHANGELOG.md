@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-30** — Admin page: "User Guide" link now stays in the same
+  window (was the only nav link using `target="_blank"`); Donate button +
+  placeholder modal removed (Tez's call, may reintroduce); GoodReads link
+  now points at `/search?` instead of the homepage. → `progress.md` "Admin
+  nav consistency, Donate removed, GoodReads link fix"
 - **2026-07-30** — Tray app now detects the real Windows default browser via
   the registry (was a hardcoded Edge→Chrome guess) for Library/Admin/Editor
   and the reader alike; fixes reader opening in Edge instead of Brave,

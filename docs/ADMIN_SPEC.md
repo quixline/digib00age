@@ -11,8 +11,8 @@
 > §1–§6 (core layout, stats, scan, library folders, pagination) were live from V1.
 > All Advanced Settings additions (§7: password protection, remote admin toggle,
 > scheduled backup, server port, clear database, clear reading progress),
-> Logs/Auto Scan (§8), and Donate (§10) are built and verified — see per-section
-> notes for details.
+> Logs/Auto Scan (§8) is built and verified — see per-section notes for details.
+> Donate (§10) was built and verified but removed 2026-07-30 — see §10.
 >
 > §6 backfilled 2026-06-27 with the Card Size control — built in v2.1 (2026-06-22)
 > but never written into this doc when it was created the following day.
@@ -772,12 +772,13 @@ No new dependency — `tkinter` is already used by the §9.1 folder picker.
 
 ---
 
-## 10. Donate *(built — V2.3 Item 9, 2026-06-24)*
+## 10. Donate *(removed — 2026-07-30, was built V2.3 Item 9, 2026-06-24)*
 
-A Donate button on the Admin page (top action row) opens a popup/modal window
-showing "Coming soon." — real content is still TBC and is a pure content edit to
-this same modal block when ready, no structural change needed. Frontend-only, no
-backend endpoint.
+Previously: a Donate button on the Admin page (top action row) opened a
+popup/modal window showing "Coming soon." — removed 2026-07-30, Tez's call,
+not enough usage of the placeholder to justify keeping it. May be
+reintroduced later if that changes — see `DECISIONS.md`. No backend
+endpoint existed, so nothing to remove server-side.
 
 ---
 

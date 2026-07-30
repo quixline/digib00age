@@ -174,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initServerPort();
   initBackupSettings();
   initDangerZone();
-  initDonate();
   initPasswordRecovery();
   initPWAInstall();
 });
@@ -665,19 +664,6 @@ function initPasswordRecovery() {
   });
   document.getElementById('pwRecoveryOverlay').addEventListener('click', (e) => {
     if (e.target.id === 'pwRecoveryOverlay') document.getElementById('pwRecoveryOverlay').hidden = true;
-  });
-}
-
-// ── Donate (ADMIN_SPEC.md §10 — placeholder shell, content TBC) ────────────
-function initDonate() {
-  document.getElementById('donateBtn').addEventListener('click', () => {
-    document.getElementById('donateOverlay').hidden = false;
-  });
-  document.getElementById('donateCloseBtn').addEventListener('click', () => {
-    document.getElementById('donateOverlay').hidden = true;
-  });
-  document.getElementById('donateOverlay').addEventListener('click', (e) => {
-    if (e.target.id === 'donateOverlay') document.getElementById('donateOverlay').hidden = true;
   });
 }
 
