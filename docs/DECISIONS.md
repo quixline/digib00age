@@ -4,6 +4,50 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### GoodReads extension: Genre matching is case-insensitive-only, and a `"world": "MAIN"` bridge replaces the inline-script one after a CSP block
+
+**Decided:** 2026-07-30 (same-day follow-up to the entry below).
+
+**Why:** Tez asked for two more scraped fields, Language and Genre. Genre needed
+two real decisions:
+- **Case-insensitive exact match only, no synonym table.** GoodReads' genre
+  vocabulary ("Science Fiction", "Graphic Novels", "Comics", "Adult") only
+  partially overlaps digib00age's fixed, admin-editable list
+  (`backend/editor/genres.json` — "Sci-Fi", "Superhero", etc.) — confirmed live
+  on real books (*Saga, Vol. 1*, *Locke & Key*). Tez explicitly chose the simpler
+  option over adding a hardcoded alias map (e.g. Science Fiction↔Sci-Fi):
+  nothing to maintain, and a non-match is just picked from the existing genre
+  dropdown by hand, same as today.
+- **Always paste the canonical `genres.json` casing, never GoodReads' own.**
+  `backend/editor/validation.py::validate_enforced_fields()` is case-*sensitive*
+  — a case-insensitive match that still forwarded GoodReads' own casing could
+  find "horror" as a match but then fail validation on save anyway. The
+  extension fetches `GET /api/editor/genres` fresh at paste time (not cached —
+  admin-editable) and maps every match to that exact list's casing.
+
+**What broke on first ship, and why:** the first build used the standard
+content-script-to-page bridge technique — inject an inline `<script>` element
+to call the page's `window.setGenres()` (needed because Genre is a chip UI
+backed by `editor_full.js`'s page-scoped `selectedGenres`/`setGenres()`, not a
+plain field; an isolated-world content script can't call the page's own
+`window.setGenres` directly). This worked in every test I ran via
+`claude-in-chrome` — which executes directly in the page's main world and so
+never exercises real content-script/CSP interaction — but Tez's actual browser
+reported a genuine CSP on `localhost:9424` (`script-src 'self'`, no
+`'unsafe-inline'`) that blocks exactly this kind of inline execution. Neither a
+`backend/` grep for `Content-Security-Policy` nor live `claude-in-chrome`
+testing surfaced this, since CSP only applies to real page-script-loading
+paths. **Fixed** by replacing the inline-script bridge with a second content
+script (`content/genre-bridge-main.js`) declared `"world": "MAIN"` in
+`manifest.json` — a real extension-provided file, so CSP doesn't apply — which
+listens for a `CustomEvent` (`gr-bridge-set-genres`) the isolated-world content
+script dispatches. DOM events cross the isolated/main-world boundary without
+executing any script CSP would flag. A second, unrelated bug found the same
+session: `chrome.storage.local` persists across an extension reload, so a
+scrape taken before this feature shipped silently produced a no-op paste (no
+`genresRaw` key, and the code returned with zero console output) — fixed by
+logging a specific warning for that case instead of failing silently.
+
 ### GoodReads extension: no `goodreads.com` host permission, `__NEXT_DATA__`-first scraping, full-overwrite-if-present
 
 **Decided:** 2026-07-30.

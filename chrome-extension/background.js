@@ -51,6 +51,12 @@ function scrapeGoodreadsPage() {
     const pubTime = book.details?.publicationTime;
     const year = pubTime ? String(new Date(pubTime).getUTCFullYear()) : '';
 
+    const language = book.details?.language?.name || '';
+
+    const genresRaw = (book.bookGenres || [])
+      .map((bg) => bg.genre?.name)
+      .filter(Boolean);
+
     const strippedKey = Object.keys(book).find(
       (k) => k.startsWith('description(') && k.includes('stripped')
     );
@@ -62,7 +68,7 @@ function scrapeGoodreadsPage() {
       throw new Error('all fields empty — __NEXT_DATA__ shape likely changed');
     }
 
-    return { title, writer, penciller, publisher, year, summary };
+    return { title, writer, penciller, publisher, year, language, genresRaw, summary };
   };
 
   const fromDom = () => {
@@ -93,7 +99,26 @@ function scrapeGoodreadsPage() {
 
     const title = document.querySelector('h1')?.textContent?.trim() || '';
 
-    return { title, writer, penciller, publisher: '', year, summary };
+    // Best-effort only — Language typically lives in a collapsed "Book details &
+    // editions" panel not present in the initial DOM, so this will often come up
+    // empty even when the __NEXT_DATA__ path would have found it.
+    let language = '';
+    for (const el of document.querySelectorAll('dt, span, div')) {
+      if (el.textContent?.trim() === 'Language' && el.nextElementSibling) {
+        language = el.nextElementSibling.textContent?.trim() || '';
+        if (language) break;
+      }
+    }
+
+    // Genre pills link to /genres/<slug> — a more durable selector than any
+    // specific CSS class, since it's tied to the link's actual destination.
+    const genresRaw = Array.from(new Set(
+      Array.from(document.querySelectorAll('a[href*="/genres/"]'))
+        .map((a) => a.textContent?.trim())
+        .filter(Boolean)
+    ));
+
+    return { title, writer, penciller, publisher: '', year, language, genresRaw, summary };
   };
 
   try {

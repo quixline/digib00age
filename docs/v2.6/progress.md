@@ -8095,3 +8095,83 @@ a public release copy by default). `DECISIONS.md` — new entry for the
 activeTab-only permission shape and the `__NEXT_DATA__`-first scraping
 strategy. `CHANGELOG.md` — one line. `docs/goodreads-extension-scope.md`
 — status line updated from "not yet in a build queue" to built.
+
+## Session — 2026-07-30 (continued) — GoodReads extension: added Language + Genre
+
+Tez asked for two more fields off the same GoodReads scrape: Language ("an
+easy grab") and Genre ("more complex" — GoodReads' genre tags don't
+reliably match digib00age's fixed, admin-editable genre list, and pasting
+an unrecognized one would reproduce the exact rejection
+`backend/editor/validation.py::validate_enforced_fields()` already
+enforces on save/Process All).
+
+**Resolved with Tez (AskUserQuestion) before building:** genre matching is
+**case-insensitive exact match only** (no synonym table — "Science
+Fiction" from GoodReads won't match "Sci-Fi", added by hand instead) and
+dropped genres are **console-logged only**, no on-page notice.
+
+**Confirmed by live inspection:** `book.details.language.name` (same
+`details` object Publisher/Year already use) and `book.bookGenres[].genre
+.name` (an array — tested live on *Saga, Vol. 1* and *Locke & Key*, both
+returning GoodReads' own broad shelving tags like "Graphic Novels",
+"Comics", "Science Fiction", confirming the mismatch problem is real, not
+hypothetical). `frontend/editor_full.html`'s `fe-language` is a plain
+`<input>` (trivial to paste), but Genre is a chip UI backed by a
+page-scoped `selectedGenres` array only mutable through
+`editor_full.js`'s `setGenres(list)` — the actual save-time source of
+truth, not just the visible chips.
+
+**Built:** `background.js`'s scraper now also returns `language` and
+unfiltered `genresRaw`. `content/editor-fill.js` fetches
+`GET /api/editor/genres` fresh at paste time (admin-editable, not
+cached), matches case-insensitively, and — critically — always pastes the
+**canonical `genres.json` casing**, never GoodReads' own casing, since
+validation is case-*sensitive*. A total non-match leaves the existing
+genre selection untouched, same "only overwrite what we have" rule as the
+other fields.
+
+**Two real bugs found and fixed during manual testing** (both invisible
+in my own pre-ship verification, since I was driving the code directly
+rather than through the actual installed extension):
+1. **Silent no-op on stale scrape data.** `chrome.storage.local` persists
+   across an extension reload — a scrape taken before the Genre feature
+   shipped has no `genresRaw` key, and the paste handler returned with
+   zero console output, indistinguishable from "nothing to report." Fixed
+   by logging a specific warning when `genresRaw` is missing/empty,
+   telling Tez to re-scrape.
+2. **CSP blocked the isolated-world → main-world bridge.** The original
+   approach for calling the page's real `setGenres()` (since an isolated-
+   world content script has its own `window` and can't call the page's
+   `window.setGenres` directly) was injecting an inline `<script>` tag —
+   the standard technique, and the one I verified working via
+   `claude-in-chrome` (which executes directly in the main world, so it
+   never hit this). Tez's actual browser reported a real CSP on
+   `localhost:9424` (`script-src 'self'`, no `'unsafe-inline'`) blocking
+   that inline execution outright — something neither my `backend/`
+   grep for `Content-Security-Policy` nor my live testing surfaced, since
+   CSP enforcement only applies to genuine page-script-loading paths, not
+   `claude-in-chrome`'s direct execution context. **Fixed** by replacing
+   the inline-script bridge with a second content script,
+   `content/genre-bridge-main.js`, declared with `"world": "MAIN"` in
+   `manifest.json` — a real extension-provided file (not inline), so CSP
+   doesn't apply to it. It listens for a `CustomEvent`
+   (`gr-bridge-set-genres`) that `editor-fill.js` dispatches from its
+   isolated world; DOM events cross that boundary without executing any
+   script CSP would flag.
+
+**Verified live:** the fetch/match/canonical-casing logic and the
+(pre-CSP-fix) bridge mechanics were proven correct via `claude-in-chrome`
+directly driving the real committed code against real GoodReads scrapes
+(*Saga, Vol. 1*, *Locke & Key*) on the live editor page — matched sets
+came back exactly as expected (e.g. Horror/Fantasy/Fiction/Mystery kept,
+Comics/Graphic Novels/Adult dropped), and the empty-match case left
+existing genre chips alone. The CSP failure and the stale-storage no-op
+were only caught once Tez ran the real installed extension end-to-end —
+after both fixes, Tez confirmed pasted genres (Horror, Fiction) and
+Language now land correctly.
+
+**Docs:** `EDITOR_SPEC.md` §9.4 — Language/Genre added to the field list.
+`DECISIONS.md` — new entry for the case-insensitive-exact-only matching
+rule and the CSP-safe MAIN-world bridge technique (superseding the
+inline-script approach the first `DECISIONS.md` entry described).
+`CHANGELOG.md` — one line.

@@ -712,8 +712,16 @@ misleading-results-summary UI bug caught during the low-confidence test pass).
   `chrome-extension/` and `docs/goodreads-extension-scope.md`. That extension
   injects its own "Paste from GR" button into this page via a content script and
   writes directly to `fe-writer`/`fe-penciller`/`fe-publisher`/`fe-year`/
-  `fe-summary` by id — nothing in `editor_full.js` itself changed to support that
-  half, since these are plain, listener-free form fields.
+  `fe-language`/`fe-summary` by id — nothing in `editor_full.js` itself changed
+  to support that half, since these are plain, listener-free form fields.
+  **Genre is the one exception** (added 2026-07-30): since it's a chip UI backed
+  by `editor_full.js`'s own `selectedGenres`/`setGenres()`, the extension fetches
+  the live `GET /api/editor/genres` list, matches GoodReads' genres against it
+  case-insensitively (dropping anything not on the list, console-logged, no UI
+  notice), and calls the real `setGenres()` via a `"world": "MAIN"` content
+  script + `CustomEvent` bridge (a plain inline-`<script>` injection was tried
+  first but is blocked by this origin's CSP) — so it actually updates
+  `selectedGenres`, not just the visible chips.
 - Operates on whichever file is currently focused/loaded into the form.
 - Blocked with a message if the form's Series field is empty — matches CT's own
   guard in `taggerwindow.py::query_online()` ("Need to enter a series name to
@@ -1021,3 +1029,4 @@ it reflects the populated working set instead of an empty one.
 | 2026-07-23 | **§9.6 — BUG-033 fix: "Best match" is no longer a raw pass-through of `search_for_series()`'s order.** `backend/ct_bridge.py`'s `search_series()` now computes its own best-match ranking (fuzzy title-similarity via `difflib.SequenceMatcher`, tiebroken by issue count) because the pinned CT dependency's own local search-result cache can replay a repeated search in an order that doesn't match ComicVine's original relevance ranking — confirmed by reproducing the cache's actual broken read order against a real search ("2000 AD" returning "Best of 2000 AD Monthly" first). | Tez reported the wrong-order symptom 2026-07-23 against `2000AD #763 (1991).cbz`; root cause traced and fixed same session. See `docs/archive/bugs-fixed-archive.md` BUG-033, `DECISIONS.md`, `docs/v2.6/progress.md`. |
 | 2026-07-30 | §9.4 — **"Search GoodReads" link now points at `goodreads.com/search?`** instead of the bare homepage. Same plain `target="_blank"` link, no field wiring, no behaviour change beyond the landing URL. | Tez's request 2026-07-30, same session as the Admin nav-consistency and Donate-removal fixes. See `docs/v2.6/progress.md`. |
 | 2026-07-30 | §9.4 — **"Search GoodReads" link now prefills with the Series field** on click (`wireGoodreadsLink()`), and a new **`chrome-extension/`** (personal Chrome extension, outside this repo's served app) scrapes GoodReads book pages and pastes Writer/Penciller/Publisher/Year/Summary into this form via an injected "Paste from GR" button. | Eng-review + build session 2026-07-30, from `docs/goodreads-extension-scope.md`. See `docs/v2.6/progress.md`, `docs/DECISIONS.md`. |
+| 2026-07-30 | §9.4 — extension now also pastes **Language** (plain field) and **Genre** (matched case-insensitively against the live `/api/editor/genres` list, canonical casing pasted, non-matches dropped and logged). Genre paste goes through a `"world": "MAIN"` content script + `CustomEvent` bridge to call the real `setGenres()`, after the original inline-`<script>` bridge turned out to be blocked by this origin's CSP. | Same-day follow-up, Tez's request. See `docs/v2.6/progress.md`, `docs/DECISIONS.md`. |
