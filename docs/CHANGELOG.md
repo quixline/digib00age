@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-30** — Full Editor in-app guide (`/guide/editor-full`) updated
+  for the GoodReads feature: prefilled-link behaviour corrected, new
+  "GoodReads Chrome extension" section added (install + usage). →
+  `v2.6/progress.md` "Full Editor guide updated for GoodReads feature +
+  extension"
 - **2026-07-30** — GoodReads data capture extension: added Language and
   Genre (case-insensitive matched against digib00age's live genre list,
   unrecognized ones dropped and logged). Fixed a CSP block on the

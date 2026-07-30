@@ -84,10 +84,12 @@
       </ul>
       <p>The header carries two extra controls not present elsewhere in digib00age:
       <strong>Search ComicVine</strong> (looks up the focused file's series/issue online
-      and can fill the form for you) and <strong>Search GoodReads</strong> (a plain
-      external link). The footer is a status bar showing the currently selected file's
-      name, its XML status, a running low-confidence count, and how many files are
-      currently queued.</p>
+      and can fill the form for you) and <strong>Search GoodReads</strong> (opens a
+      GoodReads search prefilled with the focused file's Series text). A separate,
+      optional <a href="#goodreads-extension">Chrome extension</a> can then scrape a
+      GoodReads book page and paste its data back into the form. The footer is a status
+      bar showing the currently selected file's name, its XML status, a running
+      low-confidence count, and how many files are currently queued.</p>
 
       <h2 id="full-editor-columns">The four columns in detail</h2>
 
@@ -222,9 +224,59 @@
         you've hand-edited a field you want to keep (a custom Notes entry, say), do that
         after confirming the ComicVine match, not before.</p>
       </div>
-      <p><strong>Search GoodReads</strong>, next to it in the header, is just a plain link
-      to goodreads.com — it opens in a new tab and isn't wired to any of the form's fields
-      or to ComicVine at all, it's there purely as a quick manual lookup shortcut.</p>
+      <p><strong>Search GoodReads</strong>, next to it in the header, opens goodreads.com
+      in a new tab with a search prefilled from the focused file's <strong>Series</strong>
+      text (if Series is empty, it opens a blank search instead). It's not wired to
+      ComicVine or to any other form field — you still pick the right result yourself.
+      Pairing this with the optional <a href="#goodreads-extension">GoodReads Chrome
+      extension</a> below turns the rest of the lookup into a one-click paste instead of
+      manual re-typing.</p>
+
+      <h2 id="goodreads-extension">GoodReads Chrome extension (optional)</h2>
+      <p>A small companion Chrome extension can scrape a GoodReads book page and paste
+      <strong>Writer, Penciller, Publisher, Year, Language, Genre, and Summary</strong>
+      straight into the focused file's form — no manual re-typing. It's a personal tool
+      that lives outside digib00age's own codebase (a <code>chrome-extension</code> folder
+      alongside the app), not something installed from the Chrome Web Store, and it's
+      hardcoded to talk to this one digib00age instance.</p>
+
+      <h3 id="goodreads-extension-install">Installing it</h3>
+      <ol>
+        <li>Open <strong>chrome://extensions</strong> in Chrome.</li>
+        <li>Turn on <strong>Developer mode</strong> (top right).</li>
+        <li>Click <strong>Load unpacked</strong> and select the <code>chrome-extension</code>
+        folder inside your digib00age install.</li>
+        <li>A new toolbar icon appears — that's the extension.</li>
+      </ol>
+
+      <h3 id="goodreads-extension-use">Using it</h3>
+      <ol>
+        <li>In the Full Editor, click <strong>Search GoodReads</strong> to open a search
+        prefilled with the focused file's Series text, and pick the right book.</li>
+        <li>On that GoodReads book page, click the extension's <strong>toolbar
+        icon</strong> — it scrapes the page in the background; nothing changes visibly on
+        the GoodReads tab itself.</li>
+        <li>Switch back to the Full Editor tab. A <strong>Paste from GR</strong> button
+        appears next to Search ComicVine/Search GoodReads, labelled with the scraped
+        book's title. Click it to fill the form.</li>
+      </ol>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>Genre is matched against your own current genre list (case-insensitive) —
+        anything GoodReads lists that doesn't match (e.g. "Science Fiction" when your list
+        has "Sci-Fi") is silently skipped rather than pasted as an invalid value; add it by
+        hand from the Genre dropdown if you want it. Every other field is a straightforward
+        overwrite, same "replace, not merge" behaviour as confirming a ComicVine match — if
+        you've already hand-edited something you want to keep, do it after pasting, not
+        before.</p>
+      </div>
+      <div class="guide-callout guide-callout-warning">
+        <span class="guide-callout-label">Warning</span>
+        <p>Each scrape is used once — pasting clears it, so a second click of <strong>Paste
+        from GR</strong> without a fresh scrape does nothing. If you switch which file is
+        focused between scraping and pasting, the paste still applies to whichever file is
+        focused when you click it, so scrape and paste in one continuous pass per file.</p>
+      </div>
 
       <h2 id="multi-xml-and-errors">When something needs your attention</h2>
       <p>Two modals surface only when something's actually gone sideways with a file or a

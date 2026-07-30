@@ -8175,3 +8175,43 @@ Language now land correctly.
 rule and the CSP-safe MAIN-world bridge technique (superseding the
 inline-script approach the first `DECISIONS.md` entry described).
 `CHANGELOG.md` — one line.
+
+## Session — 2026-07-30 (continued) — Full Editor guide updated for GoodReads feature + extension
+
+Tez asked for the in-app Full Editor guide (`frontend/guide-editor-full.html`,
+served at `/guide/editor-full`) to cover the now-prefilled GoodReads link and
+the new Chrome extension, since both had shipped without any user-facing
+documentation update — `docs/EDITOR_SPEC.md` is the dev-facing spec, this is
+the guide end users (i.e. Tez, day to day) actually read in-app.
+
+**Updated:** the "Layout at a glance" paragraph and the "Searching ComicVine"
+section's GoodReads paragraph both now describe the prefill behaviour instead
+of "just a plain link... not wired to any form field," and link down to a new
+section.
+
+**Added:** a new `<h2 id="goodreads-extension">GoodReads Chrome extension
+(optional)</h2>` section (after "Searching ComicVine," before "When something
+needs your attention") — what the extension does, install steps
+(`chrome://extensions` → Developer mode → Load unpacked → `chrome-extension`
+folder), and usage steps (Search GoodReads → scrape via toolbar icon → Paste
+from GR), plus two callouts matching the guide's existing style: a tip on
+Genre's case-insensitive matching/silent-skip behaviour, and a warning that a
+scrape is single-use and applies to whichever file is focused at paste time.
+
+**Verified live:** unregistered the editor's stale service-worker cache (same
+recurring gotcha as the link-prefill test earlier this session), reloaded
+`/guide/editor-full` via `claude-in-chrome`, confirmed the new section renders
+correctly with the existing `guide-callout`/`guide-callout-warning` styling
+(screenshot), confirmed the `#goodreads-extension` anchor and its two inbound
+links resolve, and confirmed no console errors on the page.
+
+**Note:** `frontend/` (including this guide page) is not excluded from the
+future public-repo copy the way `chrome-extension/` itself is (see
+`docs/PUBLIC_REPO_PLAN.md`) — this new section would ship in a public release
+describing a companion tool the public repo wouldn't actually include. Not
+addressed this session (Tez's ask was specifically to document it here); worth
+a caveat or removal pass whenever `PUBLIC_REPO_PLAN.md` is actually executed.
+
+**Docs:** `CHANGELOG.md` — one line. No spec-doc changes beyond the guide
+itself — `EDITOR_SPEC.md` already covers the underlying behaviour from the
+earlier sessions today.
