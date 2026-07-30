@@ -35,6 +35,7 @@ let searchOnlineOpen = false;   // focus trap — blocks card-swap/Process while
 let soSeriesResults = [];       // cached Step 1 results, so "Back to Series" doesn't re-fetch
 let soSelectedSeriesId = null;
 let soSelectedSeries = null;    // full series object of the highlighted row (set by previewSoSeries)
+let soSelectedIssueId = null;   // issue ID of the currently selected issue (set by previewSoIssue)
 let soSortKey = '';             // '' (relevance order, as returned by ComicVine) | name | start_year | count_of_issues | publisher
 let soSortDir = 'asc';
 
@@ -1012,6 +1013,7 @@ function wirePicker() {
 function openPicker() {
   pickerSelected.clear();
   document.getElementById('fePickerOverlay').hidden = false;
+  updatePickerButtonStates();
   loadPickerDirectory(pickerPath);
 }
 
@@ -1114,6 +1116,21 @@ function renderPickerTree(items) {
 function updatePickerSelectedCount() {
   const count = pickerSelected.size;
   document.getElementById('fePickerSelectedCount').textContent = `${count} item${count === 1 ? '' : 's'} selected`;
+  updatePickerButtonStates();
+}
+
+function updatePickerButtonStates() {
+  const fileBtn = document.getElementById('fePickerAddFilesBtn');
+  const folderBtn = document.getElementById('fePickerAddFolderBtn');
+
+  const hasFiles = Array.from(pickerSelected.values()).some(type => type === 'file');
+  const hasFolders = Array.from(pickerSelected.values()).some(type => type === 'folder');
+
+  fileBtn.disabled = !hasFiles;
+  fileBtn.classList.toggle('is-ready', hasFiles);
+
+  folderBtn.disabled = !hasFolders;
+  folderBtn.classList.toggle('is-ready', hasFolders);
 }
 
 function pickerSelectAll() {
@@ -1275,6 +1292,9 @@ function wireSearchOnlineModal() {
   document.getElementById('feSoCancelBtn').onclick = closeSearchOnlineModal;
   document.getElementById('feSoIssuesBtn').onclick = soIssuesBtnClick;
   document.getElementById('feSoOkBtn').onclick = soOkBtnClick;
+  document.getElementById('feSoIssueOkBtn').onclick = () => {
+    if (soSelectedIssueId) confirmSoIssue(soSelectedIssueId);
+  };
 }
 
 function escapeHtml(s) {
@@ -1427,6 +1447,7 @@ function renderSoIssueTable(issues) {
 }
 
 function previewSoIssue(issue, row) {
+  soSelectedIssueId = issue.issue_id;
   document.querySelectorAll('#feSoIssueTbody tr').forEach((r) => r.classList.remove('selected'));
   if (row) row.classList.add('selected');
   document.getElementById('feSoIssueCover').src = issue.cover_url || '';

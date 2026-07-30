@@ -319,8 +319,8 @@
       </div>
       <div class="fe-picker-tree" id="fePickerTree"></div>
       <div class="editor-actions">
-        <button type="button" class="btn-admin-action" id="fePickerAddFilesBtn">Add Selected Files</button>
-        <button type="button" class="btn-primary" id="fePickerAddFolderBtn">Add Selected Folder</button>
+        <button type="button" class="btn-admin-action" id="fePickerAddFilesBtn" disabled>Add Selected Files</button>
+        <button type="button" class="btn-admin-action" id="fePickerAddFolderBtn" disabled>Add Selected Folder</button>
       </div>
     </div>
   </div>
@@ -402,6 +402,9 @@
           <div class="fe-so-preview">
             <img id="feSoIssueCover" class="fe-so-cover-img" alt="">
             <div class="fe-so-description" id="feSoIssueDescription"></div>
+            <div class="editor-actions">
+              <button type="button" class="btn-primary" id="feSoIssueOkBtn" data-tooltip="Apply this issue's data and close">Ok</button>
+            </div>
           </div>
         </div>
       </div>
