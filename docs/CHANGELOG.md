@@ -13,6 +13,12 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-30** — GoodReads data capture: editor's "Search GoodReads" link now
+  prefills with the Series field, and a new personal Chrome extension
+  (`chrome-extension/`, outside the served app) scrapes a GoodReads book page
+  and pastes Writer/Penciller/Publisher/Year/Summary into the editor via an
+  injected "Paste from GR" button. → `v2.6/progress.md` "GoodReads data capture
+  extension built"
 - **2026-07-30** — Home page: Continue Reading strip no longer force-pinned
   to the top — it's now a normal reorderable default like the other three,
   so admin reorder changes always show up on the home page. Conditional

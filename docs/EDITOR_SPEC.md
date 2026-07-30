@@ -699,10 +699,21 @@ misleading-results-summary UI bug caught during the low-confidence test pass).
   exact `340px / 1fr / 368px` grid so the button sits centred over the XML Editor
   column at any window width.
 - **New 2026-07-09: "Search GoodReads"** sits alongside it in the same row (same
-  `.fe-toolbar-group`) — a plain `target="_blank"` link to
-  `goodreads.com/search?` (updated 2026-07-30, was the bare homepage), not
-  wired to any form field or ComicVine plumbing below; purely an external lookup
-  shortcut, Tez's addition alongside the rename.
+  `.fe-toolbar-group`) — a plain `target="_blank"` link, purely an external lookup
+  shortcut, Tez's addition alongside the rename. **Updated 2026-07-30:** the link
+  (`id="fe-search-goodreads-link"`) now prefills GoodReads' search box with the
+  form's current Series text on click (`goodreads.com/search?q=<Series,
+  URL-encoded>`; falls back to the bare `goodreads.com/search?` if Series is
+  empty) — wired via `wireGoodreadsLink()` in `editor_full.js`, no backend call,
+  no ComicVine plumbing involved. This is the first half of the GoodReads data
+  capture flow; the second half (scraping a GoodReads book page and pasting
+  Writer/Penciller/Publisher/Year/Summary back into this form) is a separate
+  Chrome extension living entirely outside this repo's served frontend — see
+  `chrome-extension/` and `docs/goodreads-extension-scope.md`. That extension
+  injects its own "Paste from GR" button into this page via a content script and
+  writes directly to `fe-writer`/`fe-penciller`/`fe-publisher`/`fe-year`/
+  `fe-summary` by id — nothing in `editor_full.js` itself changed to support that
+  half, since these are plain, listener-free form fields.
 - Operates on whichever file is currently focused/loaded into the form.
 - Blocked with a message if the form's Series field is empty — matches CT's own
   guard in `taggerwindow.py::query_online()` ("Need to enter a series name to
@@ -1009,3 +1020,4 @@ it reflects the populated working set instead of an empty one.
 | 2026-07-19 | **§9.6/§9.7 — Select Series modal gained a Sort control and Cancel/Issues/Ok buttons**, built and manually verified same day. Sort defaults to relevance order ("Best match") until manually changed — an initial build mistakenly auto-applied A-Z sort on every fresh search, caught by Tez before docs/commit and corrected same session. Ok reuses the existing confirm path (§9.7) with the first issue in the list, no new backend endpoint. Issues reintroduces CT's native "Show Issues" button, previously listed as dropped. | Tez's request 2026-07-19, built and iterated same session (Cancel button + left-alignment added in a follow-up round). See `docs/v2.6/progress.md`. |
 | 2026-07-23 | **§9.6 — BUG-033 fix: "Best match" is no longer a raw pass-through of `search_for_series()`'s order.** `backend/ct_bridge.py`'s `search_series()` now computes its own best-match ranking (fuzzy title-similarity via `difflib.SequenceMatcher`, tiebroken by issue count) because the pinned CT dependency's own local search-result cache can replay a repeated search in an order that doesn't match ComicVine's original relevance ranking — confirmed by reproducing the cache's actual broken read order against a real search ("2000 AD" returning "Best of 2000 AD Monthly" first). | Tez reported the wrong-order symptom 2026-07-23 against `2000AD #763 (1991).cbz`; root cause traced and fixed same session. See `docs/archive/bugs-fixed-archive.md` BUG-033, `DECISIONS.md`, `docs/v2.6/progress.md`. |
 | 2026-07-30 | §9.4 — **"Search GoodReads" link now points at `goodreads.com/search?`** instead of the bare homepage. Same plain `target="_blank"` link, no field wiring, no behaviour change beyond the landing URL. | Tez's request 2026-07-30, same session as the Admin nav-consistency and Donate-removal fixes. See `docs/v2.6/progress.md`. |
+| 2026-07-30 | §9.4 — **"Search GoodReads" link now prefills with the Series field** on click (`wireGoodreadsLink()`), and a new **`chrome-extension/`** (personal Chrome extension, outside this repo's served app) scrapes GoodReads book pages and pastes Writer/Penciller/Publisher/Year/Summary into this form via an injected "Paste from GR" button. | Eng-review + build session 2026-07-30, from `docs/goodreads-extension-scope.md`. See `docs/v2.6/progress.md`, `docs/DECISIONS.md`. |

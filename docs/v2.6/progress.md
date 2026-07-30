@@ -8004,3 +8004,94 @@ Continue-Reading-specific logic anywhere, so seeding is unaffected.
 
 **Docs:** `HOME_STRIPS_SPEC.md` §1/§2/§4.4/§5.1/Change Log. `DECISIONS.md`
 — new entry. `CHANGELOG.md` — one line.
+
+## Session — 2026-07-30 — GoodReads data capture extension built
+
+Starting point: `docs/goodreads-extension-scope.md` (a Cowork discovery
+session earlier the same day) scoped a fix for the manual GoodReads
+lookup → re-typing workflow when filling Writer/Artist/Publisher/Year/
+Summary in the Full Editor. Not yet in a build queue — this session ran
+`/eng-review` against the scope doc, resolved its four open questions
+with Tez, wrote an implementation plan, and built it in the same session
+once approved.
+
+**Resolved with Tez (AskUserQuestion) before building:**
+- Handoff timing: explicit **"Paste from GR" button**, no auto-fill on
+  tab focus.
+- Field collision: **full overwrite**, matching the existing "Search
+  ComicVine" convention (`EDITOR_SPEC.md` §9.7 — not a smart merge).
+- Editor target URL for the extension's `host_permissions`:
+  `http://localhost:9424/editor` — confirmed via `config.json`
+  (`reader_port: 9424`) and `backend/main.py`'s `/editor` route.
+  `editor_port: 8001` in `config.json` is legacy/unread since v2.3, not
+  the real route.
+
+**DOM selector strategy** (the scope doc's fourth open question) —
+resolved by live inspection rather than guessing: opened real GoodReads
+book pages via `claude-in-chrome` and inspected `__NEXT_DATA__`'s Apollo
+cache directly. Confirmed GoodReads' Next.js app exposes a clean,
+structured `Book` entity (found via `ROOT_QUERY`'s
+`getBookByLegacyId(...)` key) with `primaryContributorEdge` (Writer),
+`secondaryContributorEdges` (Illustrator — tested live against *Saga,
+Vol. 1*, which correctly split Brian K. Vaughan/Writer from Fiona
+Staples/Illustrator), `details.publisher`, `details.publicationTime`
+(epoch ms), and a pre-stripped plain-text
+`description({"stripped":true})` field. This is what the scraper parses
+first; a DOM-text fallback (`.ContributorLink`, `.FeaturedDetails`,
+`[data-testid="description"]`) exists for if GoodReads' JSON shape ever
+changes, logging `console.warn` when it triggers so a break is visible
+rather than silent (the scope doc's stated kill signal is "breaks more
+than it's used").
+
+**Built:**
+- `frontend/editor_full.html` / `frontend/js/editor_full.js` —
+  `#fe-search-goodreads-link` now gets its `href` rewritten on click to
+  `goodreads.com/search?q=<Series, URL-encoded>` via `wireGoodreadsLink()`
+  (falls back to the bare search page if Series is empty). Plain link,
+  no backend call.
+- `chrome-extension/` (new, git-tracked, outside the served app) — a
+  Manifest V3 extension: `manifest.json` (`activeTab`/`scripting`/
+  `storage` permissions, `host_permissions` scoped to
+  `localhost:9424` only — **no** `goodreads.com` host permission at all,
+  since the scrape runs via `chrome.scripting.executeScript` function
+  injection on the active tab at the moment the toolbar icon is clicked,
+  the narrowest MV3 permission shape available), `background.js` (the
+  scraper + `chrome.storage.local` handoff), `content/editor-fill.js`
+  (persistent content script on `/editor*` — injects the "Paste from GR"
+  button next to the existing GoodReads/ComicVine buttons, mirrors
+  `editor_full.js`'s `setField(id, value)` pattern for `fe-writer`/
+  `fe-penciller`/`fe-publisher`/`fe-year`/`fe-summary`, clears storage
+  after a successful paste so a stale scrape can't get pasted twice),
+  placeholder icons.
+- Full-overwrite applies only to fields the scrape actually produced a
+  value for — a field the scraper found nothing for (e.g. no publisher
+  listed) is left as-is rather than blanked, so a partial scrape can't
+  wipe out a hand-typed value in an unrelated field.
+
+**Verified live:**
+- Confirmed the editor's service worker (`sw.js`) was serving a stale
+  cached copy of `editor_full.js` after the edit — unregistered it via
+  `claude-in-chrome` and reloaded before the link-prefill test would
+  show updated behaviour (recurring gotcha, see `meta` notes on hard-
+  reloading before declaring JS broken).
+- Live-tested the link prefill: set Series to `"Six of Crows & Friends"`,
+  clicked the link, confirmed `href` became
+  `goodreads.com/search?q=Six%20of%20Crows%20%26%20Friends` before
+  navigation.
+- Tez loaded the extension unpacked (`chrome://extensions` → Developer
+  mode → Load unpacked — a native folder-picker dialog, not something
+  `claude-in-chrome` can drive) and ran the full manual test himself:
+  scraped a real GoodReads book page, confirmed the "Paste from GR"
+  button appeared in the editor and correctly overwrote all five fields,
+  confirmed pre-filling a field by hand still got overwritten, confirmed
+  clicking Paste twice in a row without a new scrape was a no-op.
+  Reported back: "works great."
+
+**Docs:** `EDITOR_SPEC.md` §9.4 corrected (link is no longer "not wired
+to any form field"; extension existence noted) + Change Log row added.
+`PUBLIC_REPO_PLAN.md` — added `chrome-extension/` to the exclusion list
+(it's git-tracked but personal/single-instance, would otherwise ship in
+a public release copy by default). `DECISIONS.md` — new entry for the
+activeTab-only permission shape and the `__NEXT_DATA__`-first scraping
+strategy. `CHANGELOG.md` — one line. `docs/goodreads-extension-scope.md`
+— status line updated from "not yet in a build queue" to built.

@@ -4,6 +4,45 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### GoodReads extension: no `goodreads.com` host permission, `__NEXT_DATA__`-first scraping, full-overwrite-if-present
+
+**Decided:** 2026-07-30.
+
+**Why:** The scope doc (`docs/goodreads-extension-scope.md`) flagged four open
+questions for eng review: narrowest manifest permission set, DOM selector
+durability, handoff timing, and field-collision behaviour. Resolved as follows,
+each for a specific reason rather than by default:
+- **No persistent content script or `host_permissions` entry for
+  `goodreads.com` at all.** The scrape only needs to run once, at the moment
+  the toolbar icon is clicked — `activeTab` + `chrome.scripting.executeScript`
+  (function-injection form) grants that single moment of access without ever
+  declaring a standing permission over every GoodReads page load. This is
+  strictly narrower than the alternative (a registered content script matching
+  `goodreads.com/*`), which was the actual open question.
+- **`__NEXT_DATA__` (GoodReads' Next.js/Apollo hydration data) parsed before
+  any DOM selector is tried**, not the other way around. Verified live (via
+  `claude-in-chrome`, opening real book pages) that this JSON blob is the
+  page's actual data source — `Book.primaryContributorEdge` /
+  `secondaryContributorEdges` cleanly separate Writer from Illustrator on a
+  real graphic novel (*Saga, Vol. 1*), which a generic "author byline" CSS
+  selector would not reliably do. Raw DOM scraping is kept only as a fallback
+  (with a `console.warn` when it triggers), since it's what the scope doc's
+  kill signal ("breaks more than it's used") is actually worried about.
+- **Full overwrite, but only for fields the scrape actually produced a value
+  for** — not a blanket overwrite of all five mapped fields regardless. Chosen
+  over both plain full-overwrite (would blank a hand-typed field if GoodReads
+  happens to be missing that one data point, e.g. no publisher listed) and
+  over skip-if-populated (would break consistency with the existing "Search
+  ComicVine" convention, `EDITOR_SPEC.md` §9.7, which Tez confirmed should
+  stay consistent). This is the narrow middle case neither of the scope doc's
+  two named options was actually asking for.
+- **`chrome-extension/` stays a git-tracked folder inside this repo**, not a
+  separate untracked location — but is now explicitly excluded in
+  `PUBLIC_REPO_PLAN.md`'s copy list, since it's a personal, single-instance
+  tool (hardcoded `localhost:9424` target) that would otherwise ship by
+  default in a public release copy (which bases itself on `git ls-files`
+  minus an explicit exclusion list).
+
 ### Continue Reading strip: removed the render-time pin-to-top; now a normal reorderable default
 
 **Decided:** 2026-07-30.

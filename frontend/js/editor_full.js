@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   wireMultiXmlModal();
   wireProcessErrorModal();
   wireSearchOnlineModal();
+  wireGoodreadsLink();
 
   await refreshFileList();
   await refreshQueueList();
@@ -1271,6 +1272,20 @@ async function resolveMultiXml(keepFilename) {
   const entry = loadedFiles.find((f) => f.id === multiXmlFileId);
   if (entry) entry.xml_files = ['ComicInfo.xml'];
   renderFileTree();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  SEARCH GOODREADS — plain external link, prefilled with the Series field
+// ══════════════════════════════════════════════════════════════════════════════
+
+function wireGoodreadsLink() {
+  const link = document.getElementById('fe-search-goodreads-link');
+  link.addEventListener('click', (event) => {
+    const series = document.getElementById('fe-series').value.trim();
+    event.currentTarget.href = series
+      ? `https://www.goodreads.com/search?q=${encodeURIComponent(series)}`
+      : 'https://www.goodreads.com/search?';
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
