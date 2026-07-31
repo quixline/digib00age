@@ -11,25 +11,6 @@ one).
 
 ## OPEN
 
-**BUG-034 (2026-07-31) — Reading Queue fieldview strips can't drill into a
-scoped series detail page; falls back to the whole series.**
-Found while adding Reading Queue as a Home Page Strips field option (see
-`v2.6/progress.md` "Session — 2026-07-31 (continued)"). `GET /series/{id}`
-(`backend/routers/library.py` ~line 479) and its caller `initSeries()`
-(`frontend/js/app.js` ~line 2298) both gate credit-scoped series filtering on
-`field && value` — i.e. `value` must be truthy, not just present. A Reading
-Queue strip's fieldview link always carries an empty `value` (it's a
-valueless field — `Issue.queued_for_reading` is the whole filter), so
-clicking from a Reading Queue "View All" grid into an individual series'
-detail page silently drops the scoping and shows the entire series instead
-of just the queued issue(s). No error, just a less-scoped result — same
-degrade-gracefully behavior any other field with an empty value would get
-today; this isn't new breakage, just newly reachable now that a real
-valueless field exists. Fix would touch `library.py`'s `GET /series/{id}`
-and `initSeries()`'s query-string builder to key off `field` presence rather
-than `value` truthiness — not done as part of the Reading Queue change since
-it's a pre-existing pattern gap, not something that change introduced.
-
 **BUG-033 (2026-07-29) — Reading a page/cover while an editor rebuild is in
 flight on the same issue can 500, or silently truncate the response.**
 Found by the new `stress-test` skill's first baseline pass (`STRESS_TEST.md`

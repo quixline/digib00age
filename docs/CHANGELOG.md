@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-31** — Fixed BUG-034: a Reading Queue card for a partially-queued
+  series now links straight to the queued issue instead of falling back to
+  the whole series page; a fully-queued series still links to the series
+  page. → `v2.6/progress.md` "Session — 2026-07-31 (continued) — BUG-034
+  fixed: Reading Queue cards now route by queue completeness"
 - **2026-07-31** — Added "Reading Queue" as a 10th, valueless field option to
   the Home Page Strips admin dropdown, matching `Issue.queued_for_reading`.
   → `v2.6/progress.md` "Session — 2026-07-31 (continued) — Add Reading Queue

@@ -7,6 +7,64 @@ Append-only; entries kept exactly as they were in `BUGS.md` at the time of move.
 
 ---
 
+### BUG-034 — Reading Queue fieldview strips can't drill into a scoped series detail page; falls back to the whole series
+
+**Found:** 2026-07-31, while adding Reading Queue as a Home Page Strips field
+option (see `v2.6/progress.md` "Session — 2026-07-31 (continued)").
+
+**Closed:** 2026-07-31, same day.
+
+**Where:** `backend/routers/library.py` — `GET /library`'s `get_library()`
+(the endpoint behind both the Reading Queue custom tab and the
+`field=reading_queue` fieldview "View All" link) and `frontend/js/app.js`'s
+`buildCoverCard()`.
+
+**What happened:** `GET /library` groups by series before returning results.
+For a reading-queue-scoped request, issues were filtered down to only the
+queued ones *before* that groupby, so a series with just 1 of its 20 issues
+queued still surfaced as one aggregate "series" card (not format `Singles`),
+which `buildCoverCard()` linked to `/series/{id}` like any other series card.
+Clicking it landed on the *whole* series, not just the queued issue(s) — no
+error, just a silently less-scoped result.
+
+**Root cause:** the original write-up (logged same day this bug was found)
+diagnosed this as `GET /series/{id}`/`initSeries()` gating credit-scoped
+filtering on `value` being truthy (`field && value`) rather than `field`
+merely being present — since a Reading Queue link always carries an empty
+`value` (it's a valueless field), that gate silently dropped the scoping.
+That diagnosis was accurate but the fix it proposed (key off `field`
+presence instead) was superseded before being built — see next.
+
+**Fix (as actually built, narrower/better than the original proposal):**
+route by whether the *whole* series is queued, not by trying to make the
+series page itself scoping-aware:
+1. A series with only some issue(s) queued (not the complete series) now
+   routes straight to the issue, bypassing the series page entirely — the
+   series page always shows the whole series regardless of query params, so
+   a "scoped" series page destination doesn't actually exist to send anyone
+   to.
+2. A series that's queued in full still routes to the series page, same as
+   before — no scoping needed there since queued and complete are the same
+   set of issues.
+
+`get_library()` now snapshots each series' true total issue count before
+the queued-only filter runs, and — for the Reading Queue tab and
+`field=reading_queue` fieldview calls only — emits one row per issue
+(`link_as_issue: true`) instead of one aggregate row whenever a series'
+queued count is less than its true total. `buildCoverCard()` treats
+`link_as_issue` exactly like a Singles card for href/select-kind/progress
+math, with its own issue-number display (`#N`) in place of a page count.
+The `GET /series/{id}`/`initSeries()` `field`/`value` gate from the original
+diagnosis was left untouched — moot now, since a Reading Queue card is never
+routed through a partially-scoped series page in the first place.
+
+**Verified:** backend logic checked read-only against the real dev DB
+(in-process `TestClient`, no writes) before Tez's manual pass; manually
+tested and signed off by Tez same session (server restarted to pick up the
+backend change — `start_server.py` runs `reload=False`).
+
+---
+
 ### BUG-032 — HTML/CSS page routes send no `Cache-Control` header; browser can silently serve a stale page on normal navigation
 
 **Found:** 2026-07-20, during manual testing of the CSS theme-token refactor

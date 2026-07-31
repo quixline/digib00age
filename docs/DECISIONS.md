@@ -4,6 +4,33 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### BUG-034 fix: a partially-queued series routes straight to the issue, not through a "scoped" series page
+
+**Decided:** 2026-07-31.
+
+**Why:** BUG-034's own write-up (logged earlier the same day) proposed
+fixing `GET /series/{id}`/`initSeries()`'s `field && value` gate so a
+Reading-Queue-scoped series page would list only the queued issues. Tez's
+actual intent, given at the start of the fix session, was different and
+simpler: a series that's only partially queued should skip the series page
+entirely and go straight to the queued issue; only a *fully*-queued series
+still routes to the series page. This is the better fix because the series
+page has no real "scoped" mode to land on in the first place — it always
+renders the whole series regardless of query params, so making it
+*accept* a field/value query string wouldn't have actually produced a
+scoped view without separately teaching the series page to filter its own
+issue list, more work for a destination Tez didn't actually want reached in
+the partial case. Once the routing decision is "partial → issue,
+complete → series," the original `field`/`value` truthiness gate is moot —
+a Reading Queue card is never sent through a series-page URL with query
+params anymore.
+
+**How to apply:** see `archive/bugs-fixed-archive.md` BUG-034 for the full
+before/after. If a similar "drill into a filtered aggregate" bug turns up
+elsewhere, check first whether the destination page can *actually* honor
+the requested scope before assuming the fix is "pass the filter through" —
+sometimes routing around the aggregate page entirely is the real fix.
+
 ### GoodReads extension: Genre matching is case-insensitive-only, and a `"world": "MAIN"` bridge replaces the inline-script one after a CSP block
 
 **Decided:** 2026-07-30 (same-day follow-up to the entry below).

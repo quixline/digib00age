@@ -175,6 +175,19 @@ def get_library(
             tab_folder = tab.folder_path
 
     all_issues = query.all()
+
+    # BUG-034: reading-queue views (the Reading Queue custom tab and the
+    # "field=reading_queue" fieldview "View All" link) need each series' TRUE
+    # total issue count — independent of the queued-only filtering below — to
+    # tell a fully-queued series apart from one where only some issues are
+    # queued. Snapshotted here, before that filtering narrows all_issues down
+    # to just the queued ones.
+    reading_queue_scoped = tab_is_reading_queue or field == "reading_queue"
+    series_totals: dict[str, int] = {}
+    if reading_queue_scoped:
+        for i in all_issues:
+            series_totals[i.series] = series_totals.get(i.series, 0) + 1
+
     if tab_is_favorites:
         # CUSTOM_TABS_SPEC.md §10.3 — library-wide, filtered by Issue.favorites
         # before the per-series groupby (same principle as BUG-010's fix), so
@@ -222,6 +235,51 @@ def get_library(
 
     result = []
     for series_name, issues in sorted(series_map.items(), key=lambda x: x[0].lstrip("'\"").lower()):
+        # BUG-034: a partially-queued series (some but not all of its issues
+        # queued) has no scoped series-page destination to send the user to —
+        # the series page always shows the whole series — so each queued
+        # issue gets its own direct-to-issue card instead of one misleading
+        # aggregate card that would silently fall back to the full series.
+        # A fully-queued series (every issue in it queued) still gets the
+        # normal aggregate series card below, since in that case the series
+        # page and the queue show the same issues anyway.
+        if reading_queue_scoped and len(issues) < series_totals.get(series_name, len(issues)):
+            issues_sorted = sorted(
+                issues,
+                key=lambda i: (float(i.number) if i.number and _is_numeric(i.number) else 9999, i.id)
+            )
+            for issue in issues_sorted:
+                status = read_map.get(issue.id, "unread")
+                result.append({
+                    "series": series_name,
+                    "number": issue.number,
+                    "issue_count": 1,
+                    "unread_count": 1 if status == "unread" else 0,
+                    "read_count": 1 if status == "read" else 0,
+                    "reading_count": 1 if status == "reading" else 0,
+                    "cover_issue_id": issue.id,
+                    "cover_path": cover_url(issue),
+                    "publisher": issue.publisher,
+                    "year": issue.year,
+                    "format_group": issue.format_group,
+                    "page_count": issue.page_count,
+                    "current_page": page_map.get(issue.id, 0),
+                    "summary": issue.summary,
+                    "genres": sorted(g.genre_name for g in issue.genres),
+                    "writers": [issue.writer] if issue.writer else [],
+                    "artists": [issue.penciller] if issue.penciller else [],
+                    "formats": [issue.format] if issue.format else [],
+                    "age_ratings": [issue.age_rating] if issue.age_rating else [],
+                    "has_bw": issue.black_and_white,
+                    "series_anchor_id": issue.id,
+                    "favorites": issue.favorites,
+                    "flagged_for_review": issue.flagged_for_review,
+                    "queued_for_reading": issue.queued_for_reading,
+                    "personal_rating": issue.personal_rating,
+                    "link_as_issue": True,
+                })
+            continue
+
         cover_issue = sorted(
             issues,
             key=lambda i: (float(i.number) if i.number and _is_numeric(i.number) else 9999, i.id)
@@ -272,6 +330,7 @@ def get_library(
             "flagged_for_review": any(i.flagged_for_review for i in issues),
             "queued_for_reading": any(i.queued_for_reading for i in issues),
             "personal_rating": cover_issue.personal_rating,
+            "link_as_issue": False,
         })
 
     return result

@@ -8336,3 +8336,57 @@ fixes earlier today (the CSP block, the stale-storage no-op).
   Filter link and the URL carries no `value=` param, checked console for
   errors (none), then deleted the test strip and confirmed the strip list
   returned to just the 4 defaults.
+
+## Session — 2026-07-31 (continued) — BUG-034 fixed: Reading Queue cards now route by queue completeness
+
+- Fixed BUG-034 (logged earlier this same day, see previous session entry),
+  but with a different resolution than its own write-up proposed. The
+  original note suggested fixing `GET /series/{id}`/`initSeries()`'s
+  `field`-presence-vs-`value`-truthiness gate so a partially-queued series
+  would land on a *scoped* series page (queued issues only). Tez's actual
+  intent, stated at the start of this session, was narrower and better:
+  route by whether the *whole* series is queued, not partially —
+  1. a series with only some issue(s) queued: clicking it in a Reading
+     Queue view goes straight to the issue, bypassing the series page
+     entirely (the series page always shows the whole series regardless of
+     query params, so a "scoped" series page was never really the fix);
+  2. a series that's queued in full: clicking it still goes to the series
+     page, same as before.
+  The `GET /series/{id}` field-scoping gate itself was left untouched —
+  moot now, since a Reading Queue card is never sent through a partially
+  scoped series page anymore.
+- Backend (`backend/routers/library.py`, `get_library()`): for the two
+  reading-queue-scoped call shapes (the Reading Queue custom tab via
+  `tab_id`, and the `field=reading_queue` fieldview "View All" link), each
+  series' true total issue count is snapshotted from `all_issues` right
+  after the base query runs, before the queued-only filter narrows it down.
+  In the per-series result loop, a series whose queued-issue count is less
+  than its true total now emits one row per queued issue (sorted the same
+  way `cover_issue` selection already sorts, `number` then `id`) instead of
+  one aggregate row — each carries a new `link_as_issue: true` flag, real
+  per-issue fields (own genres/writers/format/etc., not series-aggregated),
+  and `issue_count: 1`. A fully-queued series keeps the existing single
+  aggregate row, now explicit with `link_as_issue: false`. Every other
+  `GET /library` call shape (plain browse, Series/Singles group, other
+  field filters, folder/tab/search scoping) is unaffected — `link_as_issue`
+  is simply `false` on every row when `reading_queue_scoped` doesn't apply.
+- Frontend (`frontend/js/app.js`, `buildCoverCard()`): a new `linksToIssue`
+  flag (`isSingle || s.link_as_issue`) replaces the old bare `isSingle`
+  check for href, multi-select kind, and progress-bar math — a
+  `link_as_issue` card behaves exactly like a Singles card for navigation/
+  selection purposes. `countRow` gained a `link_as_issue` branch showing
+  `#<issue number>` (matching how the Home strip's per-issue cards already
+  label a series issue), distinct from a genuine Singles card's page count
+  and a real aggregate card's issue count.
+- Verified backend logic against the real dev DB read-only (in-process
+  `TestClient`, no writes, Tez's running server at :9424 untouched) before
+  asking for a manual pass: confirmed `Aliens: Xenogenesis` (4/4 issues
+  queued) still aggregates, `Silent Hill Downpour: Anne's Story` (1 of
+  several queued) now returns `link_as_issue: true`, and plain
+  `GET /library` calls (no reading-queue scoping) always carry
+  `link_as_issue: false`.
+- **Manually tested and signed off by Tez** (server restarted to pick up
+  the backend change, since `start_server.py` runs with `reload=False`):
+  clicking a series in the Reading Queue view that's only partially queued
+  now lands directly on the issue; clicking a fully-queued series still
+  lands on the series page.

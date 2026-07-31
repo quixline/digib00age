@@ -1786,6 +1786,13 @@ function seriesReadState(s) {
 
 function buildCoverCard(s) {
   const isSingle = s.format_group === 'Singles';
+  // BUG-034: a Reading Queue card for a series that's only partially queued
+  // (backend/routers/library.py's get_library() sets link_as_issue when a
+  // series' queued issues don't cover the whole series) links straight to
+  // that issue instead of the series page — the series page always shows
+  // the whole series, queued or not, so routing through it would silently
+  // re-expand to issues that were never queued.
+  const linksToIssue = isSingle || !!s.link_as_issue;
   // BUG-010: a series card reached via a fieldview filter (e.g. a Writer
   // credit link) or an active search should carry that filter into the
   // series page, so it lists only the matching issues instead of the whole
@@ -1796,7 +1803,7 @@ function buildCoverCard(s) {
   const searchQs = !fieldQs && activeSearch ? `q=${encodeURIComponent(activeSearch)}` : '';
   const qs       = [fieldQs, searchQs].filter(Boolean).join('&');
   const suffix   = qs ? `?${qs}` : '';
-  const href     = isSingle
+  const href     = linksToIssue
     ? `/issue/${s.series_anchor_id}${suffix}`
     : `/series/${s.series_anchor_id}${suffix}`;
   const state    = seriesReadState(s);
@@ -1804,10 +1811,11 @@ function buildCoverCard(s) {
   const card = el('a', `cover-card cover-card--redesign ${state}${s.favorites ? ' is-favorite' : ''}${s.flagged_for_review ? ' is-flagged-review' : ''}${s.queued_for_reading ? ' is-queued-reading' : ''}`);
   card.href  = href;
 
-  // Multi-select: Singles cards select their one underlying issue directly;
-  // Series-aggregate cards select the whole series (DECISIONS.md 2026-06-23
-  // scope correction — previously series-aggregate cards were navigation-only).
-  const selectKind = isSingle ? 'issue' : 'series';
+  // Multi-select: Singles cards (and link_as_issue partial-queue cards)
+  // select their one underlying issue directly; Series-aggregate cards
+  // select the whole series (DECISIONS.md 2026-06-23 scope correction —
+  // previously series-aggregate cards were navigation-only).
+  const selectKind = linksToIssue ? 'issue' : 'series';
   makeSelectable(card, s.series_anchor_id, selectKind);
 
   const wrap = el('div', 'cover-img-wrap');
@@ -1830,7 +1838,7 @@ function buildCoverCard(s) {
   // or 100% for a single issue. Series cards keep the issue-count aggregate.
   if (state === 'state-part-read' || state === 'state-read') {
     let pct;
-    if (isSingle && s.page_count > 0) {
+    if (linksToIssue && s.page_count > 0) {
       pct = Math.min(100, Math.round((s.current_page / s.page_count) * 100));
     } else {
       pct = Math.round((s.read_count / s.issue_count) * 100);
@@ -1861,6 +1869,11 @@ function buildCoverCard(s) {
   const countRow = el('div', 'cover-meta-row cover-count-row');
   if (isSingle) {
     if (s.page_count) countRow.appendChild(el('div', 'cover-count', `${s.page_count} pages`));
+  } else if (s.link_as_issue) {
+    // BUG-034: a partial-queue card is one real issue out of a bigger
+    // series — show its issue number (like the Home strip's issue cards),
+    // not a misleading "1 issue" aggregate count.
+    if (s.number) countRow.appendChild(el('div', 'cover-count', `#${s.number}`));
   } else {
     countRow.appendChild(el('div', 'cover-count',
       `${s.issue_count} issue${s.issue_count !== 1 ? 's' : ''}`
