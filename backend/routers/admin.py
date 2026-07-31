@@ -669,8 +669,8 @@ def list_custom_tabs(db: Session = Depends(get_db)):
 @router.post("/admin/custom-tabs")
 def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
     basis_type = (payload.get("basis_type") or "folder").strip()
-    if basis_type not in ("folder", "favorites", "genre", "reading_queue"):
-        raise HTTPException(status_code=400, detail="basis_type must be 'folder', 'favorites', 'genre', or 'reading_queue'")
+    if basis_type not in ("folder", "favorites", "genre", "reading_queue", "writer", "publisher"):
+        raise HTTPException(status_code=400, detail="basis_type must be 'folder', 'favorites', 'genre', 'reading_queue', 'writer', or 'publisher'")
 
     if basis_type == "favorites":
         # CUSTOM_TABS_SPEC.md §10.2 — no name/folder_path required, server
@@ -727,6 +727,64 @@ def create_custom_tab(payload: dict = Body(...), db: Session = Depends(get_db)):
         db.commit()
         return _custom_tab_to_dict(tab)
 
+    if basis_type == "publisher":
+        # CUSTOM_TABS_SPEC.md §10.11 — mirrors the genre branch above: one tab
+        # per distinct publisher value, name is just the publisher name, no
+        # folder_path. field_value carries which publisher this tab is scoped to.
+        publisher_value = (payload.get("field_value") or "").strip()
+        if not publisher_value:
+            raise HTTPException(status_code=400, detail="field_value (publisher name) is required")
+
+        existing = (
+            db.query(CustomTab)
+            .filter(CustomTab.basis_type == "publisher", CustomTab.field_value == publisher_value)
+            .first()
+        )
+        if existing:
+            raise HTTPException(status_code=409, detail=f"A Publisher Library for '{publisher_value}' already exists.")
+
+        tab = CustomTab(
+            name=publisher_value, folder_path="", visible=True,
+            view_mode="flat", basis_type="publisher", field_value=publisher_value,
+        )
+        db.add(tab)
+        db.commit()
+        return _custom_tab_to_dict(tab)
+
+    if basis_type == "writer":
+        # CUSTOM_TABS_SPEC.md §10.12 — same shape as genre/publisher, but the
+        # dimension is person-based (Tier 4 Item 3): field_value stores the
+        # writer's Person.id (as a string), not a raw name, since matches_field()
+        # resolves writer credits by person_id. name is set to the resolved
+        # Person.name so the tab displays a readable label, not a numeric id.
+        person_id_raw = (payload.get("field_value") or "").strip()
+        if not person_id_raw:
+            raise HTTPException(status_code=400, detail="field_value (writer person_id) is required")
+        try:
+            person_id = int(person_id_raw)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="field_value must be a valid person_id")
+
+        person = db.query(Person).filter(Person.id == person_id).first()
+        if not person:
+            raise HTTPException(status_code=400, detail="No such person")
+
+        existing = (
+            db.query(CustomTab)
+            .filter(CustomTab.basis_type == "writer", CustomTab.field_value == str(person_id))
+            .first()
+        )
+        if existing:
+            raise HTTPException(status_code=409, detail=f"A Writer Library for '{person.name}' already exists.")
+
+        tab = CustomTab(
+            name=person.name, folder_path="", visible=True,
+            view_mode="flat", basis_type="writer", field_value=str(person_id),
+        )
+        db.add(tab)
+        db.commit()
+        return _custom_tab_to_dict(tab)
+
     name = (payload.get("name") or "").strip()
     folder_path = (payload.get("folder_path") or "").strip()
     view_mode = (payload.get("view_mode") or "flat").strip()
@@ -756,10 +814,11 @@ def update_custom_tab(tab_id: int, payload: dict = Body(...), db: Session = Depe
     if not tab:
         raise HTTPException(status_code=404, detail="Custom tab not found")
 
-    if tab.basis_type in ("favorites", "genre", "reading_queue"):
-        # CUSTOM_TABS_SPEC.md §10.4/10.9/10.10 — favourites/genre/reading-queue
-        # basis rows only allow name/visible edits; folder_path, basis_type,
-        # and field_value are locked, and view_mode is forced to stay Flat.
+    if tab.basis_type in ("favorites", "genre", "reading_queue", "writer", "publisher"):
+        # CUSTOM_TABS_SPEC.md §10.4/10.9/10.10/10.11/10.12 — favourites/genre/
+        # reading-queue/publisher/writer basis rows only allow name/visible
+        # edits; folder_path, basis_type, and field_value are locked, and
+        # view_mode is forced to stay Flat.
         locked_keys = {"folder_path", "basis_type", "field_value"} & payload.keys()
         if locked_keys:
             raise HTTPException(

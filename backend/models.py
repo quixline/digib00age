@@ -176,11 +176,11 @@ class CustomTab(Base):
 
     id          = Column(Integer, primary_key=True, autoincrement=True)
     name        = Column(Text, nullable=False)
-    folder_path = Column(Text, nullable=False)          # stored normalized — see backend.path_utils; "" for basis_type in ('favorites', 'genre', 'reading_queue')
+    folder_path = Column(Text, nullable=False)          # stored normalized — see backend.path_utils; "" for basis_type in ('favorites', 'genre', 'reading_queue', 'writer', 'publisher')
     visible     = Column(Boolean, default=True, nullable=False)
     view_mode   = Column(Text, nullable=False, default="flat")   # 'flat' | 'folder'
-    basis_type  = Column(Text, nullable=False, default="folder")  # 'folder' | 'favorites' | 'genre' | 'reading_queue' — CUSTOM_TABS_SPEC.md §10
-    field_value = Column(Text, nullable=True)           # genre name, only set for basis_type='genre'
+    basis_type  = Column(Text, nullable=False, default="folder")  # 'folder' | 'favorites' | 'genre' | 'reading_queue' | 'writer' | 'publisher' — CUSTOM_TABS_SPEC.md §10
+    field_value = Column(Text, nullable=True)           # genre/publisher name, or writer's Person.id (as a string) — only set for basis_type in ('genre', 'publisher', 'writer')
     created_at  = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     def __repr__(self):

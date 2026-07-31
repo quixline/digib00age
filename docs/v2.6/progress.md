@@ -8257,3 +8257,43 @@ residue left on the live page.
 **Docs:** `CHANGELOG.md` — one line. Not logged as a `BUGS.md` entry — found
 and fixed within the same session, same precedent as other same-session
 fixes earlier today (the CSP block, the stale-storage no-op).
+
+## Session — 2026-07-31
+
+- Added two more Custom Tabs basis types, following the "Add Genre Library"
+  pattern exactly (`CUSTOM_TABS_SPEC.md` §10.9): **Add Writer Library** and
+  **Add Publisher Library**, both requested directly by Tez as the two
+  dimensions §10.9's own "out of scope" note had flagged as the natural next
+  step.
+- Publisher mirrors Genre exactly — `field_value` is the plain publisher
+  string, sourced from the existing `GET /browse/publishers`. Writer differs:
+  `field_value` stores the writer's `Person.id` (Tier 4 Item 3's deduped
+  people table) since `matches_field()` resolves writer credits by
+  `person_id`, not name — the tab's `name` is set to the resolved
+  `Person.name` at creation time so the sidebar/admin list never shows a raw
+  numeric id.
+- Backend: `create_custom_tab()`/`update_custom_tab()` (`admin.py`) gained
+  `writer`/`publisher` branches and PATCH-lock coverage; `get_library()`
+  (`library.py`) gained `writer`/`publisher` filter branches reusing the
+  already-existing `matches_field()` helper — zero new queries. Folder View
+  guards needed no change (already generic on `basis_type != "folder"`).
+- Frontend: two new admin rows (`admin.html`) with dropdown + button,
+  mirroring the Genre row; `admin.js` got `loadCtWriterOptions()`/
+  `loadCtPublisherOptions()`, render/exclude logic, and `addWriterTab()`/
+  `addPublisherTab()`; `app.js` got `isWriterTab()`/`isPublisherTab()` and
+  matching empty-state messages.
+- Docs: `CUSTOM_TABS_SPEC.md` §3 caps list extended, new §10.11 (Publisher
+  Library) and §10.12 (Writer Library) added mirroring §10.9's structure,
+  §10.8/§10.9's stale "Publisher/Writer remain out of scope" notes corrected
+  to point at the new sections.
+- **Verified live** via `claude-in-chrome` against the real running app
+  (port 9424, Tez restarted the backend mid-session so the new routes would
+  load): created a real Writer Library ("Aaron Renier") and Publisher Library
+  ("2000 AD"), confirmed both appear in the sidebar and filter correctly
+  (1 title / 2 titles respectively), confirmed dropdown exclusion removes an
+  already-used value, confirmed 409 on a repeat POST for both basis types,
+  confirmed the PATCH-lock guard (400 on `field_value` change) and the
+  Folder View guard (400 "Folder View is not available for this tab") both
+  cover the new basis types, checked the console for errors (none), then
+  deleted both test tabs and confirmed the sidebar returned to its original
+  four libraries (2000 AD/folder, Mystery/genre, Reading Queue, Favourites).

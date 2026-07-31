@@ -83,6 +83,10 @@ new ingestion rule.
 - **Maximum 1 genre-basis tab per distinct genre value** — a second tab for the same
   genre would be a duplicate; different genres each get their own tab freely
   (Section 10.9).
+- **Maximum 1 publisher-basis tab per distinct publisher value** — same reasoning
+  as genre; different publishers each get their own tab freely (Section 10.11).
+- **Maximum 1 writer-basis tab per distinct person** — same reasoning as genre,
+  keyed on `Person.id` rather than a name string (Section 10.12).
 
 ---
 
@@ -510,7 +514,8 @@ confusing place to leave things.
   criterion, the way `HomeStrip` supports for strips) — `basis_type` as a column
   doesn't preclude adding a third value later, but no admin UI for it is being built
   now.~~ **Superseded 2026-07-24 — see §10.9.** Genre shipped as a third
-  `basis_type`; Publisher/Writer/etc. remain out of scope until asked for.
+  `basis_type`. **Further superseded 2026-07-31 — see §10.11/§10.12.** Publisher
+  and Writer shipped too; Format/etc. remain out of scope until asked for.
 - Removing the "Add Tab" form's manual-path text input now that the Browse picker
   works reliably — flagged during scoping as redundant, but unrelated to this
   feature; tracked separately via `INBOX.md`.
@@ -561,8 +566,8 @@ View is not available for this tab", now that two non-folder types exist).
 **Empty state** — mirrors §10.6: a genre tab with nothing tagged reads
 `No comics tagged "<genre>" yet.` instead of the generic filters message.
 
-**Out of scope, same as before** — Publisher/Writer/Format/etc. as their own
-`basis_type` remain unbuilt; only Genre was asked for.
+**Out of scope at the time, since superseded** — Publisher and Writer shipped as
+their own `basis_type` values in §10.11/§10.12; Format/etc. remain unbuilt.
 
 ### 10.10 Reading Queue (v2.6)
 
@@ -628,4 +633,86 @@ redesigned grid card; the "Queued"/"Add to Reading Queue" button state and
 the Reading Queue tab itself remain the reliable signal there. Flagged as a
 known gap rather than solved, since fixing it would mean relitigating the
 four-corner badge layout, which nobody asked for as part of this build.
+
+### 10.11 Publisher Library (v2.6)
+
+**Built 2026-07-31.** A fifth `basis_type` value, `'publisher'`, scoping a tab
+to every issue from one specific publisher — library-wide, like Genre, not
+folder-restricted. Multiple publishers can each get their own tab, same as
+Genre. Requested directly alongside Writer (§10.12) as the two natural
+next dimensions after Genre proved out the pattern (§10.9's "out of scope"
+note flagged both as unbuilt-until-asked-for).
+
+**Data model** — no schema change; reuses the existing `custom_tabs.field_value`
+column added for Genre (§10.9), storing the publisher name for
+`basis_type = 'publisher'` rows. Identical shape to Genre — a plain string
+value, no lookup table involved (unlike Writer, §10.12).
+
+**Admin — "Add Publisher Library"**: a dropdown (sourced from the existing
+`GET /api/browse/publishers`, the same endpoint Home Strips' Publisher field
+already uses) plus its own button, next to "Add Genre Library". The dropdown
+excludes publishers that already have a tab. POSTs
+`{"basis_type": "publisher", "field_value": "<publisher>"}`. Server rejects a
+repeat of the same publisher value with 409 (dedup is per-publisher-value,
+same as Genre); the tab's `name` is set to the publisher string itself,
+unprefixed — the admin row's path-line text shows `Publisher: <value>` for
+clarity in the list, but the sidebar-facing `name` stays plain.
+
+**Query resolution** — `get_library()`'s `tab_id` branch gains a
+`basis_type == "publisher"` case alongside `genre`/`favorites`/folder,
+filtering `all_issues` through the already-existing
+`matches_field(issue, "publisher", tab.field_value)` helper (`path_utils.py`)
+— the same publisher-membership test the filter bar and field-based Home
+Strips already use. Zero new queries.
+
+**Guards** — same treatment as Genre (§10.9): `view_mode` forced to `"flat"`
+at creation and locked via `PATCH`; `folder_path`/`basis_type`/`field_value`
+are all locked on `PATCH`. Already covered by the generalized
+`basis_type != "folder"` Folder View guard (§10.9) — no further changes
+needed there.
+
+**Empty state** — mirrors §10.6/§10.9: a publisher tab with nothing from that
+publisher reads `No comics from "<publisher>" yet.` instead of the generic
+filters message.
+
+### 10.12 Writer Library (v2.6)
+
+**Built 2026-07-31.** A sixth `basis_type` value, `'writer'`, scoping a tab to
+every issue crediting one specific writer — library-wide, like Genre/Publisher,
+not folder-restricted. Multiple writers can each get their own tab.
+
+**Data model** — no schema change; reuses `custom_tabs.field_value`, but unlike
+Genre/Publisher this is **not** the writer's name — it stores the writer's
+`Person.id` (Tier 4 Item 3's deduped people table), as a string. This is
+necessary because `matches_field(issue, "writer", value)` (`path_utils.py`)
+resolves writer credits by `person_id` via the `issue_credits` join table, not
+by name — the same reason `GET /browse/writers` returns `{person_id, name,
+series_count}` rather than a bare name list. The tab's `name` column is set to
+the resolved `Person.name` at creation time (looked up server-side from the
+posted `person_id`), so the sidebar/nav and admin list display a readable name,
+never a raw numeric id.
+
+**Admin — "Add Writer Library"**: a dropdown (sourced from the existing
+`GET /api/browse/writers`, the same endpoint Home Strips' Writer field already
+uses) plus its own button, next to "Add Genre Library". Dropdown option
+*values* are `person_id`, option *labels* are the writer's name; the dropdown
+excludes writers that already have a tab (compared by `person_id`). POSTs
+`{"basis_type": "writer", "field_value": "<person_id>"}`. Server looks up the
+`Person` row (400 if the id doesn't resolve), rejects a repeat of the same
+person with 409 (dedup is per-person, same principle as Genre/Publisher's
+per-value dedup), and sets the new tab's `name` to `Person.name`.
+
+**Query resolution** — `get_library()`'s `tab_id` branch gains a
+`basis_type == "writer"` case, filtering `all_issues` through
+`matches_field(issue, "writer", tab.field_value)` — `tab.field_value` here is
+the `person_id` string `matches_field()` already expects. Zero new queries.
+
+**Guards** — same treatment as Genre/Publisher: `view_mode` forced to `"flat"`
+at creation and locked via `PATCH`; `folder_path`/`basis_type`/`field_value`
+are all locked on `PATCH`. Already covered by the generalized
+`basis_type != "folder"` Folder View guard.
+
+**Empty state** — mirrors §10.6/§10.9/§10.11: a writer tab with nothing by
+that writer reads `No comics by "<writer name>" yet.` (using the tab's
+resolved `name`, not `field_value`) instead of the generic filters message.
 

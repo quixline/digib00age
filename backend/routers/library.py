@@ -155,6 +155,8 @@ def get_library(
     tab_is_favorites = False
     tab_is_reading_queue = False
     tab_genre_value: Optional[str] = None
+    tab_writer_value: Optional[str] = None
+    tab_publisher_value: Optional[str] = None
     if tab_id is not None:
         tab = db.query(CustomTab).filter(CustomTab.id == tab_id).first()
         if not tab:
@@ -165,6 +167,10 @@ def get_library(
             tab_is_reading_queue = True
         elif tab.basis_type == "genre":
             tab_genre_value = tab.field_value
+        elif tab.basis_type == "writer":
+            tab_writer_value = tab.field_value
+        elif tab.basis_type == "publisher":
+            tab_publisher_value = tab.field_value
         else:
             tab_folder = tab.folder_path
 
@@ -184,6 +190,14 @@ def get_library(
         # membership before the per-series groupby, same principle as the
         # favourites branch above.
         all_issues = [i for i in all_issues if matches_field(i, "genre", tab_genre_value)]
+    if tab_writer_value:
+        # CUSTOM_TABS_SPEC.md §10.12 — same principle as the genre branch
+        # above; tab_writer_value is a Person.id string, matches_field()
+        # resolves it against issue credits.
+        all_issues = [i for i in all_issues if matches_field(i, "writer", tab_writer_value)]
+    if tab_publisher_value:
+        # CUSTOM_TABS_SPEC.md §10.11 — same principle as the genre branch above.
+        all_issues = [i for i in all_issues if matches_field(i, "publisher", tab_publisher_value)]
     if tab_folder:
         all_issues = [i for i in all_issues if is_under(i.file_path, tab_folder)]
     if field and value is not None:

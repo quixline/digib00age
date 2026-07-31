@@ -795,7 +795,7 @@ let searchLibraryCache = {};    // query (lowercased) -> /api/library?q=… resp
 
 // Folder View (Custom Tabs, view_mode='folder' — CUSTOM_TABS_SPEC.md §9)
 let tabViewModes        = {};   // custom tab id (string) -> 'flat' | 'folder', from /nav/config
-let tabBasisTypes       = {};   // custom tab id (string) -> 'folder' | 'favorites' | 'genre', from /nav/config
+let tabBasisTypes       = {};   // custom tab id (string) -> 'folder' | 'favorites' | 'genre' | 'reading_queue' | 'writer' | 'publisher', from /nav/config
 let tabNames            = {};   // custom tab id (string) -> tab.name, from /nav/config
 let viewTabPath         = '';   // relative path within the active folder-view tab
 let folderViewCache     = {};   // cache key `${tabId}:${path}` -> folder-contents response
@@ -1017,6 +1017,14 @@ function isGenreTab(surface) {
 
 function isReadingQueueTab(surface) {
   return surface.startsWith('tab-') && tabBasisTypes[surface.slice(4)] === 'reading_queue';
+}
+
+function isWriterTab(surface) {
+  return surface.startsWith('tab-') && tabBasisTypes[surface.slice(4)] === 'writer';
+}
+
+function isPublisherTab(surface) {
+  return surface.startsWith('tab-') && tabBasisTypes[surface.slice(4)] === 'publisher';
 }
 
 // Menu bar controls (sort/rated/favourites) act on whichever surface is
@@ -1666,16 +1674,20 @@ function _renderBrowsePage() {
   grid.innerHTML = '';
 
   if (!filtered.length) {
-    // CUSTOM_TABS_SPEC.md §10.6/§10.9/§10.10 — a Favourites, Genre, or Reading
-    // Queue tab with nothing in it yet reads as broken with the generic
-    // filters message; give each its own.
+    // CUSTOM_TABS_SPEC.md §10.6/§10.9/§10.10/§10.11/§10.12 — a Favourites,
+    // Genre, Reading Queue, Publisher, or Writer tab with nothing in it yet
+    // reads as broken with the generic filters message; give each its own.
     const emptyMsg = isFavoritesTab(activeSurface)
       ? 'No favourites yet — star some issues to see them here.'
       : isGenreTab(activeSurface)
         ? `No comics tagged "${tabNames[activeSurface.slice(4)]}" yet.`
         : isReadingQueueTab(activeSurface)
           ? 'No comics queued yet — use Queue Reading to add some.'
-          : 'No matching titles found';
+          : isPublisherTab(activeSurface)
+            ? `No comics from "${tabNames[activeSurface.slice(4)]}" yet.`
+            : isWriterTab(activeSurface)
+              ? `No comics by "${tabNames[activeSurface.slice(4)]}" yet.`
+              : 'No matching titles found';
     grid.innerHTML =
       '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
       `<p>${emptyMsg}</p></div>`;

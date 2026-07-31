@@ -139,10 +139,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   loadCustomTabs();
   loadCtGenreOptions();
+  loadCtWriterOptions();
+  loadCtPublisherOptions();
   document.getElementById('ctAddBtn').addEventListener('click', addCustomTab);
   document.getElementById('ctAddFavouritesBtn').addEventListener('click', addFavouritesTab);
   document.getElementById('ctAddReadingQueueBtn').addEventListener('click', addReadingQueueTab);
   document.getElementById('ctAddGenreBtn').addEventListener('click', addGenreTab);
+  document.getElementById('ctAddWriterBtn').addEventListener('click', addWriterTab);
+  document.getElementById('ctAddPublisherBtn').addEventListener('click', addPublisherTab);
   document.getElementById('ctBrowseBtn').addEventListener('click', () => openCtPicker('ctPathInput'));
   document.getElementById('ctPickerCloseBtn').addEventListener('click', closeCtPicker);
   document.getElementById('ctPickerSelectBtn').addEventListener('click', selectCtPickerFolder);
@@ -865,6 +869,8 @@ function renderCustomTabs() {
   document.getElementById('ctAddReadingQueueBtn').disabled = hasReadingQueueTab;
 
   renderCtGenreOptions();
+  renderCtWriterOptions();
+  renderCtPublisherOptions();
 }
 
 // ── Genre Library (CUSTOM_TABS_SPEC.md §10.9) ───────────────────────────────
@@ -926,12 +932,126 @@ async function addGenreTab() {
   }
 }
 
+// ── Writer Library (CUSTOM_TABS_SPEC.md §10.12) ─────────────────────────────
+let ctAllWriters = []; // cached from /browse/writers: [{person_id, name, series_count}, ...]
+
+async function loadCtWriterOptions() {
+  try {
+    const r = await fetch(`${API}/browse/writers`);
+    ctAllWriters = r.ok ? await r.json() : [];
+  } catch (_) {
+    ctAllWriters = [];
+  }
+  renderCtWriterOptions();
+}
+
+function renderCtWriterOptions() {
+  const select = document.getElementById('ctWriterSelect');
+  if (!select) return;
+  const usedWriters = new Set(
+    customTabs.filter(t => t.basis_type === 'writer').map(t => t.field_value)
+  );
+  const prevValue = select.value;
+  select.innerHTML = '';
+  select.add(new Option('Writer…', ''));
+  for (const w of ctAllWriters) {
+    const personId = String(w.person_id);
+    if (usedWriters.has(personId)) continue;
+    select.add(new Option(w.name, personId));
+  }
+  select.value = usedWriters.has(prevValue) ? '' : prevValue;
+}
+
+async function addWriterTab() {
+  const select = document.getElementById('ctWriterSelect');
+  const personId = select.value;
+  if (!personId) {
+    showToast('Choose a writer first', true);
+    return;
+  }
+  const writerName = select.options[select.selectedIndex].textContent;
+  try {
+    const r = await fetch(`${API}/admin/custom-tabs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ basis_type: 'writer', field_value: personId }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      showToast(d.detail || 'Could not add Writer Library', true);
+      return;
+    }
+    showToast(`Writer Library "${writerName}" added`);
+    select.value = '';
+    await Promise.all([loadCustomTabs(), loadCtWriterOptions()]);
+  } catch (e) {
+    showToast('Could not add Writer Library: ' + e.message, true);
+  }
+}
+
+// ── Publisher Library (CUSTOM_TABS_SPEC.md §10.11) ──────────────────────────
+let ctAllPublishers = []; // cached from /browse/publishers: [{publisher, series_count}, ...]
+
+async function loadCtPublisherOptions() {
+  try {
+    const r = await fetch(`${API}/browse/publishers`);
+    ctAllPublishers = r.ok ? await r.json() : [];
+  } catch (_) {
+    ctAllPublishers = [];
+  }
+  renderCtPublisherOptions();
+}
+
+function renderCtPublisherOptions() {
+  const select = document.getElementById('ctPublisherSelect');
+  if (!select) return;
+  const usedPublishers = new Set(
+    customTabs.filter(t => t.basis_type === 'publisher').map(t => t.field_value)
+  );
+  const prevValue = select.value;
+  select.innerHTML = '';
+  select.add(new Option('Publisher…', ''));
+  for (const p of ctAllPublishers) {
+    if (usedPublishers.has(p.publisher)) continue;
+    select.add(new Option(p.publisher, p.publisher));
+  }
+  select.value = usedPublishers.has(prevValue) ? '' : prevValue;
+}
+
+async function addPublisherTab() {
+  const select = document.getElementById('ctPublisherSelect');
+  const publisher = select.value;
+  if (!publisher) {
+    showToast('Choose a publisher first', true);
+    return;
+  }
+  try {
+    const r = await fetch(`${API}/admin/custom-tabs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ basis_type: 'publisher', field_value: publisher }),
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      showToast(d.detail || 'Could not add Publisher Library', true);
+      return;
+    }
+    showToast(`Publisher Library "${publisher}" added`);
+    select.value = '';
+    await Promise.all([loadCustomTabs(), loadCtPublisherOptions()]);
+  } catch (e) {
+    showToast('Could not add Publisher Library: ' + e.message, true);
+  }
+}
+
 function makeCustomTabRow(tab) {
   const row = document.createElement('div');
   row.className = 'ct-tab-row';
   const isFavourites = tab.basis_type === 'favorites';
   const isGenre = tab.basis_type === 'genre';
   const isReadingQueue = tab.basis_type === 'reading_queue';
+  const isWriter = tab.basis_type === 'writer';
+  const isPublisher = tab.basis_type === 'publisher';
 
   const info = document.createElement('div');
   info.className = 'ct-tab-info';
@@ -952,14 +1072,18 @@ function makeCustomTabRow(tab) {
       ? 'Library-wide (Reading Queue)'
       : isGenre
         ? `Genre: ${tab.field_value}`
-        : tab.folder_path;
+        : isPublisher
+          ? `Publisher: ${tab.field_value}`
+          : isWriter
+            ? `Writer: ${tab.name}`
+            : tab.folder_path;
   info.append(nameLine, pathLine);
 
   const viewModeSelect = document.createElement('select');
   viewModeSelect.className = 'ct-viewmode-select admin-select';
   viewModeSelect.innerHTML = '<option value="flat">Flat</option><option value="folder">Folder View</option>';
   viewModeSelect.value = tab.view_mode || 'flat';
-  viewModeSelect.disabled = isFavourites || isGenre || isReadingQueue;
+  viewModeSelect.disabled = isFavourites || isGenre || isReadingQueue || isWriter || isPublisher;
   viewModeSelect.addEventListener('change', () => updateCustomTabViewMode(tab, viewModeSelect.value));
 
   const toggleBtn = document.createElement('button');
