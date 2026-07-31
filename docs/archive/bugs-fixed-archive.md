@@ -7,6 +7,48 @@ Append-only; entries kept exactly as they were in `BUGS.md` at the time of move.
 
 ---
 
+### BUG-035 — Stacked filters showed two ambiguous, unlabeled "Clear Filter" buttons that couldn't clear just one filter
+
+**Found:** 2026-07-31, reported design flaw.
+
+**Closed:** 2026-07-31, same day.
+
+**Where:** `frontend/js/app.js` (`renderFieldviewBanner()`, `#filterClear`
+binding), `frontend/index.html` (`.menu-bar-trailing`), `frontend/css/style.css`.
+
+**What happened:** From an issue detail page, clicking a Genre tag opens the
+All view scoped to that genre via the "fieldview" mechanism, showing a
+labeled "Genre: Adventure  Clear Filter" banner. Adding a Format dropdown
+filter on top made a second, unlabeled "Clear Filter" button appear next to
+it — same text, no indication of what either one did or cleared. Confirmed
+via code they didn't even do the same thing: the fieldview banner's clear was
+a real page reload to `/?surface=all` (which wiped every filter, not just
+genre, since a reload reinitializes all JS state), while the generic pill
+called `clearAllFilters()` (reset every dropdown filter but deliberately left
+the fieldview scope untouched). Neither let a user clear just one filter
+while keeping another active.
+
+**Fix:** Replaced both mechanisms with `renderActiveFilterChips()` — one
+labeled chip per active filter (the fieldview scope, if any, plus each active
+dropdown filter: genre/format/decade/year/rating/B&W/star rating), each with
+its own "×" that clears only that filter. A separate "Clear All Filters"
+button (`clearAllFiltersAndFieldview()`) appears whenever any filter is
+active and resets everything at once. Leaving a fieldview scope via its
+chip's "×" now calls `switchSurface('all')` directly instead of doing a full
+page reload — the same client-side transition the sidebar's own "All" nav
+item already uses — so other active dropdown filters survive instead of
+being silently wiped. See `DECISIONS.md` for why reversing the prior
+BUG-015 "always a real navigation" rule is safe here.
+
+**Manually verified** (dev server, `?surface=fieldview&field=genre&value=Adventure`
+plus a Format pick): each chip's "×" clears only that filter and leaves the
+other active with no page reload; "Clear All Filters" resets everything and
+correctly leaves the fieldview when clicked while one is active; same
+behavior confirmed inside Folder View (dropdown chips only, no fieldview
+chip, as expected).
+
+---
+
 ### BUG-034 — Reading Queue fieldview strips can't drill into a scoped series detail page; falls back to the whole series
 
 **Found:** 2026-07-31, while adding Reading Queue as a Home Page Strips field

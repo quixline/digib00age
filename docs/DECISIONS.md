@@ -3918,3 +3918,40 @@ branch); `backend/routers/admin.py` (`HOME_STRIP_FIELD_NAMES`,
 (`#hsFieldNameSelect`); `frontend/js/admin.js`
 (`updateHsFieldValueOptions()`, `addHomeStrip()`); `frontend/js/app.js`
 (`renderFieldviewBanner()`); `HOME_STRIPS_SPEC.md` §1/§2.
+
+### BUG-035 fix: per-filter "Clear" chips replace the single generic pill + fieldview banner; leaving a fieldview scope reverses BUG-015's "always a real navigation" rule
+**Decided:** 2026-07-31, reported design flaw fix session.
+**Why:** Reported flaw — from an issue page, clicking a Genre tag (fieldview
+scope) then adding a Format dropdown filter on top showed two "Clear Filter"
+buttons: the fieldview banner's (labeled "Genre: Adventure") and the generic
+`#filterClear` pill (unlabeled). They didn't even do the same thing — the
+banner's link was a real page reload to `/?surface=all` (wiping every filter,
+not just genre, since the reload reinitializes all JS state), while the pill
+called `clearAllFilters()` (resets every dropdown filter but deliberately
+left the fieldview scope untouched, per the BUG-015 comment). Neither let you
+clear just one filter and keep the other. The 2026-07-09 "Clear Filter pill
+unified across both trigger paths" decision (above) had explicitly rejected a
+per-field "Field: Value" label for the dropdown case, reasoning that multiple
+dropdown filters can be active at once and there's no single label that
+represents the combination — that reasoning is superseded here: instead of
+one combined label, each active filter (dropdown or fieldview) now gets its
+own chip and its own label, which sidesteps the "no single label" problem
+entirely rather than solving it.
+
+Leaving a fieldview scope (the chip's "×") was changed from a real page
+reload to a direct `switchSurface('all')` call — a reversal of the BUG-015
+decision (above) that a real navigation was needed to sidestep the "JS state
+vs. URL desync" bug class BUG-014 had just been fixed for. That reasoning
+doesn't actually block this reversal: `switchSurface('all')` already is the
+proven, working mechanism for this exact "leave fieldview, go to All"
+transition — `bindSidebarNav()`'s "All" nav item calls it directly whenever
+`onLibraryPage` is true, with no known desync issue — so reusing it here
+doesn't reopen the class of bug the real-navigation rule was guarding
+against, and it's what makes "clear the fieldview chip without also wiping
+active dropdown filters" possible at all (a reload can't selectively
+preserve JS-only state).
+**Where:** `frontend/js/app.js` (`renderActiveFilterChips()` and
+`FILTER_CHIP_SELECTS` replace `renderFieldviewBanner()`;
+`clearAllFiltersAndFieldview()` added), `frontend/index.html`
+(`#activeFilterChips`, `#filterClearAll` replace `#fieldviewBanner`/
+`#filterClear`), `frontend/css/style.css`, `MENU_BAR_SPEC.md` §2.7.

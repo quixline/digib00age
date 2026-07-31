@@ -1621,39 +1621,99 @@ function renderBrowse() {
   _renderBrowsePage();
 }
 
-// BUG-015: generic "you're filtered, here's how to clear it" indicator for
-// the fieldview surface (genre tags / writer+artist credit links / admin
-// home-strip "view all" links can all land here). Called from
-// _renderBrowsePage() (not loadBrowse()) so it stays correct when a
-// secondary dropdown filter is layered on top via renderActiveSurface(),
-// and gets cleanup-on-navigate-away for free — every surface's render pass
-// hides it when activeSurface isn't 'fieldview'. Clear link is a real
-// navigation (not a JS state reset) — see series-filter-banner precedent
-// (BUG-010) and the reasoning in DECISIONS.md for why that matters here.
-function renderFieldviewBanner() {
-  const banner = document.getElementById('fieldviewBanner');
-  if (!banner) return;
-  const hasValue = viewFieldValue || viewField === 'reading_queue';
-  if (activeSurface !== 'fieldview' || !viewField || !hasValue) {
-    banner.hidden = true;
-    banner.textContent = '';
-    return;
+// Dropdown filters that can stack in the browse filter bar — each paired
+// with a getter/clearer for the module-level variable it drives, so a
+// chip's clear can reset just that one filter without touching any other
+// (fixes the stacked-filter "Clear Filter" ambiguity — see DECISIONS.md).
+// Note: genreFilter's own .value can be cosmetically synced to a genre
+// fieldview's viewFieldValue (switchSurface()'s BUG-015-bonus sync) without
+// activeGenre itself being set — get() (not sel.value) is what decides
+// whether a dropdown chip renders, so that sync never produces a duplicate
+// "Genre: …" chip alongside the fieldview one.
+const FILTER_CHIP_SELECTS = [
+  { id: 'genreFilter',      get: () => activeGenre,  clear: () => { activeGenre  = ''; } },
+  { id: 'formatFilter',     get: () => activeFormat, clear: () => { activeFormat = ''; } },
+  { id: 'decadeFilter',     get: () => activeDecade, clear: () => { activeDecade = ''; } },
+  { id: 'yearFilter',       get: () => activeYear,   clear: () => { activeYear   = ''; } },
+  { id: 'ratingFilter',     get: () => activeRating, clear: () => { activeRating = ''; } },
+  { id: 'bwFilter',         get: () => activeBW,     clear: () => { activeBW     = ''; } },
+  { id: 'starRatingFilter', get: () => activeStars,  clear: () => { activeStars  = ''; } },
+];
+
+// One labeled chip per active filter — the fieldview scope (genre tags /
+// writer+artist credit links / admin home-strip "view all" links) and/or
+// each active dropdown filter — each with its own scoped clear, replacing
+// the old renderFieldviewBanner() + generic multi-filter Clear pill (which
+// could show two differently-scoped "Clear Filter" buttons at once, only
+// one of them ever labeled). Called from _renderBrowsePage() and Folder
+// View's render pass so it stays correct when filters are layered on top
+// via renderActiveSurface(), and gets cleanup-on-navigate-away for free —
+// every render hides the fieldview chip once activeSurface isn't
+// 'fieldview'. The fieldview chip's clear is a real switchSurface('all')
+// call (not a page reload) — see DECISIONS.md for why that's safe here.
+function renderActiveFilterChips() {
+  const container   = document.getElementById('activeFilterChips');
+  const clearAllBtn = document.getElementById('filterClearAll');
+  if (!container || !clearAllBtn) return;
+  container.innerHTML = '';
+
+  const isFieldview = activeSurface === 'fieldview' && viewField &&
+    (viewFieldValue || viewField === 'reading_queue');
+
+  const addChip = (label, onClear) => {
+    const chip = el('span', 'filter-chip');
+    chip.appendChild(document.createTextNode(label));
+    const clearBtn = el('button', 'filter-chip-clear', '×');
+    clearBtn.type = 'button';
+    clearBtn.setAttribute('aria-label', `Clear ${label} filter`);
+    clearBtn.addEventListener('click', onClear);
+    chip.appendChild(clearBtn);
+    container.appendChild(chip);
+  };
+
+  if (isFieldview) {
+    const fieldLabel = FIELDVIEW_LABELS[viewField] || viewField;
+    const label = viewField === 'reading_queue'
+      ? fieldLabel
+      : `${fieldLabel}: ${fieldviewValueDisplay(viewField, viewFieldValue, viewFieldLabel)}`;
+    addChip(label, () => switchSurface('all'));
   }
-  const fieldLabel = FIELDVIEW_LABELS[viewField] || viewField;
-  banner.textContent = viewField === 'reading_queue'
-    ? `${fieldLabel} `
-    : `${fieldLabel}: ${fieldviewValueDisplay(viewField, viewFieldValue, viewFieldLabel)} `;
-  const clearLink = el('a', 'fieldview-banner-clear', 'Clear Filter');
-  clearLink.href = '/?surface=all';
-  banner.appendChild(clearLink);
-  banner.hidden = false;
+
+  FILTER_CHIP_SELECTS.forEach(({ id, get, clear }) => {
+    if (!get()) return;
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const labelPrefix = sel.options[0] ? sel.options[0].textContent : id;
+    const valueText    = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : sel.value;
+    addChip(`${labelPrefix}: ${valueText}`, () => {
+      clear();
+      sel.value = '';
+      sel.classList.remove('active');
+      renderActiveSurface();
+    });
+  });
+
+  clearAllBtn.hidden = !(isFieldview || hasActiveFilters());
+}
+
+// Driven by the "Clear All Filters" button — resets every dropdown filter
+// and, if a fieldview scope is active, actually leaves it via
+// switchSurface('all') so the grid re-fetches the right (unfiltered) pool
+// rather than just blanking viewField in place (see switchSurface()'s
+// viewField handling / BUG-015).
+function clearAllFiltersAndFieldview() {
+  clearAllFilters();
+  if (activeSurface === 'fieldview') {
+    switchSurface('all');
+  } else {
+    renderActiveSurface();
+  }
 }
 
 function _renderBrowsePage() {
   exitSelectionMode();
   const grid    = document.getElementById('coverGrid');
   const countEl = document.getElementById('browseCount');
-  const clearBtn= document.getElementById('filterClear');
   const pagEl   = document.getElementById('pagination');
 
   const filtered   = getFilteredLibrary();
@@ -1672,8 +1732,7 @@ function _renderBrowsePage() {
   countEl.textContent = suffix
     ? `${displayCount.toLocaleString()} ${suffix}`
     : displayCount.toLocaleString();
-  renderFieldviewBanner();
-  clearBtn.style.display = hasActiveFilters() ? 'inline-block' : 'none';
+  renderActiveFilterChips();
 
   grid.innerHTML = '';
 
@@ -1997,9 +2056,8 @@ function bindFilterEvents() {
   bindSelect('ratingFilter',    v => activeRating    = v);
   bindSelect('bwFilter',        v => activeBW        = v);
 
-  document.getElementById('filterClear').addEventListener('click', () => {
-    clearAllFilters();
-    renderActiveSurface();
+  document.getElementById('filterClearAll').addEventListener('click', () => {
+    clearAllFiltersAndFieldview();
   });
 
   // Menu bar — sort dropdown + ascend/descend toggle (MENU_BAR_SPEC.md §2.1)
@@ -2163,7 +2221,7 @@ async function renderFolderView(tabId, path) {
   const countEl = document.getElementById('browseCount');
   const total = folders.length + files.length;
   countEl.textContent = `${total.toLocaleString()} Item${total === 1 ? '' : 's'}`;
-  document.getElementById('filterClear').style.display = hasActiveFilters() ? 'inline-block' : 'none';
+  renderActiveFilterChips();
 
   if (!folders.length && !files.length) {
     grid.appendChild(el('div', 'empty-state', 'This folder is empty.'));

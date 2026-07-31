@@ -13,6 +13,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-31** — Fixed BUG-035: stacked filters (e.g. a Genre fieldview
+  plus a Format dropdown pick) no longer show two ambiguous, unlabeled
+  "Clear Filter" buttons — each active filter now gets its own labeled chip
+  with a scoped "×", plus a separate "Clear All Filters" button. → `v2.6/
+  progress.md` "Session — 2026-07-31 (continued) — BUG-035 fixed:
+  stacked-filter "Clear Filter" buttons replaced with per-filter chips + a
+  separate "Clear All Filters" button"
 - **2026-07-31** — Fixed BUG-034: a Reading Queue card for a partially-queued
   series now links straight to the queued issue instead of falling back to
   the whole series page; a fully-queued series still links to the series

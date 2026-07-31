@@ -103,14 +103,29 @@ needs to be in line with the items above and below"). **Grouping (`#groupBySelec
 is the one control that stays Flat-View-only** — Folder View already groups by
 directory structure, so a second grouping mechanism doesn't apply there.
 
-**Clear button relocated 2026-07-09** — `#filterClear` no longer lives inside
-`#browseFilters`; it now sits in the trailing group (`.menu-bar-trailing`), right
-before `#browseCount`, the same slot the fieldview banner's own "Clear filter" link
-occupies (`renderFieldviewBanner()`, `BUG-015`). Both now share one CSS treatment
-(solid accent pill, matching the sidebar's collapsed Library letter-badges) so the
-"you're filtered, here's how to clear it" affordance looks and sits identically
-regardless of whether the active filter came from a dropdown or a Genre/Writer/
-Artist link on an issue/series page. See `DECISIONS.md`.
+**Replaced with per-filter chips 2026-07-31 (BUG-035)** — the single generic
+`#filterClear` pill and the separate fieldview banner (`renderFieldviewBanner()`,
+`BUG-015`) could both be visible in the trailing group at once (one whenever any
+dropdown filter was active, the other whenever a fieldview scope — a Genre/Writer/
+Artist link, etc. — was active), each doing a different, unlabeled "Clear Filter"
+action. Stacking two filters (e.g. a Genre fieldview plus a Format dropdown pick)
+showed two identically-labeled buttons with no indication of what each cleared, and
+neither actually let you clear just one filter while keeping the other.
+
+Replaced by `renderActiveFilterChips()`: one labeled chip per active filter — the
+fieldview scope (if any) and each active dropdown filter (`genreFilter`/
+`formatFilter`/`decadeFilter`/`yearFilter`/`ratingFilter`/`bwFilter`/
+`starRatingFilter`) — each with its own small "×" that clears only that filter, into
+`#activeFilterChips` (`.menu-bar-trailing`, before `#browseCount`). A separate
+`#filterClearAll` ("Clear All Filters") button sits alongside it, shown whenever
+*any* filter (dropdown or fieldview) is active, and resets everything at once via
+`clearAllFiltersAndFieldview()`. Leaving a fieldview via its chip's "×" no longer
+does a full page reload (`location.href = '/?surface=all'`) — it calls
+`switchSurface('all')` directly, the same client-side transition the sidebar's own
+"All" nav item already uses, so other active dropdown filters survive instead of
+being silently wiped by the reload. See `DECISIONS.md` for why that reload-to-JS-
+transition change is safe despite BUG-015's original "always a real navigation"
+reasoning.
 
 These filters also apply to Folder View's flat file cards (folders themselves
 have no per-field aggregate to filter against, so they stay navigable regardless of
@@ -181,3 +196,4 @@ The menu bar also does not appear on the Admin page or the Full Editor.
 | 2026-07-07 | §2.6 Status Pills removed entirely — no per-surface status-pill row anywhere, on any surface. Read-status filtering (`activeStatus`) now only exists as the left sidebar's Unread/Reading/Read shortcut, which always navigates to the All surface first. Clicking it from Series/Singles/a custom tab no longer filters that surface in place. | v2.6 Item 1 Phase B (left sidebar nav) — matches the approved Claude Design reference exactly, not a gap being filled; see `docs/v2.6/progress.md`. |
 | 2026-07-09 | Publisher filter dropdown removed from §2.7 (stays as a Group by option only); Grid/List toggle (§2.5) relocated from the trailing count group to sit with sort ascend/descend + Rated; vertical divider separators extended between every control in the row; Clear button (§2.7) relocated from `#browseFilters` into the trailing group next to the title count and unified visually with the fieldview banner's own Clear link. | Tez's post-redesign UI tweak pass — see `docs/v2.6/progress.md` and `DECISIONS.md`. |
 | 2026-07-15 | Added §2.8, Flagged-for-Review Filter Button — a new toggle mirroring §2.3's Favourites filter exactly (same mechanics, same Folder View parity rule), part of the new review-queue feature (`EDITOR_SPEC.md` §13, v2.6 Item 8). §3's parity table gained a matching row. | Ad-hoc feature request 2026-07-15, scoped and built same session; see `v2.6/progress.md`. |
+| 2026-07-31 | §2.7 — BUG-035 fix: `#filterClear` + the fieldview banner replaced by per-filter "Clear" chips (`renderActiveFilterChips()`) plus a separate "Clear All Filters" button; leaving a fieldview scope now uses `switchSurface('all')` instead of a full page reload. | Reported design flaw: stacking a fieldview filter (e.g. Genre) with a dropdown filter (e.g. Format) showed two unlabeled, ambiguously-scoped "Clear Filter" buttons and no way to clear just one. See `DECISIONS.md` and `docs/v2.6/progress.md`. |

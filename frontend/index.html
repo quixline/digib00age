@@ -150,12 +150,11 @@
         </div>
 
         <div class="menu-bar-trailing">
-          <!-- Fieldview filter banner (BUG-015) — populated by renderFieldviewBanner() -->
-          <p class="fieldview-banner" id="fieldviewBanner" hidden></p>
-          <!-- Dropdown-filter Clear pill — same trailing slot as the fieldview
-               banner's own Clear link, so both entry points land in the same
-               place next to the count (Tez's tweak pass, 2026-07-09). -->
-          <button class="filter-clear" id="filterClear" data-tooltip="Reset every active filter, sort, search and grouping">Clear Filter</button>
+          <!-- Active-filter chips — one per active filter (fieldview scope and/or
+               each active dropdown filter), each with its own scoped clear.
+               Populated by renderActiveFilterChips(). -->
+          <div class="active-filter-chips" id="activeFilterChips"></div>
+          <button class="filter-clear-all" id="filterClearAll" hidden data-tooltip="Reset every active filter, sort, search and grouping">Clear All Filters</button>
           <span class="browse-count" id="browseCount"></span>
         </div>
        </div>

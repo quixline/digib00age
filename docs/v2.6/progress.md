@@ -8390,3 +8390,59 @@ fixes earlier today (the CSP block, the stale-storage no-op).
   clicking a series in the Reading Queue view that's only partially queued
   now lands directly on the issue; clicking a fully-queued series still
   lands on the series page.
+
+## Session — 2026-07-31 (continued) — BUG-035 fixed: stacked-filter "Clear Filter" buttons replaced with per-filter chips + a separate "Clear All Filters" button
+
+- Reported design flaw: from an issue detail page, clicking a Genre tag
+  opens the All view scoped to that genre (the "fieldview" mechanism),
+  showing a labeled "Genre: Adventure  Clear Filter" banner. Adding a Format
+  dropdown filter on top made a second, unlabeled "Clear Filter" button
+  appear next to it — no indication of what either cleared, and (confirmed
+  by reading the code, not just observed) they didn't even do the same
+  thing: the fieldview banner's clear was a real page reload to
+  `/?surface=all` (wiping every filter, not just genre), while the generic
+  `#filterClear` pill called `clearAllFilters()` (reset every dropdown
+  filter but deliberately left the fieldview scope untouched). Neither let
+  a user clear just one filter while keeping another active.
+- Replaced both with `renderActiveFilterChips()` (`frontend/js/app.js`):
+  one labeled chip per active filter — the fieldview scope (if any) plus
+  each active dropdown filter (genre/format/decade/year/rating/B&W/star
+  rating) — each with its own "×" that clears only that filter. A new
+  `FILTER_CHIP_SELECTS` table drives the dropdown side; the fieldview
+  chip reuses the existing `FIELDVIEW_LABELS`/`fieldviewValueDisplay()`
+  helpers. A new `#filterClearAll` ("Clear All Filters") button, driven by
+  `clearAllFiltersAndFieldview()`, shows whenever any filter (dropdown or
+  fieldview) is active and resets everything at once.
+- Leaving the fieldview scope via its chip's "×" no longer does a full page
+  reload — it calls `switchSurface('all')` directly, the same client-side
+  transition the sidebar's own "All" nav item already uses on this page, so
+  other active dropdown filters survive instead of being silently wiped by
+  a reload. This reverses the BUG-015 "always use a real navigation to
+  leave a fieldview" decision; see `DECISIONS.md` for why that's safe here
+  (`switchSurface()` is already the proven mechanism for this exact
+  transition elsewhere in the same file).
+- `frontend/index.html`'s `.menu-bar-trailing` now holds
+  `#activeFilterChips` (chip container) + `#filterClearAll`, replacing the
+  old `#fieldviewBanner` `<p>` and `#filterClear` `<button>`.
+  `frontend/css/style.css` got matching `.active-filter-chips`/
+  `.filter-chip`/`.filter-chip-clear` rules and a `.filter-clear-all[hidden]`
+  override (needed because the button's visibility is now driven by the
+  `hidden` DOM property, not `style.display`, so the always-on
+  `.filter-clear-all { display: none }` base rule had to move behind the
+  `[hidden]` attribute selector to actually get overridden when JS clears
+  `hidden`).
+- **Verified live** via `claude-in-chrome` against the real running app
+  (port 9424): navigated to a Genre fieldview, added a Format filter,
+  confirmed both chips render with correct labels and "Clear All Filters"
+  appears; cleared the Format chip alone and confirmed only Format cleared
+  (Genre chip and fieldview scope remained, no reload); re-added Format,
+  cleared the Genre chip instead, and confirmed the surface switched to
+  plain All with Format still active and no page reload (URL updated via
+  `pushState`, not a real navigation); confirmed "Clear All Filters" resets
+  everything both when a fieldview is active and when it isn't; repeated
+  the Format-filter chip add/clear inside Folder View (a custom tab in
+  folder mode) and confirmed the same shared render path works there (no
+  fieldview chip ever appears, as expected). No console errors after a hard
+  reload (one stale-cached-JS error surfaced on a plain in-session
+  `navigate()` reusing the same tab — expected/known browser-cache quirk,
+  not a code defect; resolved by hard-reloading, unrelated to this fix).

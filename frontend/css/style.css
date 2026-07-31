@@ -733,38 +733,74 @@ select.filter-select:focus,
 }
 
 /* Solid accent + on-accent text — same "active" look as the collapsed
-   sidebar's single-letter Library badges (.app-sidebar-lib-badge). Shared
-   by the dropdown-filter Clear button (.filter-clear, hidden by default —
-   JS toggles it via style.display) and the fieldview banner's Clear link
-   (.fieldview-banner-clear, always shown when appended) so both "you're
-   filtered, here's how to clear it" affordances look identical regardless
-   of which one put you there. */
-.filter-clear {
+   sidebar's single-letter Library badges (.app-sidebar-lib-badge). Shared by
+   the "Clear All Filters" button (.filter-clear-all — JS toggles its
+   `hidden` attribute, not style.display, so the [hidden] override below
+   needs to out-specificity the plain class rule or it'd never actually
+   hide) and each per-filter chip's own "×" clear control
+   (.filter-chip-clear) so every "here's how to clear it" affordance looks
+   consistent regardless of scope. */
+.filter-clear-all[hidden] {
   display: none;
 }
 
-.filter-clear,
-.fieldview-banner-clear {
+.filter-clear-all,
+.filter-chip-clear {
   font-size: 12px;
   font-weight: 600;
   color: var(--on-accent);
   background: var(--accent);
   border: none;
-  border-radius: var(--radius-pill);
-  padding: 5px 12px;
   cursor: pointer;
   white-space: nowrap;
   text-decoration: none;
   transition: background var(--dur) var(--ease);
 }
 
-.fieldview-banner-clear {
-  display: inline-block;
+.filter-clear-all {
+  border-radius: var(--radius-pill);
+  padding: 5px 12px;
 }
 
-.filter-clear:hover,
-.fieldview-banner-clear:hover {
+.filter-clear-all:hover,
+.filter-chip-clear:hover {
   background: var(--accent-hover);
+}
+
+/* Active-filter chips — one per active filter (see index.html's
+   .active-filter-chips / renderActiveFilterChips() in app.js). Each chip is
+   its own pill: a label ("Genre: Adventure") plus a small "×" that clears
+   only that one filter. */
+.active-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 3px 4px 3px 10px;
+  white-space: nowrap;
+}
+
+.filter-chip-clear {
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  padding: 0;
 }
 
 /* ── Home strips ─────────────────────────────────────────────────────────── */
@@ -2145,21 +2181,6 @@ select.filter-select:focus,
 .genre-tag:hover {
   border-color: var(--accent);
   color: var(--accent);
-}
-
-/* BUG-015 — fieldview filter banner. Sits inline in .menu-bar-trailing,
-   before the count (moved 2026-07-09 to drop the duplicate title count that
-   used to open this banner's own text — the trailing count already shows
-   it once). */
-.fieldview-banner {
-  font-size: 13px;
-  color: var(--text-2);
-  white-space: nowrap;
-  margin: 0;
-}
-
-.fieldview-banner .fieldview-banner-clear {
-  margin-left: 8px;
 }
 
 .btn-primary {
