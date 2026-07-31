@@ -945,7 +945,7 @@ def _show_folder_dialog() -> str | None:
 # ---------------------------------------------------------------------------
 
 MAX_NON_DEFAULT_HOME_STRIPS = 5
-HOME_STRIP_FIELD_NAMES = {"genre", "publisher", "writer", "artist", "format", "decade", "year", "rating", "bw"}
+HOME_STRIP_FIELD_NAMES = {"genre", "publisher", "writer", "artist", "format", "decade", "year", "rating", "bw", "reading_queue"}
 HOME_STRIP_SORT_FIELDS = {"title", "newest", "recent"}
 
 
@@ -978,7 +978,7 @@ def _validate_strip_payload(payload: dict) -> tuple[str | None, dict | None]:
         field_value = (payload.get("field_value") or "").strip()
         if field_name not in HOME_STRIP_FIELD_NAMES:
             return f"field_name must be one of: {', '.join(sorted(HOME_STRIP_FIELD_NAMES))}", None
-        if not field_value:
+        if field_name != "reading_queue" and not field_value:
             return "field_value is required for a field-based strip", None
     else:
         folder_path = (payload.get("folder_path") or "").strip()

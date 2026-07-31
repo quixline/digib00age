@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-07-31** — Added "Reading Queue" as a 10th, valueless field option to
+  the Home Page Strips admin dropdown, matching `Issue.queued_for_reading`.
+  → `v2.6/progress.md` "Session — 2026-07-31 (continued) — Add Reading Queue
+  field to Home Page Strips"
 - **2026-07-31** — Added "Add Writer Library" and "Add Publisher Library" to
   Custom Tabs, following the "Add Genre Library" pattern (`CUSTOM_TABS_SPEC.md`
   §10.11/§10.12). → `v2.6/progress.md` "Session — 2026-07-31"

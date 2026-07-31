@@ -778,6 +778,7 @@ let viewFolderPath  = '';
 const FIELDVIEW_LABELS = {
   genre: 'Genre', publisher: 'Publisher', writer: 'Writer', artist: 'Artist',
   format: 'Format', decade: 'Decade', year: 'Year', rating: 'Rating', bw: 'Black & White',
+  reading_queue: 'Reading Queue',
 };
 
 function fieldviewValueDisplay(field, value, label) {
@@ -1241,7 +1242,8 @@ function stripViewAllHref(strip) {
     // BUG-015: writer/artist strips carry a Person.id value — field_value_label
     // (resolved server-side, backend/routers/home.py) supplies the display name.
     const label = strip.field_value_label ? `&label=${encodeURIComponent(strip.field_value_label)}` : '';
-    return `/?surface=fieldview&field=${encodeURIComponent(strip.field_name)}&value=${encodeURIComponent(strip.field_value)}${label}`;
+    const valuePart = strip.field_name === 'reading_queue' ? '' : `&value=${encodeURIComponent(strip.field_value)}`;
+    return `/?surface=fieldview&field=${encodeURIComponent(strip.field_name)}${valuePart}${label}`;
   }
   if (strip.basis_type === 'folder') {
     return `/?surface=folderview&folder=${encodeURIComponent(strip.folder_path)}`;
@@ -1631,14 +1633,16 @@ function renderBrowse() {
 function renderFieldviewBanner() {
   const banner = document.getElementById('fieldviewBanner');
   if (!banner) return;
-  if (activeSurface !== 'fieldview' || !viewField || !viewFieldValue) {
+  const hasValue = viewFieldValue || viewField === 'reading_queue';
+  if (activeSurface !== 'fieldview' || !viewField || !hasValue) {
     banner.hidden = true;
     banner.textContent = '';
     return;
   }
-  const fieldLabel   = FIELDVIEW_LABELS[viewField] || viewField;
-  const valueDisplay = fieldviewValueDisplay(viewField, viewFieldValue, viewFieldLabel);
-  banner.textContent = `${fieldLabel}: ${valueDisplay} `;
+  const fieldLabel = FIELDVIEW_LABELS[viewField] || viewField;
+  banner.textContent = viewField === 'reading_queue'
+    ? `${fieldLabel} `
+    : `${fieldLabel}: ${fieldviewValueDisplay(viewField, viewFieldValue, viewFieldLabel)} `;
   const clearLink = el('a', 'fieldview-banner-clear', 'Clear Filter');
   clearLink.href = '/?surface=all';
   banner.appendChild(clearLink);

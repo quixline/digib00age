@@ -4,7 +4,7 @@ every call site applies identical logic instead of near-duplicate copies.
 normalize_path/is_under: folder-path normalization and prefix-matching
 (custom tab + home strip folder validation/filtering — the separator-suffixed
 boundary check means a folder "C:\\Comics\\Batman" won't match "C:\\Comics\\Batman2\\...").
-matches_field: the 9 field-filter dimensions shared by the browse filter bar,
+matches_field: the 10 field-filter dimensions shared by the browse filter bar,
 Custom Tabs, and HOME_STRIPS_SPEC.md's field-based strips.
 """
 
@@ -26,9 +26,12 @@ def is_under(child: str, parent: str) -> bool:
 
 def matches_field(issue: Issue, field_name: str, field_value: str) -> bool:
     """
-    One of: genre, publisher, writer, artist, format, decade, year, rating, bw.
+    One of: genre, publisher, writer, artist, format, decade, year, rating, bw,
+    reading_queue.
     writer/artist: field_value is a Person.id (Tier 4 Item 3) — resolved against
     the issue_credits junction, not the old raw-CSV columns.
+    reading_queue: field_value is unused — queued_for_reading is a single
+    per-issue boolean, so picking the field is the entire filter.
     """
     if field_name == "genre":
         return any(g.genre_name == field_value for g in issue.genres)
@@ -48,6 +51,8 @@ def matches_field(issue: Issue, field_name: str, field_value: str) -> bool:
         return bool(issue.year) and (int(issue.year) // 10) * 10 == int(field_value)
     if field_name == "bw":
         return issue.black_and_white == (field_value == "yes")
+    if field_name == "reading_queue":
+        return issue.queued_for_reading
     return False
 
 

@@ -1332,6 +1332,7 @@ const MAX_NON_DEFAULT_HOME_STRIPS = 5;
 const HS_FIELD_LABELS = {
   genre: 'Genre', publisher: 'Publisher', writer: 'Writer', artist: 'Artist',
   format: 'Format', decade: 'Decade', year: 'Year', rating: 'Rating', bw: 'Black & White',
+  reading_queue: 'Reading Queue',
 };
 // `key` is the dropdown's display label source; `valueKey` (when different
 // from `key`) is what actually gets stored as field_value. writer/artist
@@ -1401,6 +1402,7 @@ function hsBasisSummary(strip) {
   if (strip.basis_type === 'builtin') return 'default';
   if (strip.basis_type === 'field') {
     const label = HS_FIELD_LABELS[strip.field_name] || strip.field_name;
+    if (strip.field_name === 'reading_queue') return label;
     // writer/artist field_value is a Person.id (Tier 4 Item 3) — show the
     // name if the cache has loaded it, otherwise fall back to the raw id.
     let value = strip.field_value;
@@ -1556,7 +1558,13 @@ async function updateHsFieldValueOptions() {
   const fieldName = document.getElementById('hsFieldNameSelect').value;
   const valueSelect = document.getElementById('hsFieldValueSelect');
   valueSelect.innerHTML = '<option value="">Value…</option>';
+  valueSelect.disabled = false;
   if (!fieldName) return;
+
+  if (fieldName === 'reading_queue') {
+    valueSelect.disabled = true;
+    return;
+  }
 
   if (fieldName === 'bw') {
     valueSelect.add(new Option('Yes', 'yes'));
@@ -1598,7 +1606,7 @@ async function addHomeStrip() {
   if (basisType === 'field') {
     payload.field_name = document.getElementById('hsFieldNameSelect').value;
     payload.field_value = document.getElementById('hsFieldValueSelect').value;
-    if (!payload.field_name || !payload.field_value) {
+    if (!payload.field_name || (payload.field_name !== 'reading_queue' && !payload.field_value)) {
       showToast('Pick a field and a value', true);
       return;
     }

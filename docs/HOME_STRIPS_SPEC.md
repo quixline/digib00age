@@ -47,7 +47,9 @@ other three (see Section 4.4 for the removed pin-to-top history).
 - Each added strip is based on **one** of:
   - A single field + single value (Genre, Publisher, Writer, Artist, Format, Decade,
     Year, Rating, or B&W — the same nine dimensions as the existing filter dropdowns),
-    **or**
+    or the valueless Reading Queue field (matches `Issue.queued_for_reading`, no
+    second value to pick — see `CUSTOM_TABS_SPEC.md` §10.10 for where that flag
+    comes from), **or**
   - A single folder (+ subfolders) — same folder-scoping mechanism as Custom Tabs
     (`CUSTOM_TABS_SPEC.md`), reused here rather than reimplemented.
 - No combining criteria within one strip (e.g. no "Genre=Horror AND Decade=1990s") —
@@ -70,8 +72,8 @@ column every row has.
 | `is_default` | BOOLEAN NOT NULL | `true` for the 4 existing strips, seeded once via migration. Locks `name`, `basis_type`, `field_name`, `field_value`, `folder_path` from editing or deletion — only `position` is mutable for these rows, and (as of 2026-07-30) it's respected identically for all 4, including Continue Reading — see Section 4.4. |
 | `name` | TEXT NOT NULL | Heading shown on the home page. Admin-set for added strips; fixed text for defaults ("Random Genre" still computes its displayed genre name live per SPEC.md 20.4 — this column is the static heading label, not the dynamic per-visit genre name). |
 | `basis_type` | TEXT NOT NULL | `'builtin'` (the 5 defaults, logic lives in existing code, not driven by the columns below), `'field'`, or `'folder'` |
-| `field_name` | TEXT NULLABLE | One of: `genre`, `publisher`, `writer`, `artist`, `format`, `decade`, `year`, `rating`, `bw`. Only set when `basis_type = 'field'` |
-| `field_value` | TEXT NULLABLE | The specific value within `field_name` (e.g. `"Horror"`). Only set when `basis_type = 'field'` |
+| `field_name` | TEXT NULLABLE | One of: `genre`, `publisher`, `writer`, `artist`, `format`, `decade`, `year`, `rating`, `bw`, `reading_queue`. Only set when `basis_type = 'field'` |
+| `field_value` | TEXT NULLABLE | The specific value within `field_name` (e.g. `"Horror"`). Only set when `basis_type = 'field'`, except `reading_queue` which is valueless (stored as `""`) — `queued_for_reading` is already a single per-issue boolean |
 | `folder_path` | TEXT NULLABLE | Only set when `basis_type = 'folder'`. Same validation rules as `CUSTOM_TABS_SPEC.md` Section 4.1 |
 | `order_mode` | TEXT NULLABLE | `'random'` or `'fixed'`. Not applicable to `'builtin'` rows (each default strip's randomness is already defined by its own existing logic) |
 | `sort_field` | TEXT NULLABLE | Only used when `order_mode = 'fixed'`: `'title'`, `'newest'`, or `'recent'` — reuses the existing Title/Newest/Recent sort vocabulary from SPEC.md 20.2, applied to the filtered set instead of the whole library |

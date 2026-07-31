@@ -3863,3 +3863,31 @@ skill's entire purpose requires triggering real writes concurrently.
 **Where:** `.claude/skills/stress-test/SKILL.md` ("Ground rules" section
 states this explicitly, to head off a future session assuming it's an
 oversight).
+
+### Reading Queue in Home Page Strips: a 10th `field_name` value, not a new `basis_type`
+**Decided:** 2026-07-31, adding Reading Queue to the Home Page Strips admin
+dropdown.
+**Why:** Home Page Strips' admin-added strips are based on exactly one of
+two `basis_type`s — `'field'` (one of 9 dimensions + a value, e.g.
+Genre="Horror") or `'folder'`. Reading Queue doesn't fit either shape
+cleanly: it needs no second value (`Issue.queued_for_reading` is already a
+single per-issue boolean, so picking the field *is* the filter), which made
+a third `basis_type` sibling to `field`/`folder` the more "correct" data
+model on paper — mirroring how Custom Tabs already treats `reading_queue` as
+a `basis_type` sibling to `folder`/`favorites`/`genre`. Went with the field
+option instead: Tez's ask was literally "add a new field in the dd menu",
+the field dropdown is the actual UI surface being extended, and a new
+`basis_type` would have required restructuring `admin.html`'s binary
+field/folder radio toggle and `_resolve_added_strip()`'s binary
+`if basis_type == "field" ... else ...` branch for the sake of one field
+that's genuinely valueless. The "valueless field" carve-out (skip the
+`field_value`-required checks, disable the value dropdown, drop the value
+from the fieldview URL/banner) touches strictly fewer places than a new
+basis type would, at the cost of `field_value` always being stored as `""`
+for this one field rather than truly absent.
+**Where:** `backend/path_utils.py` (`matches_field()`'s `reading_queue`
+branch); `backend/routers/admin.py` (`HOME_STRIP_FIELD_NAMES`,
+`_validate_strip_payload()`); `frontend/admin.html`
+(`#hsFieldNameSelect`); `frontend/js/admin.js`
+(`updateHsFieldValueOptions()`, `addHomeStrip()`); `frontend/js/app.js`
+(`renderFieldviewBanner()`); `HOME_STRIPS_SPEC.md` §1/§2.

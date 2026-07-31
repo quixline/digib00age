@@ -8297,3 +8297,42 @@ fixes earlier today (the CSP block, the stale-storage no-op).
   cover the new basis types, checked the console for errors (none), then
   deleted both test tabs and confirmed the sidebar returned to its original
   four libraries (2000 AD/folder, Mystery/genre, Reading Queue, Favourites).
+
+## Session — 2026-07-31 (continued) — Add Reading Queue field to Home Page Strips
+
+- Added a 10th field-name option to the Home Page Strips admin dropdown:
+  **Reading Queue**, matching `Issue.queued_for_reading` (the boolean flag
+  behind `CUSTOM_TABS_SPEC.md` §10.10, unrelated to this session's data
+  model). Unlike the other 9 dimensions (Genre, Publisher, Writer, Artist,
+  Format, Decade, Year, Rating, B&W), Reading Queue is valueless — the field
+  itself is the whole filter, no second value to pick.
+- Backend: `matches_field()` (`path_utils.py`) gained a `reading_queue`
+  branch returning `issue.queued_for_reading` directly; `admin.py` added
+  `reading_queue` to `HOME_STRIP_FIELD_NAMES` and carved out the
+  field_value-required check in `_validate_strip_payload()` for that one
+  field name. `home.py`'s `_resolve_added_strip()` needed no change — it
+  already calls `matches_field()` unconditionally.
+- Frontend: `admin.html` added the dropdown option; `admin.js` added the
+  label, disabled the now-pointless value dropdown when Reading Queue is
+  selected, and skipped the value-required validation in `addHomeStrip()`.
+  `app.js` mirrored the label map and strip-link builder, and fixed a real
+  bug caught while implementing: `renderFieldviewBanner()`'s guard hid the
+  filter banner/Clear Filter link whenever `field_value` was falsy, which is
+  always true for a valueless field — added a `reading_queue` carve-out so
+  the banner still renders.
+- Flagged, not fixed: `GET /series/{id}` and `initSeries()` gate
+  credit-scoped series filtering on `value` being truthy, so drilling from a
+  Reading Queue strip into an individual series' detail page falls back to
+  the whole series rather than just the queued issue(s). Pre-existing
+  pattern gap, not introduced by this change — worth a `BUGS.md` entry, not
+  in scope here.
+- **Verified live** via `claude-in-chrome` against the real running app
+  (port 9424, Tez restarted the backend so the new `HOME_STRIP_FIELD_NAMES`
+  value would load): added a real "Reading Queue Test" strip, confirmed the
+  Value dropdown disables and no value is required, confirmed the strip
+  renders on the home page against whatever issues were already flagged
+  `queued_for_reading` in the dev DB, clicked through to "View All" and
+  confirmed the fieldview banner reads "Reading Queue" with a working Clear
+  Filter link and the URL carries no `value=` param, checked console for
+  errors (none), then deleted the test strip and confirmed the strip list
+  returned to just the 4 defaults.
