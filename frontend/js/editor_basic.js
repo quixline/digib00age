@@ -112,6 +112,14 @@ function setField(id, value) {
 }
 
 async function openEditorModal(issueId, onSaved) {
+  // authLocked comes from auth.js (shared global scope, always loaded
+  // alongside this file) — password protection on, not authenticated. Show
+  // the login popup instead of opening a modal that can't do anything useful.
+  if (authLocked) {
+    showLoginPopup();
+    return;
+  }
+
   await ensureEditorLoaded();
 
   currentIssueId = issueId;

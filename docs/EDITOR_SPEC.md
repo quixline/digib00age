@@ -591,6 +591,17 @@ entirely — there's no batch concept in a single-file popup).
 Per Section 4.4 — any field whose existing value doesn't match its enforced dropdown list
 loads blank and must be actively set before save is permitted.
 
+### 6.4 Password gate (fixed, 2026-08-01)
+`openEditorModal()` (`editor_basic.js`) checks the shared auth-lock flag from
+`auth.js` before doing anything else; if password protection is on and the
+session isn't authenticated, it shows the login popup and returns instead of
+fetching `editor_basic.html` and populating the form. Nothing of the Basic
+Editor renders while locked — previously the popup only appeared reactively
+(via the global 401 interceptor) after the modal had already half-opened with
+an empty genre/format list. `issue.html`'s own browsing/reading UI is not
+gated — only this modal's entry point is. See `ADMIN_SPEC.md` §7.1.2's
+"Deterministic View Only lock" for the shared mechanism.
+
 ### 6.4 Remote access
 Works correctly from any device on the home network (e.g. Tez's laptop), with no special
 handling needed: the popup is just HTML/JS served by the same FastAPI app the rest of

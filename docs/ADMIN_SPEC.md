@@ -375,6 +375,52 @@ The auth button tracks `protection_enabled` (via a `dataset.protectionEnabled`
 attribute set in `checkAuthStatus()`) to decide which of the three states applies:
 logout, real login form, or this explanation.
 
+**Deterministic View Only lock — replaces incidental crash-based lockdown
+(fixed, 2026-08-01):** the popup added by 7.1.2 above is only an overlay; it never
+by itself prevented interaction with whatever had already rendered underneath, and
+dismissing it (Cancel) left that page exactly as usable as before. On the Full
+Editor this had accidentally been masked by an unrelated bug — `editor_full.js`'s
+init handler `await`ed a gated call with no try/catch, so a 401 silently aborted
+the rest of its `DOMContentLoaded` wiring and most controls never got wired up —
+but Theme, Card Size (Admin) and the GoodReads link (Full Editor) never depended on
+that wiring (pure `localStorage` / a static `<a href>`) and stayed fully usable
+regardless of auth state. `auth.js`'s `checkAuthStatus()` now computes
+`locked = protection_enabled && !authenticated` and calls `applyAuthLock(locked,
+onProtectedPage)` unconditionally:
+
+- On `/admin` and `/editor`, `applyAuthLock` sets `.inert` on the page's `<main>`
+  and on any element carrying `data-auth-gated` (used for the two Full Editor
+  header buttons — Search ComicVine, Search GoodReads — that sit outside
+  `<main>`), and toggles a `body.auth-locked` class that dims/desaturates those
+  regions via CSS. `inert` disables pointer events, focus, and a11y-tree
+  visibility together, so nothing under it is reachable by mouse, keyboard, or
+  screen reader regardless of what its own JS handler would have done.
+- A persistent "View Only — sign in to make changes" banner (bottom of the
+  viewport, its own Login button) appears whenever locked and stays up
+  independent of the login popup's visibility — Cancel only calls
+  `hideLoginPopup()`, which no longer implies unlocking anything. Only a
+  successful login (existing `location.reload()`) or protection being off
+  clears the lock.
+- `editor_full.js`'s init was also restructured so all `wireX()` calls run
+  unconditionally before the gated data loads (`loadGenreOptions`,
+  `loadFormatOptions`, `refreshFileList`, `refreshQueueList`), which are now
+  wrapped in a single `try/catch` — a 401 no longer leaves the toolbox
+  half-wired; `applyAuthLock`'s `inert` lock is what actually prevents
+  interaction now, not an accidental exception.
+- The Basic Editor popup (`/issue/{id}`, `editor_basic.js`) is gated at its
+  entry point instead: `openEditorModal()` checks the shared `authLocked` flag
+  (set by `applyAuthLock` on every page that loads `auth.js`, not only
+  `/admin`/`/editor`) and shows the login popup instead of opening the modal at
+  all when locked — nothing of the Basic Editor renders while locked, rather
+  than opening a partially-populated form. `issue.html` itself is not in
+  `PROTECTED_PATHS` and its own browsing/reading UI is untouched; only the
+  edit-modal entry point is gated.
+
+This keeps the client-side-popup architecture decided in
+`DECISIONS.md` (2026-06-24) rather than moving to a server-side page
+redirect — see that entry's 2026-08-01 addendum for why the original
+"hostile client reading static JS" risk framing didn't cover this gap.
+
 #### 7.1.3 Brute-force protection
 
 In-memory, per-IP failed-attempt counter — no new dependency (this follows the same

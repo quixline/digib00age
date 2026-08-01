@@ -4355,6 +4355,35 @@ select.filter-select:focus,
   padding: 16px 20px 20px;
 }
 
+/* ── Auth lock (auth.js applyAuthLock) ───────────────────────────────────────
+   Regions marked inert while locked out (password protection on, not
+   authenticated) get a dimmed/desaturated look so they read as "view only,"
+   not broken. */
+[inert] {
+  opacity: 0.55;
+  filter: grayscale(0.3);
+  transition: opacity 0.15s, filter 0.15s;
+}
+
+.view-only-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-pop);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 /* Tooltip anchor for the disabled Save button (Basic Editor) — see
    updateSaveButtonState()'s comment in editor_basic.js for why the tooltip
    lives on this wrapper instead of the button itself. */

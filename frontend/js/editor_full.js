@@ -42,8 +42,11 @@ let soSortDir = 'asc';
 // ── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   populateStaticSelects();
-  await loadGenreOptions();
-  await loadFormatOptions();
+
+  // Wiring first, gated data loads after — a 401 from the loads below (locked
+  // out, password protection on) must not leave the rest of the toolbox
+  // unwired. auth.js's applyAuthLock() is what actually prevents interaction
+  // while locked; this ordering just keeps init itself reliable regardless.
   wireFileManagement();
   wireQueue();
   wireXmlEditor();
@@ -54,8 +57,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   wireSearchOnlineModal();
   wireGoodreadsLink();
 
-  await refreshFileList();
-  await refreshQueueList();
+  try {
+    await loadGenreOptions();
+    await loadFormatOptions();
+    await refreshFileList();
+    await refreshQueueList();
+  } catch (err) {
+    // Expected when locked out — nothing further to do, applyAuthLock() owns
+    // the actual enforcement.
+  }
 });
 
 function populateStaticSelects() {

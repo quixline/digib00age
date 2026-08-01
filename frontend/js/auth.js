@@ -1,9 +1,15 @@
 // ComicVault — auth.js
-// Admin/Editor password gate: login popup, logout control, global 401 interception.
-// ADMIN_SPEC.md Section 7.1 / 7.2.
+// Admin/Editor password gate: login popup, logout control, global 401 interception,
+// and the deterministic View Only lock (ADMIN_SPEC.md Section 7.1 / 7.2).
+//
+// The lock is driven solely by checkAuthStatus()'s result — protection_enabled
+// && !authenticated — never by whether the login popup happens to be open.
+// Cancelling the popup does not unlock anything; only a successful login
+// (which reloads the page) or protection being off does.
 
 let loginPopupReady = null;   // Promise — fragment fetched + chrome wired
 let popupShowing = false;
+let authLocked = false;       // current View Only lock state — read by other page scripts
 
 function ensureLoginPopupLoaded() {
   if (loginPopupReady) return loginPopupReady;
@@ -70,9 +76,51 @@ function hideLoginPopup() {
   if (passwordInput) passwordInput.value = '';
   const errorBox = document.getElementById('loginError');
   if (errorBox) { errorBox.hidden = true; errorBox.textContent = ''; }
+  // Deliberately no lock change here — Cancel dismisses the modal, nothing else.
+  // The page stays exactly as locked/unlocked as checkAuthStatus() found it.
+}
+
+function ensureViewOnlyBanner() {
+  let banner = document.getElementById('viewOnlyBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'viewOnlyBanner';
+    banner.className = 'view-only-banner';
+    banner.hidden = true;
+    banner.innerHTML = `
+      <span>View Only &mdash; sign in to make changes</span>
+      <button type="button" class="btn-admin-action" id="viewOnlyLoginBtn">Login</button>
+    `;
+    document.body.appendChild(banner);
+    document.getElementById('viewOnlyLoginBtn').addEventListener('click', showLoginPopup);
+  }
+  return banner;
 }
 
 const PROTECTED_PATHS = ['/admin', '/editor'];
+
+// Deterministic View Only lock — driven only by auth status, never by popup
+// visibility. `main` covers everything in the page's primary content area;
+// `[data-auth-gated]` covers the handful of controls (Full Editor's header
+// action buttons) that sit outside <main> but still need to be locked.
+//
+// The DOM lock itself only applies on /admin and /editor — those are the
+// pages whose entire content is "the feature behind the gate." Library pages
+// (index/series/issue) load auth.js too (for the global 401 interceptor and
+// the Login/Logout button) but browsing/reading was never gated, so they keep
+// rendering normally; only `authLocked` gets tracked there, for callers like
+// editor_basic.js's Basic Editor popup to check before opening.
+function applyAuthLock(locked, onProtectedPage) {
+  authLocked = locked;
+  if (!onProtectedPage) return;
+
+  document.body.classList.toggle('auth-locked', locked);
+  const main = document.querySelector('main');
+  if (main) main.inert = locked;
+  document.querySelectorAll('[data-auth-gated]').forEach((el) => { el.inert = locked; });
+
+  ensureViewOnlyBanner().hidden = !locked;
+}
 
 function showNoPasswordSetModal() {
   let overlay = document.getElementById('noPasswordOverlay');
@@ -113,8 +161,11 @@ async function checkAuthStatus() {
     authBtn.dataset.protectionEnabled = String(status.protection_enabled);
   }
 
+  const locked = status.protection_enabled && !status.authenticated;
   const onProtectedPage = PROTECTED_PATHS.some((p) => window.location.pathname.startsWith(p));
-  if (status.protection_enabled && !status.authenticated && onProtectedPage) {
+  applyAuthLock(locked, onProtectedPage);
+
+  if (locked && onProtectedPage) {
     showLoginPopup();
   }
 

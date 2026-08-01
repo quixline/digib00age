@@ -3247,6 +3247,24 @@ global middleware — kept per-router so the gate stays auditable per `main.py`'
 router-registration block, and so `/api/editor/genres`/`/formats` are caught
 alongside the issue-specific editor routes without special-casing a path regex).
 
+**Addendum, 2026-08-01:** Tez reported that Cancelling the popup left the loaded
+Admin/Full Editor page fully interactive — the "actual security cost is minor"
+framing above was reasoning about a hostile client *reading* static JS, not about
+a client *using* live, already-rendered functionality after dismissing the gate.
+The API layer was never actually at risk (`require_admin_auth` still 401s every
+gated call regardless of client state), but the client UI gave no honest signal
+of that — most Full Editor controls happened to look disabled only because an
+unrelated bug (`editor_full.js:45`'s unguarded `await` on a gated call) crashed
+the rest of its init on a 401, and a few harmless controls (Admin's Theme/Card
+Size, the Full Editor's GoodReads link) that never depended on that crash stayed
+fully live. This still didn't warrant revisiting (b) from above — kept the
+client-side architecture, but replaced the incidental crash-based lockdown with
+a deliberate one: `auth.js` now owns a real `applyAuthLock()` that `inert`-locks
+the page's `<main>` (plus a few `data-auth-gated` elements outside it) whenever
+`protection_enabled && !authenticated`, independent of popup visibility or any
+particular fetch's success/failure. See `ADMIN_SPEC.md` §7.1.2's "Deterministic
+View Only lock" entry for the full mechanism.
+
 ### Disabling password protection clears the stored hash outright
 
 **Decided:** 2026-06-24, Item 6 build session.

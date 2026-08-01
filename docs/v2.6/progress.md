@@ -8754,3 +8754,69 @@ fixes earlier today (the CSP block, the stale-storage no-op).
   three: laptop, tablet, and desktop — signed off.**
 - Cosmetic-threshold change (layout sizing within an existing page, no
   nav/routing/IA change) — no build-queue item or `DECISIONS.md` entry.
+
+## Session — 2026-08-01 (continued) — Admin/Editor password gate: Cancel left the page fully usable (bug fix)
+
+- Tez reported: after setting an admin password, opening `/admin` or
+  `/editor` showed the login popup with the real page loaded and rendering
+  behind it; clicking Cancel left that page interactive. Most controls
+  ended up non-functional, but Theme and Card Size (Admin) and the "Search
+  GoodReads" link (Full Editor) kept working regardless.
+- Investigation confirmed the API layer was never actually at risk —
+  `require_admin_auth` (`backend/auth.py`) already enforces a real
+  HMAC-signed session cookie server-side on every `/api/admin/*` and
+  `/api/editor/*` call, so no mutating action could succeed while
+  unauthenticated. The gap was entirely client-side: `auth.js`'s login
+  popup was a post-load overlay with no relationship to page interactivity,
+  and Cancel (`hideLoginPopup()`) only ever hid the modal — no re-lock, no
+  redirect. What looked like partial lockdown in the Full Editor was
+  actually an accident: `editor_full.js`'s init `await`ed a gated call
+  (`loadGenreOptions()`) with no try/catch, so a 401 silently aborted the
+  rest of `DOMContentLoaded` and most controls never got wired up. Theme,
+  Card Size (pure `localStorage`, no network) and the GoodReads link (a
+  static `<a href>`, no JS required) never depended on that wiring and
+  stayed live regardless of auth state — not because anyone had decided to
+  allow them.
+- Two decisions confirmed with Tez before building: (1) enforcement stays
+  client-side (a deterministic lock, not a server-side page-gate/redirect —
+  keeps the existing architecture from the 2026-06-24 `DECISIONS.md` entry
+  intact); (2) no exceptions — Theme, Card Size, and the GoodReads link get
+  locked too, for a fully consistent View Only state. Basic Editor
+  (`/issue/{id}`'s quick-edit popup) was pulled into the same fix, since it
+  shares the underlying gap.
+- Built a real `applyAuthLock(locked, onProtectedPage)` in `auth.js`,
+  driven solely by `checkAuthStatus()`'s `protection_enabled &&
+  !authenticated` result — never by popup visibility. On `/admin` and
+  `/editor` it sets `.inert` on the page's `<main>` (which already covers
+  Admin's Theme/Card Size, both nested inside it) plus any element carrying
+  a new `data-auth-gated` attribute (added to Full Editor's header-level
+  Search ComicVine / Search GoodReads controls, which sit outside `<main>`).
+  A persistent "View Only — sign in to make changes" banner with its own
+  Login button shows whenever locked and stays up independent of the popup.
+  Also restructured `editor_full.js`'s init so all `wireX()` calls run
+  before the gated data loads (now wrapped in one `try/catch`) — the page
+  wires up consistently regardless of auth state, and `inert` is what
+  actually enforces the lock rather than an accidental crash. Basic
+  Editor's `openEditorModal()` now checks the shared lock flag and shows
+  the login popup instead of opening the modal at all when locked.
+- CSS: `[inert]` regions get a dim/desaturate treatment so a locked page
+  reads as "view only," not broken; new `.view-only-banner` component
+  styled with the existing `.btn-admin-action`/`color-mix` conventions.
+- Verified manually via claude-in-chrome against the real dev server: set a
+  temporary test password through the Admin UI, confirmed the login popup
+  appears with the page already visibly dimmed on `/admin` and `/editor`;
+  Cancel leaves the dimming and banner in place; Theme, Card Size, Search
+  ComicVine, and the GoodReads link (clicked directly — confirmed no new
+  tab opened) are all inert; clicking Edit XML on an unauthenticated
+  `/issue/{id}` opens the login popup instead of a partial Basic Editor
+  modal, while the rest of that page (browsing, Start Reading, favourites)
+  stays fully interactive throughout, since it was never behind this gate;
+  logging in via both the popup and the banner's own Login button restores
+  full functionality; console clean on all pages, no unhandled rejection
+  from the old unguarded `await`. Regression-checked with password
+  protection off afterward — zero visual/behavioral change from before this
+  fix. Test password removed and `config.json` confirmed back to its
+  original `admin_password_hash: null` state before closing the session.
+- `docs/ADMIN_SPEC.md` §7.1.2 (new "Deterministic View Only lock" entry),
+  `docs/EDITOR_SPEC.md` §6 (new §6.4), and `docs/DECISIONS.md` (2026-08-01
+  addendum to the 2026-06-24 client-side-popup entry) updated to match.

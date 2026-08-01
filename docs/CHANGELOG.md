@@ -13,6 +13,14 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-08-01** — Fixed Admin/Editor password gate: Cancelling the login
+  popup used to leave the loaded page fully interactive (the API layer was
+  always safe; the client-side lockdown was accidental). Added a real
+  `applyAuthLock()` in `auth.js` that `inert`-locks the page and shows a
+  persistent View Only banner whenever unauthenticated, independent of
+  popup visibility; extended to the Basic Editor popup too. → `v2.6/progress.md`
+  "Session — 2026-08-01 (continued) — Admin/Editor password gate: Cancel
+  left the page fully usable (bug fix)"
 - **2026-08-01** — Full Editor's 4-column layout (`/editor`) no longer
   breaks at laptop (1366×768) or tablet widths: switched `.fe-layout`
   from fixed-px columns to proportional `minmax()` tracks and lowered the
