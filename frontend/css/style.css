@@ -1683,6 +1683,7 @@ select.filter-select:focus,
 
 .card-genre-ribbon:hover {
   color: var(--accent);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .cover-card--redesign.state-part-read .card-genre-ribbon,

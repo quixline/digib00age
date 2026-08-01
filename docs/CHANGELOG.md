@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-08-01** — Genre ribbon hover on Grid/Home cards now lightens its
+  background instead of staying near-black, so the blue hover text stays
+  readable. → `v2.6/progress.md` "Session — 2026-08-01 (continued) —
+  Genre ribbon hover: lightened background so blue text stays readable"
 - **2026-08-01** — Fixed List View's "N% Read" text showing 0% for
   partially-read Singles/link_as_issue cards (it used `read_count/
   issue_count` instead of the page-level calc the grid progress bar

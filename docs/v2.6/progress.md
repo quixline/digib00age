@@ -8622,3 +8622,18 @@ fixes earlier today (the CSP block, the stale-storage no-op).
   matching the cover's progress-bar fill.
 - Not tracked in `BUGS.md` — reported and fixed directly in the same
   session.
+
+## Session — 2026-08-01 (continued) — Genre ribbon hover: lightened background so blue text stays readable
+
+- Tez reported: the genre ribbon on Grid/Home cards (`.card-genre-ribbon`,
+  `frontend/css/style.css:1669`) turns its text blue (`var(--accent)`) on
+  hover, but the ribbon's background stayed `rgba(0, 0, 0, 0.4)` — dark
+  enough that the blue text lost contrast against it.
+- Fix: `.card-genre-ribbon:hover` now also sets
+  `background: rgba(255, 255, 255, 0.25)`, lightening the pill behind the
+  text on hover while leaving the text itself blue as requested.
+- Cosmetic-threshold change (colour/hover state only) — no build-queue
+  item or `DECISIONS.md` entry needed.
+- **Verified live** via `claude-in-chrome`: hovered ribbons on both Grid
+  View (`/?surface=all`) and Home strips (`/?surface=home`) — text stays
+  blue, background visibly lightens, readable on the dark card face.
