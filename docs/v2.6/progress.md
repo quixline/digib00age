@@ -8446,3 +8446,43 @@ fixes earlier today (the CSP block, the stale-storage no-op).
   reload (one stale-cached-JS error surfaced on a plain in-session
   `navigate()` reusing the same tab — expected/known browser-cache quirk,
   not a code defect; resolved by hard-reloading, unrelated to this fix).
+
+## Session — 2026-08-01 — Star-rating hover now cascades to preceding stars
+
+- Cosmetic polish (interaction feel only, no data/route/IA change — no
+  `DECISIONS.md` entry or build-queue item per `CLAUDE.md`'s cosmetic
+  threshold): both star-rating widgets (the issue-detail page's
+  `.rating-control` and the bulk-selection bottom bar's `.selection-rate`)
+  previously only lit up the single star under the cursor on hover. Now
+  hovering star *N* lights stars 1..*N* gold, matching the conventional
+  star-rating hover pattern — hovering the 5th star turns the whole row
+  gold.
+- Plain CSS `:hover` can't reach *preceding* siblings (only `~`/`+` reach
+  siblings later in DOM order), so this is done via a small JS helper,
+  `attachRatingHoverPreview()` (`frontend/js/app.js`, added just after the
+  `el()` helper): a `mouseover`/`mouseleave` listener delegated on the
+  widget's container toggles an `.is-hover` class on every star whose
+  `data-value` is ≤ the hovered star's. Wired into both `buildRatingControl()`
+  (issue page) and the selection toolbar's star row in
+  `ensureSelectionToolbar()`. The selection bar's `✕` clear button shares
+  the `.rating-star` class but has no `data-value`, so the `[data-value]`
+  selector naturally excludes it from the cascade.
+- `frontend/css/style.css`: added `.rating-control .rating-star.is-hover`
+  and `.selection-rate .rating-star.is-hover` rules (gold color, no
+  transform — only the literally-hovered star still scales, via the
+  existing `:hover` rule). Also tightened the two light-theme
+  "inactive stars are 10% darker" overrides
+  (`:root[data-theme="light"] .rating-control .rating-star:not(.is-filled)`
+  and its `prefers-color-scheme` twin) to `:not(.is-filled):not(.is-hover)`
+  — those overrides had higher specificity than a plain `.is-hover` rule
+  and would otherwise have kept cascaded-but-unfilled stars grey in light
+  theme.
+- **Verified live** via `claude-in-chrome` against the real running app
+  (port 9424, dev DB): on an issue detail page, hovered the 3rd of 5 stars
+  and confirmed stars 1-3 turned gold with 4-5 staying grey; hovered the
+  5th star and confirmed all 5 turned gold. Entered selection mode via
+  `enterSelectionMode()` in the console (no real card long-pressed) and
+  repeated the same check against the bottom bar's `.selection-rate`
+  widget — same cascade behaviour, clear button unaffected. No rating was
+  actually set on any issue (hover only, no clicks); exited selection mode
+  after. No console errors.

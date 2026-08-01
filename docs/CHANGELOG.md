@@ -13,6 +13,11 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-08-01** — Star-rating hover (issue page + bulk-selection bottom
+  bar) now cascades to preceding stars, so hovering the 5th star turns the
+  whole row gold instead of just the one under the cursor. → `v2.6/
+  progress.md` "Session — 2026-08-01 — Star-rating hover now cascades to
+  preceding stars"
 - **2026-07-31** — Fixed BUG-035: stacked filters (e.g. a Genre fieldview
   plus a Format dropdown pick) no longer show two ambiguous, unlabeled
   "Clear Filter" buttons — each active filter now gets its own labeled chip

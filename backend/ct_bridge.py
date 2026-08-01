@@ -252,8 +252,8 @@ def metadata_to_field_dict(md: GenericMetadata) -> dict:
 
     if md.issue_id:
         fields["Notes"] = (
-            "Tagged with ComicVault (ComicTagger backend) using info from Comic Vine "
-            f"on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}. [Issue ID {md.issue_id}]"
+            "digib00age thanks ComicTagger, Comic Vine and all the contributors for their work. "
+            f"[Issue ID {md.issue_id}]"
         )
 
     _ROLE_FIELDS = (

@@ -24,6 +24,26 @@ function el(tag, cls, text) {
   return node;
 }
 
+// Cascading hover preview for star-rating widgets: hovering star N highlights
+// stars 1..N (not just the one under the cursor), so the rightmost star shows
+// the whole row gold. CSS :hover alone can't do this (no "preceding sibling"
+// selector), so it's done via mouseover/mouseleave delegation on the
+// container instead. Only elements with a data-value (the 1-5 stars) take
+// part — the selection toolbar's clear (✕) button shares the .rating-star
+// class but has no data-value, so it's naturally excluded.
+function attachRatingHoverPreview(container) {
+  const stars = () => Array.from(container.querySelectorAll('.rating-star[data-value]'));
+  container.addEventListener('mouseover', e => {
+    const star = e.target.closest('.rating-star[data-value]');
+    if (!star) return;
+    const value = Number(star.dataset.value);
+    stars().forEach(s => s.classList.toggle('is-hover', Number(s.dataset.value) <= value));
+  });
+  container.addEventListener('mouseleave', () => {
+    stars().forEach(s => s.classList.remove('is-hover'));
+  });
+}
+
 // Horizontal rating row — sits in the info block's count row (alongside
 // issue/page count), not overlaid on the cover.
 function buildRatingRow(rating) {
@@ -366,6 +386,7 @@ function ensureSelectionToolbar() {
     });
     rateWrap.appendChild(star);
   }
+  attachRatingHoverPreview(rateWrap);
   actions.appendChild(rateWrap);
   bar.appendChild(actions);
 
@@ -3100,6 +3121,7 @@ function buildRatingControl(data) {
     });
     wrap.appendChild(star);
   }
+  attachRatingHoverPreview(wrap);
   sync();
 
   return wrap;

@@ -2918,16 +2918,24 @@ select.filter-select:focus,
   color: var(--favourite);
 }
 
+/* Hover preview (cascades to preceding stars via JS-toggled .is-hover, see
+   attachRatingHoverPreview in app.js — plain CSS :hover can't reach
+   preceding siblings). */
+.rating-control .rating-star.is-hover {
+  color: var(--favourite);
+}
+
 /* Inactive stars 10% darker in light theme (--surface-3 #E1E6EC × 0.9),
    scoped here rather than in the shared --surface-3 token since that token
-   is reused for borders/surfaces elsewhere. :not(.is-filled) so this can't
-   clobber the .is-filled rule above at equal specificity. */
-:root[data-theme="light"] .rating-control .rating-star:not(.is-filled) {
+   is reused for borders/surfaces elsewhere. :not(.is-filled):not(.is-hover)
+   so this can't clobber the .is-filled/.is-hover rules above at equal
+   specificity. */
+:root[data-theme="light"] .rating-control .rating-star:not(.is-filled):not(.is-hover) {
   color: #CACFD4;
 }
 
 @media (prefers-color-scheme: light) {
-  :root:not([data-theme]) .rating-control .rating-star:not(.is-filled) {
+  :root:not([data-theme]) .rating-control .rating-star:not(.is-filled):not(.is-hover) {
     color: #CACFD4;
   }
 }
@@ -4010,6 +4018,13 @@ select.filter-select:focus,
 .selection-rate .rating-star:hover {
   color: var(--favourite);
   transform: scale(1.15);
+}
+
+/* Hover preview (cascades to preceding stars via JS-toggled .is-hover, see
+   attachRatingHoverPreview in app.js — plain CSS :hover can't reach
+   preceding siblings). */
+.selection-rate .rating-star.is-hover {
+  color: var(--favourite);
 }
 
 .selection-rate .rating-clear {
