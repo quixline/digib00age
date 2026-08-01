@@ -117,11 +117,6 @@ ul {
   z-index: 1;
 }
 
-.menu-bar {
-  position: relative;
-  z-index: 2;
-}
-
 .page-bg {
   position: fixed;
   top: var(--header-h);
@@ -520,6 +515,8 @@ body.sidebar-collapsed .app-sidebar-lib-badge {
 /* ── Unified menu bar (MENU_BAR_SPEC.md) — shared across Flat View and
    Folder View; sits above whichever surface is active. ───────────────────── */
 .menu-bar {
+  position: relative;
+  z-index: 2;
   border-bottom: 1px solid var(--border);
   margin-bottom: 12px;
 }
@@ -1396,14 +1393,14 @@ select.filter-select:focus,
   transition: opacity var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
-.cover-card:hover .select-dot,
-.cover-card.selected .select-dot {
+.cover-card:hover .select-dot {
   opacity: 1;
 }
 
 .cover-card.selected .select-dot {
-  background: #333;
-  border-color: #333;
+  opacity: 1;
+  background: var(--surface-3);
+  border-color: var(--surface-3);
 }
 
 .cover-card.selected .select-dot::after {
@@ -2459,19 +2456,6 @@ select.filter-select:focus,
     padding-right: 10px;
   }
 
-  .series-header {
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .series-cover-wrap {
-    width: 120px;
-  }
-
-  .filter-selects {
-    gap: 6px;
-  }
-
   .filter-select {
     max-width: 120px;
     font-size: 12px;
@@ -2769,16 +2753,16 @@ select.filter-select:focus,
 
 /* Progress bar — under the cover, not overlaid, with a visible track so a
    partial fill still reads clearly at a glance. */
-.issue-progress-track {
+.issue-cover-col .issue-progress-track {
   height: 6px;
   border-radius: var(--radius-pill);
-  background: #1b1e24;
+  background: var(--surface-3);
   overflow: hidden;
 }
 
-.issue-progress-fill {
+.issue-cover-col .issue-progress-fill {
   height: 100%;
-  background: #3FB877;
+  background: var(--green);
   border-radius: var(--radius-pill);
 }
 
