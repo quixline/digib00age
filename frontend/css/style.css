@@ -797,7 +797,11 @@ select.filter-select:focus,
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  padding: 0;
+  /* The "×" glyph's ink sits above/left of the flex-centered line box in
+     this font, so nudge it down-right within the fixed circle (border-box
+     means padding never changes the circle's painted size — same trick as
+     the favorite-heart badge above). */
+  padding: 3px 0 0 2px;
 }
 
 /* ── Home strips ─────────────────────────────────────────────────────────── */
@@ -1683,7 +1687,7 @@ select.filter-select:focus,
 
 .card-genre-ribbon:hover {
   color: var(--accent);
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 1.25);
 }
 
 .cover-card--redesign.state-part-read .card-genre-ribbon,

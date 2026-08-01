@@ -13,6 +13,10 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-08-01** — Fixed the "×" glyph inside active-filter chips
+  (`.filter-chip-clear`) sitting visibly off-centre in its circle. →
+  `v2.6/progress.md` "Session — 2026-08-01 (continued) — Filter chip '×'
+  glyph off-centre in its circle (cosmetic fix)"
 - **2026-08-01** — Genre ribbon hover on Grid/Home cards now lightens its
   background instead of staying near-black, so the blue hover text stays
   readable. → `v2.6/progress.md` "Session — 2026-08-01 (continued) —

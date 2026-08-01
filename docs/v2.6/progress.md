@@ -8637,3 +8637,27 @@ fixes earlier today (the CSP block, the stale-storage no-op).
 - **Verified live** via `claude-in-chrome`: hovered ribbons on both Grid
   View (`/?surface=all`) and Home strips (`/?surface=home`) — text stays
   blue, background visibly lightens, readable on the dark card face.
+
+## Session — 2026-08-01 (continued) — Filter chip "×" glyph off-centre in its circle (cosmetic fix)
+
+- Tez pointed out (screenshot) the "×" clear glyph inside each active
+  filter chip's circle (`.filter-chip-clear`, BUG-035's per-filter chips)
+  sat visibly high and left of the circle's true centre.
+- Measured the cause empirically rather than guessing: used
+  `javascript_tool` to read the live button's computed styles/font metrics
+  (`Hanken Grotesk`, 13px, `line-height: 1`), then rendered the same "×"
+  glyph to an offscreen canvas and scanned pixel alpha to find its actual
+  ink bounding box — confirmed the glyph's visual ink sits above and left
+  of the flex-centered line box's geometric centre in this font, at this
+  size. Iterated the fix live in the DOM (temporary crosshair overlay +
+  transform nudge on a wrapped test span) until the ink visually centred,
+  then translated that offset into a permanent CSS-only fix.
+- Fix: same technique already used by the favourite-heart badge
+  (`style.css` ~1053-1079, see its own comment) — keep the circle's
+  painted size fixed (`border-box` means padding never grows it) but bias
+  the flex-centered content with asymmetric padding
+  (`padding: 3px 0 0 2px`) so the glyph's ink — not its line box — lands
+  in the centre.
+- Cosmetic-threshold change — no build-queue item or `DECISIONS.md` entry.
+- **Verified live**: zoomed screenshots of the active-filter chip's "×"
+  before/after confirm the glyph now sits centred in its circle.
