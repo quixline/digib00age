@@ -4,6 +4,49 @@ Rationale log — *why*, not *what*. Only non-obvious calls go here; routine
 implementation choices are covered in `SPEC.md` / `EDITOR_SPEC.md` / the feature
 specs and aren't repeated. Newest first.
 
+### API consolidation: per-file `onError` callback instead of one shared toast; `reader.js`/`sw.js` excluded; existing `AbortSignal` cancellation preserved
+
+**Decided:** 2026-08-01.
+
+**Why:** `docs/api-consolidation-scope.md` assumed a single existing
+toast/notification function that the new shared `apiFetch()` could call
+directly. Checking the actual code found four separate, incompatible
+error-display patterns instead (`admin.js`'s auto-dismiss toast,
+`editor_basic.js`'s own duplicate toast built because `admin.js`'s isn't
+loaded on `issue.html`, `editor_full.js`'s persistent inline error box,
+`reader.js`'s full-page error replacement). Forcing all of them onto one
+shared display method would have been a visible UX change on at least two
+pages, which contradicts the scope doc's own "no user-facing changes"
+constraint. Giving `apiFetch(path, options)` an optional `onError`
+callback (default no-op) instead keeps each file's existing display
+function as-is — the consolidation is in the fetch/URL/retry mechanics,
+not the error UI.
+
+`reader.js` was excluded from the consolidation entirely (confirmed with
+Tez before implementing), same treatment as `sw.js`: it's already
+deliberately isolated (its own header comment says it duplicates the
+`el()` helper rather than share code with `app.js`), `reader.html` doesn't
+load `auth.js`/`pwa.js`/`tooltip.js` at all, and its error UX doesn't fit
+anywhere else. Only 4 fetch() calls — high risk (new script-tag
+dependency on a page kept deliberately minimal) for low reward.
+
+`app.js` already had its own `apiFetch(path, signal)` using a raw
+`AbortSignal` to cancel stale library-cache lookups (search debounce, tab
+switching, Folder View) — missed by the original scope doc, which listed
+AbortController-based cancellation as out of scope. Read that exclusion as
+"no *new* cancellation work," not "remove what's already there," and gave
+the new shared `apiFetch` an `options.signal` passthrough so the existing
+behaviour survived the migration.
+
+**How to apply:** if a future consolidation/refactor doc assumes "the
+existing X function" in the singular, verify that before implementing —
+this repo has a track record of the same utility (toast displays, `el()`
+helpers, back-button handling) being deliberately duplicated per-file
+rather than shared, because different pages load different combinations
+of scripts with no bundler/module system tying them together. Don't
+assume a shared abstraction is safe to introduce without checking what
+already silently relies on script load order.
+
 ### BUG-034 fix: a partially-queued series routes straight to the issue, not through a "scoped" series page
 
 **Decided:** 2026-07-31.

@@ -60,8 +60,8 @@ async function populateStaticSelects() {
   const ratingSelect = document.getElementById('ed-agerating');
 
   const [formatOptions, genreOptions] = await Promise.all([
-    fetch('/api/editor/formats').then((r) => r.json()),
-    fetch('/api/editor/genres').then((r) => r.json()),
+    apiFetch('/editor/formats'),
+    apiFetch('/editor/genres'),
   ]);
 
   formatSelect.innerHTML = optionsHtml(formatOptions, '-- Select Format --');
@@ -121,14 +121,15 @@ async function openEditorModal(issueId, onSaved) {
   errorBox.hidden = true;
   errorBox.textContent = '';
 
-  const res = await fetch(`/api/editor/${issueId}`);
-  if (!res.ok) {
+  let fields, saving;
+  try {
+    ({ fields, saving } = await apiFetch(`/editor/${issueId}`));
+  } catch (_) {
     errorBox.hidden = false;
     errorBox.textContent = 'Could not load this issue for editing.';
     document.getElementById('editorOverlay').hidden = false;
     return;
   }
-  const { fields, saving } = await res.json();
 
   const form = document.getElementById('editorForm');
   // Cancel stays enabled either way — this only ever gates the fields and
@@ -206,8 +207,7 @@ async function warnOnFuzzyCredits(fields) {
     const resolved = [];
     for (const name of names) {
       try {
-        const res = await fetch(`/api/people/fuzzy-match?name=${encodeURIComponent(name)}`);
-        const data = await res.json();
+        const data = await apiFetch(`/people/fuzzy-match?name=${encodeURIComponent(name)}`);
         if (data.closest_match) {
           const useExisting = confirm(
             `"${name}" is close to an existing ${label}: "${data.closest_match.name}".\n\n` +
@@ -262,27 +262,12 @@ async function onEditorSubmit(e) {
   errorBox.hidden = true;
 
   try {
-    const res = await fetch(`/api/editor/${currentIssueId}`, {
+    const body = await apiFetch(`/editor/${currentIssueId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ fields }),
     });
 
-    if (res.status === 409) {
-      const body = await res.json().catch(() => ({}));
-      errorBox.hidden = false;
-      errorBox.textContent = body?.detail || 'A save is already in progress for this issue.';
-      return;
-    }
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      const messages = body?.detail?.errors || [body?.detail || 'Save failed.'];
-      errorBox.hidden = false;
-      errorBox.textContent = messages.join(' ');
-      return;
-    }
-
-    const body = await res.json();
     const onSaved = currentOnSaved;
     const issueId = currentIssueId;
     closeEditorModal();
@@ -294,7 +279,14 @@ async function onEditorSubmit(e) {
     }
   } catch (err) {
     errorBox.hidden = false;
-    errorBox.textContent = 'Network error — save did not complete.';
+    if (err.status === 409) {
+      errorBox.textContent = err.body?.detail || 'A save is already in progress for this issue.';
+    } else if (err.status) {
+      const messages = err.body?.detail?.errors || [err.body?.detail || 'Save failed.'];
+      errorBox.textContent = messages.join(' ');
+    } else {
+      errorBox.textContent = 'Network error — save did not complete.';
+    }
   } finally {
     saveBtn.textContent = 'Save';
     updateSaveButtonState();
@@ -310,7 +302,7 @@ async function onEditorSubmit(e) {
 async function pollEditorSaveStatus(issueId, onSaved) {
   let status;
   try {
-    status = await (await fetch(`/api/editor/${issueId}/save-status`)).json();
+    status = await apiFetch(`/editor/${issueId}/save-status`, { retry: false });
   } catch (_) {
     setTimeout(() => pollEditorSaveStatus(issueId, onSaved), 700);
     return;

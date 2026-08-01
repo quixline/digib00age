@@ -8486,3 +8486,108 @@ fixes earlier today (the CSP block, the stale-storage no-op).
   widget — same cascade behaviour, clear button unaffected. No rating was
   actually set on any issue (hover only, no clicks); exited selection mode
   after. No console errors.
+
+## Session — 2026-08-01 (continued) — API layer consolidation
+
+- Pure frontend refactor, pre-production housekeeping (`docs/
+  api-consolidation-scope.md`), scoped and requested directly, not tied to
+  a build-queue item — no user-facing behaviour change, so no
+  `comicvault-changes-v2.6.md` item or roadmap change either.
+- Planned first, then checked the scope doc's assumptions against the
+  actual code before writing anything — several didn't hold and the plan
+  was revised before implementation:
+  - No single shared toast/notification function exists. Four separate,
+    incompatible patterns were found: `admin.js`'s `showToast()`
+    (auto-dismiss toast, also relied on globally by `processingTools.js`/
+    `filePicker.js` via same-page script load), `editor_basic.js`'s own
+    `showEditorToast()` (a *duplicate* toast impl, built specifically
+    because `admin.js`'s isn't loaded on `issue.html`), `editor_full.js`'s
+    `showError()`/`clearError()` (persistent inline box, not a toast), and
+    `reader.js`'s `showError()` (full-page replacement of `#readerRoot`).
+    Resolved by giving the new `apiFetch()` an optional `onError` callback
+    (default no-op) instead of baking in one display method — each file
+    keeps calling its own existing display function, so no visible UI
+    changed anywhere.
+  - `app.js` already had its own `apiFetch(path, signal)` (GET-only,
+    ~12 call sites using a raw `AbortSignal` to cancel stale cache
+    lookups for search/tab-switch/Folder View). Missed entirely by the
+    original scope doc. Since every script here is a plain global
+    `<script>` tag (no modules/bundler), a second global `apiFetch`
+    would have silently shadowed or been shadowed by the first depending
+    on script load order — a regression invisible in the diff. `app.js`'s
+    local `apiFetch`/`const API` were removed, its call sites updated to
+    the new `apiFetch(path, { signal })` shape, and the shared
+    `apiFetch` was given `options.signal` support to preserve the
+    existing cancellation behaviour (kept, not new scope — the original
+    "no AbortController" exclusion was read as "no *new* cancellation
+    work," not "break what's already there").
+  - `reader.js` excluded from the consolidation entirely (same treatment
+    as `sw.js`, confirmed with Tez before implementing) — it's
+    deliberately isolated already (own header comment: duplicates the
+    `el()` helper rather than share code with `app.js`), `reader.html`
+    doesn't even load `auth.js`/`pwa.js`/`tooltip.js`, and its error UX
+    (full-page replace) doesn't fit the toast/inline-box shapes anywhere
+    else. Only 4 fetch() calls, high risk/low reward to fold in.
+  - `auth.js` had only 3 genuine `/api/...` call sites, not 5 — one of
+    its 5 raw `fetch(` matches was a `/static/login_popup.html` fragment
+    fetch (not an API call), another was `nativeFetch(...args)` inside
+    its own 401-interceptor IIFE (must stay a raw call — it's the
+    mechanism that makes the interceptor work at all).
+  - `processingTools.js` had its own `postJSON(path, body)` helper that
+    always resolves with the parsed response body regardless of HTTP
+    status (callers check body fields like `.started`/`.message`
+    themselves, not `res.ok`). Preserved that exact contract rather than
+    letting the new `apiFetch`'s throw-on-non-ok behaviour break 11
+    existing callers: `postJSON` now calls `apiFetch` internally but
+    catches and returns `err.body` on failure, matching the old
+    always-resolves shape.
+  - `filePicker.js`'s two fetch calls take a fully-built `browseUrl`/
+    `drivesUrl` string from whichever caller opened the picker
+    (`processingTools.js` for Filename Editor/Convert/XML Tagging/etc.,
+    each previously built with a `${API}` prefix). Since `apiFetch`
+    prepends its own base, those 8 URL pairs in `processingTools.js` had
+    the redundant `${API}` prefix stripped as part of migrating
+    `filePicker.js`, ahead of `processingTools.js`'s own full migration —
+    a real cross-file coupling the file-by-file migration order didn't
+    originally account for.
+  - `admin.js`'s raw fetch count was actually 48, not 44 as the scope doc
+    stated — corrected before using it to size the migration order.
+  - Auth mechanism confirmed as originally expected: session cookie
+    (`cv_session`, `backend/auth.py`), sent automatically by the browser
+    — no header-injection interceptor needed.
+- `frontend/js/api.js` created: global `apiFetch(path, options)` —
+  `options: { method, headers, body, signal, retry = true, onLoading,
+  onError }`. One retry on a true network failure only (not on
+  4xx/5xx, not on `AbortError`). On a non-ok response the thrown `Error`
+  carries `.status` and `.body` (parsed JSON, best-effort) so call sites
+  needing status- or body-based branching (423 lockout on login, 409
+  save-in-progress, etc.) keep working without changing their branching
+  logic. Added as a new `<script src="/static/js/api.js">` tag, loaded
+  before its consumers, on every HTML template that needed it —
+  `index.html`, `series.html`, `issue.html`, `admin.html`,
+  `editor_full.html`, and every `guide-*.html` page that loads `auth.js`.
+- Migrated in order (smallest/lowest-risk first): `filePicker.js` (2),
+  `auth.js` (3 real API calls; login POST uses `retry: false` to avoid a
+  transient network blip double-submitting a password attempt against the
+  login rate limiter), `editor_basic.js` (7; the background-save polling
+  fetch also uses `retry: false` since it already has its own
+  indefinite retry-until-done loop), `app.js` (12 raw + updated the ~12
+  existing `apiFetch` call sites), `processingTools.js` (14, including
+  the `postJSON` rewrite above), `editor_full.js` (23), `admin.js` (48,
+  largest, done last — its `const API` removed too).
+- `reader.js` and `sw.js` untouched, confirmed via `git diff --stat`.
+- **Verified live** via `claude-in-chrome` against the real running app
+  (port 9424, dev DB) across every migrated surface: Home (strips,
+  Custom Tabs nav), issue detail (favorite/unfavorite/rate — confirmed
+  the actual `POST /api/progress/bulk/*` calls fired and the DOM updated),
+  Admin dashboard (stats), Admin → Library Appearance → Home Page Strips,
+  Admin → Processing Tools → Filename Editor including its folder-browse
+  picker (the `filePicker.js`/`processingTools.js` URL-prefix coupling
+  fix above), Full Editor (genre/format dropdowns, file/queue lists),
+  Basic Editor modal (full field population). Zero console errors on any
+  page; every `/api/...` request observed returned 200. Login flow
+  checked as far as the dev environment allows (no admin password set —
+  confirmed the "Password Protection Not Set Up" modal renders correctly,
+  which exercises `auth.js`'s migrated `checkAuthStatus()`). Tez then
+  manually tested and signed off separately before this doc update, per
+  `CLAUDE.md`'s close-of-session gate.

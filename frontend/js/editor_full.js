@@ -70,7 +70,7 @@ function populateStaticSelects() {
 
 async function loadFormatOptions() {
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-  const formats = await fetch('/api/editor/formats').then((r) => r.json());
+  const formats = await apiFetch('/editor/formats');
   let html = `<option value="">-- Select Format --</option>`;
   for (const v of formats) html += `<option value="${esc(v)}">${esc(v)}</option>`;
   document.getElementById('fe-format').innerHTML = html;
@@ -81,7 +81,7 @@ async function loadFormatOptions() {
 // list still comes from /api/editor/genres; chips hold the current selection and
 // the "＋ Add genre" dropdown offers only genres not yet chosen.
 async function loadGenreOptions() {
-  genreOptions = await fetch('/api/editor/genres').then((r) => r.json());
+  genreOptions = await apiFetch('/editor/genres');
   renderGenreChips();
 }
 
@@ -161,8 +161,7 @@ function wireFileManagement() {
 }
 
 async function refreshFileList() {
-  const res = await fetch('/api/editor/full/files');
-  const data = await res.json();
+  const data = await apiFetch('/editor/full/files');
   // Preserve current display order where possible, append new entries
   const known = new Map(loadedFiles.map((f) => [f.id, f]));
   const incoming = new Map(data.files.map((f) => [f.id, f]));
@@ -389,7 +388,7 @@ async function focusFile(fileId) {
 }
 
 async function removeFile(fileId) {
-  await fetch(`/api/editor/full/files/${fileId}`, { method: 'DELETE' });
+  await apiFetch(`/editor/full/files/${fileId}`, { method: 'DELETE' });
   loadedFiles = loadedFiles.filter((f) => f.id !== fileId);
   if (focusedFileId === fileId) {
     focusedFileId = null;
@@ -402,7 +401,7 @@ async function removeFile(fileId) {
 }
 
 async function clearFileList() {
-  await fetch('/api/editor/full/files/clear', { method: 'DELETE' });
+  await apiFetch('/editor/full/files/clear', { method: 'DELETE' });
   loadedFiles = [];
   focusedFileId = null;
   resetForm();
@@ -424,8 +423,7 @@ function wireQueue() {
 }
 
 async function refreshQueueList() {
-  const res = await fetch('/api/editor/full/queue');
-  const data = await res.json();
+  const data = await apiFetch('/editor/full/queue');
   queueFiles = data.files;
   renderQueueList();
   updateMismatchIndicator();
@@ -486,7 +484,7 @@ function updateMismatchIndicator() {
 }
 
 async function removeFromQueue(fileId) {
-  await fetch(`/api/editor/full/queue/${fileId}`, { method: 'DELETE' });
+  await apiFetch(`/editor/full/queue/${fileId}`, { method: 'DELETE' });
   queueFiles = queueFiles.filter((f) => f.id !== fileId);
   renderQueueList();
   updateMismatchIndicator();
@@ -494,7 +492,7 @@ async function removeFromQueue(fileId) {
 }
 
 async function clearQueue() {
-  await fetch('/api/editor/full/queue/clear', { method: 'DELETE' });
+  await apiFetch('/editor/full/queue/clear', { method: 'DELETE' });
   queueFiles = [];
   renderQueueList();
   updateMismatchIndicator();
@@ -513,8 +511,7 @@ async function warnOnFuzzyCredits(fields) {
     const resolved = [];
     for (const name of names) {
       try {
-        const res = await fetch(`/api/people/fuzzy-match?name=${encodeURIComponent(name)}`);
-        const data = await res.json();
+        const data = await apiFetch(`/people/fuzzy-match?name=${encodeURIComponent(name)}`);
         if (data.closest_match) {
           const useExisting = confirm(
             `"${name}" is close to an existing ${label}: "${data.closest_match.name}".\n\n` +
@@ -539,12 +536,13 @@ async function addCurrentToQueue() {
     return;
   }
   const fields = await warnOnFuzzyCredits(collectFormFields());
-  const res = await fetch('/api/editor/full/queue/add', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ file_id: focusedFileId, fields }),
-  });
-  if (!res.ok) {
+  try {
+    await apiFetch('/editor/full/queue/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file_id: focusedFileId, fields }),
+    });
+  } catch (_) {
     showError('Could not add this file to the queue.');
     return;
   }
@@ -579,12 +577,11 @@ async function processBatch(mode) {
   setProcessingState(true);
   clearError();
   try {
-    const res = await fetch('/api/editor/full/process', {
+    const result = await apiFetch('/editor/full/process', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    const result = await res.json();
     if (result.errors && result.errors.length) {
       openProcessErrorModal(result.processed, result.errors);
     }
@@ -627,12 +624,13 @@ function setField(id, value) {
 }
 
 async function loadFileIntoEditor(fileId) {
-  const res = await fetch(`/api/editor/full/files/${fileId}/xml`);
-  if (!res.ok) {
+  let data;
+  try {
+    data = await apiFetch(`/editor/full/files/${fileId}/xml`);
+  } catch (_) {
     showError('Could not load this file for editing.');
     return;
   }
-  const data = await res.json();
 
   if (data.multiple_xml) {
     openMultiXmlModal(fileId, data.candidates);
@@ -851,9 +849,10 @@ function resetViewer() {
 }
 
 async function loadFileIntoViewer(fileId) {
-  const res = await fetch(`/api/editor/full/files/${fileId}/preview`);
-  if (!res.ok) { resetViewer(); return; }
-  const data = await res.json();
+  let data;
+  try {
+    data = await apiFetch(`/editor/full/files/${fileId}/preview`);
+  } catch (_) { resetViewer(); return; }
 
   viewerFileId = fileId;
   viewerImageList = data.image_list;
@@ -876,9 +875,10 @@ async function loadFileIntoViewer(fileId) {
 }
 
 async function showViewerPage() {
-  const res = await fetch(`/api/editor/full/files/${viewerFileId}/page/${viewerPageNum}`);
-  if (!res.ok) return;
-  const data = await res.json();
+  let data;
+  try {
+    data = await apiFetch(`/editor/full/files/${viewerFileId}/page/${viewerPageNum}`);
+  } catch (_) { return; }
 
   const img = document.getElementById('feViewerImg');
   img.src = data.data;
@@ -986,8 +986,7 @@ function loadThumbImage(n, el) {
     el.style.backgroundImage = `url("${thumbCache.get(key)}")`;
     return;
   }
-  fetch(`/api/editor/full/files/${fileId}/page/${n}?w=120`)
-    .then((r) => (r.ok ? r.json() : null))
+  apiFetch(`/editor/full/files/${fileId}/page/${n}?w=120`)
     .then((d) => {
       if (!d || !d.data) return;
       thumbCache.set(key, d.data);
@@ -1023,10 +1022,11 @@ function closePicker() {
 }
 
 async function loadPickerDirectory(path) {
-  const url = path ? `/api/editor/full/browse?path=${encodeURIComponent(path)}` : '/api/editor/full/browse';
-  const res = await fetch(url);
-  if (!res.ok) return;
-  const data = await res.json();
+  const url = path ? `/editor/full/browse?path=${encodeURIComponent(path)}` : '/editor/full/browse';
+  let data;
+  try {
+    data = await apiFetch(url);
+  } catch (_) { return; }
   pickerPath = data.path;
   pickerSelected.clear();
   renderPickerTree(data.items || []);
@@ -1161,7 +1161,7 @@ function pickerGetSelectedPaths(type) {
 async function pickerAddSelectedFiles() {
   const filePaths = pickerGetSelectedPaths('file');
   if (!filePaths.length) return;
-  await fetch('/api/editor/full/files/add', {
+  await apiFetch('/editor/full/files/add', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ file_paths: filePaths }),
@@ -1173,7 +1173,7 @@ async function pickerAddSelectedFiles() {
 async function pickerAddSelectedFolder() {
   const folderPaths = pickerGetSelectedPaths('folder');
   if (!folderPaths.length) return;
-  await fetch('/api/editor/full/folders/add', {
+  await apiFetch('/editor/full/folders/add', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ folder_paths: folderPaths }),
@@ -1253,19 +1253,19 @@ function openMultiXmlModal(fileId, candidates) {
 }
 
 async function resolveMultiXml(keepFilename) {
-  const res = await fetch(`/api/editor/full/files/${multiXmlFileId}/resolve-xml`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ keep: keepFilename }),
-  });
-  document.getElementById('feMultiXmlOverlay').hidden = true;
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    showError(body?.detail || 'Could not resolve the multiple XML files.');
+  let data;
+  try {
+    data = await apiFetch(`/editor/full/files/${multiXmlFileId}/resolve-xml`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keep: keepFilename }),
+    });
+  } catch (err) {
+    document.getElementById('feMultiXmlOverlay').hidden = true;
+    showError(err.body?.detail || 'Could not resolve the multiple XML files.');
     return;
   }
-  const data = await res.json();
+  document.getElementById('feMultiXmlOverlay').hidden = true;
   populateForm(data.fields);
 
   // Refresh the file row's xml_files so the warning clears
@@ -1333,12 +1333,13 @@ async function openSearchOnline() {
   showSoStep('series');
 
   document.getElementById('feSoSeriesTbody').innerHTML = '<tr><td colspan="4">Searching…</td></tr>';
-  const res = await fetch(`/api/editor/full/search/series?q=${encodeURIComponent(fields.Series.trim())}`);
-  if (!res.ok) {
+  let data;
+  try {
+    data = await apiFetch(`/editor/full/search/series?q=${encodeURIComponent(fields.Series.trim())}`);
+  } catch (_) {
     document.getElementById('feSoSeriesTbody').innerHTML = '<tr><td colspan="4">Search failed.</td></tr>';
     return;
   }
-  const data = await res.json();
   soSeriesResults = data.results;
   renderSoSeriesTable();
 }
@@ -1412,12 +1413,13 @@ function soIssuesBtnClick() {
 
 async function soOkBtnClick() {
   if (!soSelectedSeries) return;
-  const res = await fetch(`/api/editor/full/search/issues?series_id=${encodeURIComponent(soSelectedSeries.id)}`);
-  if (!res.ok) {
+  let data;
+  try {
+    data = await apiFetch(`/editor/full/search/issues?series_id=${encodeURIComponent(soSelectedSeries.id)}`);
+  } catch (_) {
     showError('Could not load issues.');
     return;
   }
-  const data = await res.json();
   if (!data.results.length) {
     showError('No issues found for this series.');
     return;
@@ -1430,12 +1432,13 @@ async function proceedToSoIssues(seriesId) {
   showSoStep('issue');
   const tbody = document.getElementById('feSoIssueTbody');
   tbody.innerHTML = '<tr><td colspan="3">Loading…</td></tr>';
-  const res = await fetch(`/api/editor/full/search/issues?series_id=${encodeURIComponent(seriesId)}`);
-  if (!res.ok) {
+  let data;
+  try {
+    data = await apiFetch(`/editor/full/search/issues?series_id=${encodeURIComponent(seriesId)}`);
+  } catch (_) {
     tbody.innerHTML = '<tr><td colspan="3">Could not load issues.</td></tr>';
     return;
   }
-  const data = await res.json();
   renderSoIssueTable(data.results);
 }
 
@@ -1470,16 +1473,17 @@ function previewSoIssue(issue, row) {
 }
 
 async function confirmSoIssue(issueId) {
-  const res = await fetch('/api/editor/full/search/confirm', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ issue_id: issueId }),
-  });
-  if (!res.ok) {
+  let data;
+  try {
+    data = await apiFetch('/editor/full/search/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ issue_id: issueId }),
+    });
+  } catch (_) {
     showError('Could not apply this match.');
     return;
   }
-  const data = await res.json();
   // §9.7 — fully overwrites only the mapped fields; Genre/Format/AgeRating/
   // BlackAndWhite/PageCount (never in the mapped set) are left untouched.
   populateForm({ ...collectFormFields(), ...data.fields });

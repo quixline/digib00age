@@ -2,13 +2,21 @@
 // File Rename (§12.1) today; Convert Archives/Convert Images/Processing
 // Folder Automation join this file as they're built (§12.2-§12.4).
 
+// Preserves the pre-consolidation contract: always resolves with the parsed
+// body, even on a non-2xx response (callers inspect fields like `.started`/
+// `.message` themselves rather than relying on HTTP status) — only a genuine
+// network failure (no body to fall back to) still throws.
 async function postJSON(path, body) {
-  const res = await fetch(`${API}/admin${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return res.json();
+  try {
+    return await apiFetch(`/admin${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    if (err.body) return err.body;
+    throw err;
+  }
 }
 
 function showPtSummary(title, headline, errors) {
@@ -273,7 +281,7 @@ function resetRenameFieldsPanel() {
 }
 
 async function removeLoadedRenameFile(id) {
-  await fetch(`${API}/admin/rename/files/${id}`, { method: 'DELETE' });
+  await apiFetch(`/admin/rename/files/${id}`, { method: 'DELETE' });
   renameFiles = renameFiles.filter(x => x.id !== id);
   delete renamePreviewMap[id];
   delete renamePreviewNames[id];
@@ -288,8 +296,8 @@ async function removeLoadedRenameFile(id) {
 
 function openRenameBrowse() {
   openFilePicker({
-    browseUrl: `${API}/admin/rename/browse`,
-    drivesUrl: `${API}/admin/rename/drives`,
+    browseUrl: `/admin/rename/browse`,
+    drivesUrl: `/admin/rename/drives`,
     mode: 'files',
     title: 'Choose Files to Rename',
     onConfirm: addRenameFiles,
@@ -303,7 +311,7 @@ async function addRenameFiles(paths) {
 }
 
 async function clearRenameFiles() {
-  await fetch(`${API}/admin/rename/files/clear`, { method: 'DELETE' });
+  await apiFetch(`/admin/rename/files/clear`, { method: 'DELETE' });
   renameFiles = [];
   renameSelectedId = null;
   resetRenameFieldsPanel();
@@ -319,12 +327,11 @@ async function applyRename() {
     return;
   }
 
-  const res = await fetch(`${API}/admin/rename/apply`, {
+  const data = await apiFetch(`/admin/rename/apply`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items }),
   });
-  const data = await res.json();
 
   showPtSummary(
     'File Rename',
@@ -394,8 +401,8 @@ function renderConvertFileList() {
 function openConvertBrowse() {
   const fromFormat = currentConvertFromFormat();
   openFilePicker({
-    browseUrl: `${API}/admin/convert/browse?from_format=${fromFormat}`,
-    drivesUrl: `${API}/admin/convert/drives`,
+    browseUrl: `/admin/convert/browse?from_format=${fromFormat}`,
+    drivesUrl: `/admin/convert/drives`,
     mode: 'files',
     title: `Choose ${fromFormat.toUpperCase()} Files to Convert`,
     onConfirm: addConvertFiles,
@@ -409,7 +416,7 @@ async function addConvertFiles(paths) {
 }
 
 async function clearConvertFiles() {
-  await fetch(`${API}/admin/convert/files/clear`, { method: 'DELETE' });
+  await apiFetch(`/admin/convert/files/clear`, { method: 'DELETE' });
   convertFiles = [];
   renderConvertFileList();
 }
@@ -430,7 +437,7 @@ async function runConvert() {
 }
 
 async function pollConvertStatus() {
-  const status = await (await fetch(`${API}/admin/convert/status`)).json();
+  const status = await apiFetch(`/admin/convert/status`);
   const label = document.getElementById('convertProgressLabel');
   const bar = document.getElementById('convertProgressBar');
 
@@ -459,7 +466,7 @@ async function pollConvertStatus() {
   showPtSummary('Convert Archives', `Converted ${ok} of ${status.results.length} files`, [...warnings, ...errors]);
 
   // Reload working set — successes were removed server-side, failures remain.
-  const files = await (await fetch(`${API}/admin/convert/files`)).json();
+  const files = await apiFetch(`/admin/convert/files`);
   convertFiles = files.files || [];
   renderConvertFileList();
 }
@@ -497,8 +504,8 @@ function renderConvertImagesFileList() {
 
 function openConvertImagesBrowse() {
   openFilePicker({
-    browseUrl: `${API}/admin/convert-images/browse`,
-    drivesUrl: `${API}/admin/convert-images/drives`,
+    browseUrl: `/admin/convert-images/browse`,
+    drivesUrl: `/admin/convert-images/drives`,
     mode: 'files',
     title: 'Choose CBZ/CBR Files to Convert',
     onConfirm: addConvertImagesFiles,
@@ -512,7 +519,7 @@ async function addConvertImagesFiles(paths) {
 }
 
 async function clearConvertImagesFiles() {
-  await fetch(`${API}/admin/convert-images/files/clear`, { method: 'DELETE' });
+  await apiFetch(`/admin/convert-images/files/clear`, { method: 'DELETE' });
   convertImagesFiles = [];
   renderConvertImagesFileList();
 }
@@ -535,7 +542,7 @@ async function runConvertImages() {
 }
 
 async function pollConvertImagesStatus() {
-  const status = await (await fetch(`${API}/admin/convert-images/status`)).json();
+  const status = await apiFetch(`/admin/convert-images/status`);
   const label = document.getElementById('convertImagesProgressLabel');
   const bar = document.getElementById('convertImagesProgressBar');
 
@@ -563,7 +570,7 @@ async function pollConvertImagesStatus() {
 
   showPtSummary('Convert Images', `Converted ${ok} of ${status.results.length} files`, [...warnings, ...errors]);
 
-  const files = await (await fetch(`${API}/admin/convert-images/files`)).json();
+  const files = await apiFetch(`/admin/convert-images/files`);
   convertImagesFiles = files.files || [];
   renderConvertImagesFileList();
 }
@@ -592,7 +599,7 @@ const PF_STAGE_LABELS = {
 };
 
 async function loadProcessingFolderConfig() {
-  const cfg = await (await fetch(`${API}/admin/processing-folder/config`)).json();
+  const cfg = await apiFetch(`/admin/processing-folder/config`);
 
   document.getElementById('pfFolderInput').value = cfg.processing_folder_path || '';
   document.getElementById('pfConvertArchivesEnabled').checked = cfg.processing_folder_convert_archives_enabled;
@@ -639,8 +646,8 @@ async function saveSchedule() {
 
 function openPfBrowse() {
   openFilePicker({
-    browseUrl: `${API}/admin/processing-folder/browse`,
-    drivesUrl: `${API}/admin/processing-folder/drives`,
+    browseUrl: `/admin/processing-folder/browse`,
+    drivesUrl: `/admin/processing-folder/drives`,
     mode: 'folder',
     title: 'Choose Processing Folder',
     onConfirm: async ([folderPath]) => {
@@ -667,7 +674,7 @@ async function runPfNow() {
 }
 
 async function pollPfStatus() {
-  const status = await (await fetch(`${API}/admin/processing-folder/status`)).json();
+  const status = await apiFetch(`/admin/processing-folder/status`);
   const label = document.getElementById('pfProgressLabel');
 
   if (status.running) {
@@ -778,8 +785,8 @@ let fsPollTimer = null;
 const FS_SCRIPTS = {
   filename_sort: {
     label: 'Sort by Filename',
-    browseUrl: `${API}/admin/filename-sort/browse`,
-    drivesUrl: `${API}/admin/filename-sort/drives`,
+    browseUrl: `/admin/filename-sort/browse`,
+    drivesUrl: `/admin/filename-sort/drives`,
     pickerTitle: 'Choose Folder to Sort',
     runPath: '/filename-sort/run',
     runBody: (folder) => ({ folder }),
@@ -787,8 +794,8 @@ const FS_SCRIPTS = {
   },
   move_series: {
     label: 'Move Series Folders',
-    browseUrl: `${API}/admin/library-move/browse`,
-    drivesUrl: `${API}/admin/library-move/drives`,
+    browseUrl: `/admin/library-move/browse`,
+    drivesUrl: `/admin/library-move/drives`,
     pickerTitle: 'Choose Folder Containing Series Folders to Move',
     runPath: '/library-move/run',
     runBody: (folder) => ({ folder, group: 'series' }),
@@ -796,8 +803,8 @@ const FS_SCRIPTS = {
   },
   move_singles: {
     label: 'Move Singles Folders',
-    browseUrl: `${API}/admin/library-move/browse`,
-    drivesUrl: `${API}/admin/library-move/drives`,
+    browseUrl: `/admin/library-move/browse`,
+    drivesUrl: `/admin/library-move/drives`,
     pickerTitle: 'Choose Folder Containing Singles Folders to Move',
     runPath: '/library-move/run',
     runBody: (folder) => ({ folder, group: 'singles' }),
@@ -864,7 +871,7 @@ async function runFilenameSort() {
 }
 
 async function pollFsStatus(script) {
-  const status = await (await fetch(`${API}/admin${script.statusPath()}`)).json();
+  const status = await apiFetch(`/admin${script.statusPath()}`);
 
   if (status.running) {
     fsPollTimer = setTimeout(() => pollFsStatus(script), 500);
@@ -948,8 +955,8 @@ let xtPollTimer = null;
 
 function openXtBrowse() {
   openFilePicker({
-    browseUrl: `${API}/admin/xml-tagging/browse`,
-    drivesUrl: `${API}/admin/xml-tagging/drives`,
+    browseUrl: `/admin/xml-tagging/browse`,
+    drivesUrl: `/admin/xml-tagging/drives`,
     mode: 'folder',
     title: 'Choose Folder to Tag',
     onConfirm: ([folderPath]) => {
@@ -998,7 +1005,7 @@ async function runXmlTagging() {
 }
 
 async function pollXtStatus() {
-  const status = await (await fetch(`${API}/admin/xml-tagging/status`)).json();
+  const status = await apiFetch(`/admin/xml-tagging/status`);
 
   if (status.running) {
     xtPollTimer = setTimeout(pollXtStatus, 700);

@@ -13,6 +13,12 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-08-01** — API layer consolidation: all 114+ scattered `fetch()`
+  calls across `app.js`/`admin.js`/`processingTools.js`/`editor_full.js`/
+  `editor_basic.js`/`auth.js`/`filePicker.js` now go through a single
+  shared `frontend/js/api.js`. Pure refactor, no user-facing change —
+  `reader.js`/`sw.js` deliberately excluded. → `v2.6/progress.md` "Session
+  — 2026-08-01 (continued) — API layer consolidation"
 - **2026-08-01** — Star-rating hover (issue page + bulk-selection bottom
   bar) now cascades to preceding stars, so hovering the 5th star turns the
   whole row gold instead of just the one under the cursor. → `v2.6/

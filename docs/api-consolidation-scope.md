@@ -80,10 +80,24 @@ After each file: verify in browser that the affected pages load and core actions
 
 ## Completion checklist
 
-- [ ] `api.js` created and exported correctly
-- [ ] All 7 files migrated, local `const API` declarations removed
-- [ ] Auth mechanism confirmed and documented in `api.js` comments
-- [ ] Toast/notification function identified and wired in
-- [ ] No regressions on: library load, series/issue pages, admin panel, basic editor, full editor
-- [ ] sw.js untouched
-- [ ] This file updated with completion note and date
+- [x] `api.js` created and exported correctly
+- [x] All 7 files migrated, local `const API` declarations removed
+- [x] Auth mechanism confirmed and documented in `api.js` comments
+- [x] Toast/notification function identified and wired in — revised approach:
+      no single shared function exists (4 separate patterns found), so
+      `apiFetch()` takes a per-call `onError` callback instead of calling one
+      directly. See `DECISIONS.md` "API consolidation" entry.
+- [x] No regressions on: library load, series/issue pages, admin panel, basic editor, full editor
+- [x] sw.js untouched (reader.js also excluded — see `DECISIONS.md`)
+- [x] This file updated with completion note and date
+
+---
+
+## Completion note
+
+**Done 2026-08-01.** Implemented per the revised plan (the "smallest version"
+above's toast-handler assumption didn't hold — see `DECISIONS.md`). `reader.js`
+was excluded from migration alongside `sw.js`, so "7 files" above became 6 in
+practice. Verified live via `claude-in-chrome` against the running dev app, then
+manually tested and signed off by Tez. Full narrative in `v2.6/progress.md`,
+Session "2026-08-01 (continued) — API layer consolidation".

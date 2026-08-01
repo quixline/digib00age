@@ -32,17 +32,20 @@ async function onLoginSubmit(e) {
   errorBox.hidden = true;
   errorBox.textContent = '';
 
-  const res = await fetch('/api/admin/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
-  });
-
-  if (!res.ok) {
+  try {
+    await apiFetch('/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+      retry: false, // avoid double-submitting a password attempt against the login rate limiter
+    });
+  } catch (err) {
     errorBox.hidden = false;
-    errorBox.textContent = res.status === 423
+    errorBox.textContent = err.status === 423
       ? 'Too many failed attempts. Try again in a few minutes.'
-      : 'Incorrect password.';
+      : err.status
+        ? 'Incorrect password.'
+        : 'Network error — could not reach the server.';
     return;
   }
 
@@ -100,8 +103,7 @@ function showNoPasswordSetModal() {
 }
 
 async function checkAuthStatus() {
-  const res = await fetch('/api/admin/auth/status');
-  const status = await res.json();
+  const status = await apiFetch('/admin/auth/status');
 
   const authBtn = document.getElementById('logoutBtn');
   if (authBtn) {
@@ -136,7 +138,7 @@ function wireLogoutButton() {
   if (!authBtn) return;
   authBtn.addEventListener('click', async () => {
     if (authBtn.dataset.authenticated === 'true') {
-      await fetch('/api/admin/logout', { method: 'POST' });
+      await apiFetch('/admin/logout', { method: 'POST' });
       location.reload();
     } else if (authBtn.dataset.protectionEnabled === 'false') {
       showNoPasswordSetModal();

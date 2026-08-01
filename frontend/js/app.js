@@ -1,21 +1,7 @@
 // ComicVault — app.js
 // Library home (index.html), series detail (series.html), issue detail (issue.html)
 
-const API = '/api';
-
 // ── Utilities ────────────────────────────────────────────────────────────────
-
-async function apiFetch(path, signal) {
-  let res;
-  try {
-    res = await fetch(API + path, signal ? { signal } : undefined);
-  } catch (networkErr) {
-    if (networkErr.name === 'AbortError') throw networkErr;
-    throw new Error(`Network error (server unreachable): ${path}`);
-  }
-  if (!res.ok) throw new Error(`HTTP ${res.status} from ${path}`);
-  return res.json();
-}
 
 function el(tag, cls, text) {
   const node = document.createElement(tag);
@@ -348,7 +334,7 @@ function ensureSelectionToolbar() {
 
     try {
       const issueIds = await resolveBulkIssueIds();
-      await fetch(`${API}/editor/full/files/add-by-issues`, {
+      await apiFetch('/editor/full/files/add-by-issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ issue_ids: issueIds }),
@@ -523,7 +509,7 @@ async function runBulkAction(path, extraBody, applyFn) {
   if (!originalIds.length) return;
   try {
     const issueIds = await resolveBulkIssueIds();
-    await fetch(`${API}${path}`, {
+    await apiFetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ issue_ids: issueIds, ...extraBody }),
@@ -546,13 +532,11 @@ async function runBulkDelete() {
   if (!originalIds.length) return;
   try {
     const issueIds = await resolveBulkIssueIds();
-    const res = await fetch(`${API}/progress/bulk/delete`, {
+    const data = await apiFetch('/progress/bulk/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ issue_ids: issueIds }),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
     removeIssuesFromDom(originalIds);
     exitSelectionMode();
     if (data.file_errors && data.file_errors.length) {
@@ -1230,7 +1214,7 @@ async function loadHome() {
   const timerId = setTimeout(() => ctrl.abort(), 20000);
 
   try {
-    const stripsData = await apiFetch('/home/strips', ctrl.signal);
+    const stripsData = await apiFetch('/home/strips', { signal: ctrl.signal });
     clearTimeout(timerId);
 
     homeStrips.innerHTML = '';
@@ -2610,10 +2594,10 @@ function buildStatusButton(issue, row) {
     e.stopPropagation();
     const next = issue.read_status === 'read' ? 'unread' : 'read';
     const endpoint = next === 'read'
-      ? `/api/progress/${issue.id}/mark-read`
-      : `/api/progress/${issue.id}/mark-unread`;
+      ? `/progress/${issue.id}/mark-read`
+      : `/progress/${issue.id}/mark-unread`;
     try {
-      await fetch(endpoint, { method: 'POST' });
+      await apiFetch(endpoint, { method: 'POST' });
       issue.read_status    = next;
       btn.className        = `status-btn ${next}`;
       btn.textContent      = STATUS_ICON[next] || '';
@@ -2638,7 +2622,7 @@ async function markAllRead(issues) {
   }
 
   await Promise.allSettled(
-    unread.map(i => fetch(`/api/progress/${i.id}/mark-read`, { method: 'POST' }))
+    unread.map(i => apiFetch(`/progress/${i.id}/mark-read`, { method: 'POST' }))
   );
 
   for (const issue of issues) issue.read_status = 'read';
@@ -2993,10 +2977,10 @@ function buildStatusToggle(data, onChange) {
   btn.addEventListener('click', async () => {
     const next     = data.read_status === 'read' ? 'unread' : 'read';
     const endpoint = next === 'read'
-      ? `/api/progress/${data.id}/mark-read`
-      : `/api/progress/${data.id}/mark-unread`;
+      ? `/progress/${data.id}/mark-read`
+      : `/progress/${data.id}/mark-unread`;
     try {
-      await fetch(endpoint, { method: 'POST' });
+      await apiFetch(endpoint, { method: 'POST' });
       data.read_status = next;
       sync();
       if (onChange) onChange();
@@ -3021,9 +3005,9 @@ function buildFavoriteToggle(data, badgeEl) {
   sync();
 
   btn.addEventListener('click', async () => {
-    const endpoint = data.favorites ? '/api/progress/bulk/unfavorite' : '/api/progress/bulk/favorite';
+    const endpoint = data.favorites ? '/progress/bulk/unfavorite' : '/progress/bulk/favorite';
     try {
-      await fetch(endpoint, {
+      await apiFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ issue_ids: [data.id] }),
@@ -3048,10 +3032,10 @@ function buildQueueReadingToggle(data) {
 
   btn.addEventListener('click', async () => {
     const endpoint = data.queued_for_reading
-      ? '/api/progress/bulk/unqueue-reading'
-      : '/api/progress/bulk/queue-reading';
+      ? '/progress/bulk/unqueue-reading'
+      : '/progress/bulk/queue-reading';
     try {
-      await fetch(endpoint, {
+      await apiFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ issue_ids: [data.id] }),
@@ -3080,10 +3064,10 @@ function buildFlagReviewToggle(data, badgeEl) {
   btn.addEventListener('click', async () => {
     const next     = !data.flagged_for_review;
     const endpoint = next
-      ? `/api/progress/${data.id}/flag-review`
-      : `/api/progress/${data.id}/unflag-review`;
+      ? `/progress/${data.id}/flag-review`
+      : `/progress/${data.id}/unflag-review`;
     try {
-      await fetch(endpoint, { method: 'POST' });
+      await apiFetch(endpoint, { method: 'POST' });
       data.flagged_for_review = next;
       sync();
     } catch (_) {}
@@ -3110,7 +3094,7 @@ function buildRatingControl(data) {
       // Clicking the already-highlighted star clears to Unrated (BUG-009).
       const newRating = data.personal_rating === i ? 0 : i;
       try {
-        await fetch('/api/progress/bulk/rate', {
+        await apiFetch('/progress/bulk/rate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ issue_ids: [data.id], rating: newRating }),

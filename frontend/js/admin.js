@@ -1,6 +1,5 @@
 /* ComicVault — admin.js */
 
-const API = '/api';
 let scanPollInterval = null;
 let _config = { library_roots: [], scan_exclude: [], library_root: '' };
 
@@ -185,9 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── Stats ─────────────────────────────────────────────────────────────────────
 async function loadStats() {
   try {
-    const r = await fetch(`${API}/admin/stats`);
-    if (!r.ok) throw new Error(r.statusText);
-    const d = await r.json();
+    const d = await apiFetch(`/admin/stats`);
     renderStats(d);
     renderScanSection(d.scan_state, d.missing_count, d.log_status);
     renderLastBackup(d.last_backup_at, d.last_backup_error);
@@ -335,12 +332,11 @@ async function openLogViewer(logName, cardEl) {
   document.getElementById('logViewerContent').textContent = 'Loading…';
   document.getElementById('logViewerOverlay').hidden = false;
 
-  const r = await fetch(`${API}/admin/logs/${logName}`);
-  const d = await r.json();
+  const d = await apiFetch(`/admin/logs/${logName}`);
   document.getElementById('logViewerContent').textContent =
     d.exists && d.content ? d.content : 'No entries yet.';
 
-  await fetch(`${API}/admin/logs/${logName}/mark-viewed`, { method: 'POST' });
+  await apiFetch(`/admin/logs/${logName}/mark-viewed`, { method: 'POST' });
   if (cardEl) cardEl.classList.remove('has-pending');
 }
 
@@ -360,8 +356,7 @@ function showScanProgress() {
 async function doScan() {
   showScanProgress();
   try {
-    const r = await fetch(`${API}/scan`, { method: 'POST' });
-    const d = await r.json();
+    const d = await apiFetch(`/scan`, { method: 'POST' });
     if (d.running) startScanPoll();
   } catch (e) {
     const btn  = document.getElementById('scanNowBtn');
@@ -380,18 +375,11 @@ async function doCleanup() {
   btn.disabled = true;
   btn.textContent = 'Cleaning…';
   try {
-    const r = await fetch(`${API}/admin/cleanup-missing`, { method: 'POST' });
-    const d = await r.json();
-    if (r.ok) {
-      if (countEl) countEl.textContent = '0';
-      if (result)  result.textContent = `${d.removed} record${d.removed !== 1 ? 's' : ''} removed`;
-      if (card)    card.classList.remove('has-pending');
-      showToast(`Removed ${d.removed} missing record${d.removed !== 1 ? 's' : ''}`);
-    } else {
-      btn.disabled = false;
-      btn.textContent = 'Clean Up';
-      showToast('Cleanup failed', true);
-    }
+    const d = await apiFetch(`/admin/cleanup-missing`, { method: 'POST' });
+    if (countEl) countEl.textContent = '0';
+    if (result)  result.textContent = `${d.removed} record${d.removed !== 1 ? 's' : ''} removed`;
+    if (card)    card.classList.remove('has-pending');
+    showToast(`Removed ${d.removed} missing record${d.removed !== 1 ? 's' : ''}`);
   } catch (e) {
     btn.disabled = false;
     btn.textContent = 'Clean Up';
@@ -411,8 +399,7 @@ function stopScanPoll() {
 
 async function pollScanStatus() {
   try {
-    const r = await fetch(`${API}/scan/status`);
-    const d = await r.json();
+    const d = await apiFetch(`/scan/status`);
     updateScanUI(d);
     if (!d.running) {
       stopScanPoll();
@@ -463,16 +450,11 @@ async function doBackup() {
   btn.disabled = true;
   btn.textContent = 'Backing up…';
   try {
-    const r = await fetch(`${API}/admin/backup`, { method: 'POST' });
-    const d = await r.json();
-    if (r.ok) {
-      showToast('Backup saved: ' + d.backup_file);
-      await loadStats();
-    } else {
-      showToast('Backup failed: ' + (d.detail || 'Unknown error'), true);
-    }
+    const d = await apiFetch(`/admin/backup`, { method: 'POST' });
+    showToast('Backup saved: ' + d.backup_file);
+    await loadStats();
   } catch (e) {
-    showToast('Backup failed: ' + e.message, true);
+    showToast('Backup failed: ' + (e.body?.detail || e.message || 'Unknown error'), true);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Backup Database';
@@ -482,9 +464,7 @@ async function doBackup() {
 // ── Config / Folders ──────────────────────────────────────────────────────────
 async function loadConfig() {
   try {
-    const r = await fetch(`${API}/admin/config`);
-    if (!r.ok) throw new Error(r.statusText);
-    _config = await r.json();
+    _config = await apiFetch(`/admin/config`);
   } catch (_) {
     _config = { library_roots: [], scan_exclude: [], library_root: '' };
   }
@@ -520,26 +500,31 @@ function initServerPort() {
     if (!confirm('This will restart the server and disconnect active users. Continue?')) {
       return;
     }
-    await fetch(`${API}/admin/config`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reader_port: port }),
-    });
-    await fetch(`${API}/admin/restart`, { method: 'POST' });
-    showToast(`Restarting on port ${port}…`);
-    setTimeout(() => { window.location.href = `http://${location.hostname}:${port}/admin`; }, 4000);
+    try {
+      await apiFetch(`/admin/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reader_port: port }),
+      });
+      await apiFetch(`/admin/restart`, { method: 'POST' });
+      showToast(`Restarting on port ${port}…`);
+      setTimeout(() => { window.location.href = `http://${location.hostname}:${port}/admin`; }, 4000);
+    } catch (e) {
+      showToast('Failed to change port: ' + e.message, true);
+    }
   });
 }
 
 // ── Scheduled Database Backup (ADMIN_SPEC.md §9) ────────────────────────────
 function initBackupSettings() {
   document.getElementById('browseBackupFolderBtn').addEventListener('click', async () => {
-    const r = await fetch(`${API}/admin/browse-folder-dialog`, { method: 'POST' });
-    if (!r.ok) {
+    let d;
+    try {
+      d = await apiFetch(`/admin/browse-folder-dialog`, { method: 'POST' });
+    } catch (_) {
       showToast('Folder browsing requires a local session', true);
       return;
     }
-    const d = await r.json();
     if (!d.path) return; // dialog cancelled
     document.getElementById('backupFolderInput').value = d.path;
     patchConfig({ backup_folder: d.path });
@@ -550,12 +535,13 @@ function initBackupSettings() {
   });
 
   document.getElementById('browseRestoreFileBtn').addEventListener('click', async () => {
-    const r = await fetch(`${API}/admin/browse-backup-file-dialog`, { method: 'POST' });
-    if (!r.ok) {
+    let d;
+    try {
+      d = await apiFetch(`/admin/browse-backup-file-dialog`, { method: 'POST' });
+    } catch (_) {
       showToast('Local access required', true);
       return;
     }
-    const d = await r.json();
     if (!d.path) return; // dialog cancelled
     document.getElementById('restoreFileInput').value = d.path;
   });
@@ -582,22 +568,17 @@ async function doRestore() {
   btn.disabled = true;
   btn.textContent = 'Restoring…';
   try {
-    const r = await fetch(`${API}/admin/restore-database`, {
+    await apiFetch(`/admin/restore-database`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ source_path: path }),
     });
-    const d = await r.json();
-    if (r.ok) {
-      showToast('Database restored — restarting…');
-      setTimeout(() => { window.location.reload(); }, 4000);
-    } else {
-      showToast(d.detail?.error === 'local_access_required' ? 'Local access required' : (d.detail || 'Restore failed'), true);
-      btn.disabled = false;
-      btn.textContent = 'Restore Database';
-    }
+    showToast('Database restored — restarting…');
+    setTimeout(() => { window.location.reload(); }, 4000);
   } catch (e) {
-    showToast('Restore failed: ' + e.message, true);
+    showToast(e.status
+      ? (e.body?.detail?.error === 'local_access_required' ? 'Local access required' : (e.body?.detail || 'Restore failed'))
+      : 'Restore failed: ' + e.message, true);
     btn.disabled = false;
     btn.textContent = 'Restore Database';
   }
@@ -616,14 +597,13 @@ async function clearReadingProgress() {
     'files are not affected. This cannot be undone.'
   )) return;
 
-  const r = await fetch(`${API}/admin/clear-reading-progress`, { method: 'POST' });
-  const d = await r.json();
-  if (!r.ok) {
-    showToast(d.detail?.error === 'local_access_required' ? 'Local access required' : 'Clear failed', true);
-    return;
+  try {
+    const d = await apiFetch(`/admin/clear-reading-progress`, { method: 'POST' });
+    showToast(`Cleared reading progress for ${d.removed} issue(s)`);
+    await loadStats();
+  } catch (e) {
+    showToast(e.body?.detail?.error === 'local_access_required' ? 'Local access required' : 'Clear failed', true);
   }
-  showToast(`Cleared reading progress for ${d.removed} issue(s)`);
-  await loadStats();
 }
 
 async function clearDatabase() {
@@ -641,18 +621,13 @@ async function clearDatabase() {
   btn.disabled = true;
   btn.textContent = 'Clearing…';
   try {
-    const r = await fetch(`${API}/admin/clear-database`, { method: 'POST' });
-    const d = await r.json();
-    if (r.ok) {
-      showToast(`Cleared ${d.issues_removed} issue(s), ${d.thumbnails_removed} thumbnail(s) — restarting…`);
-      setTimeout(() => { window.location.reload(); }, 4000);
-    } else {
-      showToast(d.detail?.error === 'local_access_required' ? 'Local access required' : (d.detail || 'Clear failed'), true);
-      btn.disabled = false;
-      btn.textContent = 'Clear Database';
-    }
+    const d = await apiFetch(`/admin/clear-database`, { method: 'POST' });
+    showToast(`Cleared ${d.issues_removed} issue(s), ${d.thumbnails_removed} thumbnail(s) — restarting…`);
+    setTimeout(() => { window.location.reload(); }, 4000);
   } catch (e) {
-    showToast('Clear failed: ' + e.message, true);
+    showToast(e.status
+      ? (e.body?.detail?.error === 'local_access_required' ? 'Local access required' : (e.body?.detail || 'Clear failed'))
+      : 'Clear failed: ' + e.message, true);
     btn.disabled = false;
     btn.textContent = 'Clear Database';
   }
@@ -672,8 +647,7 @@ function initPasswordRecovery() {
 }
 
 async function initLogsSection() {
-  const r = await fetch(`${API}/admin/logs/folder-path`);
-  const d = await r.json();
+  const d = await apiFetch(`/admin/logs/folder-path`);
   document.getElementById('logsFolderPathInput').value = d.path;
 
   document.getElementById('copyLogsPathBtn').addEventListener('click', async () => {
@@ -731,15 +705,14 @@ function makeFolderRow(path, onRemove) {
 
 async function patchConfig(patch) {
   try {
-    const r = await fetch(`${API}/admin/config`, {
+    await apiFetch(`/admin/config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
     });
-    if (!r.ok) throw new Error(await r.text());
     showToast('Saved');
   } catch (e) {
-    showToast('Save failed: ' + e.message, true);
+    showToast('Save failed: ' + (e.body?.detail || e.message), true);
   }
 }
 
@@ -841,9 +814,7 @@ let ctPickerRoots = [];
 
 async function loadCustomTabs() {
   try {
-    const r = await fetch(`${API}/admin/custom-tabs`);
-    if (!r.ok) throw new Error(r.statusText);
-    customTabs = await r.json();
+    customTabs = await apiFetch(`/admin/custom-tabs`);
   } catch (_) {
     customTabs = [];
   }
@@ -878,8 +849,7 @@ let ctAllGenres = []; // cached from /browse/genres: [{genre, issue_count}, ...]
 
 async function loadCtGenreOptions() {
   try {
-    const r = await fetch(`${API}/browse/genres`);
-    ctAllGenres = r.ok ? await r.json() : [];
+    ctAllGenres = await apiFetch(`/browse/genres`);
   } catch (_) {
     ctAllGenres = [];
   }
@@ -910,16 +880,11 @@ async function addGenreTab() {
     return;
   }
   try {
-    const r = await fetch(`${API}/admin/custom-tabs`, {
+    await apiFetch(`/admin/custom-tabs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ basis_type: 'genre', field_value: genre }),
     });
-    const d = await r.json();
-    if (!r.ok) {
-      showToast(d.detail || 'Could not add Genre Library', true);
-      return;
-    }
     showToast(`Genre Library "${genre}" added`);
     select.value = '';
     // Re-fetch the genre list itself (not just re-render from the cached
@@ -928,7 +893,7 @@ async function addGenreTab() {
     // instead of leaving it empty until a hard refresh.
     await Promise.all([loadCustomTabs(), loadCtGenreOptions()]);
   } catch (e) {
-    showToast('Could not add Genre Library: ' + e.message, true);
+    showToast(e.body?.detail || 'Could not add Genre Library: ' + e.message, true);
   }
 }
 
@@ -937,8 +902,7 @@ let ctAllWriters = []; // cached from /browse/writers: [{person_id, name, series
 
 async function loadCtWriterOptions() {
   try {
-    const r = await fetch(`${API}/browse/writers`);
-    ctAllWriters = r.ok ? await r.json() : [];
+    ctAllWriters = await apiFetch(`/browse/writers`);
   } catch (_) {
     ctAllWriters = [];
   }
@@ -971,21 +935,16 @@ async function addWriterTab() {
   }
   const writerName = select.options[select.selectedIndex].textContent;
   try {
-    const r = await fetch(`${API}/admin/custom-tabs`, {
+    await apiFetch(`/admin/custom-tabs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ basis_type: 'writer', field_value: personId }),
     });
-    const d = await r.json();
-    if (!r.ok) {
-      showToast(d.detail || 'Could not add Writer Library', true);
-      return;
-    }
     showToast(`Writer Library "${writerName}" added`);
     select.value = '';
     await Promise.all([loadCustomTabs(), loadCtWriterOptions()]);
   } catch (e) {
-    showToast('Could not add Writer Library: ' + e.message, true);
+    showToast(e.body?.detail || 'Could not add Writer Library: ' + e.message, true);
   }
 }
 
@@ -994,8 +953,7 @@ let ctAllPublishers = []; // cached from /browse/publishers: [{publisher, series
 
 async function loadCtPublisherOptions() {
   try {
-    const r = await fetch(`${API}/browse/publishers`);
-    ctAllPublishers = r.ok ? await r.json() : [];
+    ctAllPublishers = await apiFetch(`/browse/publishers`);
   } catch (_) {
     ctAllPublishers = [];
   }
@@ -1026,21 +984,16 @@ async function addPublisherTab() {
     return;
   }
   try {
-    const r = await fetch(`${API}/admin/custom-tabs`, {
+    await apiFetch(`/admin/custom-tabs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ basis_type: 'publisher', field_value: publisher }),
     });
-    const d = await r.json();
-    if (!r.ok) {
-      showToast(d.detail || 'Could not add Publisher Library', true);
-      return;
-    }
     showToast(`Publisher Library "${publisher}" added`);
     select.value = '';
     await Promise.all([loadCustomTabs(), loadCtPublisherOptions()]);
   } catch (e) {
-    showToast('Could not add Publisher Library: ' + e.message, true);
+    showToast(e.body?.detail || 'Could not add Publisher Library: ' + e.message, true);
   }
 }
 
@@ -1104,38 +1057,28 @@ function makeCustomTabRow(tab) {
 
 async function updateCustomTabViewMode(tab, view_mode) {
   try {
-    const r = await fetch(`${API}/admin/custom-tabs/${tab.id}`, {
+    await apiFetch(`/admin/custom-tabs/${tab.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ view_mode }),
     });
-    const d = await r.json();
-    if (!r.ok) {
-      showToast(d.detail || 'Could not update view mode', true);
-      return;
-    }
     showToast(`View mode set to ${view_mode === 'folder' ? 'Folder View' : 'Flat'}`);
     await loadCustomTabs();
   } catch (e) {
-    showToast('Could not update view mode: ' + e.message, true);
+    showToast(e.body?.detail || 'Could not update view mode: ' + e.message, true);
   }
 }
 
 async function toggleCustomTabVisible(tab) {
   try {
-    const r = await fetch(`${API}/admin/custom-tabs/${tab.id}`, {
+    await apiFetch(`/admin/custom-tabs/${tab.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ visible: !tab.visible }),
     });
-    const d = await r.json();
-    if (!r.ok) {
-      showToast(d.detail || 'Could not update tab', true);
-      return;
-    }
     await loadCustomTabs();
   } catch (e) {
-    showToast('Could not update tab: ' + e.message, true);
+    showToast(e.body?.detail || 'Could not update tab: ' + e.message, true);
   }
 }
 
@@ -1146,16 +1089,11 @@ async function deleteCustomTab(tab) {
   );
   if (!ok) return;
   try {
-    const r = await fetch(`${API}/admin/custom-tabs/${tab.id}`, { method: 'DELETE' });
-    if (!r.ok) {
-      const d = await r.json().catch(() => ({}));
-      showToast(d.detail || 'Delete failed', true);
-      return;
-    }
+    await apiFetch(`/admin/custom-tabs/${tab.id}`, { method: 'DELETE' });
     showToast('Tab deleted');
     await loadCustomTabs();
   } catch (e) {
-    showToast('Delete failed: ' + e.message, true);
+    showToast(e.body?.detail || 'Delete failed: ' + e.message, true);
   }
 }
 
@@ -1171,16 +1109,11 @@ async function addCustomTab() {
     return;
   }
   try {
-    const r = await fetch(`${API}/admin/custom-tabs`, {
+    const d = await apiFetch(`/admin/custom-tabs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, folder_path, view_mode }),
     });
-    const d = await r.json();
-    if (!r.ok) {
-      showToast(d.detail || 'Could not add tab', true);
-      return;
-    }
     if (d.warning) showToast(d.warning, true);
     else showToast('Tab added');
     nameInput.value = '';
@@ -1188,45 +1121,35 @@ async function addCustomTab() {
     viewModeSelect.value = 'flat';
     await loadCustomTabs();
   } catch (e) {
-    showToast('Could not add tab: ' + e.message, true);
+    showToast(e.body?.detail || 'Could not add tab: ' + e.message, true);
   }
 }
 
 async function addFavouritesTab() {
   try {
-    const r = await fetch(`${API}/admin/custom-tabs`, {
+    await apiFetch(`/admin/custom-tabs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ basis_type: 'favorites' }),
     });
-    const d = await r.json();
-    if (!r.ok) {
-      showToast(d.detail || 'Could not add Favourites tab', true);
-      return;
-    }
     showToast('Favourites tab added');
     await loadCustomTabs();
   } catch (e) {
-    showToast('Could not add Favourites tab: ' + e.message, true);
+    showToast(e.body?.detail || 'Could not add Favourites tab: ' + e.message, true);
   }
 }
 
 async function addReadingQueueTab() {
   try {
-    const r = await fetch(`${API}/admin/custom-tabs`, {
+    await apiFetch(`/admin/custom-tabs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ basis_type: 'reading_queue' }),
     });
-    const d = await r.json();
-    if (!r.ok) {
-      showToast(d.detail || 'Could not add Reading Queue tab', true);
-      return;
-    }
     showToast('Reading Queue tab added');
     await loadCustomTabs();
   } catch (e) {
-    showToast('Could not add Reading Queue tab: ' + e.message, true);
+    showToast(e.body?.detail || 'Could not add Reading Queue tab: ' + e.message, true);
   }
 }
 
@@ -1244,18 +1167,16 @@ function closeCtPicker() {
 }
 
 async function loadCtPickerDir(path) {
-  const url = path ? `${API}/admin/browse?path=${encodeURIComponent(path)}` : `${API}/admin/browse`;
+  const url = path ? `/admin/browse?path=${encodeURIComponent(path)}` : `/admin/browse`;
   try {
-    const r = await fetch(url);
-    if (!r.ok) throw new Error((await r.json()).detail || r.statusText);
-    const data = await r.json();
+    const data = await apiFetch(url);
     ctPickerPath  = data.path;
     ctPickerRoots = data.roots || [];
     renderCtPickerRoots();
     renderCtPickerBreadcrumb(data.path);
     renderCtPickerTree(data.items || []);
   } catch (e) {
-    showToast('Could not browse: ' + e.message, true);
+    showToast('Could not browse: ' + (e.body?.detail || e.message), true);
   }
 }
 
@@ -1360,8 +1281,8 @@ async function ensureHsPersonNameCache() {
   hsPersonNameCache = { writer: {}, artist: {} };
   try {
     const [writers, artists] = await Promise.all([
-      fetch(`${API}/browse/writers`).then(r => r.json()),
-      fetch(`${API}/browse/artists`).then(r => r.json()),
+      apiFetch(`/browse/writers`),
+      apiFetch(`/browse/artists`),
     ]);
     for (const w of writers) hsPersonNameCache.writer[w.person_id] = w.name;
     for (const a of artists) hsPersonNameCache.artist[a.person_id] = a.name;
@@ -1373,9 +1294,7 @@ async function ensureHsPersonNameCache() {
 
 async function loadHomeStrips() {
   try {
-    const r = await fetch(`${API}/admin/home-strips`);
-    if (!r.ok) throw new Error(r.statusText);
-    homeStrips = await r.json();
+    homeStrips = await apiFetch(`/admin/home-strips`);
   } catch (_) {
     homeStrips = [];
   }
@@ -1489,37 +1408,27 @@ async function moveHomeStrip(strip, direction) {
     { id: other.id, position: strip.position },
   ];
   try {
-    const r = await fetch(`${API}/admin/home-strips/reorder`, {
+    await apiFetch(`/admin/home-strips/reorder`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (!r.ok) {
-      const d = await r.json().catch(() => ({}));
-      showToast(d.detail || 'Reorder failed', true);
-      return;
-    }
     await loadHomeStrips();
   } catch (e) {
-    showToast('Reorder failed: ' + e.message, true);
+    showToast(e.body?.detail || 'Reorder failed: ' + e.message, true);
   }
 }
 
 async function toggleHomeStripVisible(strip) {
   try {
-    const r = await fetch(`${API}/admin/home-strips/${strip.id}`, {
+    await apiFetch(`/admin/home-strips/${strip.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ visible: !strip.visible }),
     });
-    const d = await r.json();
-    if (!r.ok) {
-      showToast(d.detail || 'Could not update strip', true);
-      return;
-    }
     await loadHomeStrips();
   } catch (e) {
-    showToast('Could not update strip: ' + e.message, true);
+    showToast(e.body?.detail || 'Could not update strip: ' + e.message, true);
   }
 }
 
@@ -1530,16 +1439,11 @@ async function deleteHomeStrip(strip) {
   );
   if (!ok) return;
   try {
-    const r = await fetch(`${API}/admin/home-strips/${strip.id}`, { method: 'DELETE' });
-    if (!r.ok) {
-      const d = await r.json().catch(() => ({}));
-      showToast(d.detail || 'Delete failed', true);
-      return;
-    }
+    await apiFetch(`/admin/home-strips/${strip.id}`, { method: 'DELETE' });
     showToast('Strip deleted');
     await loadHomeStrips();
   } catch (e) {
-    showToast('Delete failed: ' + e.message, true);
+    showToast(e.body?.detail || 'Delete failed: ' + e.message, true);
   }
 }
 
@@ -1575,8 +1479,7 @@ async function updateHsFieldValueOptions() {
   const endpoint = HS_FIELD_ENDPOINTS[fieldName];
   if (!endpoint) return;
   try {
-    const r = await fetch(`${API}${endpoint.url}`);
-    const rows = await r.json();
+    const rows = await apiFetch(endpoint.url);
     for (const row of rows) {
       const label = String(row[endpoint.key]);
       const val   = String(row[endpoint.valueKey || endpoint.key]);
@@ -1622,16 +1525,11 @@ async function addHomeStrip() {
   }
 
   try {
-    const r = await fetch(`${API}/admin/home-strips`, {
+    const d = await apiFetch(`/admin/home-strips`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    const d = await r.json();
-    if (!r.ok) {
-      showToast(d.detail || 'Could not add strip', true);
-      return;
-    }
     if (d.warning) showToast(d.warning, true);
     else showToast('Strip added');
     nameInput.value = '';
@@ -1640,7 +1538,7 @@ async function addHomeStrip() {
     document.getElementById('hsFieldValueSelect').innerHTML = '<option value="">Value…</option>';
     await loadHomeStrips();
   } catch (e) {
-    showToast('Could not add strip: ' + e.message, true);
+    showToast(e.body?.detail || 'Could not add strip: ' + e.message, true);
   }
 }
 
@@ -1653,12 +1551,12 @@ async function loadEditableValueList(kind) {
   let names = [];
   let counts = {};
   try {
-    names = await fetch(`${API}/editor/${kind}`).then(r => r.json());
+    names = await apiFetch(`/editor/${kind}`);
   } catch (_) {
     names = [];
   }
   try {
-    const rows = await fetch(`${API}/browse/${kind}`).then(r => r.json());
+    const rows = await apiFetch(`/browse/${kind}`);
     for (const row of rows) counts[row[countKey]] = row.issue_count;
   } catch (_) {
     counts = {};
@@ -1722,16 +1620,11 @@ async function deleteEditableValue(kind, name, count) {
     if (!ok) return;
   }
   try {
-    const r = await fetch(`${API}/editor/${kind}/${encodeURIComponent(name)}`, { method: 'DELETE' });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      showToast(d.detail || 'Delete failed', true);
-      return;
-    }
+    await apiFetch(`/editor/${kind}/${encodeURIComponent(name)}`, { method: 'DELETE' });
     showToast(`${label[0].toUpperCase()}${label.slice(1)} removed`);
     await (kind === 'genres' ? loadGenreList() : loadFormatList());
   } catch (e) {
-    showToast('Delete failed: ' + e.message, true);
+    showToast(e.body?.detail || 'Delete failed: ' + e.message, true);
   }
 }
 
@@ -1744,21 +1637,16 @@ async function addEditableValue(kind, inputId) {
     return;
   }
   try {
-    const r = await fetch(`${API}/editor/${kind}`, {
+    await apiFetch(`/editor/${kind}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
     });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      showToast(d.detail || `Could not add ${label.toLowerCase()}`, true);
-      return;
-    }
     showToast(`${label} added`);
     input.value = '';
     await (kind === 'genres' ? loadGenreList() : loadFormatList());
   } catch (e) {
-    showToast(`Could not add ${label.toLowerCase()}: ` + e.message, true);
+    showToast(e.body?.detail || `Could not add ${label.toLowerCase()}: ` + e.message, true);
   }
 }
 
@@ -1814,12 +1702,13 @@ async function initAuthSettings() {
   document.getElementById('authDisableConfirmBtn').addEventListener('click', disableProtection);
 
   remoteToggle.addEventListener('change', async () => {
-    const res = await fetch(`${API}/admin/auth/remote-toggle`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: remoteToggle.checked }),
-    });
-    if (!res.ok) {
+    try {
+      await apiFetch(`/admin/auth/remote-toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: remoteToggle.checked }),
+      });
+    } catch (_) {
       remoteToggle.checked = !remoteToggle.checked;
       showToast('Could not update Remote Administration', true);
       return;
@@ -1834,7 +1723,7 @@ async function initAuthSettings() {
 }
 
 async function refreshAuthSettingsUi() {
-  const status = await fetch(`${API}/admin/auth/status`).then(r => r.json());
+  const status = await apiFetch(`/admin/auth/status`);
 
   document.getElementById('authProtectionToggle').checked = status.protection_enabled;
   document.getElementById('authPasswordFields').hidden = true;
@@ -1879,12 +1768,13 @@ async function enableProtection() {
     return;
   }
 
-  const res = await fetch(`${API}/admin/auth/enable`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password: pw }),
-  });
-  if (!res.ok) {
+  try {
+    await apiFetch(`/admin/auth/enable`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw }),
+    });
+  } catch (_) {
     errorBox.hidden = false;
     errorBox.textContent = 'Could not enable password protection.';
     return;
@@ -1900,12 +1790,13 @@ async function disableProtection() {
   const current_password = document.getElementById('authDisableCurrentPassword').value;
   errorBox.hidden = true;
 
-  const res = await fetch(`${API}/admin/auth/disable`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ current_password }),
-  });
-  if (!res.ok) {
+  try {
+    await apiFetch(`/admin/auth/disable`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_password }),
+    });
+  } catch (_) {
     errorBox.hidden = false;
     errorBox.textContent = 'Incorrect password.';
     return;
@@ -1934,13 +1825,13 @@ async function submitPwReset(e) {
   const current_password = document.getElementById('pwResetCurrent').value;
   const new_password = document.getElementById('pwResetNew').value;
 
-  const res = await fetch(`${API}/admin/auth/change-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ current_password, new_password }),
-  });
-
-  if (!res.ok) {
+  try {
+    await apiFetch(`/admin/auth/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_password, new_password }),
+    });
+  } catch (_) {
     errorBox.hidden = false;
     errorBox.textContent = 'Current password incorrect, or local access required.';
     return;

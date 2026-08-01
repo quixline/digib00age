@@ -49,18 +49,24 @@ async function loadPtPickerDirectory(path) {
     const sep = url.includes('?') ? '&' : '?';
     url += `${sep}path=${encodeURIComponent(path)}`;
   }
-  const res = await fetch(url);
-  if (!res.ok) return;
-  const data = await res.json();
+  let data;
+  try {
+    data = await apiFetch(url);
+  } catch (_) {
+    return;
+  }
   ptPickerPath = data.path;
   renderPtPickerBreadcrumb(data.path);
   renderPtPickerTree(data.folders || [], data.files || []);
 }
 
 async function loadPtPickerDrives() {
-  const res = await fetch(ptPickerConfig.drivesUrl);
-  if (!res.ok) return;
-  const data = await res.json();
+  let data;
+  try {
+    data = await apiFetch(ptPickerConfig.drivesUrl);
+  } catch (_) {
+    return;
+  }
   ptPickerPath = null;
   renderPtPickerBreadcrumb(null);
   renderPtPickerTree(data.drives || [], []);
