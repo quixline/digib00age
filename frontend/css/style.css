@@ -4431,7 +4431,11 @@ select.filter-select:focus,
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 340px 540px 470px minmax(280px, 1fr);
+  grid-template-columns:
+    minmax(250px, 0.85fr)
+    minmax(430px, 1.35fr)
+    minmax(330px, 1.15fr)
+    minmax(260px, 1fr);
   gap: 14px;
 }
 
@@ -5179,6 +5183,7 @@ select.fe-genre-add:focus {
 
 .fe-queue-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -5485,8 +5490,10 @@ select.fe-genre-add:focus {
 
 /* Below the 4-column workspace's natural width, stop pinning the shell to the
    viewport height and let it stack + scroll vertically (columns keep a usable
-   min-height instead of being crushed). */
-@media (max-width: 1500px) {
+   min-height instead of being crushed). Threshold matches the sum of the
+   .fe-layout column minimums + gaps + shell padding (~1340px) — below that,
+   the fixed minmax() floors can't all fit side-by-side anymore. */
+@media (max-width: 1340px) {
   .fe-shell {
     height: auto;
     min-height: calc(100vh - var(--header-h));

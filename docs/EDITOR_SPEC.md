@@ -485,9 +485,11 @@ The Full Editor was redesigned in Claude Design and rebuilt to a **four-column
 workspace + a footer status bar** (`comicvault-changes-v2.6.md` Item 7). This section
 governs the current layout; §5.2's three-column description is historical. **No
 backend endpoint or data-path changed** — this is a layout + interaction reskin.
-Grid: `340px 540px 470px minmax(280px,1fr)`, collapsing responsively (2-up ≤1500px,
-1-up ≤900px). The whole workspace pins to the viewport height; each column scrolls
-internally.
+Grid: `minmax(250px,0.85fr) minmax(430px,1.35fr) minmax(330px,1.15fr) minmax(260px,1fr)`
+— proportional tracks (not fixed pixels, changed 2026-08-01 after Tez hit a broken
+laptop/tablet layout — see `v2.6/progress.md`), collapsing responsively (2-up
+≤1340px, 1-up ≤900px). The whole workspace pins to the viewport height; each column
+scrolls internally.
 
 **Column 1 — Load / Select Files.** `Select Folder` opens the same modal
 browser/picker as §5.1 (`/browse` + `/files/add` + `/folders/add`) — file intake is

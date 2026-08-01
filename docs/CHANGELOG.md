@@ -13,6 +13,13 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-08-01** — Full Editor's 4-column layout (`/editor`) no longer
+  breaks at laptop (1366×768) or tablet widths: switched `.fe-layout`
+  from fixed-px columns to proportional `minmax()` tracks and lowered the
+  2×2 fallback breakpoint to match; also fixed the Queue Actions button
+  row overflowing its panel by adding `flex-wrap`. → `v2.6/progress.md`
+  "Session — 2026-08-01 (continued) — Full Editor 4-column layout broke
+  on laptop/tablet widths (cosmetic fix)"
 - **2026-08-01** — Investigated a Full Editor batch-processing "Network
   error" report; batch had actually completed server-side (lost response,
   not a failed write). Found and fixed an unrelated service-worker bug

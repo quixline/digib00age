@@ -8708,3 +8708,49 @@ fixes earlier today (the CSP block, the stale-storage no-op).
   not safely reproducible on demand. Low risk since the change only
   removes a fallback path that was already provably wrong for non-GET
   requests.
+
+## Session — 2026-08-01 (continued) — Full Editor 4-column layout broke on laptop/tablet widths (cosmetic fix)
+
+- Tez reported the Full Editor's 4-column layout (`/editor`) only looked
+  right at full desktop width. On his 1366×768 laptop, columns 1 & 2
+  stretched full-width and columns 3 & 4 got pushed below the fold. On
+  his 10" tablet in landscape, all 4 columns stayed in a row but column 4
+  (Edited Files Queue) was clipped at the right edge.
+- Root cause: `.fe-layout`'s grid used **fixed pixel column widths**
+  (`340px 540px 470px minmax(280px, 1fr)`), which only fit a viewport of
+  ~1700px+. Below that there was a single hard breakpoint at 1500px that
+  abandoned the 4-column layout entirely for a 2×2 grid — so any viewport
+  in between (tablet range) either got clipped (still above 1500px, but
+  short of the ~1700px the fixed columns actually needed) or got dropped
+  into the disliked 2×2 stack (laptop range, below 1500px).
+- Fix: replaced the fixed-px tracks with `minmax(min, fr)` tracks so all
+  4 columns shrink together proportionally as the viewport narrows,
+  instead of jumping straight to 2×2:
+  `minmax(250px, 0.85fr) minmax(430px, 1.35fr) minmax(330px, 1.15fr)
+  minmax(260px, 1fr)` (column mins derived from each panel's actual
+  content — col 2's form/dropdowns/56px checkbox column need the most
+  room). Lowered the 2×2 fallback breakpoint from 1500px to 1340px to
+  match the new combined floor (sum of mins + gaps + shell padding), so
+  it only kicks in once columns genuinely can't fit anymore.
+- Second-pass bug found during the same investigation: the Queue Actions
+  button row (`.fe-queue-actions` — Process Queue / Clear Queue /
+  Process All) had no wrap behaviour and each `.btn-primary` has
+  generous fixed padding (`30px` each side). Under the new proportional
+  grid, column 4 is often narrower than it used to be (previously it
+  absorbed *all* leftover viewport width as the only flexible column),
+  so the 3-button row started overflowing its panel instead of wrapping
+  — a latent bug the width change surfaced rather than introduced. Fixed
+  by adding `flex-wrap: wrap` to `.fe-queue-actions`, matching the same
+  wrap convention already used elsewhere (`.pt-toolbar`).
+- Verified: since the live browser session's window couldn't actually be
+  resized (`resize_window` had no effect — window appears
+  maximized/managed in this environment), verified the grid math
+  directly by cloning `.fe-layout` and `.fe-queue-actions` into off-
+  screen containers at exact target widths (1340px, 1366px, 1500px,
+  1700px) and measuring rendered column/button widths for overflow —
+  none at any width from the new 1340px floor up. Confirmed the edited
+  `1340px` media-query breakpoint was actually served (not stale-cached)
+  via `document.styleSheets`. **Tez then manually confirmed live on all
+  three: laptop, tablet, and desktop — signed off.**
+- Cosmetic-threshold change (layout sizing within an existing page, no
+  nav/routing/IA change) — no build-queue item or `DECISIONS.md` entry.
