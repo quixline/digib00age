@@ -1900,13 +1900,13 @@ function buildCoverCard(s) {
   // flush full-width line. Singles cards use real page-level progress
   // (current_page/page_count) — read_count/issue_count can only ever be 0%
   // or 100% for a single issue. Series cards keep the issue-count aggregate.
+  let pct;
+  if (linksToIssue && s.page_count > 0) {
+    pct = Math.min(100, Math.round((s.current_page / s.page_count) * 100));
+  } else {
+    pct = Math.round((s.read_count / s.issue_count) * 100);
+  }
   if (state === 'state-part-read' || state === 'state-read') {
-    let pct;
-    if (linksToIssue && s.page_count > 0) {
-      pct = Math.min(100, Math.round((s.current_page / s.page_count) * 100));
-    } else {
-      pct = Math.round((s.read_count / s.issue_count) * 100);
-    }
     const track = el('div', 'card-progress-track');
     const fill  = el('div', 'card-progress-fill');
     fill.style.width = `${pct}%`;
@@ -1967,8 +1967,9 @@ function buildCoverCard(s) {
   if (metaParts.length) listMeta.appendChild(el('div', 'list-pub-writer', metaParts.join(' · ')));
   if (s.summary)        listMeta.appendChild(el('div', 'list-summary', s.summary));
   // List view shows "X% Read" text instead of the grid progress bar
+  // (uses the same pct computed above — page-based for Singles/link_as_issue
+  // cards, issue-count-based for series — so it always matches the bar)
   if (state === 'state-part-read') {
-    const pct = Math.round((s.read_count / s.issue_count) * 100);
     listMeta.appendChild(el('div', 'list-progress-text', `${pct}% Read`));
   }
   // List view's own rating stars — the grid's ratingRow (in countRow above)

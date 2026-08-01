@@ -1005,7 +1005,7 @@ select.filter-select:focus,
 
 .list-progress-text {
   font-size: 11px;
-  color: var(--blue);
+  color: var(--green);
   font-weight: 600;
   margin-top: 2px;
 }

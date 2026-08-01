@@ -13,6 +13,12 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-08-01** — Fixed List View's "N% Read" text showing 0% for
+  partially-read Singles/link_as_issue cards (it used `read_count/
+  issue_count` instead of the page-level calc the grid progress bar
+  already used); also recolored it from blue to the default green. →
+  `v2.6/progress.md` "Session — 2026-08-01 (continued) — List View 'N%
+  Read' showing 0% (bug fix)"
 - **2026-08-01** — API layer consolidation: all 114+ scattered `fetch()`
   calls across `app.js`/`admin.js`/`processingTools.js`/`editor_full.js`/
   `editor_basic.js`/`auth.js`/`filePicker.js` now go through a single

@@ -8591,3 +8591,34 @@ fixes earlier today (the CSP block, the stale-storage no-op).
   which exercises `auth.js`'s migrated `checkAuthStatus()`). Tez then
   manually tested and signed off separately before this doc update, per
   `CLAUDE.md`'s close-of-session gate.
+
+## Session — 2026-08-01 (continued) — List View "N% Read" showing 0% (bug fix)
+
+- Tez reported: in List View, the "N% Read" text under a card's summary
+  showed 0% for "1000 Ways To Die" even though its cover progress bar
+  tracked correctly.
+- Root cause in `buildCoverCard()` (`frontend/js/app.js`): the grid
+  progress-bar fill already special-cased Singles/`link_as_issue` cards to
+  compute percent from real page progress (`current_page/page_count`),
+  since `read_count/issue_count` can only ever be 0% or 100% for a single
+  issue (`read_count` doesn't increment until the issue is fully read). The
+  List View text block lower in the same function never got that
+  special-case — it always computed straight `read_count/issue_count`, so
+  any partially-read single showed 0% right next to a bar showing real
+  progress. The `flutter-ui-sync-plan.md` closeout (2026-07-28) had
+  actually flagged the web's grid-bar branch (`app.js:1812-1821` at the
+  time) as the reference implementation to port *into* Flutter's
+  `Series.progressPercent` — it didn't catch that the web's own List View
+  text, a separate render path in the same function, still had the bug.
+- Fix: hoisted the pct calculation to compute once per card and reused it
+  for both the grid progress-bar fill and the List View text, so they can
+  no longer disagree.
+- Also changed `.list-progress-text` (`frontend/css/style.css`) from
+  `var(--blue)` to `var(--green)` per Tez's request — matches the green
+  already used for the progress bar fill/read badge elsewhere on the card.
+- **Verified live** via `claude-in-chrome` against the real running app
+  (port 9424): searched "1000 Ways To Die" in List View, hard-reloaded to
+  clear cached JS/CSS, confirmed the text now reads "45% Read" in green,
+  matching the cover's progress-bar fill.
+- Not tracked in `BUGS.md` — reported and fixed directly in the same
+  session.
