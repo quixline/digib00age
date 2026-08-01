@@ -39,43 +39,82 @@
       <a href="/guide">Overview</a>
       <a href="/guide/library">Library</a>
       <a href="/guide/admin">Admin</a>
-      <a href="/guide/editor" class="active">Editor</a>
+      <a href="/guide/editor" class="active">Editor Hub</a>
       <a href="/guide/editor-basic" class="guide-sub-link">Basic Editor</a>
       <a href="/guide/editor-full" class="guide-sub-link">Full Editor</a>
     </nav>
 
     <main class="guide-main">
-      <h1>Editor</h1>
-      <p class="guide-subtitle">Two ways to edit a comic's metadata — pick the one that fits.</p>
+      <h1>Editor Hub</h1>
+      <p class="guide-subtitle">Two ways to edit comic metadata — pick the tool that fits your workflow.</p>
 
-      <!-- content: Stage 6 (brief hub — Basic vs Full editor, when to use which, links to both) -->
+      <div class="guide-toc">
+        <span class="guide-toc-label">Quick Jump:</span>
+        <div class="guide-toc-pills">
+          <a href="#which-editor" class="guide-toc-pill">Comparison Matrix</a>
+          <a href="#basic-editor-summary" class="guide-toc-pill">Basic Editor</a>
+          <a href="#full-editor-summary" class="guide-toc-pill">Full Editor</a>
+        </div>
+      </div>
 
       <h2 id="which-editor">Which editor do I need?</h2>
-      <p>Both editors write to the same place — the <code>ComicInfo.xml</code> record
-      packed inside a comic's CBZ file — and share the same enforced Genre, Format, and
-      Age Rating lists, so nothing you set in one editor conflicts with the other. What
-      differs is scope: how many files you're touching at once, and whether those files
-      are already in your library.</p>
+      <p>Both editors write to the exact same <code>ComicInfo.xml</code> file embedded inside comic CBZ archives and share enforced Genre, Format, and Age Rating lists. What differs is scope and workflow:</p>
 
-      <p><strong>Basic Editor</strong> is a quick, single-issue fix. Open it straight from
-      an issue's page in the reader when you just want to correct that one issue's title,
-      tick a missing genre, or tweak the summary — no file browsing, no batch controls,
-      just the issue you're already looking at.</p>
+      <div class="guide-card">
+        <table class="guide-shortcut-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Basic Editor</th>
+              <th>Full Editor</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Primary Scope</strong></td>
+              <td>Single issue metadata edit</td>
+              <td>Batch tagging (entire folders or selection)</td>
+            </tr>
+            <tr>
+              <td><strong>Access Point</strong></td>
+              <td>Issue Detail page (<code>Edit XML</code>)</td>
+              <td>Admin &rarr; Open Editor or Selection Bar</td>
+            </tr>
+            <tr>
+              <td><strong>Pre-Library Staging</strong></td>
+              <td>No (requires library item)</td>
+              <td>Yes (edits files before scanning)</td>
+            </tr>
+            <tr>
+              <td><strong>Integrations</strong></td>
+              <td>Near-duplicate credit checks</td>
+              <td>ComicVine online lookup &amp; GoodReads extension</td>
+            </tr>
+            <tr>
+              <td><strong>Batch Utilities</strong></td>
+              <td>N/A</td>
+              <td>Auto-increment numbers &amp; "Apply to All" fields</td>
+            </tr>
+            <tr>
+              <td><strong>Page Viewer</strong></td>
+              <td>Cover preview</td>
+              <td>4-column layout with full zoom/pan page viewer</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-      <p><strong>Full Editor</strong> is a batch tagging workspace for handling many files
-      at once — built mainly for tagging new comics before they join your library (e.g.
-      a staging folder full of freshly-downloaded issues that haven't been scanned in
-      yet), but also useful afterward: select one or more already-catalogued issues from
-      the library and use <strong>Send to Full Editor</strong> to load them in for a batch
-      retag. Open it from Admin → Open Editor, or from a library selection's "Send to
-      Full Editor" action in the selection bar.</p>
+      <div class="guide-card" id="basic-editor-summary">
+        <h3 style="margin-top:0;"><a href="/guide/editor-basic">Basic Editor &rarr;</a></h3>
+        <p>A quick, single-issue modal. Open it straight from any issue's detail page when you want to tweak an issue title, summary, format, genre tags, or creator credits. Saves asynchronously in the background while you keep browsing.</p>
+        <p><a href="/guide/editor-basic" class="btn-primary" style="display:inline-block; padding:6px 14px; text-decoration:none;">Read Basic Editor Guide &rarr;</a></p>
+      </div>
 
-      <p>Rule of thumb: editing one issue you're currently reading or viewing → Basic
-      Editor. Editing several files at once, or files not yet in your library → Full
-      Editor.</p>
-
-      <p><a href="/guide/editor-basic">Read the Basic Editor guide →</a></p>
-      <p><a href="/guide/editor-full">Read the Full Editor guide →</a></p>
+      <div class="guide-card" id="full-editor-summary">
+        <h3 style="margin-top:0;"><a href="/guide/editor-full">Full Editor &rarr;</a></h3>
+        <p>A dense 4-column batch tagging workspace for pre-library staging or batch retagging. Features folder browsing, natural file sorting, auto-incrementing issue numbers, selective field stamping, ComicVine automated lookups, and GoodReads extension integration.</p>
+        <p><a href="/guide/editor-full" class="btn-primary" style="display:inline-block; padding:6px 14px; text-decoration:none;">Read Full Editor Guide &rarr;</a></p>
+      </div>
     </main>
   </div>
 

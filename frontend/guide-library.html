@@ -38,6 +38,12 @@
       <span class="guide-sidebar-section-label">Guide</span>
       <a href="/guide">Overview</a>
       <a href="/guide/library" class="active">Library</a>
+      <a href="#library-index" class="guide-sub-link">Index &amp; Toolbar</a>
+      <a href="#folder-view" class="guide-sub-link">Folder View</a>
+      <a href="#web-reader" class="guide-sub-link">Web Reader</a>
+      <a href="#series-page" class="guide-sub-link">Series Page</a>
+      <a href="#issue-page" class="guide-sub-link">Issue Page</a>
+      <a href="#selection-bar" class="guide-sub-link">Bulk Actions</a>
       <a href="/guide/admin">Admin</a>
       <a href="/guide/editor">Editor</a>
       <a href="/guide/editor-basic" class="guide-sub-link">Basic Editor</a>
@@ -45,121 +51,134 @@
     </nav>
 
     <main class="guide-main">
-      <h1>Library</h1>
-      <p class="guide-subtitle">Browsing, reading, and organizing your comics.</p>
+      <h1>Library &amp; Web Reader</h1>
+      <p class="guide-subtitle">Browsing, reading, and organizing your comics across flat, folder, and reader views.</p>
 
-      <!-- content: Stage 4 -->
+      <div class="guide-toc">
+        <span class="guide-toc-label">Quick Jump:</span>
+        <div class="guide-toc-pills">
+          <a href="#library-index" class="guide-toc-pill">Library Index</a>
+          <a href="#folder-view" class="guide-toc-pill">Folder View</a>
+          <a href="#web-reader" class="guide-toc-pill">Web Reader</a>
+          <a href="#series-page" class="guide-toc-pill">Series Page</a>
+          <a href="#issue-page" class="guide-toc-pill">Issue Page</a>
+          <a href="#selection-bar" class="guide-toc-pill">Bulk Actions</a>
+        </div>
+      </div>
 
       <h2 id="library-index">The library index</h2>
       <p>The <strong>Home</strong> page greets you with a set of scrollable strips —
       Continue Reading (when you have something in progress), Recently Added, Random
       Unread, Random Genre, and any custom strips your admin has added. Click a strip's
-      heading (where it's a link) to open the full filtered list behind it, or use the
-      left sidebar to jump straight to <strong>Series</strong> (multi-issue titles
-      only), <strong>Singles</strong> (one-shots), or <strong>All</strong> (everything
-      together). The <strong>Unread</strong>, <strong>Reading</strong>, and
-      <strong>Read</strong> shortcuts in the sidebar each open the All view
-      pre-filtered to that status.</p>
+      heading to open the full filtered list behind it, or use the left sidebar to jump straight to <strong>Series</strong> (multi-issue titles), <strong>Singles</strong> (one-shots), or <strong>All</strong> (everything together).</p>
+      
+      <p>You can toggle the main navigation sidebar at any time using the <strong>sidebar toggle (&#9776;)</strong> icon in the top header bar. The sidebar also provides quick status filters: <strong>Unread</strong> (○), <strong>Reading</strong> (◕), and <strong>Read</strong> (✓) each open the All view pre-filtered to comics in that state.</p>
 
       <p>Every browse surface shares the same toolbar above the cover grid:</p>
       <ul>
         <li><strong>Search</strong> — live search scoped to whichever surface you're on.</li>
-        <li><strong>Sort</strong> (A–Z, Newest, Recent, Issues, Pages) with an
-        ascending/descending toggle next to it.</li>
-        <li>A <strong>grid/list</strong> view toggle — list view adds genre tags,
-        publisher/writer, a summary snippet, and a "% Read" figure in place of the
-        progress bar.</li>
-        <li><strong>Rated</strong>, <strong>Favourites</strong>, and
-        <strong>Flagged</strong> filters, plus secondary filters for
-        <strong>Genre</strong>, <strong>Format</strong>, <strong>Decade</strong>,
-        <strong>Year</strong>, <strong>Rating</strong>, and <strong>B&amp;W</strong>.</li>
-        <li><strong>Group By</strong> (Year, Genre, Publisher, Writer, Format) —
-        available on the flat Series/Singles/All surfaces.</li>
-        <li>A <strong>Clear Filter</strong> pill that resets every active filter, sort,
-        search, and grouping at once — it only appears once something is actually
-        active.</li>
+        <li><strong>Sort</strong> (A–Z, Newest, Recent, Issues, Pages) with an ascending/descending toggle next to it.</li>
+        <li>A <strong>grid/list</strong> view toggle — list view adds genre tags, publisher/writer, summary snippet, and "% Read" figure.</li>
+        <li><strong>Rated</strong>, <strong>Favourites</strong>, and <strong>Flagged</strong> filters, plus secondary dropdown filters for <strong>Genre</strong>, <strong>Format</strong>, <strong>Decade</strong>, <strong>Year</strong>, <strong>Rating</strong>, and <strong>B&amp;W</strong>.</li>
+        <li><strong>Group By</strong> (Year, Genre, Publisher, Writer, Format) — available on flat Series/Singles/All surfaces.</li>
+        <li><strong>Active Filter Chips</strong> — each active filter generates an individual chip (e.g. <code>Genre: Sci-Fi ✕</code>). Click the <strong>✕</strong> on any chip to clear just that filter, or click <strong>Clear All Filters</strong> to reset everything at once.</li>
       </ul>
-      <p>A live item count sits at the top-right of the toolbar, and once a filter is
-      active it's replaced by a banner showing what you're filtered to, with its own
-      Clear link.</p>
 
-      <p>Each cover card shows the title, year, a genre tag, and either an issue count
-      (series) or page count (singles), along with your star rating if you've set one.
-      A small dot badge in the corner marks an issue as fully read, a flag badge marks
-      one flagged for review, and a progress bar along the bottom fills in as you work
-      through a series or a single issue — an empty bar means unread, a partial bar
-      means you're mid-way through, and a full bar (or the read-state dot) means
-      finished.</p>
+      <p>Each cover card shows title, year, genre tag, issue or page count, and your star rating. Dot badges mark read items, flag badges mark items for review, and bottom progress bars track reading status.</p>
+
+      <a href="#library-index" class="guide-back-to-top">↑ Back to top</a>
 
       <h2 id="folder-view">Folder View</h2>
-      <p>Some libraries in the sidebar are set up as a <strong>Folder View</strong>
-      instead of a flat list — rather than one long grid, they mirror the actual folder
-      structure on disk. Subfolders show up as their own cards (with a representative
-      cover and a recursive issue count for everything inside), and clicking one drills
-      down a level; use your browser's Back button to go back up. It's the same
-      toolbar as everywhere else, minus Group By and the Pages sort option, since
-      neither means much once things are split across folders.</p>
-      <p>Searching inside a Folder View library replaces the current folder's grid with
-      a flat list of matches from anywhere in that library, each showing its folder
-      path — clearing the search brings back the folder you were browsing.</p>
+      <p>Custom libraries in the sidebar can be set up as a <strong>Folder View</strong> mirroring disk directories. Subfolders show up as cards with representative covers and recursive issue counts; click to drill down, or use browser Back to go up.</p>
+      <p>Searching inside a Folder View replaces the grid with a flat list of matches from anywhere in that library, showing full folder paths — clearing the search restores your folder position.</p>
 
-      <h2 id="series-page">The series page</h2>
-      <p>Opening a series shows a header with its publisher, year, genre tags, and
-      issue count, plus a <strong>Mark all read</strong> button that marks every
-      currently-unread issue in the series done in one go. Below that is the full issue
-      list — each row shows a thumbnail, issue number and title, year and page count,
-      genre tags, and a short summary. Click the status icon on a row (○ unread /
-      ▶ reading / ✓ read) to toggle that single issue's read state without opening it.</p>
-      <p>Click an issue row's title or cover to open it for reading. To edit its
-      metadata instead, open the issue and use its <strong>Edit XML</strong> button,
-      which opens the Basic Editor.</p>
+      <a href="#library-index" class="guide-back-to-top">↑ Back to top</a>
 
-      <h2 id="issue-page">The issue page</h2>
-      <p>The issue page shows the cover, the series title, issue number, format and
-      B&amp;W badges, publisher/year/language, genre tags, a summary, story arc (if
-      set), and Writer/Artist credits — each credit name links to everything else by
-      that person.</p>
-      <p>The cover art and the <strong>Start Reading</strong> / <strong>Continue
-      Reading</strong> / <strong>Read Again</strong> button both do the same thing:
-      they hand off to the digib00age reader app to actually open the pages.</p>
+      <h2 id="web-reader">In-Browser Web Reader</h2>
+      <p>digib00age includes a built-in, full-screen <strong>Web Reader</strong> that opens directly in your browser at <code>/reader/{id}</code> whenever you click <strong>Read</strong> or a comic's cover. No external app installation is required!</p>
+
+      <div class="guide-card">
+        <h3>Web Reader Features &amp; Controls</h3>
+        <ul>
+          <li><strong>3-Zone Tap Navigation:</strong>
+            <ul>
+              <li><strong>Left 25%:</strong> Turn to previous page (or next page in Right-to-Left mode).</li>
+              <li><strong>Middle 50%:</strong> Toggle header &amp; footer toolbars visibility.</li>
+              <li><strong>Right 25%:</strong> Turn to next page (or previous page in Right-to-Left mode).</li>
+            </ul>
+          </li>
+          <li><strong>Manga / Right-to-Left Mode:</strong> Automatically reverses tap zones and arrow key directions when issue metadata has manga reading direction set to <code>YesAndRightToLeft</code>.</li>
+          <li><strong>Zoom &amp; Pan:</strong> Zoom in (<code>+</code>) up to 300%, zoom out (<code>−</code>) down to 50%, or reset (<code>Fit</code>). When zoomed in, click-and-drag directly on the page to pan around smoothly.</li>
+          <li><strong>Navigation Controls:</strong> Interactive page slider, page count indicator (<code>Page X / Y</code>), and Fullscreen button (<code>⛶</code>).</li>
+          <li><strong>Automatic Progress Tracking &amp; Next Issue Prompt:</strong> Page turns save progress automatically to the server. Upon reaching the final page, status updates to <strong>Read</strong> and an "Issue Complete" modal prompts you to jump straight to the next issue (<code>Next issue →</code>) or <code>Stay here</code>.</li>
+        </ul>
+
+        <h3>Web Reader Keyboard Shortcuts</h3>
+        <table class="guide-shortcut-table">
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><kbd>←</kbd> / <kbd>↑</kbd></td>
+              <td>Previous page (Next page in Manga RTL)</td>
+            </tr>
+            <tr>
+              <td><kbd>→</kbd> / <kbd>↓</kbd> / <kbd>Space</kbd></td>
+              <td>Next page (Previous page in Manga RTL)</td>
+            </tr>
+            <tr>
+              <td><kbd>Home</kbd> / <kbd>End</kbd></td>
+              <td>Jump to First Page / Last Page</td>
+            </tr>
+            <tr>
+              <td><kbd>F</kbd></td>
+              <td>Toggle Fullscreen Mode</td>
+            </tr>
+            <tr>
+              <td><kbd>Esc</kbd></td>
+              <td>Exit Fullscreen / Close Reader</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <div class="guide-callout">
         <span class="guide-callout-label">Tip</span>
-        <p>Reading opens in the separate digib00age reader app (Windows or Android). If
-        that app isn't installed on the device you're using, clicking Read won't do
-        anything visible — install the reader app first.</p>
+        <p>In addition to the Web Reader, dedicated native digib00age reader apps are also available for Windows and Android for offline reading or native OS integration.</p>
       </div>
-      <p>From here you can also toggle <strong>Mark as Read</strong>, add the issue to
-      <strong>Favorites</strong> or the <strong>Reading Queue</strong>, set a
-      <strong>1–5 star rating</strong> (click your current rating again to clear it),
-      <strong>Flag for Review</strong>, or open <strong>Edit XML</strong> to change its
-      metadata. A prev/next bar at the bottom moves between neighbouring issues in the
-      series, when one exists.</p>
+
+      <a href="#library-index" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="series-page">The series page</h2>
+      <p>Opening a series shows its publisher, year, genre tags, issue count, and a <strong>Mark all read</strong> button. Below is the full issue list showing thumbnails, issue numbers, titles, page counts, genres, and summaries. Click the status icon (○ / ◕ / ✓) on any row to toggle read status without opening the issue.</p>
+
+      <a href="#library-index" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="issue-page">The issue page</h2>
+      <p>The issue page displays cover art, series title, issue number, badges, metadata, summary, story arc, and writer/artist credit links. Click cover art or <strong>Start / Continue / Read Again</strong> to open the built-in Web Reader.</p>
+      <p>From here you can also toggle <strong>Mark as Read</strong>, add to <strong>Favorites</strong> or <strong>Reading Queue</strong>, set 1–5 star ratings, toggle <strong>Flag for Review</strong>, or launch <strong>Edit XML</strong> to open the Basic Editor.</p>
+
+      <a href="#library-index" class="guide-back-to-top">↑ Back to top</a>
 
       <h2 id="selection-bar">Selecting items and bulk actions</h2>
-      <p>You can act on several issues (or whole series) at once. Start a selection by
-      long-pressing any card or row, clicking the select-dot that appears on hover
-      (grid view), or Shift-clicking a second card to select a range. Selecting a
-      series card (not a Singles card) selects every issue in that series. Once
-      selection mode is active, a floating toolbar gives you:</p>
+      <p>Act on multiple issues or whole series at once by long-pressing cards, clicking hover select-dots, or Shift-clicking range selections. Selecting a series card selects all issues inside it.</p>
       <ul>
-        <li><strong>Mark Read / Mark Unread</strong> — bulk status change.</li>
-        <li><strong>★ Favorite</strong> — favourites everything selected, or
-        un-favourites if all of it already was.</li>
-        <li><strong>📖 Queue Reading</strong> — same on/off logic, for the Reading Queue.</li>
-        <li><strong>🏷 Flag for Review</strong> — same logic, for the review flag.</li>
-        <li><strong>→ Send to Full Editor</strong> — opens the selected issues in the
-        Full Editor for XML editing.</li>
-        <li>A <strong>star rating row</strong> — sets a rating across the whole
-        selection; clicking a rating everything already has clears it instead.</li>
-        <li><strong>Deselect</strong> — clears the current selection but stays in
-        selection mode; <strong>Done</strong> exits selection mode entirely.</li>
+        <li><strong>Mark Read / Mark Unread:</strong> Bulk status change.</li>
+        <li><strong>★ Favorite / 📖 Queue Reading / 🏷 Flag for Review:</strong> Toggle flags across selection.</li>
+        <li><strong>→ Send to Full Editor:</strong> Load selection into Full Editor for batch XML editing.</li>
+        <li><strong>Star Rating Row:</strong> Apply star rating across selection (click existing rating to clear).</li>
+        <li><strong>Deselect / Done:</strong> Clear selection or exit selection mode.</li>
       </ul>
       <div class="guide-callout guide-callout-warning">
         <span class="guide-callout-label">Warning</span>
-        <p><strong>Delete</strong> permanently removes the selected file(s) from disk
-        and their database record(s) — there's a confirmation prompt first, but once
-        confirmed, there's no going back.</p>
+        <p><strong>Delete</strong> permanently removes selected files from disk and database after confirmation.</p>
       </div>
+
+      <a href="#library-index" class="guide-back-to-top">↑ Back to top</a>
     </main>
   </div>
 

@@ -26,7 +26,7 @@
       <a href="/admin" class="settings-btn" title="Admin / Settings" aria-label="Settings">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="3"/>
-          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83 2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
       </a>
       <button type="button" class="btn-admin-action" id="logoutBtn" hidden>Logout</button>
@@ -42,254 +42,146 @@
       <a href="/guide/editor">Editor</a>
       <a href="/guide/editor-basic" class="guide-sub-link">Basic Editor</a>
       <a href="/guide/editor-full" class="guide-sub-link active">Full Editor</a>
+      <a href="#what-is-full-editor" class="guide-sub-link">Overview</a>
+      <a href="#loading-files" class="guide-sub-link">Col 1: Load Files</a>
+      <a href="#editing-fields" class="guide-sub-link">Col 2: Tagging Form</a>
+      <a href="#comic-viewer" class="guide-sub-link">Col 3: Page Viewer</a>
+      <a href="#queue-and-saving" class="guide-sub-link">Col 4: Save Queue</a>
+      <a href="#comicvine-search" class="guide-sub-link">ComicVine Search</a>
+      <a href="#goodreads-extension" class="guide-sub-link">GoodReads Ext</a>
     </nav>
 
     <main class="guide-main">
       <h1>Full Editor</h1>
-      <p class="guide-subtitle">Batch metadata tagging for files before — or after — they join your library.</p>
+      <p class="guide-subtitle">Batch metadata tagging workspace for files before — or after — they join your library.</p>
 
-      <!-- content: Stage 6 -->
+      <div class="guide-toc">
+        <span class="guide-toc-label">Quick Jump:</span>
+        <div class="guide-toc-pills">
+          <a href="#what-is-full-editor" class="guide-toc-pill">Overview</a>
+          <a href="#loading-files" class="guide-toc-pill">Col 1: Load Files</a>
+          <a href="#editing-fields" class="guide-toc-pill">Col 2: Tagging Form</a>
+          <a href="#comic-viewer" class="guide-toc-pill">Col 3: Viewer</a>
+          <a href="#queue-and-saving" class="guide-toc-pill">Col 4: Save Queue</a>
+          <a href="#comicvine-search" class="guide-toc-pill">ComicVine Search</a>
+          <a href="#goodreads-extension" class="guide-toc-pill">GoodReads Extension</a>
+        </div>
+      </div>
 
       <h2 id="what-is-full-editor">What the Full Editor is for</h2>
-      <p>The Full Editor is a batch metadata-tagging workspace, built mainly as a
-      <strong>pre-library staging tool</strong> — a place to tag a folder of freshly
-      acquired comics (art scanned from a "Processing" folder excluded from your library
-      scan, say) before they ever join your library, rather than something you use on
-      issues that are already catalogued. Because it works directly against files on
-      disk, it can also be pointed at a folder of comics that were tagged incorrectly the
-      first time round, with no library involvement at all.</p>
-      <p>It's also useful the other way: select one or more issues already in your
-      library and choose <strong>Send to Full Editor</strong> from the selection bar to
-      load them in for a batch retag. That's the one case where the Full Editor does
-      touch your library — an issue loaded this way gets an automatic rescan the moment
-      you save it, so the corrected metadata shows up back in the library right away.</p>
-      <p>Open it from <strong>Admin → Open Editor</strong> (loads with nothing selected —
-      you pick a folder yourself), or from a library selection's <strong>→ Send to Full
-      Editor</strong> action (skips the folder picker entirely and loads your selection
-      straight in).</p>
+      <p>The Full Editor is a 4-column batch metadata-tagging workspace built mainly as a <strong>pre-library staging tool</strong> — a place to tag a folder of freshly acquired comics before they enter your main library. You can also load existing catalogued issues from the library using <strong>Send to Full Editor</strong> in the selection bar for a batch retag.</p>
 
-      <h2 id="full-editor-layout">Layout at a glance</h2>
-      <p>The Full Editor is the densest screen in digib00age — a four-column workspace
-      plus a header and a footer status bar, all built to keep loading files, editing
-      their tags, viewing pages, and queuing saves visible at the same time:</p>
+      <div class="guide-card">
+        <h3>4-Column Workspace Layout</h3>
+        <ul>
+          <li><strong>Column 1 — Load / Select Files:</strong> Folder tree browser with natural sorting (<code>001 &lt; 002 &lt; 010</code>) and status badges.</li>
+          <li><strong>Column 2 — Edit ComicInfo.xml:</strong> Comprehensive form with "Apply to All" batch checkboxes and Issue # auto-incrementing.</li>
+          <li><strong>Column 3 — Comic Viewer:</strong> Full page-by-page archive viewer with zoom, drag panning, and thumbnail strip.</li>
+          <li><strong>Column 4 — Edited Files Queue:</strong> Save queue manager for queueing edits and running batch saves.</li>
+        </ul>
+      </div>
+
+      <a href="#what-is-full-editor" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="full-editor-columns">The Four Columns in Detail</h2>
+
+      <details class="guide-accordion" open>
+        <summary id="loading-files">Column 1 — Load / Select Files</summary>
+        <div class="guide-accordion-content">
+          <p>Click <strong>Select Folder</strong> to launch digib00age's in-app folder picker. Files are natural-sorted and rendered as a tree with status indicators:</p>
+          <ul>
+            <li><strong>XML Badge:</strong> Indicates a <code>ComicInfo.xml</code> file is present inside the archive.</li>
+            <li><strong>Needs-Review (Red Border):</strong> Visual cue marking files flagged during low-confidence auto-tagging.</li>
+            <li><strong>Stats Row:</strong> Tracks total files found, with XML, and without XML.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="guide-accordion">
+        <summary id="editing-fields">Column 2 — Edit ComicInfo.xml &amp; Batch Tagging</summary>
+        <div class="guide-accordion-content">
+          <p>Tagging fields split across Main and More tabs with batch controls:</p>
+          <ul>
+            <li><strong>Increment # Checkbox:</strong> When checked, issue numbers auto-increment sequentially across loaded files as you tag through them.</li>
+            <li><strong>Apply to All Checkboxes:</strong> Each field features an "Apply to All" box. Checking a box stamps that value across every loaded file when running <strong>Process All</strong>. Unchecked fields remain untouched per-file.</li>
+            <li><strong>Genre Chips:</strong> Easily add or remove genre chips drawn from the Admin managed list.</li>
+            <li><strong>＋ Queue:</strong> Adds current file edits to Column 4 save queue. Checks for near-duplicate creator names before adding.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="guide-accordion">
+        <summary id="comic-viewer">Column 3 — Comic Viewer (Page Preview)</summary>
+        <div class="guide-accordion-content">
+          <p>Inspect archive covers or credit pages directly while tagging:</p>
+          <ul>
+            <li><strong>Zoom Controls:</strong> Zoom in (<code>+</code>), Zoom out (<code>−</code>), Reset (<code>Fit</code>), and Fullscreen.</li>
+            <li><strong>Click &amp; Drag Panning:</strong> Click and drag anywhere on the page to pan around when zoomed in.</li>
+            <li><strong>Thumbnail Strip:</strong> Bottom strip with lazy-loaded page thumbnails for quick jumping.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="guide-accordion">
+        <summary id="queue-and-saving">Column 4 — Edited Files Queue &amp; Batch Processing</summary>
+        <div class="guide-accordion-content">
+          <p>Manages committed edits before writing back to disk:</p>
+          <ul>
+            <li><strong>Process Queue:</strong> Writes XML edits back to comic archives for all queued files. The queue clears automatically upon completion.</li>
+            <li><strong>Process All:</strong> Bypasses the queue and writes XML to <em>every loaded file</em> in Column 1, applying only checked "Apply to All" fields.</li>
+            <li><strong>Clear Queue:</strong> Discards pending queue items without saving.</li>
+          </ul>
+          <div class="guide-callout guide-callout-warning">
+            <span class="guide-callout-label">Warning</span>
+            <p>Process All overwrites fields across all loaded files. Verify checked "Apply to All" boxes before running!</p>
+          </div>
+        </div>
+      </details>
+
+      <a href="#what-is-full-editor" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="comicvine-search">Automated ComicVine Online Search</h2>
+      <p>Click <strong>Search ComicVine</strong> in the header to look up metadata for the focused file based on Series, Issue Number, and Year (Title is not used in search queries):</p>
+      
+      <div class="guide-card">
+        <h3>2-Step Lookup Flow</h3>
+        <ol>
+          <li><strong>Select Series:</strong> Returns a results table ranked by digib00age's <strong>Best Match</strong> algorithm (fuzzy title matching + issue count ranking). Double-click or click <strong>Issues</strong> to view issue list, or click <strong>Ok</strong> for single-issue fast path.</li>
+          <li><strong>Select Issue:</strong> Natural-sorted issue list with cover preview. Double-click an issue to confirm and populate form fields.</li>
+        </ol>
+      </div>
+
+      <a href="#what-is-full-editor" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="goodreads-extension">GoodReads Chrome Extension (Optional)</h2>
+      <p>Scrapes GoodReads book pages and pastes Writer, Penciller, Publisher, Year, Language, Genre, and Summary directly into the focused file form.</p>
+
+      <details class="guide-accordion">
+        <summary id="goodreads-extension-install">Installation &amp; Usage Steps</summary>
+        <div class="guide-accordion-content">
+          <ol>
+            <li>Navigate to <code>chrome://extensions</code> in Chrome and enable <strong>Developer mode</strong>.</li>
+            <li>Click <strong>Load unpacked</strong> and select the <code>chrome-extension</code> folder inside your digib00age installation directory.</li>
+            <li>In the Full Editor, click <strong>Search GoodReads</strong> to search for the book on GoodReads.</li>
+            <li>On the GoodReads book page, click the extension icon in your browser toolbar to scrape data.</li>
+            <li>Return to the Full Editor and click the <strong>Paste from GR</strong> button (labelled with scraped book title) to auto-fill the form!</li>
+          </ol>
+          <div class="guide-callout">
+            <span class="guide-callout-label">Tip</span>
+            <p>Scraped genres are automatically matched against your Admin Genre list (case-insensitive); unrecognized genres are silently skipped to preserve data validity.</p>
+          </div>
+        </div>
+      </details>
+
+      <a href="#what-is-full-editor" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="multi-xml-and-errors">Conflict &amp; Failure Resolution Modals</h2>
       <ul>
-        <li><strong>Column 1 — Load / Select Files</strong>: pick a folder and browse the
-        files you've loaded.</li>
-        <li><strong>Column 2 — Edit ComicInfo.xml</strong>: the actual tagging form for
-        whichever file is currently focused.</li>
-        <li><strong>Column 3 — Comic Viewer</strong>: page-by-page preview of the focused
-        file, so you can check a cover or credits page while you tag it.</li>
-        <li><strong>Column 4 — Edited Files Queue</strong>: files you've finished editing
-        and queued up, ready to save.</li>
+        <li><strong>Multi-XML Resolution:</strong> If an archive contains multiple <code>ComicInfo.xml</code> files, a side-by-side comparison modal asks you to pick which one to keep; excess files are removed on save.</li>
+        <li><strong>Process All Error Summary:</strong> If a batch save fails on certain files, an error modal reports per-file failure details so you can fix them individually.</li>
       </ul>
-      <p>The header carries two extra controls not present elsewhere in digib00age:
-      <strong>Search ComicVine</strong> (looks up the focused file's series/issue online
-      and can fill the form for you) and <strong>Search GoodReads</strong> (opens a
-      GoodReads search prefilled with the focused file's Series text). A separate,
-      optional <a href="#goodreads-extension">Chrome extension</a> can then scrape a
-      GoodReads book page and paste its data back into the form. The footer is a status
-      bar showing the currently selected file's name, its XML status, a running
-      low-confidence count, and how many files are currently queued.</p>
 
-      <h2 id="full-editor-columns">The four columns in detail</h2>
-
-      <h3 id="loading-files">Column 1 — Load / Select Files</h3>
-      <p><strong>Select Folder</strong> opens digib00age's own in-app folder browser (a
-      breadcrumb-and-tree picker, not your OS's native file dialog) — it isn't restricted
-      to your library's root, so you can point it anywhere on the machine the server is
-      running on. It loads only that one folder's direct contents; subfolders aren't
-      included and there's no recursive option, so a folder full of nested series
-      subfolders needs to be loaded one level at a time. Multi-select within a single
-      folder is supported. <strong>Clear</strong> wipes the whole loaded set and resets
-      the form back to empty.</p>
-      <p>Loaded files render as an expandable <strong>folder → series → issue tree</strong>,
-      grouped by each file's nearest two directory levels. Issue rows carry an
-      <strong>XML</strong> badge when a <code>ComicInfo.xml</code> is already present
-      inside the archive, and a red-border <strong>needs-review</strong> indicator on any
-      file flagged by an earlier low-confidence auto-tag pass (from Admin's XML Tagging
-      or Auto Processing tools) — a visual cue for which files still need a human look.
-      Everything is natural-sorted, so issue numbers order correctly (<code>001 &lt; 002
-      &lt; 010</code>) instead of alphabetically.</p>
-      <p>Clicking an issue — or moving keyboard focus onto it with the up/down arrow
-      keys — loads its XML into Column 2 and its cover into Column 3; this is the same
-      unified focus/load action either way. A stats line at the bottom of the column
-      tracks <strong>Files Found</strong>, <strong>With XML</strong>, and <strong>Without
-      XML</strong> for the currently loaded set.</p>
-
-      <h3 id="editing-fields">Column 2 — Edit ComicInfo.xml</h3>
-      <p>The same Main and More tab fields as the <a href="/guide/editor-basic">Basic
-      Editor</a> — Series Title, Issue Title, Issue Number, Year, Genre, Format, Age
-      Rating, Black &amp; White, Summary on Main; Count, Page Count, Writer, Penciller,
-      Publisher, Story Arc, Language, Notes on More — with a few differences that only
-      make sense in a batch context:</p>
-      <ul>
-        <li><strong>Increment #</strong> — a checkbox next to Issue Number. When
-        checked, digib00age auto-increments the issue number across the loaded list in
-        display order as you tag through it, so you don't have to type each number by
-        hand. This is the <strong>one field with no "Apply to All" checkbox</strong> —
-        it doesn't need one, since incrementing across files is already its whole job.</li>
-        <li><strong>Apply to All</strong> — every other field gets its own checkbox in a
-        column alongside it. Only fields whose box is checked get bulk-applied when you
-        run <strong>Process All</strong> (below); unchecked fields keep each file's own
-        individual value untouched. Leave everything unchecked and Process All changes
-        nothing but what's genuinely per-file.</li>
-        <li><strong>Genre</strong> is removable chips plus a <strong>＋ Add genre</strong>
-        dropdown, rather than the checkbox grid the Basic Editor uses — a layout better
-        suited to a field you're likely to reuse across many files in a row.</li>
-      </ul>
-      <p>A <strong>＋ Queue</strong> button at the bottom adds the currently-focused file
-      to the Edited Files Queue (Column 4) using whatever's currently in the form.</p>
-      <div class="guide-callout">
-        <span class="guide-callout-label">Tip</span>
-        <p>If a Writer or Penciller name you typed is a close match to someone already
-        credited elsewhere in your library, a confirmation popup offers to use that
-        existing spelling instead — the same near-duplicate-credit guard the
-        <a href="/guide/editor-basic">Basic Editor</a> uses. It can appear once when you
-        click <strong>＋ Queue</strong>, and again when you run <strong>Process All</strong>
-        if a Writer/Penciller field is checked "Apply to All" — not per file in the queue,
-        since each queued file's credits were already checked when it was added. It never
-        blocks the action either way; declining just keeps what you typed.</p>
-      </div>
-
-      <h3 id="comic-viewer">Column 3 — Comic Viewer</h3>
-      <p>A page-by-page preview of the focused file: <strong>Zoom in</strong>/<strong>Zoom
-      out</strong>, <strong>Fit</strong> (resets to fit the frame), Prev/Next page with an
-      "X / Y" counter, and <strong>Fullscreen</strong>. Once you've zoomed past 100%, the
-      page becomes click-drag-pannable so you can look around it without hunting for
-      scrollbars. A lazy page-thumbnail strip sits below the main view — thumbnails load
-      on demand as you scroll through them, the current page is highlighted, and clicking
-      one jumps straight to it. The cover loads automatically the moment a file is
-      focused; every other page loads only when you actually navigate to it.</p>
-
-      <h3 id="queue-and-saving">Column 4 — Edited Files Queue, and saving</h3>
-      <p>Every file you've clicked <strong>＋ Queue</strong> on shows up here as a card
-      (a checkmark, the filename, an "Edited" tag, and a <strong>✕</strong> to remove it
-      from the queue). A running <strong>"N files in queue"</strong> count sits above the
-      cards, with a <strong>"⚠ counts differ"</strong> warning if the number of files
-      you've loaded doesn't match the number you've queued — a quick completeness check
-      for a batch session, so you don't accidentally save 40 of 42 files and move on.</p>
-      <ul>
-        <li><strong>Process Queue</strong> is the actual save action for queued files —
-        there's no separate "Save" button anywhere in the Full Editor. It writes each
-        queued file's edited XML back into its archive, and the queue empties itself
-        automatically once processing finishes successfully.</li>
-      </ul>
-      <div class="guide-callout guide-callout-warning">
-        <span class="guide-callout-label">Warning</span>
-        <p><strong>Clear Queue</strong> abandons everything currently queued
-        <strong>without saving any of it</strong> — none of those edits reach disk. Use
-        it to start a batch session over, not as a way to "clean up" after a successful
-        Process Queue (that already happens automatically).</p>
-      </div>
-      <div class="guide-callout guide-callout-warning">
-        <span class="guide-callout-label">Warning</span>
-        <p><strong>Process All</strong> is a separate action that bypasses the queue
-        entirely: it writes XML to <strong>every file currently loaded</strong> in
-        Column 1 — not just the ones you've queued — applying only the fields whose
-        "Apply to All" checkbox is ticked, batch-wide, on top of each file's own existing
-        values. It's powerful for something like stamping the same Publisher and Genre
-        across an entire loaded folder in one click, but double-check which boxes are
-        actually ticked before running it, since there's no per-file preview step
-        first.</p>
-      </div>
-
-      <h2 id="comicvine-search">Searching ComicVine</h2>
-      <p>The <strong>Search ComicVine</strong> button in the header looks up metadata for
-      whichever file is currently focused in Column 2, using that file's own form fields —
-      there's no separate search box. <strong>Series</strong> is required; if it's empty,
-      the search is blocked with a message asking you to fill it in first. Issue Number,
-      Year, and Issue Count (if already filled in) are read along as filters to help
-      narrow the results, but <strong>Title is not used</strong> in the search at all.</p>
-      <p>The search opens as a two-step modal:</p>
-      <ul>
-        <li><strong>Select Series</strong> — a results table (Series / Year / Issues /
-        Publisher) with a cover preview and description. It defaults to <strong>Best
-        Match</strong> ordering — digib00age's own fuzzy title-match-plus-issue-count
-        ranking, not simply whatever order ComicVine happened to return — though you can
-        re-sort by any column instead. <strong>Cancel</strong> closes the modal,
-        <strong>Issues</strong> proceeds to the issue list for the highlighted series
-        (same as double-clicking it), and <strong>Ok</strong> fast-paths straight past
-        the issue list onto that series' first issue — handy for one-shots and graphic
-        novels where there's only ever going to be one result anyway.</li>
-        <li><strong>Select Issue</strong> — a natural-sorted issue list (Issue # / Date /
-        Title) with its own cover preview and description. Click a row to preview it;
-        <strong>double-click to confirm</strong> and apply that issue's data to the form.
-        <strong>← Back to Series</strong> returns to the series results you already
-        fetched, with no re-fetch needed.</li>
-      </ul>
-      <div class="guide-callout">
-        <span class="guide-callout-label">Tip</span>
-        <p>Confirming an issue match <strong>fully overwrites</strong> the mapped fields
-        in the form — it's a replace, not a merge with whatever you'd already typed. If
-        you've hand-edited a field you want to keep (a custom Notes entry, say), do that
-        after confirming the ComicVine match, not before.</p>
-      </div>
-      <p><strong>Search GoodReads</strong>, next to it in the header, opens goodreads.com
-      in a new tab with a search prefilled from the focused file's <strong>Series</strong>
-      text (if Series is empty, it opens a blank search instead). It's not wired to
-      ComicVine or to any other form field — you still pick the right result yourself.
-      Pairing this with the optional <a href="#goodreads-extension">GoodReads Chrome
-      extension</a> below turns the rest of the lookup into a one-click paste instead of
-      manual re-typing.</p>
-
-      <h2 id="goodreads-extension">GoodReads Chrome extension (optional)</h2>
-      <p>A small companion Chrome extension can scrape a GoodReads book page and paste
-      <strong>Writer, Penciller, Publisher, Year, Language, Genre, and Summary</strong>
-      straight into the focused file's form — no manual re-typing. It's a personal tool
-      that lives outside digib00age's own codebase (a <code>chrome-extension</code> folder
-      alongside the app), not something installed from the Chrome Web Store, and it's
-      hardcoded to talk to this one digib00age instance.</p>
-
-      <h3 id="goodreads-extension-install">Installing it</h3>
-      <ol>
-        <li>Open <strong>chrome://extensions</strong> in Chrome.</li>
-        <li>Turn on <strong>Developer mode</strong> (top right).</li>
-        <li>Click <strong>Load unpacked</strong> and select the <code>chrome-extension</code>
-        folder inside your digib00age install.</li>
-        <li>A new toolbar icon appears — that's the extension.</li>
-      </ol>
-
-      <h3 id="goodreads-extension-use">Using it</h3>
-      <ol>
-        <li>In the Full Editor, click <strong>Search GoodReads</strong> to open a search
-        prefilled with the focused file's Series text, and pick the right book.</li>
-        <li>On that GoodReads book page, click the extension's <strong>toolbar
-        icon</strong> — it scrapes the page in the background; nothing changes visibly on
-        the GoodReads tab itself.</li>
-        <li>Switch back to the Full Editor tab. A <strong>Paste from GR</strong> button
-        appears next to Search ComicVine/Search GoodReads, labelled with the scraped
-        book's title. Click it to fill the form.</li>
-      </ol>
-      <div class="guide-callout">
-        <span class="guide-callout-label">Tip</span>
-        <p>Genre is matched against your own current genre list (case-insensitive) —
-        anything GoodReads lists that doesn't match (e.g. "Science Fiction" when your list
-        has "Sci-Fi") is silently skipped rather than pasted as an invalid value; add it by
-        hand from the Genre dropdown if you want it. Every other field is a straightforward
-        overwrite, same "replace, not merge" behaviour as confirming a ComicVine match — if
-        you've already hand-edited something you want to keep, do it after pasting, not
-        before.</p>
-      </div>
-      <div class="guide-callout guide-callout-warning">
-        <span class="guide-callout-label">Warning</span>
-        <p>Each scrape is used once — pasting clears it, so a second click of <strong>Paste
-        from GR</strong> without a fresh scrape does nothing. If you switch which file is
-        focused between scraping and pasting, the paste still applies to whichever file is
-        focused when you click it, so scrape and paste in one continuous pass per file.</p>
-      </div>
-
-      <h2 id="multi-xml-and-errors">When something needs your attention</h2>
-      <p>Two modals surface only when something's actually gone sideways with a file or a
-      batch, rather than as part of normal use:</p>
-      <ul>
-        <li>If a loaded archive contains <strong>more than one <code>ComicInfo.xml</code></strong>
-        file inside it, a resolution modal shows both side by side (read-only) and asks
-        you to pick which one to keep — the other(s) are deleted from the archive the
-        next time that file is saved.</li>
-        <li>If a <strong>Process All</strong> batch save runs into trouble on some files,
-        an error summary modal lists each failure so you can see exactly which files
-        didn't make it through and why, without having to guess from a partial result.</li>
-      </ul>
+      <a href="#what-is-full-editor" class="guide-back-to-top">↑ Back to top</a>
     </main>
   </div>
 

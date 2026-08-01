@@ -28,11 +28,11 @@
       --text-3: #888E98;
       --green: #2E9E60;
       --blue: #0A5FFF;
-      --danger: #ff000b;
+      --danger: #D24A42;
       --border: #C8D1DC;
 
-      /* Card background — bright white cards in light mode */
-      --surface-card: #FFFFFF;
+      /* Card background */
+      --surface-card: #d8e3ef;
 
       /* .state-read / .state-part-read card overlay (style.css) */
       --read-overlay: #2A2E36;
