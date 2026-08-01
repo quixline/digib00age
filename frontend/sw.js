@@ -60,8 +60,19 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Network-first for API calls — always want fresh data
+  // Network-first for API calls — always want fresh data. Cache fallback only
+  // makes sense for GET: nothing non-GET is ever cached (see caches.put calls
+  // below), so falling back on a failed POST/PUT/DELETE/PATCH always misses,
+  // resolving to undefined — which respondWith() turns into its own opaque
+  // "Failed to convert value to 'Response'" error, masking whatever actually
+  // went wrong on a mutating request (e.g. a long batch-process call) behind
+  // a second, unrelated failure. Let those reject with the real fetch error
+  // instead.
   if (url.pathname.startsWith('/api/')) {
+    if (event.request.method !== 'GET') {
+      event.respondWith(fetch(event.request));
+      return;
+    }
     event.respondWith(
       fetch(event.request).catch(() => caches.match(event.request))
     );

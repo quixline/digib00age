@@ -8661,3 +8661,50 @@ fixes earlier today (the CSP block, the stale-storage no-op).
 - Cosmetic-threshold change — no build-queue item or `DECISIONS.md` entry.
 - **Verified live**: zoomed screenshots of the active-filter chip's "×"
   before/after confirm the glyph now sits centred in its circle.
+
+## Session — 2026-08-01 (continued) — Full Editor "Network error — processing did not complete" investigated; service worker cache-fallback bug found and fixed
+
+- Tez ran a 28-file Full Editor batch (age rating change via Apply All →
+  Process All) and got "Network error — processing did not complete."
+  Investigated rather than assuming the batch failed.
+- Cross-checked the dev DB and the actual archive files on `L:\Comic
+  Archives`: all 28-29 targeted issues show `age_rating = 'Teen+'`,
+  `flagged_for_review = 0`, and `date_modified` timestamps running
+  sequentially from 18:15:37 to 18:38:48 — a clean, uninterrupted run
+  matching `process_batch()`'s per-file loop. **The batch fully completed
+  server-side; nothing needed reprocessing.** The error was purely a lost
+  response, not a failed write.
+- `tray/reader_stdout.log` shows a second tray/reader-server instance
+  starting at 18:18:22 (mid-batch) and repeatedly failing to bind port
+  9424 (`WinError 10048`) for about 16 seconds before giving up — Tez's
+  working theory is this was triggered by an unrelated investigation
+  request to Claude Cowork spinning up its own instance, though this
+  isn't 100% confirmed. Whatever the trigger, it's the likely proximate
+  cause of the dropped connection on the batch's single long-lived POST.
+  Considered unlikely to recur in production (dev-environment tray/port
+  contention), so **not filed as an open bug** — no fix targets this
+  specific trigger.
+- What *was* fixed, independent of that trigger: `frontend/sw.js`'s
+  `fetch` handler caught **any** failed `/api/` request and fell back to
+  `caches.match(event.request)` — including POST/PUT/DELETE, which are
+  never cached (only GETs and navigations get `caches.put`). A failed
+  mutating request therefore always missed the cache, resolved to
+  `undefined`, and `respondWith(undefined)` threw its own opaque "Failed
+  to convert value to 'Response'" error — masking whatever actually went
+  wrong on a real request (like this one) behind an unrelated second
+  failure. Fixed by only taking the cache-fallback path for GET; non-GET
+  `/api/` requests now reject with the real fetch error instead.
+- This doesn't prevent a future dropped connection during a long batch —
+  it just means if one happens again, the failure surfaced to the page
+  will reflect what actually went wrong instead of a generic, doubly-
+  masked network error. Logged for that reason, not as a bug fix for the
+  original incident (which turned out not to be a real failure).
+- Picked up automatically next load — `sw.js`'s cache name embeds a
+  content hash (`ASSET_VERSION_TOKEN`, substituted server-side), so the
+  edit changes the SW's own bytes and the browser's update check picks
+  it up without a manual cache-bust.
+- Verified: `node --check` on the edited file (syntax only). Not
+  manually verified against a real dropped-connection scenario — that's
+  not safely reproducible on demand. Low risk since the change only
+  removes a fallback path that was already provably wrong for non-GET
+  requests.

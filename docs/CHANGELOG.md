@@ -13,6 +13,15 @@ close) — **entries from 2026-06-29 through 2026-07-02 point into
 **Entries from 2026-07-07 onward point into `v2.6/progress.md`** (v2.6 opened
 2026-07-06).
 
+- **2026-08-01** — Investigated a Full Editor batch-processing "Network
+  error" report; batch had actually completed server-side (lost response,
+  not a failed write). Found and fixed an unrelated service-worker bug
+  along the way: `frontend/sw.js` fell back to cache on *any* failed
+  `/api/` request, including non-GET, which always misses cache and masks
+  the real error — now GET-only. → `v2.6/progress.md` "Session —
+  2026-08-01 (continued) — Full Editor 'Network error — processing did
+  not complete' investigated; service worker cache-fallback bug found and
+  fixed"
 - **2026-08-01** — Fixed the "×" glyph inside active-filter chips
   (`.filter-chip-clear`) sitting visibly off-centre in its circle. →
   `v2.6/progress.md` "Session — 2026-08-01 (continued) — Filter chip '×'
