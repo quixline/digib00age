@@ -1,9 +1,0 @@
-{
-  "burst_seconds": 6,
-  "pre_burst_issue_count": 19,
-  "post_burst_issue_count": 19,
-  "issue_count_drift": 0,
-  "http_errors_during_burst": [],
-  "server_log_traceback_count": 0,
-  "server_log_traceback_samples": []
-}

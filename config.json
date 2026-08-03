@@ -1,0 +1,11 @@
+{
+  "reader_port": 9424,
+  "thumbnail_size": 300,
+  "thumbnail_dir": "backend/thumbnails",
+  "db_path": "backend/comicvault_v2.db",
+  "log_last_viewed": {},
+  "next_processing_run": null,
+  "library_roots": [],
+  "library_root": "",
+  "scan_exclude": []
+}

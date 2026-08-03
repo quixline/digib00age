@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Guide — digib00age</title>
+  <link rel="icon" href="/static/images/favicon.png">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0A5FFF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script>(function(){var t=localStorage.getItem('cv_theme');if(t&&t!=='auto')document.documentElement.dataset.theme=t;})();</script>
+  <link rel="stylesheet" href="/static/css/tokens-base.css">
+  <link rel="stylesheet" href="/static/css/tokens-dark.css">
+  <link rel="stylesheet" href="/static/css/tokens-light.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/guide.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container inner">
+      <a href="/" class="site-logo">
+        <img src="/static/images/lockup-light.png" alt="digib00age" class="site-logo-img site-logo-img--dark">
+        <img src="/static/images/lockup-dark.png" alt="digib00age" class="site-logo-img site-logo-img--light">
+      </a>
+      <a href="/admin" class="settings-btn" title="Admin / Settings" aria-label="Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+      <button type="button" class="btn-admin-action" id="logoutBtn" hidden>Logout</button>
+    </div>
+  </header>
+
+  <div class="guide-shell">
+    <nav class="guide-sidebar" aria-label="Guide navigation">
+      <span class="guide-sidebar-section-label">Guide</span>
+      <a href="/guide">Overview</a>
+      <a href="/guide/library">Library</a>
+      <a href="/guide/admin" class="active">Admin</a>
+      <a href="#admin-overview" class="guide-sub-link">Stats &amp; Scan</a>
+      <a href="#admin-top-actions" class="guide-sub-link">Top Actions</a>
+      <a href="#library-management" class="guide-sub-link">Management</a>
+      <a href="#library-appearance" class="guide-sub-link">Appearance</a>
+      <a href="#editor-options" class="guide-sub-link">Editor Options</a>
+      <a href="#advanced-settings" class="guide-sub-link">Advanced</a>
+      <a href="#processing-tools" class="guide-sub-link">Processing Tools</a>
+      <a href="/guide/editor">Editor</a>
+      <a href="/guide/editor-basic" class="guide-sub-link">Basic Editor</a>
+      <a href="/guide/editor-full" class="guide-sub-link">Full Editor</a>
+    </nav>
+
+    <main class="guide-main">
+      <h1>Admin &amp; Server Settings</h1>
+      <p class="guide-subtitle">Setting up, maintaining, and automating your digib00age server.</p>
+
+      <div class="guide-toc">
+        <span class="guide-toc-label">Quick Jump:</span>
+        <div class="guide-toc-pills">
+          <a href="#admin-overview" class="guide-toc-pill">Stats &amp; Scan</a>
+          <a href="#admin-top-actions" class="guide-toc-pill">Top Actions</a>
+          <a href="#library-management" class="guide-toc-pill">Management</a>
+          <a href="#library-appearance" class="guide-toc-pill">Appearance</a>
+          <a href="#editor-options" class="guide-toc-pill">Editor Options</a>
+          <a href="#advanced-settings" class="guide-toc-pill">Advanced Settings</a>
+          <a href="#processing-tools" class="guide-toc-pill">Processing Tools</a>
+        </div>
+      </div>
+
+      <h2 id="admin-overview">Overview, Stats &amp; Live Scan</h2>
+      <p>The <strong>Admin</strong> page (accessible via the gear icon in the top header) is the command center for server scanning, backups, appearance, access rules, and file processing tools.</p>
+      
+      <div class="guide-card">
+        <h3>Library Stats &amp; Scan Controls</h3>
+        <ul>
+          <li><strong>Library Stats:</strong> Read-only summary cards showing Total Files, Series, Singles, Total Read (count &amp; percentage), and In Progress issues.</li>
+          <li><strong>Library Scan Logs:</strong> Cards for <strong>Last Scan</strong> date, <strong>Files Found</strong>, and <strong>New Files</strong>. Each features a <strong>Logs</strong> button opening recent scan entries. A card's border turns <strong style="color:var(--accent);">green</strong> when unviewed log entries exist — opening the log modal clears the badge.</li>
+          <li><strong>Scan Now:</strong> Triggers an immediate rescan of all configured roots. Shows live progress, scanned counts, and reports thumbnail errors if any occur (affected files are still catalogued).</li>
+        </ul>
+      </div>
+
+      <a href="#admin-overview" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="admin-top-actions">Top Action Row</h2>
+      <p>A quick-action bar above the stats handles common administrative utilities:</p>
+      <ul>
+        <li><strong>Back:</strong> Return to the library view.</li>
+        <li><strong>User Guide:</strong> Open this documentation.</li>
+        <li><strong>Open Editor:</strong> Launch the batch Full Editor in the current tab.</li>
+        <li><strong>Backup Database:</strong> Trigger an immediate manual database snapshot to your configured backup folder.</li>
+        <li><strong>Password Reset:</strong> Change the active admin password (requires existing password).</li>
+        <li><strong>Forgot Password?:</strong> Displays local recovery steps (stop server process, clear stored password fields in <code>config.json</code>, restart).</li>
+        <li><strong>Install App:</strong> Install digib00age as a Progressive Web App (PWA) on your desktop or mobile device.</li>
+      </ul>
+
+      <a href="#admin-overview" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="library-management">Library Management</h2>
+      <p>Configure directory roots, automated rescanning schedules, access logs, and database snapshots.</p>
+
+      <details class="guide-accordion" open>
+        <summary id="auto-scan-settings">Auto Scan Settings &amp; Folders</summary>
+        <div class="guide-accordion-content">
+          <p><strong>Auto Scan Schedule:</strong> Choose automatic scan intervals (Off, 1 hour, 6 hours, 12 hours, 1 day, 3 days, 7 days, 1 month) and toggle <strong>Scan on launch</strong> to force a rescan whenever the server starts.</p>
+          <p><strong>Library Folders &amp; Exclusions:</strong> Define top-level <strong>Scan Roots</strong> for digib00age to index (sub folders are included automatically). Add folders within those roots to <strong>Exclude Folders</strong> (e.g. <code>Processing</code>) to keep staging folders from appearing in the main library.</p>
+        </div>
+      </details>
+
+      <details class="guide-accordion">
+        <summary id="db-backup-schedule">Database Backups &amp; Restoration</summary>
+        <div class="guide-accordion-content">
+          <p><strong>DB Backup Schedule:</strong> Pick a local backup folder (via native folder picker) and frequency (Off, Day, Week, Month, 6 Months, Year). Displays last backup timestamp or error indicators.</p>
+          <div class="guide-callout">
+            <span class="guide-callout-label">Tip</span>
+            <p>Select a local cloud-sync folder (e.g., Google Drive, Dropbox) for automatic off-site backup protection!</p>
+          </div>
+          <p><strong>Restore DB:</strong> Restore a previously saved <code>.db</code> file snapshot. Overwrites database state and restarts the server after automatically creating a safety snapshot of the current state.</p>
+          <div class="guide-callout guide-callout-warning">
+            <span class="guide-callout-label">Warning</span>
+            <p>Restoring replaces your entire database (including custom libraries and home strips). Local sessions only.</p>
+          </div>
+        </div>
+      </details>
+
+      <details class="guide-accordion">
+        <summary id="access-logs">Access Logs &amp; Size Limits</summary>
+        <div class="guide-accordion-content">
+          <p>View the disk directory path where scan and processing log files are saved (with a one-click Copy button) and configure <strong>Log Size Limit (MB)</strong> to automatically cap log file size on disk.</p>
+        </div>
+      </details>
+
+      <a href="#admin-overview" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="library-appearance">Library Appearance</h2>
+      <p>Customize the visual layout, Home page strips, card sizing, and custom libraries.</p>
+
+      <details class="guide-accordion" open>
+        <summary id="home-page-strips">Home Page Strips &amp; Custom Libraries</summary>
+        <div class="guide-accordion-content">
+          <p><strong>Home Page Strips:</strong> Reorder or add up to 5 custom scrollable strips on the Home view. Custom strips can be Field-based (e.g. Genre = Horror) or Folder-based, sorted randomly or fixed by Title/Newest/Recent.</p>
+          <p><strong>Add/Remove Libraries (Custom Tabs):</strong> Create custom sidebar views with <strong>Flat</strong> (grid) or <strong>Folder View</strong> (directory hierarchy) modes. Quick shortcuts allow adding Genre, Favorites, or Reading Queue libraries with one click.</p>
+        </div>
+      </details>
+
+      <details class="guide-accordion">
+        <summary id="theme-selection">Theme, Card Sizing &amp; Pagination</summary>
+        <div class="guide-accordion-content">
+          <p><strong>Theme Selection:</strong> Switch between <strong>Match Windows</strong> (auto OS preference), <strong>Light</strong>, or <strong>Dark</strong> theme instantly.</p>
+          <p><strong>Card Size:</strong> Adjust cover card grid scale from 30% to 100% across all browse grids and Home strips.</p>
+          <p><strong>Pagination:</strong> Set browse items per page (25, 50, 100, 200, 500; default 50).</p>
+        </div>
+      </details>
+
+      <a href="#admin-overview" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="editor-options">Editor Options</h2>
+      <details class="guide-accordion" open>
+        <summary id="genre-list">Managed Value Lists (Genre &amp; Format)</summary>
+        <div class="guide-accordion-content">
+          <p>Manage the enforced dropdown values used in both Basic and Full Editors:</p>
+          <ul>
+            <li><strong>Genre List:</strong> Add/remove options offered in the Genre selector. At least one genre must exist. Removing an in-use genre does not untag existing issues; it only stops future selection.</li>
+            <li><strong>Format List:</strong> Add/remove supported formats (e.g. Single Issue, TPB, Graphic Novel).</li>
+          </ul>
+        </div>
+      </details>
+
+      <a href="#admin-overview" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="advanced-settings">Advanced Settings</h2>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>All Advanced Settings require ticking the <strong>Unlock</strong> checkbox before modification to prevent accidental changes.</p>
+      </div>
+
+      <details class="guide-accordion">
+        <summary id="password-protection">Security &amp; Port Settings</summary>
+        <div class="guide-accordion-content">
+          <p><strong>Password Protection:</strong> Enabling <strong>Require a password</strong> gates Admin and Editor pages behind local authentication. <strong>Allow Remote Administration</strong> permits LAN devices to access settings when password protected.</p>
+          <p><strong>Change Server Port:</strong> Modify the listening HTTP port and click <strong>Save &amp; Restart</strong>.</p>
+          <div class="guide-callout guide-callout-warning">
+            <span class="guide-callout-label">Warning</span>
+            <p>Changing the server port restarts the server immediately. Relaunch the tray app so menu shortcuts reflect the new port.</p>
+          </div>
+        </div>
+      </details>
+
+      <details class="guide-accordion">
+        <summary id="wipe-database">Database &amp; Progress Wipe Tools</summary>
+        <div class="guide-accordion-content">
+          <p><strong>Wipe Database:</strong> Permanently deletes all catalogued issues, genres, credits, and progress records (does not delete comic files on disk). Local sessions only.</p>
+          <p><strong>Wipe Reading State:</strong> Resets all issue reading progress to unread while preserving metadata and catalog records.</p>
+        </div>
+      </details>
+
+      <a href="#admin-overview" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="processing-tools">Processing Tools (Local Sessions Only)</h2>
+      <p>Pre-ingest filesystem management tools for preparing comic archives before or alongside library scans.</p>
+
+      <details class="guide-accordion" open>
+        <summary id="filename-editor">Filename Editor</summary>
+        <div class="guide-accordion-content">
+          <p>Batch renames comic files based on parsed or edited Series, Issue, Title, and Year values:</p>
+          <ul>
+            <li><strong>Folder Picker:</strong> Select any directory on the server machine.</li>
+            <li><strong>Batch Controls:</strong> Edit fields individually per file or check <strong>All</strong> to apply a value across the entire loaded batch.</li>
+            <li><strong>Auto-Increment Issue Numbers:</strong> Automatically sequence issue numbers sequentially down the list.</li>
+            <li><strong>Queue &amp; Preview:</strong> Review original vs new filenames in the Queued Files preview before committing. Click <strong>Apply Rename</strong> to commit changes on disk.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="guide-accordion">
+        <summary id="converter">Archive &amp; Image Converter</summary>
+        <div class="guide-accordion-content">
+          <p><strong>Convert Archives:</strong> Convert CBR or PDF archives directly into standard CBZ format with progress tracking.</p>
+          <p><strong>Convert Images:</strong> Repack archives with compressed WebP images. Set quality (1–100) or check <strong>Lossless</strong>. Automatically preserves <code>.bak</code> files if any unreadable pages are encountered during conversion.</p>
+        </div>
+      </details>
+
+      <details class="guide-accordion">
+        <summary id="xml-tagging">XML Tagging &amp; ComicVine Key</summary>
+        <div class="guide-accordion-content">
+          <p>Matches comic files in a target folder against ComicVine and writes <code>ComicInfo.xml</code> into each archive:</p>
+          <ul>
+            <li><strong>Match Ratio Threshold:</strong> Set required confidence percentage (10–100%, default 80%).</li>
+            <li><strong>Save on Low Confidence:</strong> Writes low-confidence matches flagged with a review tag rather than skipping them.</li>
+            <li><strong>ComicVine API Key:</strong> Enter your personal API key with <strong>Save &amp; Test</strong> validation to avoid rate limits.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="guide-accordion">
+        <summary id="folder-processing">Folder Processing &amp; Auto Processing Pipeline</summary>
+        <div class="guide-accordion-content">
+          <p><strong>Folder Processing:</strong> Run one-off sorting scripts: <em>Sort by Filename</em> (moves loose CBZs into title subfolders), <em>Move Series Folders</em>, or <em>Move Singles Folders</em>.</p>
+          <p><strong>Auto Processing Pipeline:</strong> Automate pre-ingest staging on a folder schedule. Runs in fixed sequence: Convert Archives &rarr; CT Auto-Tag &rarr; Convert Images. Filename renaming is deliberately excluded for human verification safety.</p>
+        </div>
+      </details>
+
+      <a href="#admin-overview" class="guide-back-to-top">↑ Back to top</a>
+    </main>
+  </div>
+
+  <script src="/static/js/pwa.js"></script>
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/auth.js"></script>
+</body>
+</html>

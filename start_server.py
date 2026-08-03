@@ -12,12 +12,13 @@ The process stays alive — Ctrl+C to stop.
 import os
 import sys
 
-# Make backend importable as a package from the project root
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Make backend importable as a package — it lives under src/
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
 from backend.config import (
     READER_PORT,
     DB_PATH, LIBRARY_ROOT, THUMBNAIL_DIR, THUMBNAIL_SIZE,
+    is_library_configured,
 )
 from backend.database import init_db
 
@@ -40,12 +41,13 @@ def main():
     print(f"  thumbnail_size : {THUMBNAIL_SIZE}px wide")
     print(f"  reader_port    : {READER_PORT}")
 
-    # Verify library root
-    if not os.path.isdir(LIBRARY_ROOT):
-        print(f"\n  [!!]  library_root not found: {LIBRARY_ROOT}")
-        print("     Edit config.json and set the correct path, then re-run.")
-        sys.exit(1)
-    print("\n  [OK] library_root found")
+    # Verify library root — not fatal; the app boots regardless and the
+    # library can be configured from /admin (Library Folders) afterward.
+    if not is_library_configured():
+        print(f"\n  [!] Library location not configured yet.")
+        print(f"     Go to http://localhost:{READER_PORT}/admin to set it.")
+    else:
+        print("\n  [OK] library_root found")
 
     # Verify / create thumbnail dir
     os.makedirs(THUMBNAIL_DIR, exist_ok=True)

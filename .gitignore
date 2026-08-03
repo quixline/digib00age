@@ -1,20 +1,23 @@
-# Config (machine-specific, contains real library path)
-config.json
+# Local working space — docs, caches, logs, scratchpad, /graphify output,
+# everything that isn't meant to go public. One blanket rule instead of the
+# pile of individual entries this used to be (single-repo restructure).
+dev/
+
+# Config (machine-specific, contains real library path + secrets).
+# config.json itself is the tracked bare/minimal template — only the backup
+# holding real values is ignored; rename it in locally when you need it.
+config.json.bak
 
 # Database — glob (not a fixed filename) so it survives renames like the
 # V1 comicvault.db -> V2 comicvault_v2.db clone, and covers dated backups
 # (comicvault_backup_*.db) from POST /api/admin/backup
-backend/*.db
-backend/*.db-wal
-backend/*.db-shm
-backend/*.db.bak
+src/backend/*.db
+src/backend/*.db-wal
+src/backend/*.db-shm
+src/backend/*.db.bak
 
 # Generated thumbnails
-backend/thumbnails/
-
-# ComicVine search-result/cover-image cache (ComicTagger's ComicVineTalker,
-# backend/ct_bridge.py's CT_CACHE_DIR) — runtime cache, not source
-ct_cache/
+src/backend/thumbnails/
 
 # Python
 __pycache__/
@@ -32,27 +35,20 @@ venv/
 env/
 
 # Tray app logs
-tray/tray.log
-tray/tray_stdout.log
-tray/reader_stdout.log
+src/tray/tray.log
+src/tray/tray_stdout.log
+src/tray/reader_stdout.log
 
 # Flutter / Dart
-flutter_app/build/
-flutter_app/.dart_tool/
-flutter_app/android/.gradle/
-flutter_app/android/app/build/
-flutter_app/windows/flutter/ephemeral/
+src/flutter_app/build/
+src/flutter_app/.dart_tool/
+src/flutter_app/android/.gradle/
+src/flutter_app/android/app/build/
+src/flutter_app/windows/flutter/ephemeral/
 
 # Local tool config
 .claude/
 CLAUDE.md
-
-# Planning docs (not part of the codebase) — one-off task instructions, already actioned
-V2_MIGRATION_SETUP.md
-V2_FOLLOWUP_COMMIT_AND_SCANNER_FIX.md
-
-# Generated reports — snapshots of current DB state, not source
-pre_migration_report.csv
 
 # OS
 .DS_Store
@@ -64,24 +60,3 @@ desktop.ini
 .idea/
 *.suo
 *.user
-
-# Cowork
-doc-scan-issues.md
-doc-scan-issues-archive.md
-doc-scan-state.md
-cowork-notes.md
-v2_investigation_report.md
-cowork-doc-scan-instructions.md
-
-# Local build tracker (HTML, open in browser — gitignored, lives in docs/meta/)
-build-plan.html
-
-# Runtime-generated admin logs (scan/backup/changed-files history) — local
-# state, not source, same treatment as the tray app logs above.
-logs/
-
-# /graphify skill output (knowledge-graph cache/report) — regenerable, not source
-graphify-out/
-
-# docs\INBOX.md is just my scratchpad - maintained by mefor keeping notes / todo's
-inbox.md
