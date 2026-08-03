@@ -1,4 +1,4 @@
-// ComicVault — api.js
+// digib00age — api.js
 // Shared fetch wrapper for all /api/... calls. Plain global script (no ES
 // modules anywhere in this codebase) — must be loaded before any script
 // that calls apiFetch(). Auth: session is a cookie (cv_session, see

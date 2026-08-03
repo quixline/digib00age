@@ -1,4 +1,4 @@
-// ComicVault — pwa.js
+// digib00age — pwa.js
 // Service worker registration + install-prompt capture.
 // Included in all full HTML pages. No automatic prompts — install is
 // triggered only by the explicit "Install App" button on the Admin page.

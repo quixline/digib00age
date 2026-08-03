@@ -1,4 +1,4 @@
-// ComicVault — auth.js
+// digib00age — auth.js
 // Admin/Editor password gate: login popup, logout control, global 401 interception,
 // and the deterministic View Only lock (ADMIN_SPEC.md Section 7.1 / 7.2).
 //

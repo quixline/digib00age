@@ -1,4 +1,4 @@
-/* ComicVault — filterDropdown.js (v2.6 Item 1 Phase D follow-up)
+/* digib00age — filterDropdown.js (v2.6 Item 1 Phase D follow-up)
    Styled open-dropdown panel for the Browse filter bar's <select>
    elements, matching Design's own custom Dropdown component
    (components/library/Dropdown.jsx) — a browser's native <select> popup

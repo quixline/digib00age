@@ -1,4 +1,4 @@
-/* ComicVault — admin.js */
+/* digib00age — admin.js */
 
 let scanPollInterval = null;
 let _config = { library_roots: [], scan_exclude: [], library_root: '' };

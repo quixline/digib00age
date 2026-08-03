@@ -1,4 +1,4 @@
-// ComicVault — app.js
+// digib00age — app.js
 // Library home (index.html), series detail (series.html), issue detail (issue.html)
 
 // ── Utilities ────────────────────────────────────────────────────────────────

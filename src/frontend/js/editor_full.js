@@ -1,4 +1,4 @@
-// ComicVault — editor_full.js
+// digib00age — editor_full.js
 // Full Editor toolbox: pre-library batch metadata editing. EDITOR_SPEC.md Section 5.
 // Self-contained — no dependency on app.js.
 // v2.6 Item 7 — 4-column redesign: Col 1 folder→series→issue tree, Col 2 editor

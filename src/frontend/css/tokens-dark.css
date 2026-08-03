@@ -1,4 +1,4 @@
-/* ComicVault — tokens-dark.css
+/* digib00age — tokens-dark.css
    Theme-dependent tokens at their dark (default) values. Loads before
    tokens-light.css so light's :root[data-theme="light"] /
    prefers-color-scheme overrides win the cascade when active.

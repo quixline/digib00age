@@ -1,4 +1,4 @@
-// ComicVault — editor_basic.js
+// digib00age — editor_basic.js
 // Basic Editor popup: single-issue metadata edit, opened from /issue/{id}.
 // EDITOR_SPEC.md Section 6.
 
