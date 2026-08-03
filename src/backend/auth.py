@@ -1,5 +1,5 @@
 """
-ComicVault — Admin/Editor auth primitives.
+digib00age — Admin/Editor auth primitives.
 
 Password protection is OFF by default (no admin_password_hash in config.json).
 Stdlib only: hashlib for pbkdf2/hmac, secrets for tokens, no new dependency.

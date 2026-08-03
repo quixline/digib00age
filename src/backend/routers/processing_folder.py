@@ -1,5 +1,5 @@
 """
-ComicVault — Processing Folder Automation Router (ADMIN_SPEC.md §11.4).
+digib00age — Processing Folder Automation Router (ADMIN_SPEC.md §11.4).
 Three-stage pipeline (Convert Archives -> CT Auto-Tag -> Convert Images,
 fixed order) against a single configured folder, triggered by "Run Now" or
 the wall-clock scheduler (backend/scheduler.py's processing_folder_loop()).

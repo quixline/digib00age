@@ -1,5 +1,5 @@
 """
-ComicVault — Config helper
+digib00age — Config helper
 Loads config.json once and provides a get_config() function.
 All paths in the codebase come from here — nothing is ever hardcoded.
 """

@@ -1,5 +1,5 @@
 """
-ComicVault — Move Series Folders / Move Singles Folders Processing Tool
+digib00age — Move Series Folders / Move Singles Folders Processing Tool
 Router (ADMIN_SPEC.md §11.7). Moves each immediate subfolder of a chosen
 folder into its correct place in the library structure — the final stage
 of processing before a library scan. Background job + polling progress,

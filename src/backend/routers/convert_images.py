@@ -1,5 +1,5 @@
 """
-ComicVault — Convert Images Router (ADMIN_SPEC.md §11.3). Converts supported
+digib00age — Convert Images Router (ADMIN_SPEC.md §11.3). Converts supported
 raster images inside a CBZ or CBR to WebP and repacks the archive — both
 formats load into the same working list together (no From-format selector,
 unlike Convert Archives). Background job + polling progress, own

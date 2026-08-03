@@ -1,5 +1,5 @@
 """
-ComicVault — Reader Server
+digib00age — Reader Server
 FastAPI entry point. Runs on localhost:9424 by default (home network accessible).
 All paths come from config.json — nothing is hardcoded here.
 """
@@ -92,7 +92,7 @@ async def lifespan(app: FastAPI):
 # App
 # ---------------------------------------------------------------------------
 app = FastAPI(
-    title="ComicVault",
+    title="digib00age",
     description="Personal comic book library server",
     version="1.0.0",
     lifespan=lifespan,

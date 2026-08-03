@@ -1,5 +1,5 @@
 """
-ComicVault — Progress Router
+digib00age — Progress Router
 POST /api/progress/{issue_id}   Update reading status and current page
 """
 

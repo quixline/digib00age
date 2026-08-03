@@ -1,5 +1,5 @@
 """
-ComicVault — File Rename Tool Router (admin-spec-section-12-processing-
+digib00age — File Rename Tool Router (admin-spec-section-12-processing-
 tools.md §12.1). Mirrors editor_full.py's shape: a browse endpoint (shared
 file_picker.py, no library_root restriction, no extension filter, plus a
 drive-list endpoint for the "This PC" Up-navigation terminus), an in-memory

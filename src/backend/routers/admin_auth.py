@@ -1,5 +1,5 @@
 """
-ComicVault — Admin auth router (ADMIN_SPEC.md §7.1 / §7.2)
+digib00age — Admin auth router (ADMIN_SPEC.md §7.1 / §7.2)
 POST /api/admin/login                 Password login, sets session cookie
 POST /api/admin/logout                Clears session cookie
 GET  /api/admin/auth/status           Auth/protection state for page bootstraps

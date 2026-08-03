@@ -1,5 +1,5 @@
 """
-ComicVault — Scan log files (ADMIN_SPEC.md §4 / §8)
+digib00age — Scan log files (ADMIN_SPEC.md §4 / §8)
 
 Persistent, on-disk record of scan results — separate from scanner.py's
 in-memory ScanProgress.log, which is ephemeral (reset every scan, capped at

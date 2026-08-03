@@ -1,5 +1,5 @@
 """
-ComicVault — Auto Scan + Scheduled Backup + Processing Folder schedulers
+digib00age — Auto Scan + Scheduled Backup + Processing Folder schedulers
 (ADMIN_SPEC.md §4 "Auto Scan Options", §9 "Scheduled Database Backup",
 §11.4.5 "Schedule")
 

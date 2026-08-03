@@ -1,5 +1,5 @@
 """
-ComicVault — XML Tagging Processing Tool Router (ADMIN_SPEC.md §11.6).
+digib00age — XML Tagging Processing Tool Router (ADMIN_SPEC.md §11.6).
 Standalone, single-folder CT Auto-Tag run — same core logic as Processing
 Folder Automation's CT Auto-Tag stage (backend/ct_autotag.py's
 ct_autotag_file()), triggered manually against any folder rather than only

@@ -1,9 +1,9 @@
 """
-ct_bridge.py — ComicVault's bridge into ComicTagger's comicapi/comictalker/
+ct_bridge.py — digib00age's bridge into ComicTagger's comicapi/comictalker/
 comictaggerlib.issueidentifier libraries (EDITOR_SPEC.md 9.1, ADMIN_SPEC.md
 11.4.3). Imported directly, no CLI wrapper. Never calls ComicArchive.write_tags()
-— ComicVault owns ComicInfo.xml read/write via backend/editor/. This module
-only maps GenericMetadata -> ComicVault's flat field-dict and drives
+— digib00age owns ComicInfo.xml read/write via backend/editor/. This module
+only maps GenericMetadata -> digib00age's flat field-dict and drives
 search/identify against ComicVine.
 
 Requires the comictagger dependency pinned in requirements.txt to a specific
@@ -32,7 +32,7 @@ from comictalker.talkers.comicvine import ComicVineTalker
 from backend.config import REPO_ROOT, get_config
 from backend.rename_tool import parse_comic_filename
 
-CT_VERSION = "1.0.0"  # ComicVault's own version string, passed to CT's talker/cache
+CT_VERSION = "1.0.0"  # digib00age's own version string, passed to CT's talker/cache
 CT_CACHE_DIR = REPO_ROOT / "dev" / "ct_cache"  # ComicVineTalker's sqlite search-result cache
 
 
@@ -169,11 +169,11 @@ def fetch_issue_metadata(issue_id: str) -> GenericMetadata:
     return get_talker().fetch_comic_data(issue_id=issue_id, on_rate_limit=None)
 
 
-# -- GenericMetadata -> ComicVault field-dict mapping --
+# -- GenericMetadata -> digib00age field-dict mapping --
 # Captures everything CT/ComicVine supplies into ComicInfo.xml, mirroring
 # comicapi/tags/comicrack.py's own write mapping field-for-field (confirmed
 # 2026-07-04 after live testing showed data loss against a real file) -- not
-# just the subset ComicVault's own editor UI exposes. build_xml_from_fields()
+# just the subset digib00age's own editor UI exposes. build_xml_from_fields()
 # writes any dict key as a literal XML tag with no COMICINFO_TAGS filtering
 # in this callpath, so tags the editor never displays (Inker/Colorist/
 # Letterer/CoverArtist/Editor/Volume/Web/etc.) still land in the file and
@@ -181,13 +181,13 @@ def fetch_issue_metadata(issue_id: str) -> GenericMetadata:
 #
 # Deliberately still excludes Genre/Format/AgeRating/BlackAndWhite -- not
 # an "editor doesn't show it" exclusion like the above, but a correctness
-# one: Genre/Format/AgeRating are ComicVault-enforced dropdowns (DECISIONS.md
+# one: Genre/Format/AgeRating are digib00age-enforced dropdowns (DECISIONS.md
 # 2026-07-03 session 3; ComicVine's issue mapper doesn't even set md.genres)
-# and BlackAndWhite has a real semantic mismatch -- ComicVault's own
+# and BlackAndWhite has a real semantic mismatch -- digib00age's own
 # convention is the literal text "on" for checked (EDITOR_SPEC.md 3.3),
 # while CT's own writer uses "Yes", which the Editor's populateForm() would
 # not recognise as checked. PageCount is excluded too -- always
-# auto-computed from the archive elsewhere in ComicVault, never from CT.
+# auto-computed from the archive elsewhere in digib00age, never from CT.
 def metadata_to_field_dict(md: GenericMetadata) -> dict:
     """Maps onto ComicInfo.xml tag names so the result can be handed
     straight to build_xml_from_fields(). Only non-empty/known fields are
@@ -311,7 +311,7 @@ _DEFAULT_IIO_KWARGS = dict(
 def identify_file(archive_path: str) -> AutoTagIdentifyResult:
     """Runs IssueIdentifier against a file already on disk, seeded from its
     existing ComicInfo.xml (if any) via CT's own read_tags. If the archive
-    has no Series/Issue# embedded, falls back to ComicVault's filename
+    has no Series/Issue# embedded, falls back to digib00age's filename
     parser (backend/rename_tool.py's parse_comic_filename -- the tested,
     scene-release-tolerant one, not the minimal scanner.py fallback).
 

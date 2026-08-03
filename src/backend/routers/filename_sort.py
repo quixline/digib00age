@@ -1,5 +1,5 @@
 """
-ComicVault — Sort by Filename Processing Tool Router (ADMIN_SPEC.md §11.5).
+digib00age — Sort by Filename Processing Tool Router (ADMIN_SPEC.md §11.5).
 Moves each CBZ/CBR file directly inside a chosen folder into its own
 same-named subfolder — ported from the standalone `create-folders-from-file.py`
 script. Background job + polling progress, mirroring

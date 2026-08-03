@@ -5,7 +5,7 @@ Ported from CAPT's utils/archive_xml_loader.py + utils/xml_archive_unpacker.py
 (see v2_investigation_report.md). CBR support reinstated v2.4 Item 5/11
 (EDITOR_SPEC.md Section 3.1/3.2) — read-only at the archive level; a rebuild
 always produces a `.cbz`, never a `.cbr` (RAR creation needs a paid WinRAR
-install, deliberately never a ComicVault dependency).
+install, deliberately never a digib00age dependency).
 """
 
 import logging

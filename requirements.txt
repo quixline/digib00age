@@ -14,4 +14,4 @@ comictagger @ git+https://github.com/comictagger/comictagger.git@0cc9e76f8d45d3e
                  # ComicVine Auto-Tag + Search Online, 2026-07-03. Pinned to a develop-branch
                  # commit, not PyPI's 1.5.5 — PyPI predates the comictalker plugin split this
                  # integration depends on. Smoke-tested 2026-07-03: base install has no PyQt6,
-                 # RarArchiver correctly uses ComicVault's existing rarfile install.
+                 # RarArchiver correctly uses digib00age's existing rarfile install.

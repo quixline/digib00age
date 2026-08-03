@@ -3,7 +3,7 @@ archive_convert.py — Convert Archives core logic (ADMIN_SPEC.md §11.2).
 Ported from CAPT's arc_conv_cb_proc.py / arc_conv_pdf_proc.py /
 arc_conv_helpers.py / arc_convert_util.py. Only CBR->CBZ and PDF->CBZ are
 ported — CAPT's CBZ->CBR/CBZ->PDF directions are dropped entirely (RAR
-creation needs a paid WinRAR install, never a ComicVault dependency).
+creation needs a paid WinRAR install, never a digib00age dependency).
 
 `convert_archive_file()` is a plain, router-independent callable — Processing
 Folder Automation (§11.4, v2.4 Item 16) invokes it directly, not through the

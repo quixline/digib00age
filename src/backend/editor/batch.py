@@ -4,7 +4,7 @@ the editor core.
 
 Ported from CAPT's utils/xml_worker.py. Increment-number is Full Editor only
 (EDITOR_SPEC.md Section 3.4) — sequential, no collision guardrail, confirmed
-acceptable since this only ever runs against files not yet in ComicVault's
+acceptable since this only ever runs against files not yet in digib00age's
 database.
 """
 

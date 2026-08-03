@@ -1,5 +1,5 @@
 """
-ComicVault — Editor (Full) Router — pre-library staging toolbox.
+digib00age — Editor (Full) Router — pre-library staging toolbox.
 EDITOR_SPEC.md Section 5. Normally operates entirely on files not yet in the
 database — no rescan-trigger logic for the ordinary pre-library path
 (Section 5). **One deliberate exception**, added for the review-queue
@@ -33,7 +33,7 @@ Batch:
 Search Online (EDITOR_SPEC.md §9, ComicTagger integration):
   GET    /api/editor/full/search/series             Select Series step — search ComicVine
   GET    /api/editor/full/search/issues              Select Issue step — issues for one series
-  POST   /api/editor/full/search/confirm              Map a chosen issue to ComicVault fields
+  POST   /api/editor/full/search/confirm              Map a chosen issue to digib00age fields
 """
 
 import base64
@@ -223,7 +223,7 @@ def add_files_by_issues(payload: dict = Body(...), db: Session = Depends(get_db)
     Add already-catalogued issues to the working set by Issue.id, resolving
     each to its known file_path — the review-queue "Send to Full Editor"
     action, skipping the manual folder-browse picker for files already in
-    ComicVault's database. Unknown ids are silently skipped (same soft-fail
+    digib00age's database. Unknown ids are silently skipped (same soft-fail
     convention as progress.py's bulk endpoints).
     """
     issue_ids = payload.get("issue_ids", [])
@@ -601,7 +601,7 @@ def search_online_issues(series_id: str):
 @router.post("/editor/full/search/confirm")
 def search_online_confirm(payload: dict = Body(...)):
     """
-    payload: {"issue_id": "..."}. Returns the mapped ComicVault field dict —
+    payload: {"issue_id": "..."}. Returns the mapped digib00age field dict —
     the frontend applies it to the form directly, fully overwriting the
     mapped fields (§9.7). Does not write to the archive or touch
     NeedsReview here — that only happens on the file's next real save

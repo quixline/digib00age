@@ -1,7 +1,7 @@
 """
 archive_formats.py — shared CBZ/CBR archive-reading dispatch (SPEC.md §6.1,
 v2.4 Item 5/11). `.cbz` uses the stdlib `zipfile`; `.cbr` uses `rarfile`
-(extraction-only — CBR is never written anywhere in ComicVault, see
+(extraction-only — CBR is never written anywhere in digib00age, see
 EDITOR_SPEC.md §3.2). Used by scanner.py, reader.py, and editor/archive_io.py
 so the zipfile-vs-rarfile branch isn't triplicated.
 """

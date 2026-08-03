@@ -1,5 +1,5 @@
 """
-ComicVault — Sync Router (v2.5 Item 3)
+digib00age — Sync Router (v2.5 Item 3)
 POST /api/sync/progress   Batch-reconcile reading progress pushed from an
                           offline mobile client (last-write-wins by timestamp).
 """

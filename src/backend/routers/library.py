@@ -1,5 +1,5 @@
 """
-ComicVault — Library Router
+digib00age — Library Router
 GET /api/library          All series with cover, issue count, unread count
 GET /api/library?group=   Filter by Series or Singles
 GET /api/series/{id}      Series detail + all issues with read status

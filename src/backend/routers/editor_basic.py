@@ -1,5 +1,5 @@
 """
-ComicVault — Editor (Basic) Router
+digib00age — Editor (Basic) Router
 GET    /api/editor/genres          Editable genre list — shared by Basic and Full editor UIs
 POST   /api/editor/genres          Add a genre (Admin page) — Tier 4 Item 1, comicvault-changes.md
 DELETE /api/editor/genres/{name}   Remove a genre (Admin page); blocked if it's the last one

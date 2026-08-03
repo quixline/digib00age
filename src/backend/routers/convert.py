@@ -1,5 +1,5 @@
 """
-ComicVault — Convert Archives Router (ADMIN_SPEC.md §11.2). CBR->CBZ and
+digib00age — Convert Archives Router (ADMIN_SPEC.md §11.2). CBR->CBZ and
 PDF->CBZ only. Background job + polling progress, modelled on
 backend/scanner.py's existing scan_progress pattern (not a blocking request
 like Rename — conversion work is meaningfully slower per file).

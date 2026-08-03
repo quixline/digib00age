@@ -1,5 +1,5 @@
 """
-ComicVault — Reader Router
+digib00age — Reader Router
 GET /api/issue/{id}/pages     Ordered list of page image URLs
 GET /api/page/{id}/{n}        Serve one page image from inside the CBZ
 GET /api/cover/{id}           Serve the pre-generated cover thumbnail
