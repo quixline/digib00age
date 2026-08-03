@@ -1,11 +1,11 @@
 """
-ComicVault — Admin Router
+digib00age — Admin Router
 GET  /api/admin/stats        Library statistics
 POST /api/scan               Trigger full background rescan
 POST /api/scan/file?path=    Rescan single file (called by Flask editor)
 GET  /api/scan/status        Live scan progress for admin UI
-POST /api/admin/backup       Copy comicvault.db to dated backup file
-POST /api/admin/restore-database  Restore comicvault.db from a chosen backup file
+POST /api/admin/backup       Copy digib00age.db to dated backup file
+POST /api/admin/restore-database  Restore digib00age.db from a chosen backup file
 """
 
 from __future__ import annotations
@@ -84,7 +84,7 @@ def get_stats(db: Session = Depends(get_db)):
         "missing_count": missing_count,
         "filename_metadata_count": filename_metadata_count,
         "library_root": config.get("library_root"),
-        "db_path": str(PROJECT_ROOT / config.get("db_path", "backend/comicvault.db")),
+        "db_path": str(PROJECT_ROOT / config.get("db_path", "backend/digib00age.db")),
         "scan_state": {
             "running": sp.running,
             "finished_at": (sp.finished_at.isoformat() + "Z") if sp.finished_at else None,
@@ -390,7 +390,7 @@ async def clear_database(request: Request, db: Session = Depends(get_db)):
     save_config({"log_last_viewed": {}, "next_processing_run": None})
 
     config = get_config()
-    db_path = PROJECT_ROOT / config.get("db_path", "backend/comicvault.db")
+    db_path = PROJECT_ROOT / config.get("db_path", "backend/digib00age.db")
     size_before = db_path.stat().st_size if db_path.exists() else 0
 
     # Fold pending WAL writes, then dispose the pooled connection so VACUUM
@@ -467,8 +467,8 @@ def clear_reading_progress(request: Request, db: Session = Depends(get_db)):
 @router.post("/admin/backup")
 def backup_database():
     """
-    Copies comicvault.db to a dated backup file.
-    e.g. comicvault_backup_2025-01-15_14-32-00.db
+    Copies digib00age.db to a dated backup file.
+    e.g. digib00age_backup_2025-01-15_14-32-00.db
 
     Uses the configured Scheduled Backup destination (ADMIN_SPEC.md §9) if one
     is set, otherwise falls back to the DB's own directory (original V1
@@ -488,16 +488,16 @@ def backup_database():
     }
 
 
-def run_database_backup(prefix: str = "comicvault_backup", sep: str = "_") -> Path:
+def run_database_backup(prefix: str = "digib00age_backup", sep: str = "_") -> Path:
     """
     Shared by the manual Backup Database button, the scheduled backup loop, and
     the pre-restore safety snapshot (ADMIN_SPEC.md §9, Restore Database subsection)
     — `prefix`/`sep` let the restore path produce `pre-restore-{timestamp}.db`
-    instead of the default `comicvault_backup_{timestamp}.db` while reusing the
+    instead of the default `digib00age_backup_{timestamp}.db` while reusing the
     same destination-folder and last-backup-tracking logic.
     """
     config = get_config()
-    db_path = PROJECT_ROOT / config.get("db_path", "backend/comicvault.db")
+    db_path = PROJECT_ROOT / config.get("db_path", "backend/digib00age.db")
 
     if not db_path.exists():
         raise FileNotFoundError(str(db_path))
@@ -538,7 +538,7 @@ def _show_backup_file_dialog() -> str | None:
     from tkinter import filedialog
 
     config = get_config()
-    db_path = PROJECT_ROOT / config.get("db_path", "backend/comicvault.db")
+    db_path = PROJECT_ROOT / config.get("db_path", "backend/digib00age.db")
     initial_dir = config.get("backup_folder") or str(db_path.parent)
 
     root = tkinter.Tk()
@@ -576,7 +576,7 @@ async def restore_database(request: Request, payload: dict = Body(...)):
         snapshot_path = None  # no existing DB yet — nothing to snapshot
 
     config = get_config()
-    db_path = PROJECT_ROOT / config.get("db_path", "backend/comicvault.db")
+    db_path = PROJECT_ROOT / config.get("db_path", "backend/digib00age.db")
 
     # Fold pending WAL writes into db_path, then clear its -wal/-shm sidecars
     # outright so nothing is left for SQLite to replay back into the restored

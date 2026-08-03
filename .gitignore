@@ -9,8 +9,8 @@ dev/
 config.json.bak
 
 # Database — glob (not a fixed filename) so it survives renames like the
-# V1 comicvault.db -> V2 comicvault_v2.db clone, and covers dated backups
-# (comicvault_backup_*.db) from POST /api/admin/backup
+# V1 comicvault.db -> V2 comicvault_v2.db -> digib00age.db history, and
+# covers dated backups (digib00age_backup_*.db) from POST /api/admin/backup
 src/backend/*.db
 src/backend/*.db-wal
 src/backend/*.db-shm

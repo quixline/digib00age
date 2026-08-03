@@ -38,7 +38,7 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 def checkpoint_wal() -> None:
     """
-    Forces a full WAL checkpoint and truncates comicvault.db-wal to zero length,
+    Forces a full WAL checkpoint and truncates digib00age.db-wal to zero length,
     folding any pending writes into the main .db file. Must run against the live
     engine before any shutil.copy2() of db_path — otherwise a leftover -wal
     sidecar sits next to the copied file and SQLite replays its pending frames
