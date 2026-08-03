@@ -15,18 +15,18 @@ import 'screens/settings_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final settings = await SettingsService.load();
-  runApp(ComicVaultApp(settings: settings));
+  runApp(Digib00ageApp(settings: settings));
 }
 
-class ComicVaultApp extends StatefulWidget {
+class Digib00ageApp extends StatefulWidget {
   final SettingsService settings;
-  const ComicVaultApp({super.key, required this.settings});
+  const Digib00ageApp({super.key, required this.settings});
 
   @override
-  State<ComicVaultApp> createState() => _ComicVaultAppState();
+  State<Digib00ageApp> createState() => _Digib00ageAppState();
 }
 
-class _ComicVaultAppState extends State<ComicVaultApp> {
+class _Digib00ageAppState extends State<Digib00ageApp> {
   late final ApiService _api;
   late final LocalCbzService _localCbz;
   late final DownloadService _downloads;
@@ -56,8 +56,8 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
   }
 
   void _handleLink(Uri uri) {
-    // comicvault://read/{issue_id}
-    if (uri.scheme == 'comicvault' && uri.host == 'read') {
+    // digib00age://read/{issue_id}
+    if (uri.scheme == 'digib00age' && uri.host == 'read') {
       final idStr = uri.pathSegments.isNotEmpty ? uri.pathSegments.first : null;
       final id = int.tryParse(idStr ?? '');
       if (id != null) {
@@ -67,7 +67,7 @@ class _ComicVaultAppState extends State<ComicVaultApp> {
     }
     // BUG-017: a .cbz opened from outside the app (file manager "Open
     // With", browser download) arrives here as a content://|file:// URI,
-    // via the same app_links stream the comicvault:// deep link uses.
+    // via the same app_links stream the digib00age:// deep link uses.
     if (uri.scheme == 'content' || uri.scheme == 'file') {
       _openSharedCbz(uri);
     }

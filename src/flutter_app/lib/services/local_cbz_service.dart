@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 
 const _imageExts = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'};
 
-const _localFilePickerChannel = MethodChannel('comicvault/local_file_picker');
+const _localFilePickerChannel = MethodChannel('digib00age/local_file_picker');
 
 class LocalCbzService {
   // Pick a CBZ from device storage. Returns null if cancelled or unsupported

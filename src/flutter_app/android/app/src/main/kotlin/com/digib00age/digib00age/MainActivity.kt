@@ -1,4 +1,4 @@
-package com.comicvault.comicvault
+package com.digib00age.digib00age
 
 import android.app.Activity
 import android.content.Intent
@@ -22,7 +22,7 @@ import java.io.FileOutputStream
 // files with the other from being selectable (also BUG-020). The app's own
 // ZipDecoder already validates the picked file's actual content afterward.
 class MainActivity : FlutterActivity() {
-    private val channelName = "comicvault/local_file_picker"
+    private val channelName = "digib00age/local_file_picker"
     private val pickCbzRequestCode = 4242
     private var pendingResult: MethodChannel.Result? = null
 

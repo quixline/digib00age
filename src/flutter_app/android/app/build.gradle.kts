@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.comicvault.comicvault"
+    namespace = "com.digib00age.digib00age"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.comicvault.comicvault"
+        applicationId = "com.digib00age.digib00age"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

@@ -27,12 +27,12 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- comicvault://read/{issue_id} deep link -->
+            <!-- digib00age://read/{issue_id} deep link -->
             <intent-filter android:autoVerify="false">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="comicvault" android:host="read"/>
+                <data android:scheme="digib00age" android:host="read"/>
             </intent-filter>
             <!-- BUG-017: open .cbz files shared/opened from outside the app
                  (file manager "Open With", browser download notification).
