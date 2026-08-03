@@ -729,7 +729,7 @@ def scan_library(db: Session):
     scan_logs.write_scan_markers(scan_progress.started_at)
 
     # ---- Collect all CBZ paths on disk ----
-    exclude = config.SCAN_EXCLUDE  # folder name fragments or absolute paths to skip
+    exclude = config.get_scan_exclude()  # folder name fragments or absolute paths to skip
     if exclude:
         scan_progress.add_log(f"Excluding folders: {exclude}")
 

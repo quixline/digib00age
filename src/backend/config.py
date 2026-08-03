@@ -53,7 +53,6 @@ THUMBNAIL_DIR  = _resolve(_cfg["thumbnail_dir"])
 THUMBNAIL_SIZE = int(_cfg.get("thumbnail_size", 300))
 SERIES_FOLDER  = _cfg.get("series_folder", "Series")
 SINGLES_FOLDER = _cfg.get("singles_folder", "Singles")
-SCAN_EXCLUDE   = _cfg.get("scan_exclude", [])
 READER_PORT    = int(_cfg.get("reader_port", 9424))
 
 
@@ -64,6 +63,16 @@ def get_library_root() -> str | None:
     takes effect immediately without restarting the server.
     """
     return get_config().get("library_root")
+
+
+def get_scan_exclude() -> list[str]:
+    """
+    Return the current scan_exclude list, re-read fresh from config.json on
+    every call (not cached at import time) so an exclusion added via the
+    Admin UI takes effect on the very next scan without restarting the
+    server — same reasoning as get_library_root() above.
+    """
+    return get_config().get("scan_exclude", [])
 
 
 def is_library_configured() -> bool:
