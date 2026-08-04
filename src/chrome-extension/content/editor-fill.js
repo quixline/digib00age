@@ -1,4 +1,4 @@
-// Persistent content script on http://localhost:9424/editor* — injects a
+// Persistent content script on http://localhost:9800/editor* — injects a
 // "Paste from GR" button next to the existing GoodReads/ComicVine buttons.
 // Mirrors editor_full.js's setField(id, value) pattern: these are plain
 // <input>/<textarea> elements with no input/change listeners, so a direct
@@ -34,7 +34,7 @@ function applyScrape(scrape) {
 // window.setGenres directly. Dispatching a CustomEvent for genre-bridge-main.js
 // (a separate "world": "MAIN" content script, see manifest.json) to pick up
 // crosses the isolated/main-world boundary without executing inline script —
-// injecting a <script> tag was the original approach here but localhost:9424's
+// injecting a <script> tag was the original approach here but localhost:9800's
 // CSP (script-src with no 'unsafe-inline') blocks that outright.
 function callPageSetGenres(genres) {
   window.dispatchEvent(new CustomEvent('gr-bridge-set-genres', { detail: genres }));

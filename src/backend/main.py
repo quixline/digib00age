@@ -1,6 +1,6 @@
 """
 digib00age — Reader Server
-FastAPI entry point. Runs on localhost:9424 by default (home network accessible).
+FastAPI entry point. Runs on localhost:9800 by default (home network accessible).
 All paths come from config.json — nothing is hardcoded here.
 """
 
@@ -253,7 +253,7 @@ if FRONTEND_DIR.exists():
 # Entry point — run directly with: python backend/main.py
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    port = config.get("reader_port", 9424)
+    port = config.get("reader_port", 9800)
     uvicorn.run(
         "backend.main:app",
         host="0.0.0.0",   # Accessible on home network

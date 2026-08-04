@@ -4,7 +4,7 @@
   "version": "0.2.1",
   "description": "Scrapes Writer/Artist/Publisher/Year/Language/Genre/Summary off a GoodReads book page and pastes them into the digib00age Full Editor. Personal tool, single instance.",
   "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["http://localhost:9424/*"],
+  "host_permissions": ["http://localhost:9800/*"],
   "background": {
     "service_worker": "background.js"
   },
@@ -19,12 +19,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://localhost:9424/editor*"],
+      "matches": ["http://localhost:9800/editor*"],
       "js": ["content/editor-fill.js"],
       "run_at": "document_idle"
     },
     {
-      "matches": ["http://localhost:9424/editor*"],
+      "matches": ["http://localhost:9800/editor*"],
       "js": ["content/genre-bridge-main.js"],
       "world": "MAIN",
       "run_at": "document_idle"

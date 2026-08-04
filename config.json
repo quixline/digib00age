@@ -1,5 +1,5 @@
 {
-  "reader_port": 9424,
+  "reader_port": 9800,
   "thumbnail_size": 300,
   "thumbnail_dir": "backend/thumbnails",
   "db_path": "backend/digib00age.db"

@@ -52,7 +52,7 @@ config.json     Tracked, bare template — no secrets. Real values (API key,
      and gives you the full tray menu), or
    - Run `python start_server.py` directly for manual/dev use (checks config,
      initializes the DB if needed, then starts uvicorn; Ctrl+C to stop).
-3. Open `http://localhost:9424` (or `http://<host-pc-ip>:9424` from another device on
+3. Open `http://localhost:9800` (or `http://<host-pc-ip>:9800` from another device on
    the network) for the library. `/admin` for the Admin page, `/editor` for the Full
    Editor — both intended for localhost use only.
 

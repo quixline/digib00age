@@ -5,7 +5,7 @@ Run from the project root:
     python start_server.py
 
 Checks config and paths, initialises the database, then launches the
-FastAPI server on the port set in config.json (default: 9424).
+FastAPI server on the port set in config.json (default: 9800).
 The process stays alive — Ctrl+C to stop.
 """
 

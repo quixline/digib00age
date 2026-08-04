@@ -228,7 +228,7 @@ def get_admin_config():
         "log_size_limit_mb": cfg.get("log_size_limit_mb", 5),
         "auto_scan_frequency": cfg.get("auto_scan_frequency", "off"),
         "autostart_scan": cfg.get("autostart_scan", False),
-        "reader_port": cfg.get("reader_port", 9424),
+        "reader_port": cfg.get("reader_port", 9800),
         "backup_folder": cfg.get("backup_folder", ""),
         "backup_frequency": cfg.get("backup_frequency", "off"),
     }

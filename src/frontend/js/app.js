@@ -2682,14 +2682,14 @@ async function initIssue() {
 
 // ── Reader launch ──────────────────────────────────────────────────────────
 // Replaces the old comicvault:// Flutter deep link (2026-07-29). Tries the
-// tray app's local-only control port first (127.0.0.1:9426, tray/tray_app.py
+// tray app's local-only control port first (127.0.0.1:9801, tray/tray_app.py
 // start_control_server()) so the reader opens as a fully chromeless --app=
 // window, same as the tray's own Library/Admin/Editor windows — a plain
 // window.open() popup can suppress the tab strip but not the address bar.
 // Falls back to window.open() (address bar visible, but still a dedicated
 // popup, not a full tab) when the tray isn't running the control server —
 // e.g. the backend was started some other way than via the tray.
-const READER_CONTROL_PORT = 9426;
+const READER_CONTROL_PORT = 9801;
 
 function launchReader(issueId) {
   const readerUrl = `/reader/${issueId}`;

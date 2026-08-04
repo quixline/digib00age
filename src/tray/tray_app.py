@@ -68,7 +68,7 @@ STARTUP_WAIT_TIMEOUT = 15  # seconds to wait for the port to open after launch
 # 2026-07-29 when a plain window.open() popup was found to still show an
 # address bar (window.open can't suppress it; only an --app=-launched
 # window can). Bound to 127.0.0.1 only, never the LAN.
-TRAY_CONTROL_PORT = 9426
+TRAY_CONTROL_PORT = 9801
 
 STARTUP_SHORTCUT_PATH = os.path.join(
     os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "digib00age.lnk"

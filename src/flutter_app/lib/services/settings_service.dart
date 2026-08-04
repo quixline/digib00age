@@ -8,7 +8,7 @@ class SettingsService {
   static const _keyThemeMode = 'theme_mode';
   static const _keyItemsPerPage = 'items_per_page';
 
-  static const defaultServerUrl = 'http://192.168.1.10:9424';
+  static const defaultServerUrl = 'http://192.168.1.10:9800';
   static const _validItemsPerPage = {25, 50, 75, 100};
 
   final SharedPreferences _prefs;

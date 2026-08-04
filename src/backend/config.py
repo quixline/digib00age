@@ -84,7 +84,7 @@ THUMBNAIL_DIR  = _resolve(_cfg["thumbnail_dir"])
 THUMBNAIL_SIZE = int(_cfg.get("thumbnail_size", 300))
 SERIES_FOLDER  = _cfg.get("series_folder", "Series")
 SINGLES_FOLDER = _cfg.get("singles_folder", "Singles")
-READER_PORT    = int(_cfg.get("reader_port", 9424))
+READER_PORT    = int(_cfg.get("reader_port", 9800))
 
 
 def get_library_root() -> str | None:
