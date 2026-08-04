@@ -132,7 +132,11 @@ document.addEventListener('DOMContentLoaded', () => {
       mode: 'folder',
       browseUrl: '/admin/scan-root/browse',
       drivesUrl: '/admin/scan-root/drives',
-      onConfirm: (paths) => { document.getElementById('newRootInput').value = paths[0]; },
+      onConfirm: (paths) => {
+        const input = document.getElementById('newRootInput');
+        input.value = paths[0];
+        input.dispatchEvent(new Event('input'));
+      },
     });
   });
   document.getElementById('excludeBrowseBtn').addEventListener('click', () => openCtPicker('newExcludeInput'));
@@ -144,6 +148,12 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('newExcludeInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') addExclude();
+  });
+  document.getElementById('newRootInput').addEventListener('input', e => {
+    document.getElementById('addRootBtn').classList.toggle('is-ready', e.target.value.trim().length > 0);
+  });
+  document.getElementById('newExcludeInput').addEventListener('input', e => {
+    document.getElementById('addExcludeBtn').classList.toggle('is-ready', e.target.value.trim().length > 0);
   });
 
   loadCustomTabs();
@@ -747,11 +757,12 @@ async function patchConfig(patch) {
 function addRoot() {
   const input = document.getElementById('newRootInput');
   const val   = input.value.trim();
-  if (!val || _config.library_roots.includes(val)) { input.value = ''; return; }
+  if (!val || _config.library_roots.includes(val)) { input.value = ''; document.getElementById('addRootBtn').classList.remove('is-ready'); return; }
   _config.library_roots = [..._config.library_roots, val];
   renderRoots();
   patchConfig({ library_roots: _config.library_roots });
   input.value = '';
+  document.getElementById('addRootBtn').classList.remove('is-ready');
 }
 
 function removeRoot(path) {
@@ -763,11 +774,12 @@ function removeRoot(path) {
 function addExclude() {
   const input = document.getElementById('newExcludeInput');
   const val   = input.value.trim();
-  if (!val || _config.scan_exclude.includes(val)) { input.value = ''; return; }
+  if (!val || _config.scan_exclude.includes(val)) { input.value = ''; document.getElementById('addExcludeBtn').classList.remove('is-ready'); return; }
   _config.scan_exclude = [..._config.scan_exclude, val];
   renderExcludes();
   patchConfig({ scan_exclude: _config.scan_exclude });
   input.value = '';
+  document.getElementById('addExcludeBtn').classList.remove('is-ready');
 }
 
 function removeExclude(ex) {
@@ -1272,7 +1284,9 @@ function renderCtPickerTree(items) {
 }
 
 function selectCtPickerFolder() {
-  document.getElementById(ctPickerTargetInputId).value = ctPickerPath || '';
+  const input = document.getElementById(ctPickerTargetInputId);
+  input.value = ctPickerPath || '';
+  input.dispatchEvent(new Event('input'));
   closeCtPicker();
 }
 
