@@ -8,8 +8,11 @@ from __future__ import annotations
 
 import json
 import os
+import platform
 from functools import lru_cache
 from pathlib import Path
+
+import rarfile
 
 # backend/ lives under src/ — PROJECT_ROOT (= src/) is what the rest of the
 # codebase's "backend/..."-relative paths (db_path, etc.) are joined against.
@@ -17,6 +20,34 @@ from pathlib import Path
 BACKEND_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = BACKEND_DIR.parent
 REPO_ROOT = PROJECT_ROOT.parent
+
+
+def _configure_unrar_tool() -> None:
+    """Point rarfile at the bundled unrar binary (bin/windows or bin/linux)
+    instead of requiring one on the host's PATH. Falls back to rarfile's
+    default PATH lookup on any OS/arch the bundle doesn't cover (e.g. a dev
+    machine that isn't Windows or x86_64 Linux) — same behaviour as before
+    this existed."""
+    system = platform.system()
+    if system == "Windows":
+        bundled = BACKEND_DIR / "bin" / "windows" / "unrar.exe"
+    elif system == "Linux":
+        bundled = BACKEND_DIR / "bin" / "linux" / "unrar"
+    else:
+        return
+    if not bundled.exists():
+        return
+    if system == "Linux":
+        # git doesn't reliably preserve the executable bit through a
+        # Windows checkout/commit round-trip — enforce it at runtime.
+        try:
+            os.chmod(bundled, 0o755)
+        except OSError:
+            pass
+    rarfile.UNRAR_TOOL = str(bundled)
+
+
+_configure_unrar_tool()
 
 
 @lru_cache(maxsize=1)
