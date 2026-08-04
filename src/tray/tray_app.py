@@ -642,6 +642,29 @@ def _migrate_legacy_startup_shortcut():
             log(f"Failed to remove legacy autostart shortcut: {e}")
 
 
+def _check_autostart_shortcut():
+    """Logs a warning if the Startup shortcut exists but its target is stale
+    or missing — e.g. after the repo folder moves (this happened 2026-08-04
+    when a shortcut created under the old private-dev-repo\\ layout kept
+    pointing at a path that no longer existed, so autostart silently did
+    nothing at login). Doesn't auto-repair: toggling "Start digib00age at
+    login" off/on in the tray menu recreates it correctly in one click."""
+    if not os.path.exists(STARTUP_SHORTCUT_PATH):
+        return
+    try:
+        import win32com.client
+        shell = win32com.client.Dispatch("WScript.Shell")
+        target = shell.CreateShortCut(STARTUP_SHORTCUT_PATH).TargetPath
+        if target != START_BAT_PATH or not os.path.exists(target):
+            log(
+                f"WARNING: autostart shortcut looks stale (points at {target!r}, "
+                f"expected {START_BAT_PATH!r}, target exists: {os.path.exists(target)}). "
+                "Toggle 'Start digib00age at login' off then on in the tray menu to fix."
+            )
+    except Exception as e:
+        log(f"Could not verify autostart shortcut: {e}")
+
+
 def toggle_autostart(icon=None, item=None):
     """Creates or removes the Windows Startup shortcut. The shortcut's own
     existence is the source of truth for the menu checkbox — no config.json
@@ -734,6 +757,7 @@ def main():
     log("digib00age tray app starting.")
 
     _migrate_legacy_startup_shortcut()
+    _check_autostart_shortcut()
 
     start_reader()
     health_thread = threading.Thread(target=health_check_loop, daemon=True)
