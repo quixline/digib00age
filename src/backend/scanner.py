@@ -17,6 +17,7 @@ import hashlib
 import logging
 import os
 import re
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -67,6 +68,17 @@ scan_progress = ScanProgress()
 # How many files scan_library() processes per DB commit (PERFORMANCE.md
 # finding #14) — batched instead of one commit per file.
 COMMIT_BATCH_SIZE = 50
+
+# How many thumbnails scan_library() generates concurrently (PERFORMANCE.md
+# finding #13, ~53% of scan wall-clock). Conservative starting point, not a
+# guessed-final value — the archives live on a single-spindle USB HDD
+# (finding #20 measured this exact scanner degrading 5x under concurrent disk
+# contention), and a meaningful fraction of _generate_thumbnail's cost is
+# GIL-holding zipfile central-directory parsing, not just GIL-releasing
+# Pillow C code — so overlap is smaller than "more threads = more parallel"
+# suggests. Tune via a perf-diagnostics subsample re-run before treating this
+# as final.
+THUMBNAIL_WORKERS = 2
 
 # Tracks changes to EXISTING issues — metadata updates (editor rescans + full
 # scan) and rename/move matches — since the last full scan completed. New-file
@@ -265,6 +277,58 @@ def _generate_thumbnail(cbz_path: str, issue_id: int) -> Optional[str]:
     except Exception as exc:
         logger.error("Thumbnail failed for %s: %s", cbz_path, exc)
         return None
+
+
+def _apply_thumbnail_result(issue: Issue, thumb: Optional[str], cbz_path: str):
+    """Set cover_path on success, or record the error — same outcome either
+    way whether the thumbnail was generated inline or off-thread."""
+    if thumb:
+        issue.cover_path = thumb
+    else:
+        scan_progress.errors += 1
+        scan_progress.add_log(f"THUMBNAIL ERROR: {Path(cbz_path).name}")
+
+
+def _make_thumbnail(cbz_path: str, issue: Issue,
+                     thumbnail_pool: Optional[ThreadPoolExecutor],
+                     details: Optional[dict]):
+    """
+    Generate `issue`'s thumbnail. With no pool (the default, used by every
+    caller except scan_library()'s full-scan path), this is synchronous and
+    identical to calling `_generate_thumbnail` inline — cover_path is set
+    before returning.
+
+    With a pool, the call is submitted to a background thread and the
+    future is stashed on `details` (`thumbnail_future`/`thumbnail_issue`)
+    instead — cover_path is NOT set yet. The caller (scan_library()) is
+    responsible for draining these futures and applying the result *before*
+    its next commit, so cover_path always lands in the same transaction as
+    the rest of the row's metadata, same as the synchronous path.
+    """
+    if thumbnail_pool is None:
+        thumb = _generate_thumbnail(cbz_path, issue.id)
+        _apply_thumbnail_result(issue, thumb, cbz_path)
+    elif details is not None:
+        future = thumbnail_pool.submit(_generate_thumbnail, cbz_path, issue.id)
+        details["thumbnail_future"] = future
+        details["thumbnail_issue"] = issue
+
+
+def _resolve_pending_thumbnails(pending: list[tuple[Future, Issue]]):
+    """Block for every still-running thumbnail future and apply its result.
+    Must be called before a commit — see _make_thumbnail's docstring."""
+    for future, issue in pending:
+        try:
+            thumb = future.result()
+        except Exception as exc:
+            # _generate_thumbnail is documented as "never raises", but that's
+            # only as good as its current implementation (PERFORMANCE.md
+            # BUG-038 — a live example of a currently-soft Pillow warning
+            # that a future dependency bump could turn into a hard error).
+            logger.error("Thumbnail future failed for issue %s: %s", issue.id, exc)
+            thumb = None
+        _apply_thumbnail_result(issue, thumb, issue.file_path)
+    pending.clear()
 
 
 # ---------------------------------------------------------------------------
@@ -480,20 +544,29 @@ def _ensure_progress(db: Session, issue: Issue):
 # ---------------------------------------------------------------------------
 
 def scan_single_file(file_path: str, db: Session, details: dict | None = None,
-                      commit: bool = True) -> str:
+                      commit: bool = True,
+                      thumbnail_pool: Optional[ThreadPoolExecutor] = None) -> str:
     """
     Scan or rescan one CBZ or CBR file.
     Returns one of: "new", "updated", "skipped", "error"
 
     `details`, if passed, is filled in with extra info the caller may want —
     currently just `change_type` for "updated" results (changed_files log,
-    2.3-fixes.md Fix 8). Other callers don't need it and can omit it.
+    2.3-fixes.md Fix 8), plus `thumbnail_future`/`thumbnail_issue` when
+    `thumbnail_pool` is passed (see below). Other callers don't need it and
+    can omit it.
 
     `commit`, if False, flushes but does not commit the transaction — used by
     scan_library()'s per-file loop to batch commits across many files instead
     of one per file (PERFORMANCE.md finding #14). Every other caller (editor
     post-save rescans, POST /api/scan/file) is single-file and needs the
     immediate, synchronous commit the default preserves.
+
+    `thumbnail_pool`, if passed, generates this file's thumbnail off-thread
+    instead of inline (PERFORMANCE.md finding #13) — only scan_library()'s
+    full-scan path does this; every other caller omits it and keeps today's
+    synchronous cover_path-before-return behavior. See _make_thumbnail's
+    docstring for the same-transaction guarantee this depends on.
     """
     file_path = str(Path(file_path).resolve())
 
@@ -529,16 +602,22 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None,
             # check and backfill it before skipping (BUG-001).
             thumb_path = config.THUMBNAIL_DIR / f"{existing.id}.jpg"
             if not thumb_path.exists():
-                thumb = _generate_thumbnail(file_path, existing.id)
-                if thumb:
-                    existing.cover_path = thumb
-                    if commit:
-                        db.commit()
+                if thumbnail_pool is None:
+                    thumb = _generate_thumbnail(file_path, existing.id)
+                    if thumb:
+                        existing.cover_path = thumb
+                        if commit:
+                            db.commit()
+                        else:
+                            db.flush()
                     else:
-                        db.flush()
+                        scan_progress.errors += 1
+                        scan_progress.add_log(f"THUMBNAIL ERROR: {Path(file_path).name}")
                 else:
-                    scan_progress.errors += 1
-                    scan_progress.add_log(f"THUMBNAIL ERROR: {Path(file_path).name}")
+                    # Nothing on this row has changed yet — cover_path isn't
+                    # known until scan_library() drains the future, so no
+                    # commit/flush here; its own batch-commit covers this row.
+                    _make_thumbnail(file_path, existing, thumbnail_pool, details)
             return "skipped"
 
     # --- Parse metadata ---
@@ -564,12 +643,7 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None,
         db.flush()
         _sync_genres(db, existing, meta["genres"])
         _sync_credits(db, existing, meta["credits"])
-        thumb = _generate_thumbnail(file_path, existing.id)
-        if thumb:
-            existing.cover_path = thumb
-        else:
-            scan_progress.errors += 1
-            scan_progress.add_log(f"THUMBNAIL ERROR: {Path(file_path).name}")
+        _make_thumbnail(file_path, existing, thumbnail_pool, details)
         if commit:
             db.commit()
         else:
@@ -585,12 +659,7 @@ def scan_single_file(file_path: str, db: Session, details: dict | None = None,
         _sync_genres(db, issue, meta["genres"])
         _sync_credits(db, issue, meta["credits"])
         _ensure_progress(db, issue)
-        thumb = _generate_thumbnail(file_path, issue.id)
-        if thumb:
-            issue.cover_path = thumb
-        else:
-            scan_progress.errors += 1
-            scan_progress.add_log(f"THUMBNAIL ERROR: {Path(file_path).name}")
+        _make_thumbnail(file_path, issue, thumbnail_pool, details)
         if commit:
             db.commit()
         else:
@@ -764,36 +833,55 @@ def scan_library(db: Session):
     # unaffected; only the transaction-commit boundary moves. A crash
     # mid-batch loses at most COMMIT_BATCH_SIZE files' worth of work, which a
     # subsequent scan simply re-detects as new/changed.
+    #
+    # Thumbnail generation (PERFORMANCE.md finding #13, ~53% of scan time) is
+    # offloaded to a small thread pool instead of running inline — see
+    # _make_thumbnail's docstring. `pending` is drained (blocking until every
+    # submitted thumbnail this batch has resolved and cover_path is set)
+    # immediately before each commit, so a committed row's cover_path is
+    # always final in the same transaction as its other metadata, exactly
+    # like the old fully-synchronous behavior.
     since_commit = 0
-    for file_path in sorted(disk_paths):
-        if file_path in renamed_paths:
+    pending: list[tuple[Future, Issue]] = []
+    with ThreadPoolExecutor(max_workers=THUMBNAIL_WORKERS) as thumbnail_pool:
+        for file_path in sorted(disk_paths):
+            if file_path in renamed_paths:
+                scan_progress.processed += 1
+                continue
+
+            details: dict = {}
+            result = scan_single_file(file_path, db, details, commit=False,
+                                       thumbnail_pool=thumbnail_pool)
             scan_progress.processed += 1
-            continue
 
-        details: dict = {}
-        result = scan_single_file(file_path, db, details, commit=False)
-        scan_progress.processed += 1
+            future = details.get("thumbnail_future")
+            if future is not None:
+                pending.append((future, details["thumbnail_issue"]))
 
-        if result == "new":
-            scan_progress.new += 1
-            scan_progress.add_log(f"NEW: {Path(file_path).name}")
-            scan_logs.append_new_files_entry(Path(file_path).name, str(Path(file_path).parent))
-        elif result == "updated":
-            scan_progress.updated += 1
-            scan_progress.add_log(f"UPDATED: {Path(file_path).name}")
-            scan_logs.append_changed_files_entry(
-                Path(file_path).name, details.get("change_type", "metadata updated")
-            )
-        elif result == "skipped":
-            scan_progress.skipped += 1
-        elif result == "error":
-            scan_progress.errors += 1
-            scan_progress.add_log(f"ERROR: {Path(file_path).name}")
+            if result == "new":
+                scan_progress.new += 1
+                scan_progress.add_log(f"NEW: {Path(file_path).name}")
+                scan_logs.append_new_files_entry(Path(file_path).name, str(Path(file_path).parent))
+            elif result == "updated":
+                scan_progress.updated += 1
+                scan_progress.add_log(f"UPDATED: {Path(file_path).name}")
+                scan_logs.append_changed_files_entry(
+                    Path(file_path).name, details.get("change_type", "metadata updated")
+                )
+            elif result == "skipped":
+                scan_progress.skipped += 1
+            elif result == "error":
+                scan_progress.errors += 1
+                scan_progress.add_log(f"ERROR: {Path(file_path).name}")
 
-        since_commit += 1
-        if since_commit >= COMMIT_BATCH_SIZE:
-            db.commit()
-            since_commit = 0
+            since_commit += 1
+            if since_commit >= COMMIT_BATCH_SIZE:
+                _resolve_pending_thumbnails(pending)
+                db.commit()
+                since_commit = 0
+
+        if pending:
+            _resolve_pending_thumbnails(pending)
 
     if since_commit > 0:
         db.commit()
