@@ -70,6 +70,27 @@ def save_config(data: dict) -> dict:
     return current
 
 
+# The bare-minimum keys config.json ships with before any library is set up
+# (see the "Reset config.json to a clean template" commit) — everything else
+# (library_root(s), scan_exclude, backup_*, log_last_viewed, etc.) is added
+# later by Admin UI / scan / library setup and is what a wipe clears back out.
+_BASE_CONFIG_KEYS = ("reader_port", "thumbnail_size", "thumbnail_dir", "db_path")
+
+
+def reset_config() -> dict:
+    """Rewrite config.json down to just _BASE_CONFIG_KEYS, dropping every key
+    added since (library setup, scan, admin settings). Used by clear_database()
+    so a DB wipe also puts config.json back to its pre-setup state."""
+    config_path = REPO_ROOT / "config.json"
+    with open(config_path, "r", encoding="utf-8") as f:
+        current = json.load(f)
+    minimal = {k: current[k] for k in _BASE_CONFIG_KEYS if k in current}
+    with open(config_path, "w", encoding="utf-8") as f:
+        json.dump(minimal, f, indent=2)
+    get_config.cache_clear()
+    return minimal
+
+
 def _resolve(path_str: str) -> Path:
     p = Path(path_str)
     return p if p.is_absolute() else PROJECT_ROOT / p

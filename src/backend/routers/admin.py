@@ -23,7 +23,7 @@ from sqlalchemy.orm import Session
 from backend import file_picker, scan_logs
 from backend import config as config_module
 from backend.auth import is_local_request
-from backend.config import get_config, save_config, get_library_root, PROJECT_ROOT, REPO_ROOT
+from backend.config import get_config, save_config, reset_config, get_library_root, PROJECT_ROOT, REPO_ROOT
 from backend.database import get_db, SessionLocal, checkpoint_wal, engine
 from backend.models import CustomTab, HomeStrip, Issue, Person, ReadingProgress
 from backend.path_utils import is_under, normalize_path
@@ -369,12 +369,14 @@ async def clear_database(request: Request, db: Session = Depends(get_db)):
     not library data, and are deliberately left untouched.
 
     Also sweeps backend/thumbnails/ (everything in it is orphaned once issues
-    is empty), resets the four scan log files and their config.json viewed-
-    timestamps/next_processing_run, then checkpoints the WAL, VACUUMs the DB
-    file, and restarts the process the same way restore_database() does
-    (BUG-026/BUG-027) — a live pooled connection can't otherwise be safely
-    reset, so the endpoint self-restarts instead of requiring the caller to
-    stop the server first.
+    is empty), resets the four scan log files, and resets config.json down to
+    its bare-minimum keys (reader_port, thumbnail_size, thumbnail_dir, db_path)
+    — dropping library_root(s), scan_exclude, backup_*, log_last_viewed,
+    next_processing_run, and anything else added since setup — then
+    checkpoints the WAL, VACUUMs the DB file, and restarts the process the
+    same way restore_database() does (BUG-026/BUG-027) — a live pooled
+    connection can't otherwise be safely reset, so the endpoint self-restarts
+    instead of requiring the caller to stop the server first.
     """
     if not is_local_request(request):
         raise HTTPException(status_code=403, detail={"error": "local_access_required"})
@@ -387,7 +389,7 @@ async def clear_database(request: Request, db: Session = Depends(get_db)):
 
     thumbs_removed, thumbs_bytes = _clear_all_thumbnails()
     scan_logs.clear_all_logs()
-    save_config({"log_last_viewed": {}, "next_processing_run": None})
+    reset_config()
 
     config = get_config()
     db_path = PROJECT_ROOT / config.get("db_path", "backend/digib00age.db")
