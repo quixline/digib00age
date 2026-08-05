@@ -58,6 +58,11 @@ config.json     Tracked, bare template — no secrets. Real values (API key,
 
 Python dependencies are in `requirements.txt` (`pip install -r requirements.txt`).
 
+**Linux hosts:** if the mobile reader (or any other device) can't reach
+`http://<host-pc-ip>:9800`, check whether a host firewall is blocking the port —
+the server itself binds to `0.0.0.0` correctly. For UFW: `sudo ufw allow 9800/tcp`,
+then `sudo ufw status verbose` to confirm.
+
 ## Status
 
 V1 is complete. V2 is active — editor integration, Custom Tabs, Home Strips, and a
