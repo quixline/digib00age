@@ -82,11 +82,12 @@ function renderPtPickerBreadcrumb(path) {
   thisPc.onclick = (e) => { e.preventDefault(); loadPtPickerDrives(); };
   breadcrumb.appendChild(thisPc);
 
-  const parts = (path || '').split('\\').filter(Boolean);
+  const sep = path && path.includes('\\') ? '\\' : '/';
+  const parts = (path || '').split(/[\\/]/).filter(Boolean);
   let accumulated = '';
   parts.forEach((part, index) => {
-    breadcrumb.appendChild(document.createTextNode(' \\ '));
-    accumulated += (index === 0 ? '' : '\\') + part;
+    breadcrumb.appendChild(document.createTextNode(` ${sep} `));
+    accumulated += (index === 0 && sep === '\\' ? '' : sep) + part;
     const isLast = index === parts.length - 1;
     if (isLast) {
       const span = document.createElement('span');
@@ -190,10 +191,11 @@ function ptPickerDeselectAll() {
 
 function ptPickerNavigateUp() {
   if (!ptPickerPath) return; // already at "This PC" — nothing above it
-  const parts = ptPickerPath.split('\\').filter(Boolean);
+  const sep = ptPickerPath.includes('\\') ? '\\' : '/';
+  const parts = ptPickerPath.split(/[\\/]/).filter(Boolean);
   if (parts.length > 1) {
     parts.pop();
-    loadPtPickerDirectory(parts.join('\\'));
+    loadPtPickerDirectory(sep === '\\' ? parts.join(sep) : sep + parts.join(sep));
   } else {
     loadPtPickerDrives();
   }

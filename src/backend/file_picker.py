@@ -11,6 +11,7 @@ filter on top of the plain file list this returns.
 from __future__ import annotations
 
 import os
+import platform
 import string
 
 
@@ -35,13 +36,15 @@ def list_directory(path: str) -> dict:
 
 
 def list_drives() -> list[dict]:
-    """Windows drive-letter listing — the Up-navigation terminus past a
-    drive's root (mirrors the Editor picker's Home/Up pattern, extended:
-    Up climbs all the way to a drive-letter list rather than stopping at a
-    fixed root)."""
-    drives = []
-    for letter in string.ascii_uppercase:
-        drive_path = f"{letter}:\\"
-        if os.path.exists(drive_path):
-            drives.append({"name": f"{letter}:", "path": drive_path})
-    return drives
+    """Root-level listing — the Up-navigation terminus past a drive's/root's
+    top (mirrors the Editor picker's Home/Up pattern, extended: Up climbs all
+    the way to this list rather than stopping at a fixed root). Windows has
+    multiple drive letters to enumerate; POSIX has a single filesystem root."""
+    if platform.system() == "Windows":
+        drives = []
+        for letter in string.ascii_uppercase:
+            drive_path = f"{letter}:\\"
+            if os.path.exists(drive_path):
+                drives.append({"name": f"{letter}:", "path": drive_path})
+        return drives
+    return [{"name": "/", "path": "/"}]

@@ -923,7 +923,8 @@ def browse_scan_root(path: str = Query(None)):
         # No usable library_root yet (the exact "adding the first scan root"
         # case) — fall back to the server's own install drive rather than a
         # path that doesn't exist, so the picker always opens somewhere real.
-        target = root if root and os.path.isdir(root) else os.path.splitdrive(str(REPO_ROOT))[0] + "\\"
+        # Path.anchor is OS-native for free: "C:\\" on Windows, "/" on Linux.
+        target = root if root and os.path.isdir(root) else str(REPO_ROOT.anchor)
     try:
         return file_picker.list_directory(target)
     except FileNotFoundError:
