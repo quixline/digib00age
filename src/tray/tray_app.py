@@ -445,6 +445,17 @@ FAVICON_PATH = os.path.join(PROJECT_ROOT, "frontend", "images", "favicon.png")
 _base_icon_cache = None
 
 
+def _frozen_server_executable_path():
+    """Path to the sibling frozen server binary, for the packaged-installer
+    build only (see DECISIONS.md "Windows MSI installer"). sys.executable
+    is this tray binary itself once frozen, not a Python interpreter, so it
+    can't run "start_server.py" as a script argument like the dev path
+    does — the frozen server ships as its own separate exe alongside it."""
+    exe_dir = os.path.dirname(sys.executable)
+    exe_name = "digib00age-server.exe" if sys.platform == "win32" else "digib00age-server"
+    return os.path.join(exe_dir, exe_name)
+
+
 def start_reader():
     global reader_process
     log("Starting reader server subprocess...")
@@ -453,9 +464,15 @@ def start_reader():
     # print() call in start_server.py. Redirect to a file so the child always
     # has real stream objects.
     reader_log = open(READER_LOG_PATH, "a", encoding="utf-8")
+    if getattr(sys, "frozen", False):
+        command = [_frozen_server_executable_path()]
+        cwd = os.path.dirname(sys.executable)
+    else:
+        command = [sys.executable, "start_server.py"]
+        cwd = REPO_ROOT
     reader_process = subprocess.Popen(
-        [sys.executable, "start_server.py"],
-        cwd=REPO_ROOT,
+        command,
+        cwd=cwd,
         stdout=reader_log,
         stderr=reader_log,
         creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0,
@@ -629,6 +646,14 @@ def is_autostart_enabled(item=None):
     return os.path.exists(STARTUP_SHORTCUT_PATH)
 
 
+def _autostart_target_path():
+    """Shortcut target for the Startup entry: the frozen tray exe itself for
+    the packaged-installer build, start.bat for the normal dev/unfrozen path
+    (see DECISIONS.md "Windows MSI installer") — there's no start.bat in a
+    frozen install, so the shortcut has to point straight at the exe."""
+    return sys.executable if getattr(sys, "frozen", False) else START_BAT_PATH
+
+
 def _migrate_legacy_startup_shortcut():
     """One-time cleanup: removes the pre-rebrand ComicVault.lnk Startup entry
     if present, so it can't fire alongside a freshly created digib00age.lnk
@@ -655,10 +680,11 @@ def _check_autostart_shortcut():
         import win32com.client
         shell = win32com.client.Dispatch("WScript.Shell")
         target = shell.CreateShortCut(STARTUP_SHORTCUT_PATH).TargetPath
-        if target != START_BAT_PATH or not os.path.exists(target):
+        expected = _autostart_target_path()
+        if target != expected or not os.path.exists(target):
             log(
                 f"WARNING: autostart shortcut looks stale (points at {target!r}, "
-                f"expected {START_BAT_PATH!r}, target exists: {os.path.exists(target)}). "
+                f"expected {expected!r}, target exists: {os.path.exists(target)}). "
                 "Toggle 'Start digib00age at login' off then on in the tray menu to fix."
             )
     except Exception as e:
@@ -680,7 +706,7 @@ def toggle_autostart(icon=None, item=None):
             import win32com.client  # imported lazily: a missing pywin32 shouldn't crash tray startup
             shell = win32com.client.Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut(STARTUP_SHORTCUT_PATH)
-            shortcut.TargetPath = START_BAT_PATH
+            shortcut.TargetPath = _autostart_target_path()
             shortcut.WorkingDirectory = REPO_ROOT
             shortcut.WindowStyle = 7  # minimized
             shortcut.save()
