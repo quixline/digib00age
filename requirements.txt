@@ -2,7 +2,10 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 pillow
-pystray[appindicator] ; sys_platform == 'linux'   # AppIndicator/GTK backend for the Linux tray icon
+pystray[appindicator] ; sys_platform == 'linux'   # AppIndicator/GTK backend for the Linux tray icon —
+                                                   # the extra alone isn't enough: the venv also needs
+                                                   # --system-site-packages so it can see the system's
+                                                   # python3-gi (see README "Linux hosts, tray app")
 pystray ; sys_platform != 'linux'
 pywin32 ; sys_platform == 'win32'   # Windows-only package; unguarded this broke `pip install` on Linux outright
 watchdog

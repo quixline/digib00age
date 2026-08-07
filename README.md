@@ -63,6 +63,14 @@ Python dependencies are in `requirements.txt` (`pip install -r requirements.txt`
 the server itself binds to `0.0.0.0` correctly. For UFW: `sudo ufw allow 9800/tcp`,
 then `sudo ufw status verbose` to confirm.
 
+**Linux hosts, tray app:** the venv must be created with `--system-site-packages`
+(or have `include-system-site-packages = true` set in an existing venv's
+`pyvenv.cfg`), and `python3-gi` + `gir1.2-appindicator3-0.1` (or the ayatana
+equivalents) + `libayatana-appindicator3-1` + `gir1.2-gtk-3.0` must be installed
+via apt first. Without these, pystray silently falls back to a legacy X11 systray
+backend that renders an icon but supports no menu at all — no error, just a tray
+icon that does nothing when clicked.
+
 ## Status
 
 V1 is complete. V2 is active — editor integration, Custom Tabs, Home Strips, and a
