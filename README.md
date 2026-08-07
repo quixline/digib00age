@@ -48,8 +48,8 @@ config.json     Tracked, bare template — no secrets. Real values (API key,
    `library_root` isn't set, the app still boots fine; set it from the Admin
    page's Library Folders section afterward.
 2. Either:
-   - Run `start.bat` (normal use — launches the tray app, which manages the backend
-     and gives you the full tray menu), or
+   - Run `start.bat` (Windows) or `start.sh` (Linux) for normal use — launches the
+     tray app, which manages the backend and gives you the full tray menu, or
    - Run `python start_server.py` directly for manual/dev use (checks config,
      initializes the DB if needed, then starts uvicorn; Ctrl+C to stop).
 3. Open `http://localhost:9800` (or `http://<host-pc-ip>:9800` from another device on
