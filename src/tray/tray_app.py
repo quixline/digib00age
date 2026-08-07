@@ -2,14 +2,17 @@
 digib00age Tray App — launches the reader server and sits in the system tray.
 
 Run from the repo root:
-    python src\\tray\\tray_app.py        (console visible, for debugging)
-    pythonw src\\tray\\tray_app.py       (silent, for normal/startup use)
+    python src\\tray\\tray_app.py        (Windows, console visible, for debugging)
+    pythonw src\\tray\\tray_app.py       (Windows, silent, for normal/startup use)
+    python3 src/tray/tray_app.py         (Linux)
 
 Tray icon (left or right click) shows a menu with:
     - Open Library                  (opens in an app-mode window, see open_app_window())
     - Admin                         (same)
     - Metadata Editor               (same; opens the URL only — does not launch/manage that process)
-    - Start digib00age at login     (checkable — creates/removes the Windows Startup shortcut)
+    - Start digib00age at login     (checkable — creates/removes the OS-appropriate autostart
+                                      entry: a Windows Startup-folder shortcut, or a Linux
+                                      ~/.config/autostart/ .desktop file)
     - Stop Server                   (stops the reader subprocess only; tray keeps running)
     - Start Server                  (restarts it; no-op if already running)
     - Close                         (stops the reader, then exits the tray app)
@@ -30,9 +33,8 @@ matching Open Library/Admin/Metadata Editor above — added 2026-07-29 to
 replace the old Windows Flutter reader's comicvault:// deep link.
 """
 
-import ctypes
-from ctypes import wintypes
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -40,13 +42,19 @@ import threading
 import time
 import urllib.request
 import webbrowser
-import winreg
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import BytesIO
 from urllib.parse import urlparse, parse_qs
 
 from PIL import Image, ImageDraw
 import pystray
+
+IS_WINDOWS = sys.platform == "win32"
+
+if IS_WINDOWS:
+    import ctypes
+    from ctypes import wintypes
+    import winreg
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # src/
 sys.path.insert(0, PROJECT_ROOT)
@@ -70,20 +78,28 @@ STARTUP_WAIT_TIMEOUT = 15  # seconds to wait for the port to open after launch
 # window can). Bound to 127.0.0.1 only, never the LAN.
 TRAY_CONTROL_PORT = 9801
 
-STARTUP_SHORTCUT_PATH = os.path.join(
-    os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "digib00age.lnk"
-)
-# Pre-rebrand shortcut filename (2026-07-28 rebrand, DECISIONS.md). Still a
-# valid, functioning Startup entry on any machine that enabled autostart
-# before this change — Windows runs it by presence in the Startup folder,
-# not by name. Left in place it would keep launching a second tray instance
-# once the new-named shortcut is created via a toggle, since
-# is_autostart_enabled() only checks the new path. Cleaned up once at
-# startup (see _migrate_legacy_startup_shortcut()) rather than requiring
-# Tez to manually re-toggle autostart after updating.
-LEGACY_STARTUP_SHORTCUT_PATH = os.path.join(
-    os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "ComicVault.lnk"
-)
+if IS_WINDOWS:
+    STARTUP_SHORTCUT_PATH = os.path.join(
+        os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "digib00age.lnk"
+    )
+    # Pre-rebrand shortcut filename (2026-07-28 rebrand, DECISIONS.md). Still a
+    # valid, functioning Startup entry on any machine that enabled autostart
+    # before this change — Windows runs it by presence in the Startup folder,
+    # not by name. Left in place it would keep launching a second tray instance
+    # once the new-named shortcut is created via a toggle, since
+    # is_autostart_enabled() only checks the new path. Cleaned up once at
+    # startup (see _migrate_legacy_startup_shortcut()) rather than requiring
+    # Tez to manually re-toggle autostart after updating.
+    LEGACY_STARTUP_SHORTCUT_PATH = os.path.join(
+        os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "ComicVault.lnk"
+    )
+else:
+    # Linux equivalent of the Windows Startup folder — the freedesktop.org
+    # Desktop Entry autostart location every major desktop environment
+    # (GNOME, Cinnamon, KDE, ...) reads on login.
+    AUTOSTART_DESKTOP_PATH = os.path.join(
+        os.path.expanduser("~"), ".config", "autostart", "digib00age.desktop"
+    )
 START_BAT_PATH = os.path.join(REPO_ROOT, "start.bat")
 
 state_lock = threading.Lock()
@@ -112,32 +128,43 @@ def port_is_open(port, timeout=1.0):
 
 READER_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reader_stdout.log")
 
-# App-mode launch: Edge/Chrome's --app=<url> opens a chromeless window (no
-# tabs/address bar) instead of a tab in the user's regular browser session.
-# The real default browser is resolved from the registry (see
+# App-mode launch: Chrome/Edge-family browsers' --app=<url> opens a
+# chromeless window (no tabs/address bar) instead of a tab in the user's
+# regular browser session. The real default browser is resolved via the
+# registry on Windows / xdg-settings on Linux (see
 # _resolve_default_browser_exe()) whenever possible; this hardcoded list is
-# only the fallback for when that lookup fails (registry unreadable, default
-# is a non-Chromium browser, etc.) — Edge first since it's virtually always
-# present, then Chrome, then Brave (both Program Files and the common
-# per-user install location), then plain webbrowser.open() (a normal tab) if
-# none of these exist either.
-_APP_BROWSER_CANDIDATES = [
-    os.path.join(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"), "Microsoft", "Edge", "Application", "msedge.exe"),
-    os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), "Microsoft", "Edge", "Application", "msedge.exe"),
-    os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), "Google", "Chrome", "Application", "chrome.exe"),
-    os.path.join(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"), "Google", "Chrome", "Application", "chrome.exe"),
-    os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
-    os.path.join(os.environ.get("LOCALAPPDATA", ""), "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
-]
+# only the fallback for when that lookup fails (unreadable, default is a
+# non-Chromium browser, etc.) — Edge first on Windows since it's virtually
+# always present; on Linux these are bare command names resolved via PATH
+# (see _find_app_browser_exe()) rather than absolute paths, since Linux
+# package installs don't share Windows' Program Files convention.
+if IS_WINDOWS:
+    _APP_BROWSER_CANDIDATES = [
+        os.path.join(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"), "Microsoft", "Edge", "Application", "msedge.exe"),
+        os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), "Microsoft", "Edge", "Application", "msedge.exe"),
+        os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), "Google", "Chrome", "Application", "chrome.exe"),
+        os.path.join(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"), "Google", "Chrome", "Application", "chrome.exe"),
+        os.path.join(os.environ.get("PROGRAMFILES", r"C:\Program Files"), "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
+        os.path.join(os.environ.get("LOCALAPPDATA", ""), "BraveSoftware", "Brave-Browser", "Application", "brave.exe"),
+    ]
+else:
+    _APP_BROWSER_CANDIDATES = [
+        "google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
+        "brave-browser", "microsoft-edge", "microsoft-edge-stable",
+    ]
 _app_browser_exe = None  # resolved lazily; False once probed with nothing found
 
 # Chromium-family browsers all support the --app=<url> chromeless-window
 # flag; anything else (e.g. Firefox) doesn't, so a resolved default outside
 # this set is treated as "no opinion" and falls through to the hardcoded list.
-_CHROMIUM_APP_MODE_EXES = {"msedge.exe", "chrome.exe", "brave.exe", "vivaldi.exe", "opera.exe", "chromium.exe"}
+_CHROMIUM_APP_MODE_EXES = {
+    "msedge.exe", "chrome.exe", "brave.exe", "vivaldi.exe", "opera.exe", "chromium.exe",
+    "google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
+    "brave-browser", "microsoft-edge", "microsoft-edge-stable", "vivaldi-stable", "opera",
+}
 
 
-def _resolve_default_browser_exe():
+def _resolve_default_browser_exe_windows():
     """Resolve the real executable Windows launches for https:// links —
     i.e. the user's actual registered default browser — instead of guessing
     install paths. `HKCU\\...\\UrlAssociations\\https\\UserChoice`'s ProgId
@@ -177,20 +204,66 @@ def _resolve_default_browser_exe():
     return exe_path
 
 
+# xdg-settings reports the default browser as a .desktop file id (e.g.
+# "google-chrome.desktop") — maps the ones we recognize to their command
+# name for shutil.which() resolution. Firefox (org.mozilla.firefox.desktop
+# or firefox.desktop) is deliberately not mapped: it doesn't support
+# --app= chromeless windows, same as any non-Chromium browser on Windows —
+# an unmapped id just falls through to the candidate list below.
+_DEFAULT_BROWSER_DESKTOP_ID_TO_EXE = {
+    "google-chrome.desktop": "google-chrome",
+    "google-chrome-stable.desktop": "google-chrome-stable",
+    "chromium.desktop": "chromium",
+    "chromium-browser.desktop": "chromium-browser",
+    "brave-browser.desktop": "brave-browser",
+    "microsoft-edge.desktop": "microsoft-edge",
+}
+
+
+def _resolve_default_browser_exe_linux():
+    """Resolve the user's default browser via `xdg-settings`, the Linux
+    equivalent of the Windows registry lookup above. Returns an exe path
+    only if it's a Chromium-family browser (supports --app=) and it's
+    actually on PATH; returns None otherwise (covers Firefox and any
+    xdg-settings failure) so the caller falls back to the hardcoded
+    candidate list."""
+    try:
+        result = subprocess.run(
+            ["xdg-settings", "get", "default-web-browser"],
+            capture_output=True, text=True, timeout=2,
+        )
+        desktop_id = result.stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return None
+    exe_name = _DEFAULT_BROWSER_DESKTOP_ID_TO_EXE.get(desktop_id)
+    if not exe_name:
+        return None
+    return shutil.which(exe_name)
+
+
+def _resolve_default_browser_exe():
+    return _resolve_default_browser_exe_windows() if IS_WINDOWS else _resolve_default_browser_exe_linux()
+
+
 def _find_app_browser_exe():
     global _app_browser_exe
     if _app_browser_exe is None:
         default_exe = _resolve_default_browser_exe()
         if default_exe:
             _app_browser_exe = default_exe
-            log(f"App-mode browser: {_app_browser_exe} (Windows default, via registry)")
+            log(f"App-mode browser: {_app_browser_exe} (system default)")
             return _app_browser_exe
 
-        _app_browser_exe = next((p for p in _APP_BROWSER_CANDIDATES if os.path.exists(p)), False)
+        # shutil.which() resolves both Linux's bare command names and
+        # Windows' existing absolute paths correctly (an absolute path is
+        # checked directly, not searched for on PATH).
+        _app_browser_exe = next(
+            (resolved for p in _APP_BROWSER_CANDIDATES if (resolved := shutil.which(p))), False
+        )
         if _app_browser_exe:
             log(f"App-mode browser: {_app_browser_exe} (default-browser lookup failed, using fallback list)")
         else:
-            log("App-mode browser: none found (registry lookup + Edge/Chrome/Brave fallback), falling back to webbrowser.open().")
+            log("App-mode browser: none found (default-browser lookup + fallback list), falling back to webbrowser.open().")
     return _app_browser_exe
 
 
@@ -231,6 +304,13 @@ def _compute_reader_window_geometry(issue_id, timeout=15):
     (page fetch, bad image, etc.) returns None and the caller applies no
     resize rather than blocking the reader from opening.
     """
+    if not IS_WINDOWS:
+        # win32 work-area/window-chrome APIs used below don't exist here —
+        # the app-mode window still opens fine, just unsized (no-op for
+        # v1, see DECISIONS.md "Linux .deb release"). Short-circuits before
+        # the page-1 image fetch rather than letting it run and get thrown
+        # away by the except below.
+        return None
     try:
         with urllib.request.urlopen(
             f"http://127.0.0.1:{READER_PORT}/api/page/{issue_id}/0", timeout=timeout
@@ -642,23 +722,54 @@ def close_app(icon, item=None):
     icon.stop()
 
 
+def _autostart_entry_path():
+    """The OS-appropriate autostart entry path: the Windows Startup-folder
+    shortcut, or the Linux ~/.config/autostart/ .desktop file."""
+    return STARTUP_SHORTCUT_PATH if IS_WINDOWS else AUTOSTART_DESKTOP_PATH
+
+
 def is_autostart_enabled(item=None):
-    return os.path.exists(STARTUP_SHORTCUT_PATH)
+    return os.path.exists(_autostart_entry_path())
 
 
 def _autostart_target_path():
-    """Shortcut target for the Startup entry: the frozen tray exe itself for
-    the packaged-installer build, start.bat for the normal dev/unfrozen path
-    (see DECISIONS.md "Windows MSI installer") — there's no start.bat in a
-    frozen install, so the shortcut has to point straight at the exe."""
+    """Shortcut target for the Windows Startup entry: the frozen tray exe
+    itself for the packaged-installer build, start.bat for the normal
+    dev/unfrozen path (see DECISIONS.md "Windows MSI installer") — there's
+    no start.bat in a frozen install, so the shortcut has to point straight
+    at the exe."""
     return sys.executable if getattr(sys, "frozen", False) else START_BAT_PATH
+
+
+def _autostart_desktop_entry_contents():
+    """.desktop file content for the Linux ~/.config/autostart entry (the
+    freedesktop.org Desktop Entry spec), mirroring _autostart_target_path()'s
+    frozen-vs-dev distinction: the frozen server binary's sibling frozen tray
+    exe when packaged (see DECISIONS.md "Linux .deb release"), or `python3
+    tray_app.py` for the normal dev/unfrozen path."""
+    if getattr(sys, "frozen", False):
+        exec_line = sys.executable
+    else:
+        script_path = os.path.join(PROJECT_ROOT, "tray", "tray_app.py")
+        exec_line = f'{sys.executable} "{script_path}"'
+    return (
+        "[Desktop Entry]\n"
+        "Type=Application\n"
+        "Name=digib00age\n"
+        f"Exec={exec_line}\n"
+        "Terminal=false\n"
+        "X-GNOME-Autostart-enabled=true\n"
+    )
 
 
 def _migrate_legacy_startup_shortcut():
     """One-time cleanup: removes the pre-rebrand ComicVault.lnk Startup entry
     if present, so it can't fire alongside a freshly created digib00age.lnk
     and double-launch the tray app. Safe no-op if it was never created or
-    was already removed."""
+    was already removed. Windows-only — no Linux install has ever had a
+    pre-rebrand entry to migrate."""
+    if not IS_WINDOWS:
+        return
     if os.path.exists(LEGACY_STARTUP_SHORTCUT_PATH):
         try:
             os.remove(LEGACY_STARTUP_SHORTCUT_PATH)
@@ -668,44 +779,63 @@ def _migrate_legacy_startup_shortcut():
 
 
 def _check_autostart_shortcut():
-    """Logs a warning if the Startup shortcut exists but its target is stale
-    or missing — e.g. after the repo folder moves (this happened 2026-08-04
-    when a shortcut created under the old private-dev-repo\\ layout kept
-    pointing at a path that no longer existed, so autostart silently did
-    nothing at login). Doesn't auto-repair: toggling "Start digib00age at
-    login" off/on in the tray menu recreates it correctly in one click."""
-    if not os.path.exists(STARTUP_SHORTCUT_PATH):
+    """Logs a warning if the autostart entry exists but its target looks
+    stale — e.g. after the install/repo folder moves (this happened on
+    Windows 2026-08-04 when a shortcut created under the old
+    private-dev-repo\\ layout kept pointing at a path that no longer
+    existed, so autostart silently did nothing at login). Doesn't
+    auto-repair: toggling "Start digib00age at login" off/on in the tray
+    menu recreates it correctly in one click."""
+    entry_path = _autostart_entry_path()
+    if not os.path.exists(entry_path):
         return
-    try:
-        import win32com.client
-        shell = win32com.client.Dispatch("WScript.Shell")
-        target = shell.CreateShortCut(STARTUP_SHORTCUT_PATH).TargetPath
-        expected = _autostart_target_path()
-        if target != expected or not os.path.exists(target):
-            log(
-                f"WARNING: autostart shortcut looks stale (points at {target!r}, "
-                f"expected {expected!r}, target exists: {os.path.exists(target)}). "
-                "Toggle 'Start digib00age at login' off then on in the tray menu to fix."
-            )
-    except Exception as e:
-        log(f"Could not verify autostart shortcut: {e}")
+    if IS_WINDOWS:
+        try:
+            import win32com.client
+            shell = win32com.client.Dispatch("WScript.Shell")
+            target = shell.CreateShortCut(entry_path).TargetPath
+            expected = _autostart_target_path()
+            if target != expected or not os.path.exists(target):
+                log(
+                    f"WARNING: autostart shortcut looks stale (points at {target!r}, "
+                    f"expected {expected!r}, target exists: {os.path.exists(target)}). "
+                    "Toggle 'Start digib00age at login' off then on in the tray menu to fix."
+                )
+        except Exception as e:
+            log(f"Could not verify autostart shortcut: {e}")
+    else:
+        try:
+            with open(entry_path, "r", encoding="utf-8") as f:
+                contents = f.read()
+            if contents != _autostart_desktop_entry_contents():
+                log(
+                    "WARNING: autostart .desktop entry looks stale (doesn't match "
+                    "the current launch path). Toggle 'Start digib00age at login' "
+                    "off then on in the tray menu to fix."
+                )
+        except OSError as e:
+            log(f"Could not verify autostart .desktop entry: {e}")
 
 
 def toggle_autostart(icon=None, item=None):
-    """Creates or removes the Windows Startup shortcut. The shortcut's own
-    existence is the source of truth for the menu checkbox — no config.json
-    flag to keep in sync."""
-    if os.path.exists(STARTUP_SHORTCUT_PATH):
+    """Creates or removes the OS-appropriate autostart entry (Windows
+    Startup shortcut / Linux .desktop file). The entry's own existence is
+    the source of truth for the menu checkbox — no config.json flag to keep
+    in sync."""
+    entry_path = _autostart_entry_path()
+    if os.path.exists(entry_path):
         try:
-            os.remove(STARTUP_SHORTCUT_PATH)
-            log("Autostart disabled (shortcut removed).")
+            os.remove(entry_path)
+            log("Autostart disabled (entry removed).")
         except OSError as e:
-            log(f"Failed to remove autostart shortcut: {e}")
-    else:
+            log(f"Failed to remove autostart entry: {e}")
+        return
+
+    if IS_WINDOWS:
         try:
             import win32com.client  # imported lazily: a missing pywin32 shouldn't crash tray startup
             shell = win32com.client.Dispatch("WScript.Shell")
-            shortcut = shell.CreateShortCut(STARTUP_SHORTCUT_PATH)
+            shortcut = shell.CreateShortCut(entry_path)
             shortcut.TargetPath = _autostart_target_path()
             shortcut.WorkingDirectory = REPO_ROOT
             shortcut.WindowStyle = 7  # minimized
@@ -713,6 +843,15 @@ def toggle_autostart(icon=None, item=None):
             log("Autostart enabled (shortcut created).")
         except Exception as e:
             log(f"Failed to create autostart shortcut: {e}")
+    else:
+        try:
+            os.makedirs(os.path.dirname(entry_path), exist_ok=True)
+            with open(entry_path, "w", encoding="utf-8") as f:
+                f.write(_autostart_desktop_entry_contents())
+            os.chmod(entry_path, 0o755)
+            log("Autostart enabled (.desktop entry created).")
+        except OSError as e:
+            log(f"Failed to create autostart .desktop entry: {e}")
 
 
 def build_menu():
@@ -777,7 +916,8 @@ def _enable_dark_menu_support():
 
 
 def main():
-    _enable_dark_menu_support()
+    if IS_WINDOWS:
+        _enable_dark_menu_support()
 
     log("=" * 40)
     log("digib00age tray app starting.")

@@ -2,8 +2,9 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 pillow
-pystray
-pywin32
+pystray[appindicator] ; sys_platform == 'linux'   # AppIndicator/GTK backend for the Linux tray icon
+pystray ; sys_platform != 'linux'
+pywin32 ; sys_platform == 'win32'   # Windows-only package; unguarded this broke `pip install` on Linux outright
 watchdog
 lxml
 rarfile          # CBR extraction — added v2.4 Item 5/11 (2026-06-30/07-01). unrar binaries
