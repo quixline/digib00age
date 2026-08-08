@@ -2,7 +2,7 @@
 Type=Application
 Name=digib00age
 Comment=Self-hosted personal comic library
-Exec=/opt/digib00age/digib00age-tray/digib00age-tray
+Exec=/opt/digib00age/digib00age-tray
 Icon=digib00age
 Terminal=false
 Categories=Graphics;Viewer;

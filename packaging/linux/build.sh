@@ -35,10 +35,17 @@ mkdir -p "$DEB_TREE/opt/$PKG_NAME"
 mkdir -p "$DEB_TREE/usr/share/applications"
 mkdir -p "$DEB_TREE/usr/share/icons/hicolor/128x128/apps"
 
-cp -a "$PYI_DIST/digib00age-server" "$DEB_TREE/opt/$PKG_NAME/"
-cp -a "$PYI_DIST/digib00age-tray" "$DEB_TREE/opt/$PKG_NAME/"
-chmod +x "$DEB_TREE/opt/$PKG_NAME/digib00age-server/digib00age-server"
-chmod +x "$DEB_TREE/opt/$PKG_NAME/digib00age-tray/digib00age-tray"
+# Merge (not nest) both --onedir outputs into one flat /opt/digib00age/ dir —
+# _frozen_server_executable_path() (tray_app.py, shared with the future
+# Windows build) expects the two executables as flat siblings in the same
+# directory, not in separate subfolders. The trailing "/." makes cp merge
+# each bundle's contents (including its own _internal/) into the shared
+# destination rather than nesting a subdirectory; both bundles come from the
+# same venv so overlapping _internal/ files are compatible duplicates.
+cp -a "$PYI_DIST/digib00age-server/." "$DEB_TREE/opt/$PKG_NAME/"
+cp -a "$PYI_DIST/digib00age-tray/." "$DEB_TREE/opt/$PKG_NAME/"
+chmod +x "$DEB_TREE/opt/$PKG_NAME/digib00age-server"
+chmod +x "$DEB_TREE/opt/$PKG_NAME/digib00age-tray"
 
 cp "$PKG_DIR/digib00age.desktop" "$DEB_TREE/usr/share/applications/"
 cp "$REPO_ROOT/src/frontend/images/favicon.png" \
@@ -51,7 +58,15 @@ chmod 755 "$DEB_TREE/DEBIAN/postinst" "$DEB_TREE/DEBIAN/postrm"
 
 echo "=== 4/4: dpkg-deb build ==="
 rm -f "$OUT_DEB"
-fakeroot dpkg-deb --build --root-owner-group "$DEB_TREE" "$OUT_DEB"
+# fakeroot/dpkg-deb use $TMPDIR (defaults to /tmp) for intermediate files —
+# on a host where / is tight on space (as this one has been), that fails
+# with ENOSPC even though the real output path below is on a roomy
+# partition. Point TMPDIR at scratch space next to the rest of this build's
+# output instead.
+TMP_SCRATCH="$BUILD_ROOT/tmp"
+mkdir -p "$TMP_SCRATCH"
+TMPDIR="$TMP_SCRATCH" fakeroot dpkg-deb --build --root-owner-group "$DEB_TREE" "$OUT_DEB"
+rm -rf "$TMP_SCRATCH"
 
 echo
 echo "Built: $OUT_DEB"

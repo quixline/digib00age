@@ -85,7 +85,20 @@ REPO_ROOT = os.path.dirname(PROJECT_ROOT)
 
 from backend.config import READER_PORT  # noqa: E402
 
-LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tray.log")
+if getattr(sys, "frozen", False) and not IS_WINDOWS:
+    # A .deb install lands in /opt, which isn't user-writable — writing
+    # tray.log/reader_stdout.log next to the binary (the dev/Windows-per-user
+    # default below) crashed the app outright on first real install/launch
+    # test (unguarded open() in start_reader() -> PermissionError). Reuse the
+    # same XDG data dir config.py already redirects db/thumbnails to when
+    # frozen on Linux, so logs land somewhere actually writable.
+    from backend.config import _xdg_data_dir
+    _LOG_DIR = str(_xdg_data_dir())
+    os.makedirs(_LOG_DIR, exist_ok=True)
+else:
+    _LOG_DIR = os.path.dirname(os.path.abspath(__file__))
+
+LOG_PATH = os.path.join(_LOG_DIR, "tray.log")
 HEALTH_CHECK_INTERVAL = 30  # seconds
 STARTUP_WAIT_TIMEOUT = 15  # seconds to wait for the port to open after launch
 
@@ -145,7 +158,7 @@ def port_is_open(port, timeout=1.0):
         return False
 
 
-READER_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reader_stdout.log")
+READER_LOG_PATH = os.path.join(_LOG_DIR, "reader_stdout.log")
 
 # App-mode launch: Chrome/Edge-family browsers' --app=<url> opens a
 # chromeless window (no tabs/address bar) instead of a tab in the user's
