@@ -56,6 +56,22 @@ if getattr(sys, "frozen", False) and not IS_WINDOWS:
     # pystray's own lazy `import gi` runs, same as the dev venv's
     # --system-site-packages achieves for an unfrozen run.
     sys.path.append("/usr/lib/python3/dist-packages")
+    # The frozen bundle's own base_library.zip only bundles the stdlib
+    # modules digib00age's own code actually imports - PyInstaller
+    # tree-shakes the rest out. The system `gi` package above is
+    # deliberately run un-frozen and imports real stdlib modules of its own
+    # (e.g. `pkgutil`, via `from pkgutil import extend_path` in
+    # gi/__init__.py) that this app's code never touches directly, so they
+    # aren't in that curated subset - `import gi` then raised
+    # ModuleNotFoundError for pkgutil, which pystray's own `except
+    # ImportError` doesn't catch, silently falling back to the menu-less
+    # legacy X11 backend (same end symptom as BUG-040, different cause).
+    # Point at the system's real stdlib too, matching the frozen
+    # interpreter's own Python version, so gi (and anything it imports) can
+    # find whatever stdlib modules it needs.
+    _sys_stdlib = f"/usr/lib/python3.{sys.version_info.minor}"
+    if os.path.isdir(_sys_stdlib):
+        sys.path.append(_sys_stdlib)
 
 from PIL import Image, ImageDraw
 import pystray

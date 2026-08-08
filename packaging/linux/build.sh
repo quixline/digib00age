@@ -3,6 +3,11 @@
 # Debian package tree, build with dpkg-deb. Safe to re-run — each step wipes
 # its own prior output first.
 #
+# This is the apt-managed path (fixed /opt/digib00age install, automatic
+# Depends: resolution). For a user-chosen install directory instead, use
+# install.sh, which shares this script's freeze.sh step but skips dpkg
+# entirely.
+#
 # Run from anywhere; paths are resolved relative to this script's location.
 set -euo pipefail
 
@@ -19,35 +24,10 @@ PYI_WORK="$BUILD_ROOT/pyinstaller-out/build"
 DEB_TREE="$BUILD_ROOT/${PKG_NAME}_${VERSION}_${ARCH}"
 OUT_DEB="$REPO_ROOT/dev/distros/${PKG_NAME}_${VERSION}_${ARCH}.deb"
 
-# Freeze from a throwaway build venv, NOT $REPO_ROOT/venv — that dev venv has
-# include-system-site-packages=true (needed for the tray's GTK/AppIndicator
-# backend at *runtime*), which also pulls in the operator's ~/.local user
-# site-packages at freeze time. PyInstaller's static analysis then follows
-# any optional/guarded import branch it can resolve (e.g. scipy's optional
-# torch array-API backend, sqlalchemy's built-in psycopg2/asyncpg dialect
-# hook) straight into whatever happens to be installed there, bundling
-# gigabytes of unrelated packages into the .deb. digib00age-tray.spec already
-# excludes=["gi"] — GTK is a system runtime Depends:, not something
-# PyInstaller needs to import during the freeze — so system-site-packages
-# isn't actually needed for the build itself, only for running the app
-# un-frozen during development.
-BUILD_VENV="$BUILD_ROOT/build-venv"
-echo "=== 1/5: Prepare clean build venv ==="
-rm -rf "$BUILD_VENV"
-python3 -m venv "$BUILD_VENV"
-"$BUILD_VENV/bin/pip" install --no-cache-dir --upgrade pip >/dev/null
-"$BUILD_VENV/bin/pip" install --no-cache-dir -r "$REPO_ROOT/requirements.txt" pyinstaller
-VENV_PYINSTALLER="$BUILD_VENV/bin/pyinstaller"
+echo "=== 1/3: Freeze both binaries ==="
+source "$PKG_DIR/freeze.sh"
 
-echo "=== 2/5: PyInstaller freeze (server) ==="
-"$VENV_PYINSTALLER" --noconfirm --distpath "$PYI_DIST" --workpath "$PYI_WORK" \
-    "$PKG_DIR/digib00age-server.spec"
-
-echo "=== 3/5: PyInstaller freeze (tray) ==="
-"$VENV_PYINSTALLER" --noconfirm --distpath "$PYI_DIST" --workpath "$PYI_WORK" \
-    "$PKG_DIR/digib00age-tray.spec"
-
-echo "=== 4/5: Assemble Debian package tree ==="
+echo "=== 2/3: Assemble Debian package tree ==="
 rm -rf "$DEB_TREE"
 mkdir -p "$DEB_TREE/DEBIAN"
 mkdir -p "$DEB_TREE/opt/$PKG_NAME"
@@ -75,7 +55,7 @@ cp "$PKG_DIR/debian/postinst" "$DEB_TREE/DEBIAN/postinst"
 cp "$PKG_DIR/debian/postrm" "$DEB_TREE/DEBIAN/postrm"
 chmod 755 "$DEB_TREE/DEBIAN/postinst" "$DEB_TREE/DEBIAN/postrm"
 
-echo "=== 5/5: dpkg-deb build ==="
+echo "=== 3/3: dpkg-deb build ==="
 rm -f "$OUT_DEB"
 # fakeroot/dpkg-deb use $TMPDIR (defaults to /tmp) for intermediate files —
 # on a host where / is tight on space (as this one has been), that fails
