@@ -18,9 +18,22 @@ import rarfile
 # backend/ lives under src/ — PROJECT_ROOT (= src/) is what the rest of the
 # codebase's "backend/..."-relative paths (db_path, etc.) are joined against.
 # config.json itself stays at the true repo root, one level above src/.
-BACKEND_DIR = Path(__file__).parent.resolve()
-PROJECT_ROOT = BACKEND_DIR.parent
-REPO_ROOT = PROJECT_ROOT.parent
+#
+# A frozen Windows build (PyInstaller MSI install) has no src/ nesting —
+# backend/ and config.json sit flat next to the exe — and __file__ isn't a
+# real on-disk path once bundled, so base everything on sys.executable's
+# directory instead. Per-user install (%LocalAppData%) is already writable,
+# so unlike the Linux XDG branch below, no data-path redirection is needed —
+# just correct resolution of where "flat next to the exe" actually is.
+if getattr(sys, "frozen", False) and platform.system() == "Windows":
+    _INSTALL_DIR = Path(sys.executable).parent.resolve()
+    BACKEND_DIR = _INSTALL_DIR / "backend"
+    PROJECT_ROOT = _INSTALL_DIR
+    REPO_ROOT = _INSTALL_DIR
+else:
+    BACKEND_DIR = Path(__file__).parent.resolve()
+    PROJECT_ROOT = BACKEND_DIR.parent
+    REPO_ROOT = PROJECT_ROOT.parent
 
 # A packaged (.deb) Linux install lands in /opt, which isn't user-writable —
 # unlike the Windows per-user install (%LocalAppData%, already writable) or

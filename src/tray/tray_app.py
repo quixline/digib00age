@@ -56,17 +56,27 @@ if IS_WINDOWS:
     from ctypes import wintypes
     import winreg
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # src/
-sys.path.insert(0, PROJECT_ROOT)
+# A frozen Windows build (PyInstaller MSI install) has no src/ nesting —
+# backend/frontend/config.json sit flat next to this exe — and __file__
+# isn't a real on-disk path once bundled, so base everything on
+# sys.executable's directory instead. Mirrors the same branch in
+# backend/config.py.
+_FROZEN = getattr(sys, "frozen", False)
+if _FROZEN:
+    PROJECT_ROOT = os.path.dirname(sys.executable)
+    REPO_ROOT = PROJECT_ROOT
+else:
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # src/
+    sys.path.insert(0, PROJECT_ROOT)
 
-# start.bat/start_server.py live at the true repo root, one level above src/
-# (tray_app.py itself is launched from there, but backend/frontend moved
-# into src/ so PROJECT_ROOT above no longer is the repo root).
-REPO_ROOT = os.path.dirname(PROJECT_ROOT)
+    # start.bat/start_server.py live at the true repo root, one level above src/
+    # (tray_app.py itself is launched from there, but backend/frontend moved
+    # into src/ so PROJECT_ROOT above no longer is the repo root).
+    REPO_ROOT = os.path.dirname(PROJECT_ROOT)
 
 from backend.config import READER_PORT  # noqa: E402
 
-LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tray.log")
+LOG_PATH = os.path.join(PROJECT_ROOT, "tray.log") if _FROZEN else os.path.join(os.path.dirname(os.path.abspath(__file__)), "tray.log")
 HEALTH_CHECK_INTERVAL = 30  # seconds
 STARTUP_WAIT_TIMEOUT = 15  # seconds to wait for the port to open after launch
 
@@ -126,7 +136,7 @@ def port_is_open(port, timeout=1.0):
         return False
 
 
-READER_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reader_stdout.log")
+READER_LOG_PATH = os.path.join(PROJECT_ROOT, "reader_stdout.log") if _FROZEN else os.path.join(os.path.dirname(os.path.abspath(__file__)), "reader_stdout.log")
 
 # App-mode launch: Chrome/Edge-family browsers' --app=<url> opens a
 # chromeless window (no tabs/address bar) instead of a tab in the user's

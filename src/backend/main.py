@@ -18,10 +18,22 @@ from fastapi.staticfiles import StaticFiles
 # ---------------------------------------------------------------------------
 # Resolve project root (one level up from backend/, i.e. src/) and the true
 # repo root (one level above that) where config.json lives
+#
+# A frozen Windows build (PyInstaller MSI install) has no src/ nesting -
+# backend/frontend/config.json sit flat next to the exe - and __file__ isn't
+# a real on-disk path once bundled, so base everything on sys.executable's
+# directory instead. Mirrors the same branch in backend/config.py (this
+# file duplicates that module's BACKEND_DIR/PROJECT_ROOT/REPO_ROOT
+# computation rather than importing it, so it needs the same fix).
 # ---------------------------------------------------------------------------
-BACKEND_DIR = Path(__file__).parent.resolve()
-PROJECT_ROOT = BACKEND_DIR.parent
-REPO_ROOT = PROJECT_ROOT.parent
+if getattr(sys, "frozen", False) and sys.platform == "win32":
+    BACKEND_DIR = Path(sys.executable).parent.resolve() / "backend"
+    PROJECT_ROOT = BACKEND_DIR.parent
+    REPO_ROOT = PROJECT_ROOT
+else:
+    BACKEND_DIR = Path(__file__).parent.resolve()
+    PROJECT_ROOT = BACKEND_DIR.parent
+    REPO_ROOT = PROJECT_ROOT.parent
 
 # Add project root to path so sibling packages import cleanly
 if str(PROJECT_ROOT) not in sys.path:
