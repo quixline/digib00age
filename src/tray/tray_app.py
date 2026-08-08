@@ -46,10 +46,19 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import BytesIO
 from urllib.parse import urlparse, parse_qs
 
+IS_WINDOWS = sys.platform == "win32"
+
+if getattr(sys, "frozen", False) and not IS_WINDOWS:
+    # PyGObject/AppIndicator is deliberately not frozen into this binary (see
+    # DECISIONS.md "Linux .deb release" + BUG-040) — GObject-Introspection's
+    # typelib machinery is fragile to bundle, and the system already has a
+    # correctly-built python3-gi (a .deb Depends:). Point at it here, before
+    # pystray's own lazy `import gi` runs, same as the dev venv's
+    # --system-site-packages achieves for an unfrozen run.
+    sys.path.append("/usr/lib/python3/dist-packages")
+
 from PIL import Image, ImageDraw
 import pystray
-
-IS_WINDOWS = sys.platform == "win32"
 
 if IS_WINDOWS:
     import ctypes
