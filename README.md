@@ -32,6 +32,9 @@ See `dev/docs/EDITOR_SPEC.md` for the full editor design.
 ```
 src/            Everything the app needs to run — backend, frontend, flutter_app,
                 chrome-extension, tray. This is what's meant to be public.
+packaging/      Source for building distributable installers (PyInstaller specs,
+                Debian package files, app-menu/icon assets). Not the installers
+                themselves — those are build output, not source.
 dev/            Local working space (docs, ct_cache, logs) — gitignored, not
                 part of this repo's public history.
 config.json     Tracked, bare template — no secrets. Real values (API key,

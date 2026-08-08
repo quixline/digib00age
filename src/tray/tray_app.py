@@ -65,7 +65,17 @@ if IS_WINDOWS:
     from ctypes import wintypes
     import winreg
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # src/
+if getattr(sys, "frozen", False):
+    # This file is the PyInstaller entry script, not a regularly-imported
+    # package module — its __file__ isn't reliably meaningful once frozen
+    # (unlike backend/config.py's, which PyInstaller preserves for real
+    # package members). sys._MEIPASS is PyInstaller's own documented,
+    # version-independent pointer to the bundle's data directory (the
+    # --onedir dist folder), used here to still find the bundled
+    # frontend/images/favicon.png below.
+    PROJECT_ROOT = sys._MEIPASS
+else:
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # src/
 sys.path.insert(0, PROJECT_ROOT)
 
 # start.bat/start_server.py live at the true repo root, one level above src/
