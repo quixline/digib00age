@@ -5,7 +5,6 @@ All paths come from config.json — nothing is hardcoded here.
 """
 
 import hashlib
-import json
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -16,24 +15,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 # ---------------------------------------------------------------------------
-# Resolve project root (one level up from backend/, i.e. src/) and the true
-# repo root (one level above that) where config.json lives
+# Resolve project root (one level up from backend/, i.e. src/) — everything
+# under it (frontend/) is joined against this.
 #
 # A frozen Windows build (PyInstaller MSI install) has no src/ nesting -
-# backend/frontend/config.json sit flat next to the exe - and __file__ isn't
-# a real on-disk path once bundled, so base everything on sys.executable's
-# directory instead. Mirrors the same branch in backend/config.py (this
-# file duplicates that module's BACKEND_DIR/PROJECT_ROOT/REPO_ROOT
-# computation rather than importing it, so it needs the same fix).
+# backend/frontend sit flat next to the exe - and __file__ isn't a real
+# on-disk path once bundled, so base everything on sys.executable's
+# directory instead. Mirrors the same branch in backend/config.py.
 # ---------------------------------------------------------------------------
 if getattr(sys, "frozen", False) and sys.platform == "win32":
     BACKEND_DIR = Path(sys.executable).parent.resolve() / "backend"
     PROJECT_ROOT = BACKEND_DIR.parent
-    REPO_ROOT = PROJECT_ROOT
 else:
     BACKEND_DIR = Path(__file__).parent.resolve()
     PROJECT_ROOT = BACKEND_DIR.parent
-    REPO_ROOT = PROJECT_ROOT.parent
 
 # Add project root to path so sibling packages import cleanly
 if str(PROJECT_ROOT) not in sys.path:
@@ -42,10 +37,14 @@ if str(PROJECT_ROOT) not in sys.path:
 # ---------------------------------------------------------------------------
 # Load config
 # ---------------------------------------------------------------------------
-CONFIG_PATH = REPO_ROOT / "config.json"
+# Reuse backend.config's already frozen-aware resolution (repo-root
+# config.json on dev/Windows, XDG path on a frozen .deb install) instead of
+# duplicating a plain "repo root / config.json" lookup here, which broke
+# under a frozen Linux install — that repo root is the /opt install dir,
+# which isn't writable and never has a config.json to begin with.
+from backend.config import get_config  # noqa: E402
 
-with open(CONFIG_PATH, "r", encoding="utf-8") as f:
-    config = json.load(f)
+config = get_config()
 
 # ---------------------------------------------------------------------------
 # Database initialisation

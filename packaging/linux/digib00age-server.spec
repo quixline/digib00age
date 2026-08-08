@@ -30,6 +30,12 @@ datas = [
 datas += copy_metadata("comictagger")
 
 hiddenimports = [
+    # start_server.py only ever references "backend.main:app" as a string for
+    # uvicorn.run() to resolve dynamically — PyInstaller's static analysis
+    # never sees that reference, so without this the whole backend.main
+    # module (FastAPI app + all its routers) is silently left out of the
+    # frozen build and the server fails to start at all.
+    "backend.main",
     "uvicorn.logging",
     "uvicorn.loops",
     "uvicorn.loops.auto",
