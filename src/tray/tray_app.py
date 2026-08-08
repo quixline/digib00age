@@ -66,22 +66,31 @@ if IS_WINDOWS:
     import winreg
 
 if getattr(sys, "frozen", False):
-    # This file is the PyInstaller entry script, not a regularly-imported
-    # package module — its __file__ isn't reliably meaningful once frozen
-    # (unlike backend/config.py's, which PyInstaller preserves for real
-    # package members). sys._MEIPASS is PyInstaller's own documented,
-    # version-independent pointer to the bundle's data directory (the
-    # --onedir dist folder), used here to still find the bundled
-    # frontend/images/favicon.png below.
-    PROJECT_ROOT = sys._MEIPASS
+    if IS_WINDOWS:
+        # A frozen Windows build (PyInstaller MSI install) has no src/
+        # nesting — backend/frontend/config.json sit flat next to this exe —
+        # and __file__ isn't a real on-disk path once bundled, so base
+        # everything on sys.executable's directory instead. Mirrors the same
+        # branch in backend/config.py. Already verified working live against
+        # a real %LocalAppData% install.
+        PROJECT_ROOT = os.path.dirname(sys.executable)
+    else:
+        # This file is the PyInstaller entry script, not a regularly-imported
+        # package module — its __file__ isn't reliably meaningful once frozen
+        # (unlike backend/config.py's, which PyInstaller preserves for real
+        # package members). sys._MEIPASS is PyInstaller's own documented,
+        # version-independent pointer to the bundle's data directory (the
+        # --onedir dist folder), used here to still find the bundled
+        # frontend/images/favicon.png below.
+        PROJECT_ROOT = sys._MEIPASS
+    REPO_ROOT = PROJECT_ROOT
 else:
     PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # src/
-sys.path.insert(0, PROJECT_ROOT)
-
-# start.bat/start_server.py live at the true repo root, one level above src/
-# (tray_app.py itself is launched from there, but backend/frontend moved
-# into src/ so PROJECT_ROOT above no longer is the repo root).
-REPO_ROOT = os.path.dirname(PROJECT_ROOT)
+    sys.path.insert(0, PROJECT_ROOT)
+    # start.bat/start_server.py live at the true repo root, one level above src/
+    # (tray_app.py itself is launched from there, but backend/frontend moved
+    # into src/ so PROJECT_ROOT above no longer is the repo root).
+    REPO_ROOT = os.path.dirname(PROJECT_ROOT)
 
 from backend.config import READER_PORT  # noqa: E402
 
@@ -95,6 +104,10 @@ if getattr(sys, "frozen", False) and not IS_WINDOWS:
     from backend.config import _xdg_data_dir
     _LOG_DIR = str(_xdg_data_dir())
     os.makedirs(_LOG_DIR, exist_ok=True)
+elif getattr(sys, "frozen", False):
+    # Frozen Windows: PROJECT_ROOT is the per-user install dir, already
+    # writable — no XDG-style redirect needed there.
+    _LOG_DIR = PROJECT_ROOT
 else:
     _LOG_DIR = os.path.dirname(os.path.abspath(__file__))
 
