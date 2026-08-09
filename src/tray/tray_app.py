@@ -33,6 +33,7 @@ matching Open Library/Admin/Metadata Editor above — added 2026-07-29 to
 replace the old Windows Flutter reader's comicvault:// deep link.
 """
 
+import configparser
 import os
 import shutil
 import socket
@@ -265,12 +266,18 @@ def _resolve_default_browser_exe_windows():
     return exe_path
 
 
-# xdg-settings reports the default browser as a .desktop file id (e.g.
-# "google-chrome.desktop") — maps the ones we recognize to their command
-# name for shutil.which() resolution. Firefox (org.mozilla.firefox.desktop
-# or firefox.desktop) is deliberately not mapped: it doesn't support
-# --app= chromeless windows, same as any non-Chromium browser on Windows —
-# an unmapped id just falls through to the candidate list below.
+# The default browser is reported as a .desktop file id (e.g.
+# "google-chrome.desktop", or a reverse-DNS id like "com.brave.Browser.desktop"
+# for a Flatpak install) — maps the ones we recognize to their command name
+# for shutil.which() resolution. A Flatpak browser's id still maps to its
+# native-style command name (e.g. Brave's) because the apt/native package
+# usually installs a same-named wrapper script on PATH that forwards to
+# `flatpak run` transparently — confirmed on a real Flatpak Brave install,
+# so no separate `flatpak run` launch path is needed here. Firefox
+# (org.mozilla.firefox.desktop or firefox.desktop) is deliberately not
+# mapped: it doesn't support --app= chromeless windows, same as any
+# non-Chromium browser on Windows — an unmapped id just falls through to
+# the candidate list below.
 _DEFAULT_BROWSER_DESKTOP_ID_TO_EXE = {
     "google-chrome.desktop": "google-chrome",
     "google-chrome-stable.desktop": "google-chrome-stable",
@@ -278,24 +285,54 @@ _DEFAULT_BROWSER_DESKTOP_ID_TO_EXE = {
     "chromium-browser.desktop": "chromium-browser",
     "brave-browser.desktop": "brave-browser",
     "microsoft-edge.desktop": "microsoft-edge",
+    "com.google.Chrome.desktop": "google-chrome",
+    "org.chromium.Chromium.desktop": "chromium",
+    "com.brave.Browser.desktop": "brave-browser",
+    "com.microsoft.Edge.desktop": "microsoft-edge",
 }
 
 
-def _resolve_default_browser_exe_linux():
-    """Resolve the user's default browser via `xdg-settings`, the Linux
-    equivalent of the Windows registry lookup above. Returns an exe path
-    only if it's a Chromium-family browser (supports --app=) and it's
-    actually on PATH; returns None otherwise (covers Firefox and any
-    xdg-settings failure) so the caller falls back to the hardcoded
-    candidate list."""
+def _default_browser_desktop_id_linux():
+    """The desktop id of the user's actual configured default browser.
+
+    Reads ~/.config/mimeapps.list's [Default Applications]
+    x-scheme-handler/https entry directly first — the real freedesktop-spec
+    source of truth that Cinnamon's own "Preferred Applications" panel
+    writes to — rather than trusting `xdg-settings get default-web-browser`
+    outright: confirmed on a real machine that xdg-settings can report a
+    stale/wrong id (it said "firefox.desktop" while mimeapps.list correctly
+    said "com.brave.Browser.desktop", matching what was actually configured
+    and what actually opens for a normal link click). Falls back to
+    xdg-settings only if mimeapps.list doesn't have the entry — keeps
+    working on setups where that file doesn't exist or isn't the source
+    xdg-settings itself is reading from."""
+    mimeapps_path = os.path.expanduser("~/.config/mimeapps.list")
+    if os.path.isfile(mimeapps_path):
+        parser = configparser.ConfigParser(strict=False)
+        try:
+            parser.read(mimeapps_path)
+            desktop_id = parser.get("Default Applications", "x-scheme-handler/https", fallback=None)
+        except configparser.Error:
+            desktop_id = None
+        if desktop_id:
+            return desktop_id.split(";")[0].strip()
+
     try:
         result = subprocess.run(
             ["xdg-settings", "get", "default-web-browser"],
             capture_output=True, text=True, timeout=2,
         )
-        desktop_id = result.stdout.strip()
+        return result.stdout.strip()
     except (OSError, subprocess.SubprocessError):
         return None
+
+
+def _resolve_default_browser_exe_linux():
+    """Resolve the user's default browser to an actual exe on PATH. Returns
+    an exe path only if it's a Chromium-family browser (supports --app=);
+    returns None otherwise (covers Firefox and any lookup failure) so the
+    caller falls back to the hardcoded candidate list."""
+    desktop_id = _default_browser_desktop_id_linux()
     exe_name = _DEFAULT_BROWSER_DESKTOP_ID_TO_EXE.get(desktop_id)
     if not exe_name:
         return None
@@ -559,10 +596,14 @@ def open_app_window(url, issue_id=None):
         before_hwnds = _snapshot_top_level_hwnds(os.path.basename(exe).lower()) if issue_id else None
         args = [exe, f"--app={url}"]
         try:
-            subprocess.Popen(
+            proc = subprocess.Popen(
                 args,
                 creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0,
             )
+            # Reap on a daemon thread once it exits — otherwise it's a zombie
+            # until this tray process itself exits (nobody else ever calls
+            # wait()/poll() on it; the exit code isn't used for anything).
+            threading.Thread(target=proc.wait, daemon=True).start()
             if issue_id:
                 threading.Thread(
                     target=_activate_and_resize_new_window,
