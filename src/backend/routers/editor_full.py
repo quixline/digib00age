@@ -369,7 +369,11 @@ def get_file_page(
 
         from PIL import Image
 
-        img = Image.open(io.BytesIO(img_bytes))
+        from backend import image_utils
+
+        img = image_utils.open_image_capped(img_bytes)
+        if img is None:
+            raise HTTPException(status_code=422, detail="Page image exceeds safe pixel limit")
         width, height = img.size
 
         # Optional server-side downscale for the viewer's lazy thumbnail strip

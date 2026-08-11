@@ -21,9 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from PIL import Image
-
-from backend import archive_formats, backup_model
+from backend import archive_formats, backup_model, image_utils
 from backend.editor.archive_io import flatten_and_zip
 
 CONVERT_EXTENSIONS = {".jpg", ".jpeg", ".tiff", ".gif", ".png", ".bmp"}
@@ -67,7 +65,10 @@ def _convert_images_in_dir(extract_dir: str, quality: int, lossless: bool) -> in
             src_path = os.path.join(root, name)
             webp_path = os.path.splitext(src_path)[0] + ".webp"
             try:
-                with Image.open(src_path) as im:
+                im = image_utils.open_image_capped_path(src_path)
+                if im is None:
+                    raise ValueError("image exceeds safe pixel limit")
+                with im:
                     im.load()
                     if lossless:
                         im.save(webp_path, "WEBP", lossless=True)

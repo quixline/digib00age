@@ -27,7 +27,7 @@ from xml.etree import ElementTree as ET
 from PIL import Image
 from sqlalchemy.orm import Session
 
-from backend import archive_formats, config, scan_logs
+from backend import archive_formats, config, image_utils, scan_logs
 from backend.editor.archive_io import extract_xml_from_archive, find_xml_in_archive
 from backend.models import Issue, IssueCredit, IssueGenre, Person, ReadingProgress
 from backend.path_utils import is_under
@@ -248,8 +248,9 @@ def _generate_thumbnail(cbz_path: str, issue_id: int) -> Optional[str]:
             for cover_name in image_files[:3]:
                 try:
                     raw = archive.read(cover_name)
-                    from io import BytesIO
-                    img = Image.open(BytesIO(raw))
+                    img = image_utils.open_image_capped(raw)
+                    if img is None:
+                        raise ValueError("image exceeds safe pixel limit")
                     img.load()
                     break  # success
                 except Exception as img_exc:
