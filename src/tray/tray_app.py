@@ -596,10 +596,14 @@ def open_app_window(url, issue_id=None):
         before_hwnds = _snapshot_top_level_hwnds(os.path.basename(exe).lower()) if issue_id else None
         args = [exe, f"--app={url}"]
         try:
-            subprocess.Popen(
+            proc = subprocess.Popen(
                 args,
                 creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0,
             )
+            # Reap on a daemon thread once it exits — otherwise it's a zombie
+            # until this tray process itself exits (nobody else ever calls
+            # wait()/poll() on it; the exit code isn't used for anything).
+            threading.Thread(target=proc.wait, daemon=True).start()
             if issue_id:
                 threading.Thread(
                     target=_activate_and_resize_new_window,

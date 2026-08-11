@@ -250,10 +250,48 @@ if FRONTEND_DIR.exists():
     # Service worker must be served from the root scope (/sw.js) so it can
     # control all pages. StaticFiles only covers /static/*, so add an explicit
     # route here. Cache-Control: no-cache so browsers always revalidate it.
+    #
+    # Loopback origins get a tombstone worker instead of the real one — see
+    # frontend/js/pwa.js for the full finding. Short version: a service worker
+    # on localhost can park the tray's --app= navigation indefinitely while
+    # buying nothing (the server is on the same machine), and this route is the
+    # only channel that can reach an already-hung client — on the stuck boot
+    # that diagnosed this, the browser's SW update check fetched /sw.js
+    # successfully while the navigation itself never dispatched at all.
+    #
+    # Keyed on the request's *origin* (the Host header), not on
+    # auth.is_local_request(), which tests the peer IP. The two differ for
+    # someone on this machine browsing to the LAN IP — exactly the client that
+    # must keep its PWA — so don't "unify" them later.
+    _LOOPBACK_HOSTNAMES = {"localhost", "127.0.0.1", "::1"}
+
+    # Deliberately constant, with no ASSET_VERSION_TOKEN substitution: the
+    # browser byte-compares this script on every update check, so a version
+    # that changed with the asset hash would reinstall itself forever. No fetch
+    # handler at all, which lets Chromium's no-fetch-handler optimisation skip
+    # service-worker startup for navigations entirely.
+    _LOOPBACK_SW_SOURCE = """\
+// digib00age — service worker tombstone (loopback origins only).
+// Unregisters itself and drops the app-shell caches; see backend/main.py.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+      .then(() => self.registration.unregister())
+      .then(() => self.clients.claim())
+      .catch(() => {})
+  );
+});
+"""
+
     @app.get("/sw.js", include_in_schema=False)
-    async def service_worker():
-        sw_source = (FRONTEND_DIR / "sw.js").read_text(encoding="utf-8")
-        sw_source = sw_source.replace("ASSET_VERSION_TOKEN", _frontend_asset_version())
+    async def service_worker(request: Request):
+        if request.url.hostname in _LOOPBACK_HOSTNAMES:
+            sw_source = _LOOPBACK_SW_SOURCE
+        else:
+            sw_source = (FRONTEND_DIR / "sw.js").read_text(encoding="utf-8")
+            sw_source = sw_source.replace("ASSET_VERSION_TOKEN", _frontend_asset_version())
         return Response(
             content=sw_source,
             media_type="application/javascript",
