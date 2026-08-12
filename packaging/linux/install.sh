@@ -9,9 +9,14 @@
 # deleted - both share this repo's freeze.sh step.
 #
 # Unlike a .deb, apt won't auto-install this app's system dependencies
-# (python3-gi, GTK, AppIndicator) - this script checks for them and prints
-# an `apt install` instruction if anything is missing, but installing them
-# is left to the user (sudo, run by hand).
+# (python3, python3-venv, python3-gi, GTK, AppIndicator) - preflight-build.sh
+# checks for all of them up front, before anything else runs, and exits
+# with an `apt install` instruction if anything is missing. Installing them
+# is left to the user (sudo, run by hand) - see preflight-build.sh.
+#
+# This script builds+installs directly from a full checkout - a dev-machine
+# convenience, not the distributed path. For a small zip end users can
+# download without the repo or a build toolchain, see make_release.sh.
 #
 # Run from anywhere; paths are resolved relative to this script's location.
 set -euo pipefail
@@ -25,10 +30,13 @@ BUILD_ROOT="$REPO_ROOT/dev/distros/install-build"
 PYI_DIST="$BUILD_ROOT/pyinstaller-out/dist"
 PYI_WORK="$BUILD_ROOT/pyinstaller-out/build"
 
-echo "=== 1/4: Freeze both binaries ==="
+echo "=== Checking prerequisites ==="
+source "$PKG_DIR/preflight-build.sh"
+
+echo "=== 1/3: Freeze both binaries ==="
 source "$PKG_DIR/freeze.sh"
 
-echo "=== 2/4: Choose install directory ==="
+echo "=== 2/3: Choose install directory ==="
 # Default lives under ~/.local/opt/ (per-user mirror of the system /opt/
 # convention), deliberately NOT ~/.local/share/digib00age - that's the app's
 # own XDG *data* directory (config.py's _xdg_data_dir(): db + thumbnails),
@@ -61,7 +69,7 @@ if [ ! -w "$TARGET_DIR" ]; then
     exit 1
 fi
 
-echo "=== 3/4: Install files ==="
+echo "=== 3/3: Install files ==="
 cp -a "$PYI_DIST/digib00age-server/." "$TARGET_DIR/"
 cp -a "$PYI_DIST/digib00age-tray/." "$TARGET_DIR/"
 chmod +x "$TARGET_DIR/digib00age-server" "$TARGET_DIR/digib00age-tray"
@@ -88,19 +96,6 @@ rm -rf "$TARGET_DIR"
 echo "digib00age uninstalled. Your data (~/.local/share/digib00age, ~/.config/digib00age) was left untouched - remove it by hand for a full wipe."
 UNINSTALL
 chmod +x "$TARGET_DIR/uninstall.sh"
-
-echo "=== 4/4: Check system dependencies ==="
-MISSING=""
-for dep in python3-gi gir1.2-gtk-3.0; do
-    dpkg -s "$dep" >/dev/null 2>&1 || MISSING="$MISSING $dep"
-done
-if ! dpkg -s libayatana-appindicator3-1 >/dev/null 2>&1 && ! dpkg -s libappindicator3-1 >/dev/null 2>&1; then
-    MISSING="$MISSING libayatana-appindicator3-1"
-fi
-if [ -n "$MISSING" ]; then
-    echo "Missing system packages needed for the tray icon:$MISSING"
-    echo "Install with: sudo apt install$MISSING"
-fi
 
 echo
 echo "Installed to: $TARGET_DIR"

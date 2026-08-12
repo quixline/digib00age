@@ -24,6 +24,13 @@ PYI_WORK="$BUILD_ROOT/pyinstaller-out/build"
 DEB_TREE="$BUILD_ROOT/${PKG_NAME}_${VERSION}_${ARCH}"
 OUT_DEB="$REPO_ROOT/dev/distros/${PKG_NAME}_${VERSION}_${ARCH}.deb"
 
+echo "=== Checking prerequisites ==="
+# This covers the machine building the .deb, not the end-installer -
+# debian/control's Depends: line already gets those packages auto-resolved
+# by apt when someone installs the built package. But freeze.sh below needs
+# python3-gi importable at build time regardless (see preflight.sh, freeze.sh).
+source "$PKG_DIR/preflight-build.sh"
+
 echo "=== 1/3: Freeze both binaries ==="
 source "$PKG_DIR/freeze.sh"
 

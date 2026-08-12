@@ -1,0 +1,7 @@
+# Shell scripts must keep LF endings regardless of core.autocrlf, or a
+# shebang line becomes "/bin/bash\r" on Linux ("bad interpreter" error) -
+# hit this shipping packaging/linux/install.sh zipped from a Windows
+# checkout. See dev/docs/BUGS.md BUG-044.
+*.sh text eol=lf
+packaging/linux/debian/postinst text eol=lf
+packaging/linux/debian/postrm text eol=lf
