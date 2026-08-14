@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "digib00age"
+version = "1.0.0"
+description = "Self-hosted personal comic library server"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "sqlalchemy",
+    "pillow",
+    "pystray[appindicator] ; sys_platform == 'linux'",
+    "pystray ; sys_platform != 'linux'",
+    "pywin32 ; sys_platform == 'win32'",
+    "watchdog",
+    "lxml",
+    "rarfile",
+    "pymupdf",
+    "comictagger @ git+https://github.com/comictagger/comictagger.git@0cc9e76f8d45d3ef27bcf2feabb676e124412abf",
+]
+
+[project.scripts]
+digib00age-server = "backend.cli:main"
+digib00age-tray = "tray.tray_app:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["backend", "backend.*", "tray", "frontend"]
+
+[tool.setuptools.package-data]
+"backend.editor" = ["*.json"]
+"backend" = ["bin/linux/*", "bin/windows/*"]
+"frontend" = [
+    "*.html",
+    "*.json",
+    "sw.js",
+    "css/*.css",
+    "js/*.js",
+    "images/*.png",
+    "images/icons/*.png",
+]

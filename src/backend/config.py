@@ -6,6 +6,7 @@ All paths in the codebase come from here — nothing is ever hardcoded.
 
 from __future__ import annotations
 
+import importlib.metadata
 import json
 import os
 import platform
@@ -42,6 +43,47 @@ else:
 # run — including minty's current unfrozen dev/manual testing — is
 # unaffected. Mirrors the frozen-branch precedent in tray_app.py.
 _IS_FROZEN_LINUX = getattr(sys, "frozen", False) and platform.system() == "Linux"
+
+
+def _is_pip_installed_distribution() -> bool:
+    """True only when a real `digib00age` distribution record exists on
+    sys.path — i.e. this code was reached via `pip install <sdist>` into a
+    venv (packaging/linux/release-template/install.sh), not a dev checkout
+    (backend/ made importable via sys.path.insert(..., "src"), which never
+    runs `pip install .` and so never registers a distribution)."""
+    try:
+        importlib.metadata.distribution("digib00age")
+        return True
+    except importlib.metadata.PackageNotFoundError:
+        return False
+
+
+_IS_PIP_INSTALLED = (
+    platform.system() == "Linux"
+    and not getattr(sys, "frozen", False)
+    and _is_pip_installed_distribution()
+)
+
+# Both a packaged .deb install (/opt, root-owned) and a pip sdist venv
+# install (see install.sh) need config/db/thumbnails/logs redirected off the
+# install location itself: /opt because it's root-owned, the pip case
+# because install.sh's own uninstall.sh does `rm -rf` on the venv's parent
+# directory — colocating the user's library data there would delete it on
+# uninstall. install.sh's own XDG-collision guard already assumes exactly
+# this reuse.
+_USE_XDG_PATHS = _IS_FROZEN_LINUX or _IS_PIP_INSTALLED
+
+
+def resolve_frontend_dir() -> Path:
+    """Root of frontend/'s static assets — used by main.py (static file
+    serving) and tray_app.py (FAVICON_PATH). A pip install has frontend/
+    installed as its own sibling package in site-packages rather than a
+    directory sitting next to backend/ the way every other layout has it,
+    so it needs importlib.resources instead of a relative join."""
+    if _IS_PIP_INSTALLED:
+        import importlib.resources
+        return Path(str(importlib.resources.files("frontend")))
+    return PROJECT_ROOT / "frontend"
 
 
 def _xdg_data_dir() -> Path:
@@ -83,7 +125,7 @@ _configure_unrar_tool()
 
 
 def _config_path() -> Path:
-    return _xdg_config_path() if _IS_FROZEN_LINUX else REPO_ROOT / "config.json"
+    return _xdg_config_path() if _USE_XDG_PATHS else REPO_ROOT / "config.json"
 
 
 # The bare-minimum keys config.json ships with before any library is set up
@@ -103,7 +145,7 @@ _DEFAULT_CONFIG = {
 def get_config() -> dict:
     """Load and return config.json. Cached after first call."""
     config_path = _config_path()
-    if _IS_FROZEN_LINUX and not config_path.exists():
+    if _USE_XDG_PATHS and not config_path.exists():
         # First launch of a packaged .deb install — nothing ships a
         # config.json at the XDG path yet, so seed it with the same bare
         # template dev/Windows already start from.
@@ -144,7 +186,7 @@ def _resolve(path_str: str) -> Path:
     p = Path(path_str)
     if p.is_absolute():
         return p
-    base = _xdg_data_dir() if _IS_FROZEN_LINUX else PROJECT_ROOT
+    base = _xdg_data_dir() if _USE_XDG_PATHS else PROJECT_ROOT
     return base / p
 
 

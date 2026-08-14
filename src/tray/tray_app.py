@@ -45,6 +45,7 @@ import urllib.request
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import BytesIO
+from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
 IS_WINDOWS = sys.platform == "win32"
@@ -102,22 +103,39 @@ if getattr(sys, "frozen", False):
         PROJECT_ROOT = sys._MEIPASS
     REPO_ROOT = PROJECT_ROOT
 else:
-    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # src/
-    sys.path.insert(0, PROJECT_ROOT)
-    # start.bat/start_server.py live at the true repo root, one level above src/
-    # (tray_app.py itself is launched from there, but backend/frontend moved
-    # into src/ so PROJECT_ROOT above no longer is the repo root).
-    REPO_ROOT = os.path.dirname(PROJECT_ROOT)
+    try:
+        import backend.config  # noqa: F401
+        # Succeeds with no sys.path change only when backend/ is already an
+        # installed sibling package on sys.path — i.e. this is a
+        # pip-installed digib00age-tray console script
+        # (packaging/linux/release-template/install.sh) running inside its
+        # own venv. A dev checkout run as a raw script (`python3
+        # src/tray/tray_app.py`) has never had backend/ importable at this
+        # point (Python only puts this script's own directory, src/tray/,
+        # on sys.path automatically) — see the except below, unchanged from
+        # every previous dev/unfrozen run.
+        PROJECT_ROOT = REPO_ROOT = os.path.dirname(os.path.dirname(sys.executable))  # the venv dir
+    except ImportError:
+        PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # src/
+        sys.path.insert(0, PROJECT_ROOT)
+        # start.bat/start_server.py live at the true repo root, one level above src/
+        # (tray_app.py itself is launched from there, but backend/frontend moved
+        # into src/ so PROJECT_ROOT above no longer is the repo root).
+        REPO_ROOT = os.path.dirname(PROJECT_ROOT)
 
-from backend.config import READER_PORT  # noqa: E402
+from backend.config import READER_PORT, _IS_PIP_INSTALLED, resolve_frontend_dir  # noqa: E402
 
-if getattr(sys, "frozen", False) and not IS_WINDOWS:
+if (getattr(sys, "frozen", False) and not IS_WINDOWS) or _IS_PIP_INSTALLED:
     # A .deb install lands in /opt, which isn't user-writable — writing
     # tray.log/reader_stdout.log next to the binary (the dev/Windows-per-user
     # default below) crashed the app outright on first real install/launch
     # test (unguarded open() in start_reader() -> PermissionError). Reuse the
     # same XDG data dir config.py already redirects db/thumbnails to when
-    # frozen on Linux, so logs land somewhere actually writable.
+    # frozen on Linux, so logs land somewhere actually writable. A pip
+    # sdist venv install (install.sh) isn't a writability problem the way
+    # /opt is, but it gets the same treatment for consistency — everything
+    # user-generated lands in one place regardless of how the app got onto
+    # disk, matching install.sh's own uninstall-safety guard.
     from backend.config import _xdg_data_dir
     _LOG_DIR = str(_xdg_data_dir())
     os.makedirs(_LOG_DIR, exist_ok=True)
@@ -623,7 +641,7 @@ def open_app_window(url, issue_id=None):
 # previously carved out an exception (SPEC.md Section 1's 2026-07-07 scope
 # note) keeping the name as "ComicVault" while only the glyph changed; that
 # exception is superseded now that the rebrand covers all three surfaces.
-FAVICON_PATH = os.path.join(PROJECT_ROOT, "frontend", "images", "favicon.png")
+FAVICON_PATH = str(resolve_frontend_dir() / "images" / "favicon.png")
 _base_icon_cache = None
 
 
@@ -649,6 +667,14 @@ def start_reader():
     if getattr(sys, "frozen", False):
         command = [_frozen_server_executable_path()]
         cwd = os.path.dirname(sys.executable)
+    elif _IS_PIP_INSTALLED:
+        # sys.executable is the venv's own python; the installed
+        # digib00age-server console script (pyproject.toml
+        # [project.scripts]) is its sibling in venv/bin/ — there's no
+        # start_server.py file on disk to shell out to the way the dev
+        # checkout below does.
+        command = [str(Path(sys.executable).parent / "digib00age-server")]
+        cwd = REPO_ROOT
     else:
         command = [sys.executable, "start_server.py"]
         cwd = REPO_ROOT
@@ -847,10 +873,16 @@ def _autostart_desktop_entry_contents():
     """.desktop file content for the Linux ~/.config/autostart entry (the
     freedesktop.org Desktop Entry spec), mirroring _autostart_target_path()'s
     frozen-vs-dev distinction: the frozen server binary's sibling frozen tray
-    exe when packaged (see DECISIONS.md "Linux .deb release"), or `python3
-    tray_app.py` for the normal dev/unfrozen path."""
+    exe when packaged (see DECISIONS.md "Linux .deb release"), the installed
+    digib00age-tray console script for a pip sdist venv install (see
+    install.sh), or `python3 tray_app.py` for the normal dev/unfrozen path."""
     if getattr(sys, "frozen", False):
         exec_line = sys.executable
+    elif _IS_PIP_INSTALLED:
+        # sys.executable here is the venv's own python; the installed
+        # digib00age-tray console script is its sibling in venv/bin/ —
+        # there's no tray/tray_app.py file on disk to shell out to.
+        exec_line = str(Path(sys.executable).parent / "digib00age-tray")
     else:
         script_path = os.path.join(PROJECT_ROOT, "tray", "tray_app.py")
         exec_line = f'{sys.executable} "{script_path}"'

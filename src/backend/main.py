@@ -42,7 +42,7 @@ if str(PROJECT_ROOT) not in sys.path:
 # duplicating a plain "repo root / config.json" lookup here, which broke
 # under a frozen Linux install — that repo root is the /opt install dir,
 # which isn't writable and never has a config.json to begin with.
-from backend.config import get_config  # noqa: E402
+from backend.config import get_config, resolve_frontend_dir  # noqa: E402
 
 config = get_config()
 
@@ -155,7 +155,7 @@ app.include_router(library_move.router,      prefix="/api/admin", dependencies=_
 # ---------------------------------------------------------------------------
 # Serve frontend static files
 # ---------------------------------------------------------------------------
-FRONTEND_DIR = PROJECT_ROOT / "frontend"
+FRONTEND_DIR = resolve_frontend_dir()
 if FRONTEND_DIR.exists():
     # BUG-032: browsers apply heuristic freshness caching to responses with no
     # explicit Cache-Control, and can silently reuse a stale cached page/asset

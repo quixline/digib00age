@@ -1,0 +1,5 @@
+recursive-include src/backend/editor *.json
+recursive-include src/backend/bin *
+recursive-include src/frontend *
+global-exclude __pycache__
+global-exclude *.py[cod]
