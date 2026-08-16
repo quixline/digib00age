@@ -35,11 +35,11 @@ function initAdminBackLink() {
 //
 const ADMIN_CATEGORIES = [
   { id: 'library-mgmt', label: 'Library Management', subItems: [
+    { id: 'library-folders', label: 'Library Folders' },
     { id: 'auto-scan', label: 'Auto Scan Settings' },
     { id: 'backup-schedule', label: 'DB Backup Schedule' },
     { id: 'restore-db', label: 'Restore DB' },
     { id: 'access-logs', label: 'Access Logs' },
-    { id: 'library-folders', label: 'Library Folders' },
   ] },
   { id: 'library-appearance', label: 'Library Appearance', subItems: [
     { id: 'home-strips', label: 'Home Page Strips' },

@@ -1285,15 +1285,17 @@ async function resolveMultiXml(keepFilename) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  SEARCH GOODREADS — plain external link, prefilled with the Series field
+//  SEARCH GOODREADS — plain external link, prefilled with Series and Writer
 // ══════════════════════════════════════════════════════════════════════════════
 
 function wireGoodreadsLink() {
   const link = document.getElementById('fe-search-goodreads-link');
   link.addEventListener('click', (event) => {
     const series = document.getElementById('fe-series').value.trim();
-    event.currentTarget.href = series
-      ? `https://www.goodreads.com/search?q=${encodeURIComponent(series)}`
+    const writer = document.getElementById('fe-writer').value.trim();
+    const q = [series, writer].filter(Boolean).join(', ');
+    event.currentTarget.href = q
+      ? `https://www.goodreads.com/search?q=${encodeURIComponent(q)}`
       : 'https://www.goodreads.com/search?';
   });
 }
