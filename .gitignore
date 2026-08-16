@@ -1,7 +1,11 @@
-# Local working space — docs, caches, logs, scratchpad, /graphify output,
+# Local working space — docs, caches, scratchpad, /graphify output,
 # everything that isn't meant to go public. One blanket rule instead of the
 # pile of individual entries this used to be (single-repo restructure).
 dev/
+
+# Processing/scan tool logs — lives at repo root (not dev/) so a dev checkout
+# mirrors the installed layout (<install-dir>/logs), just gitignored either way.
+logs/
 
 # Config (machine-specific, contains real library path + secrets).
 # config.json itself is the tracked bare/minimal template — only the backup

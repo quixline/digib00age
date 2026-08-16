@@ -688,9 +688,12 @@ async function initLogsSection() {
   const d = await apiFetch(`/admin/logs/folder-path`);
   document.getElementById('logsFolderPathInput').value = d.path;
 
-  document.getElementById('copyLogsPathBtn').addEventListener('click', async () => {
-    await navigator.clipboard.writeText(d.path);
-    showToast('Path copied');
+  document.getElementById('openLogsFolderBtn').addEventListener('click', async () => {
+    try {
+      await apiFetch(`/admin/logs/open-folder`, { method: 'POST' });
+    } catch (e) {
+      showToast('Failed to open folder: ' + (e.body?.detail?.error || e.message), true);
+    }
   });
 
   document.getElementById('saveLogSizeLimitBtn').addEventListener('click', () => {

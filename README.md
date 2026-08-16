@@ -35,8 +35,10 @@ src/            Everything the app needs to run — backend, frontend, flutter_a
 packaging/      Source for building distributable installers (PyInstaller specs,
                 Debian package files, app-menu/icon assets). Not the installers
                 themselves — those are build output, not source.
-dev/            Local working space (docs, ct_cache, logs) — gitignored, not
-                part of this repo's public history.
+dev/            Local working space (docs, ct_cache) — gitignored, not part
+                of this repo's public history.
+logs/           Processing/scan tool logs — gitignored, mirrors the installed
+                layout (<install-dir>/logs).
 config.json     Tracked, bare template — no secrets. Real values (API key,
                 session secret, admin password, real library path) live in
                 config.json.bak, which stays gitignored; rename it in locally

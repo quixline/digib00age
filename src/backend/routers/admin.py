@@ -6,13 +6,16 @@ POST /api/scan/file?path=    Rescan single file (called by Flask editor)
 GET  /api/scan/status        Live scan progress for admin UI
 POST /api/admin/backup       Copy digib00age.db to dated backup file
 POST /api/admin/restore-database  Restore digib00age.db from a chosen backup file
+POST /api/admin/logs/open-folder  Open the logs folder in the OS file explorer
 """
 
 from __future__ import annotations
 
 import json
 import os
+import platform
 import shutil
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -310,11 +313,31 @@ def _schedule_delayed_exit() -> None:
 # GET /api/admin/logs/{log_name}        Log file contents
 # POST /api/admin/logs/{log_name}/mark-viewed
 # GET /api/admin/logs/folder-path       Logs directory path
+# POST /api/admin/logs/open-folder      Open the logs folder in the OS file explorer
 # ---------------------------------------------------------------------------
 
 @router.get("/admin/logs/folder-path")
 def get_logs_folder_path():
     return {"path": str(scan_logs.LOGS_DIR)}
+
+
+@router.post("/admin/logs/open-folder")
+def open_logs_folder(request: Request):
+    # Local-only, same boundary as restart/restore — opens a window on the
+    # server machine itself, so it's only meaningful for someone sitting at it.
+    if not is_local_request(request):
+        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
+
+    scan_logs.LOGS_DIR.mkdir(parents=True, exist_ok=True)
+    path = str(scan_logs.LOGS_DIR)
+    system = platform.system()
+    if system == "Windows":
+        os.startfile(path)
+    elif system == "Linux":
+        subprocess.Popen(["xdg-open", path])
+    else:
+        raise HTTPException(status_code=501, detail={"error": "unsupported_platform"})
+    return {"message": "Opened"}
 
 
 @router.get("/admin/logs/{log_name}")

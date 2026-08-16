@@ -13,7 +13,7 @@ from pathlib import Path
 
 from backend.config import REPO_ROOT, get_config
 
-LOGS_DIR = REPO_ROOT / "dev" / "logs"
+LOGS_DIR = REPO_ROOT / "logs"
 
 _FILENAMES = {
     "last_scan": "last_scan_log.md",
