@@ -594,7 +594,7 @@ let pfPollTimer = null;
 
 const PF_STAGE_LABELS = {
   convert_archives: 'Convert Archives',
-  ct_autotag: 'CT Auto-Tag',
+  ct_autotag: 'ComicTagger Auto-Tag',
   convert_images: 'Convert Images',
 };
 
@@ -710,7 +710,7 @@ async function pollPfStatus() {
       const noMatch = results.filter(r => r.confidence === 'no_match').length;
       const skippedLow = results.filter(r => r.confidence === 'low_confidence' && !r.tags_written).length;
       const failed = results.filter(r => r.status === 'failed').length;
-      lines.push(`CT Auto-Tag: ${tagged} tagged, ${noMatch} no match, ${skippedLow} low confidence skipped, ${failed} failed (of ${results.length})`);
+      lines.push(`ComicTagger Auto-Tag: ${tagged} tagged, ${noMatch} no match, ${skippedLow} low confidence skipped, ${failed} failed (of ${results.length})`);
       for (const r of results.filter(r => r.status === 'failed')) {
         lines.push(`  ${r.filename}: ${r.error}`);
       }

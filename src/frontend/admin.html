@@ -298,8 +298,10 @@
       <div class="admin-content-block" data-category="library-appearance" data-subitem="libraries" hidden>
         <h3 class="admin-content-heading">Add/Remove Libraries</h3>
         <p class="admin-card-hint">
-          Folder-scoped library tabs shown in the home page nav. Deleting only
-          removes the tab definition; comic files are never touched.
+          Add custom libraries based on folder contents or properties within
+          the file's XML. Links appear in the navigation for viewing content.
+          Deleting a custom library only removes it from the app — the files
+          themselves are never affected.
         </p>
         <div class="admin-card">
           <div class="folder-list" id="ctTabList"></div>
@@ -309,7 +311,7 @@
               <input type="text" class="admin-input" id="ctPathInput" placeholder="Folder path" />
               <button type="button" class="btn-admin-action" id="ctBrowseBtn">Browse…</button>
             </div>
-            <div class="ct-viewmode-row">
+            <div class="ct-viewmode-row ct-xml-row">
               <label class="admin-field-label" for="ctViewModeSelect">View</label>
               <select class="admin-select" id="ctViewModeSelect" aria-label="View mode">
                 <option value="flat">Flat</option>
@@ -317,21 +319,22 @@
               </select>
               <button type="button" class="btn-primary" id="ctAddBtn">Add Library</button>
             </div>
-            <div class="ct-viewmode-row">
+            <div class="ct-section-divider"></div>
+            <div class="ct-viewmode-row ct-xml-row">
               <label class="admin-field-label" for="ctGenreSelect">Add Genre Library</label>
               <select class="admin-select" id="ctGenreSelect">
                 <option value="">Genre…</option>
               </select>
               <button type="button" class="btn-admin-action" id="ctAddGenreBtn">Add Genre Library</button>
             </div>
-            <div class="ct-viewmode-row">
+            <div class="ct-viewmode-row ct-xml-row">
               <label class="admin-field-label" for="ctWriterSelect">Add Writer Library</label>
               <select class="admin-select" id="ctWriterSelect">
                 <option value="">Writer…</option>
               </select>
               <button type="button" class="btn-admin-action" id="ctAddWriterBtn">Add Writer Library</button>
             </div>
-            <div class="ct-viewmode-row">
+            <div class="ct-viewmode-row ct-xml-row">
               <label class="admin-field-label" for="ctPublisherSelect">Add Publisher Library</label>
               <select class="admin-select" id="ctPublisherSelect">
                 <option value="">Publisher…</option>
@@ -352,11 +355,11 @@
         <div class="admin-card">
           <div class="pagination-setting-row">
             <select class="admin-select" id="themeSelect" aria-label="Theme">
-              <option value="auto">Match Windows</option>
+              <option value="auto">Match OS</option>
               <option value="light">Light</option>
               <option value="dark">Dark</option>
             </select>
-            <span class="admin-hint">"Match Windows" follows your system's dark/light setting.</span>
+            <span class="admin-hint">"Match OS" follows your system's dark/light setting.</span>
           </div>
         </div>
       </div>
@@ -725,7 +728,7 @@
         <p class="admin-card-hint">
           Matches CBZ/CBR files in a folder against ComicVine and writes the
           matched metadata into each archive's ComicInfo.xml — same matching
-          engine Auto Processing's CT Auto-Tag stage uses (§11.4), run
+          engine Auto Processing's ComicTagger Auto-Tag stage uses, run
           manually against any folder. These settings are shared with Auto
           Processing, not duplicated — saved here, read there too.
         </p>
@@ -827,13 +830,13 @@
       <div class="admin-content-block" data-category="processing-tools" data-subitem="auto-processing" hidden>
         <h3 class="admin-content-heading">Auto Processing</h3>
         <p class="admin-card-hint">
-          Runs Convert Archives, then CT Auto-Tag, then Convert Images (fixed order)
-          against a single folder, on a schedule or on demand. File Rename is not
-          part of this pipeline — its live-preview review is the only thing that
-          safely catches a mis-parsed filename, and unattended automation removes
-          that check. CT Auto-Tag's detailed settings (match threshold, save on
-          low confidence, ComicVine API key) live in XML Tagging — shared config,
-          not duplicated.
+          Runs Convert Archives, then ComicTagger Auto-Tag, then Convert Images
+          (fixed order) against a single folder, on a schedule or on demand. File
+          Rename is not part of this pipeline — its live-preview review is the only
+          thing that safely catches a mis-parsed filename, and unattended
+          automation removes that check. ComicTagger Auto-Tag's detailed settings
+          (match threshold, save on low confidence, ComicVine API key) live in
+          XML Tagging — shared config, not duplicated.
         </p>
         <div class="admin-card">
           <div class="admin-field-row">
@@ -855,7 +858,7 @@
           </div>
 
           <div class="admin-field-row">
-            <label class="admin-field-label"><input type="checkbox" id="pfCtAutotagEnabled"> CT Auto-Tag</label>
+            <label class="admin-field-label"><input type="checkbox" id="pfCtAutotagEnabled"> ComicTagger Auto-Tag</label>
             <span class="admin-hint">Detailed settings in XML Tagging</span>
           </div>
 
@@ -892,7 +895,7 @@
           <p class="admin-card-hint" id="pfNextRunHint"></p>
 
           <div class="pt-toolbar">
-            <button type="button" class="btn-primary" id="pfRunNowBtn" data-tooltip="Run enabled steps now: Convert Archives → CT Auto-Tag → Convert Images">Run Now</button>
+            <button type="button" class="btn-primary" id="pfRunNowBtn" data-tooltip="Run enabled steps now: Convert Archives → ComicTagger Auto-Tag → Convert Images">Run Now</button>
           </div>
           <div id="pfProgressWrap" hidden>
             <p class="admin-card-hint" id="pfProgressLabel"></p>

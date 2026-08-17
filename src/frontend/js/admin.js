@@ -869,7 +869,7 @@ function renderCustomTabs() {
   list.innerHTML = '';
 
   if (!customTabs.length) {
-    list.innerHTML = '<p class="admin-empty-hint">No custom tabs yet.</p>';
+    list.innerHTML = '<p class="admin-empty-hint">No custom libraries yet.</p>';
   } else {
     for (const tab of customTabs) {
       list.appendChild(makeCustomTabRow(tab));

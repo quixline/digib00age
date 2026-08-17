@@ -625,6 +625,14 @@ select.filter-select:focus,
   color: var(--accent);
 }
 
+/* Active grouping — full-contrast text (not the blue accent other filters
+   use) so an active group-by reads as "items are grouped", not "a filter
+   is applied". Comes after .filter-select.active to win at equal
+   specificity (both classes live on the same <select>). */
+.group-by-select.active {
+  color: var(--text);
+}
+
 .filter-select option {
   background: var(--surface-2);
 }
@@ -3538,6 +3546,12 @@ select.filter-select:focus,
   flex-shrink: 0;
 }
 
+.ct-section-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
 @media (max-width: 560px) {
   .admin-folders-row {
     flex-direction: column;
@@ -3767,6 +3781,10 @@ select.filter-select:focus,
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.ct-xml-row button {
+  margin-left: auto;
 }
 
 .ct-add-actions {

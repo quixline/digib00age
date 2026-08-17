@@ -2110,6 +2110,7 @@ function bindFilterEvents() {
   // Group by
   document.getElementById('groupBySelect').addEventListener('change', e => {
     activeGroupBy = e.target.value;
+    e.target.classList.toggle('active', !!activeGroupBy);
     renderBrowse();
   });
 
