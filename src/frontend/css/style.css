@@ -2227,6 +2227,11 @@ select.filter-select:focus,
   background: color-mix(in srgb, var(--danger) 85%, black);
 }
 
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 /* ── Issue list ──────────────────────────────────────────────────────────── */
 /* 2-column card grid, matching the List View redesign's .cover-grid.list-view
    (style.css ~769) — each issue gets its own formatted card instead of a

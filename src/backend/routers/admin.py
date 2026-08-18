@@ -2,6 +2,7 @@
 digib00age — Admin Router
 GET  /api/admin/stats        Library statistics
 POST /api/scan               Trigger full background rescan
+POST /api/scan/cancel        Request the running scan to stop at its next safe point
 POST /api/scan/file?path=    Rescan single file (called by Flask editor)
 GET  /api/scan/status        Live scan progress for admin UI
 POST /api/admin/backup       Copy digib00age.db to dated backup file
@@ -142,6 +143,8 @@ def scan_status():
         "current_file": "",
         "log": sp.log[-200:],
         "error": sp.error,
+        "cancel_requested": sp.cancel_requested,
+        "cancelled": sp.cancelled,
     }
 
 
@@ -176,6 +179,26 @@ def _run_scan_background():
         logging.getLogger(__name__).error("Background scan error: %s", exc)
     finally:
         db.close()
+
+
+# ---------------------------------------------------------------------------
+# POST /api/scan/cancel — request the running scan to stop
+# ---------------------------------------------------------------------------
+
+@router.post("/scan/cancel")
+def cancel_scan():
+    """
+    Request the in-progress scan to stop. It won't stop instantly — the
+    scan loop only checks this flag between files, so whatever file is
+    currently being read/parsed finishes first. Safe no-op if no scan is running.
+    """
+    from backend.scanner import scan_progress as sp
+    if not sp.running:
+        return {"message": "No scan in progress", "running": False}
+    if not sp.cancel_requested:
+        sp.cancel_requested = True
+        sp.add_log("Stop requested by user — finishing current file, then stopping")
+    return {"message": "Stop requested", "running": True, "cancel_requested": True}
 
 
 # ---------------------------------------------------------------------------
