@@ -2079,7 +2079,11 @@ select.filter-select:focus,
 .series-hero-wrap {
   position: relative;
   margin: 18px 0 24px;
-  min-height: 180px;
+  /* 150px (was 180px) — the old value matched the 4-stacked-line header;
+     pairing title+genre-tags and pub/year+count onto two rows (2026-08-19)
+     shrank the hero content, and min-height didn't follow, leaving ~30px of
+     empty backdrop below the text before the card grid. */
+  min-height: 150px;
 }
 
 /* Bleeds past .container's 30px side padding (2026-07-20 — was clipped to
