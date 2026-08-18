@@ -2139,24 +2139,42 @@ select.filter-select:focus,
 }
 
 /* Series page text elements (used inside .series-hero) */
+
+/* Title + genre tags share a row; publisher/year + issue count share the
+   next row (2026-08-19) — each row's own margin replaces the individual
+   elements' margins below. */
+.series-title-row,
+.series-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.series-title-row {
+  margin-bottom: 6px;
+}
+
+.series-meta-row {
+  margin-bottom: 12px;
+}
+
 .series-name {
   font-size: clamp(18px, 2.5vw, 26px);
   font-weight: 800;
   letter-spacing: -0.02em;
-  margin-bottom: 6px;
   line-height: 1.2;
 }
 
 .series-pub {
   font-size: 14px;
   color: var(--text-2);
-  margin-bottom: 12px;
 }
 
 .series-stats {
   font-size: 13px;
   color: var(--text-2);
-  margin-top: 10px;
 }
 
 .genre-tags {
@@ -2164,6 +2182,12 @@ select.filter-select:focus,
   gap: 6px;
   flex-wrap: wrap;
   margin-bottom: 14px;
+}
+
+/* Nested in .series-title-row (Series Detail page) — the row's own margin
+   handles spacing before the next row, not this block's. */
+.series-title-row .genre-tags {
+  margin-bottom: 0;
 }
 
 .genre-tag {

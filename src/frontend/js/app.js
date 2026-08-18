@@ -2457,15 +2457,11 @@ function buildSeriesHeader(data) {
   topRow.appendChild(markBtn);
   hero.appendChild(topRow);
 
-  // Title
-  hero.appendChild(el('h1', 'series-name', data.series));
-
-  // Publisher · Year
-  const pubParts = [data.publisher, data.year].filter(Boolean);
-  if (pubParts.length) hero.appendChild(el('p', 'series-pub', pubParts.join(' · ')));
-
-  // Genre tags — each links to a filtered list of every issue with that
-  // genre (same fieldview plumbing as the Issue detail page's genre tags).
+  // Title row — title + genre tags share a row (2026-08-19 layout tweak).
+  // Genre tags each link to a filtered list of every issue with that genre
+  // (same fieldview plumbing as the Issue detail page's genre tags).
+  const titleRow = el('div', 'series-title-row');
+  titleRow.appendChild(el('h1', 'series-name', data.series));
   if (data.genres && data.genres.length) {
     const tags = el('div', 'genre-tags');
     for (const g of data.genres) {
@@ -2473,13 +2469,18 @@ function buildSeriesHeader(data) {
       link.href = `/?surface=fieldview&field=genre&value=${encodeURIComponent(g)}`;
       tags.appendChild(link);
     }
-    hero.appendChild(tags);
+    titleRow.appendChild(tags);
   }
+  hero.appendChild(titleRow);
 
-  // Issue count
-  hero.appendChild(el('p', 'series-stats',
+  // Meta row — publisher/year + issue count share a row (2026-08-19 layout tweak).
+  const pubParts = [data.publisher, data.year].filter(Boolean);
+  const metaRow = el('div', 'series-meta-row');
+  if (pubParts.length) metaRow.appendChild(el('p', 'series-pub', pubParts.join(' · ')));
+  metaRow.appendChild(el('p', 'series-stats',
     `${data.issue_count} issue${data.issue_count !== 1 ? 's' : ''}`
   ));
+  hero.appendChild(metaRow);
 
   // BUG-010: scoped (credit/field-filtered or search-matched) view banner,
   // with a way back to the full series.
