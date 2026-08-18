@@ -2087,7 +2087,11 @@ select.filter-select:focus,
 .series-hero-wrap {
   position: relative;
   margin: 18px 0 24px;
-  min-height: 180px;
+  /* 150px (was 180px) — the old value matched the 4-stacked-line header;
+     pairing title+genre-tags and pub/year+count onto two rows (2026-08-19)
+     shrank the hero content, and min-height didn't follow, leaving ~30px of
+     empty backdrop below the text before the card grid. */
+  min-height: 150px;
 }
 
 /* Bleeds past .container's 30px side padding (2026-07-20 — was clipped to
@@ -2113,8 +2117,14 @@ select.filter-select:focus,
      text cut off mid-glyph, sometimes hiding the top title line entirely) —
      10% (2026-07-22) leaves more headroom above the logo band most covers
      use. Still a single fixed anchor shared by every cover in the library,
-     so it's a best-effort default, not a per-cover guarantee. */
-  object-position: center 10%;
+     so it's a best-effort default, not a per-cover guarantee.
+     3% (2026-08-19) — shrinking .series-hero-wrap's min-height to 150px
+     (same session) made the box short enough that 10% was cropping into the
+     logo band itself rather than just leaving headroom above it; 3% shows
+     the top of the cover (and its logo) again. This rule is series-page-
+     only (`.issue-backdrop-img` below keeps its own separate 10%) since
+     only the series hero's box got shorter. */
+  object-position: center 3%;
   opacity: var(--backdrop-opacity);
   filter: blur(var(--blur-backdrop));
   display: block;
@@ -2147,24 +2157,42 @@ select.filter-select:focus,
 }
 
 /* Series page text elements (used inside .series-hero) */
+
+/* Title + genre tags share a row; publisher/year + issue count share the
+   next row (2026-08-19) — each row's own margin replaces the individual
+   elements' margins below. */
+.series-title-row,
+.series-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.series-title-row {
+  margin-bottom: 6px;
+}
+
+.series-meta-row {
+  margin-bottom: 12px;
+}
+
 .series-name {
   font-size: clamp(18px, 2.5vw, 26px);
   font-weight: 800;
   letter-spacing: -0.02em;
-  margin-bottom: 6px;
   line-height: 1.2;
 }
 
 .series-pub {
   font-size: 14px;
   color: var(--text-2);
-  margin-bottom: 12px;
 }
 
 .series-stats {
   font-size: 13px;
   color: var(--text-2);
-  margin-top: 10px;
 }
 
 .genre-tags {
@@ -2172,6 +2200,12 @@ select.filter-select:focus,
   gap: 6px;
   flex-wrap: wrap;
   margin-bottom: 14px;
+}
+
+/* Nested in .series-title-row (Series Detail page) — the row's own margin
+   handles spacing before the next row, not this block's. */
+.series-title-row .genre-tags {
+  margin-bottom: 0;
 }
 
 .genre-tag {
@@ -2233,6 +2267,11 @@ select.filter-select:focus,
 
 .btn-danger:hover {
   background: color-mix(in srgb, var(--danger) 85%, black);
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 /* ── Issue list ──────────────────────────────────────────────────────────── */
@@ -2525,7 +2564,10 @@ select.filter-select:focus,
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* See .series-backdrop-img's comment — same fix, same reason. */
+  /* Originally matched .series-backdrop-img's 20%→10% crop-position fix
+     (2026-07-22, see that rule's comment) — kept at 10% here since
+     .issue-backdrop's box height wasn't touched by the 2026-08-19 series-
+     page change that moved .series-backdrop-img to 3%. */
   object-position: center 10%;
   opacity: var(--backdrop-opacity);
   filter: blur(var(--blur-backdrop));

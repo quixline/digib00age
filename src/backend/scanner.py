@@ -53,6 +53,10 @@ class ScanProgress:
     log: list[str] = field(default_factory=list)
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
+    # Cooperative stop: set by /api/scan/cancel, checked between files in the
+    # main scan loop (not mid-file) — see scan_library()'s per-file loop.
+    cancel_requested: bool = False
+    cancelled: bool = False
 
     def add_log(self, msg: str):
         logger.info(msg)
@@ -846,6 +850,12 @@ def scan_library(db: Session):
     pending: list[tuple[Future, Issue]] = []
     with ThreadPoolExecutor(max_workers=THUMBNAIL_WORKERS) as thumbnail_pool:
         for file_path in sorted(disk_paths):
+            # Safe stopping point: checked between files, never mid-file —
+            # scan_single_file() below always runs to completion once started.
+            if scan_progress.cancel_requested:
+                scan_progress.cancelled = True
+                break
+
             if file_path in renamed_paths:
                 scan_progress.processed += 1
                 continue
@@ -912,8 +922,12 @@ def scan_library(db: Session):
     db.commit()
 
     scan_progress.add_log(
-        f"Scan complete — "
-        f"new={scan_progress.new}, "
+        (
+            f"Scan stopped by user after {scan_progress.processed}/{scan_progress.total} files — "
+            if scan_progress.cancelled
+            else "Scan complete — "
+        )
+        + f"new={scan_progress.new}, "
         f"updated={scan_progress.updated}, "
         f"skipped={scan_progress.skipped}, "
         f"moved={scan_progress.moved}, "

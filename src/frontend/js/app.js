@@ -816,6 +816,24 @@ let pageSize    = parseInt(localStorage.getItem('cv_page_size') || '50', 10);
 let seriesCurrentPage = 1;
 let seriesPageData    = null; // full /series/{id} response, cached for client-side paging
 
+// Series Detail page's own menu-bar state — parallel to the active* filter
+// state above, not shared with it: the Series page filters/sorts/groups only
+// this one series' own issue list (a different data shape from /library's
+// series-aggregate objects), so it gets its own state rather than reusing
+// the browse variables. See MENU_BAR_SPEC.md's Series Detail section.
+let seriesActiveGenre         = '';
+let seriesActiveFormat        = '';
+let seriesActiveDecade        = '';
+let seriesActiveYear          = '';
+let seriesActiveRating        = '';
+let seriesActiveBW            = '';   // '' | yes | no
+let seriesActiveStars         = '';   // '' | 1-5
+let seriesActiveFavorites     = false;
+let seriesActiveFlaggedReview = false;
+let seriesActiveSort          = 'number'; // number | alpha | newest | recent | pages
+let seriesActiveSortDir       = 'asc';
+let seriesActiveGroupBy       = '';   // '' | year | genre | publisher | writer | format
+
 // Card size control (library view) — percent labels are presets, not literal
 // scale factors; 50% matches the original fixed --card-min (160px) so the
 // default look is unchanged until a user picks a different size. Options
@@ -2389,6 +2407,8 @@ async function initSeries() {
     const issueWrap = el('div');
     issueWrap.id = 'seriesIssueWrap';
     content.appendChild(issueWrap);
+    populateSeriesFilterDropdowns(data.issues);
+    bindSeriesFilterEvents();
     renderSeriesIssuePage();
   } catch (_) {
     content.innerHTML =
@@ -2438,15 +2458,11 @@ function buildSeriesHeader(data) {
   topRow.appendChild(markBtn);
   hero.appendChild(topRow);
 
-  // Title
-  hero.appendChild(el('h1', 'series-name', data.series));
-
-  // Publisher · Year
-  const pubParts = [data.publisher, data.year].filter(Boolean);
-  if (pubParts.length) hero.appendChild(el('p', 'series-pub', pubParts.join(' · ')));
-
-  // Genre tags — each links to a filtered list of every issue with that
-  // genre (same fieldview plumbing as the Issue detail page's genre tags).
+  // Title row — title + genre tags share a row (2026-08-19 layout tweak).
+  // Genre tags each link to a filtered list of every issue with that genre
+  // (same fieldview plumbing as the Issue detail page's genre tags).
+  const titleRow = el('div', 'series-title-row');
+  titleRow.appendChild(el('h1', 'series-name', data.series));
   if (data.genres && data.genres.length) {
     const tags = el('div', 'genre-tags');
     for (const g of data.genres) {
@@ -2454,13 +2470,18 @@ function buildSeriesHeader(data) {
       link.href = `/?surface=fieldview&field=genre&value=${encodeURIComponent(g)}`;
       tags.appendChild(link);
     }
-    hero.appendChild(tags);
+    titleRow.appendChild(tags);
   }
+  hero.appendChild(titleRow);
 
-  // Issue count
-  hero.appendChild(el('p', 'series-stats',
+  // Meta row — publisher/year + issue count share a row (2026-08-19 layout tweak).
+  const pubParts = [data.publisher, data.year].filter(Boolean);
+  const metaRow = el('div', 'series-meta-row');
+  if (pubParts.length) metaRow.appendChild(el('p', 'series-pub', pubParts.join(' · ')));
+  metaRow.appendChild(el('p', 'series-stats',
     `${data.issue_count} issue${data.issue_count !== 1 ? 's' : ''}`
   ));
+  hero.appendChild(metaRow);
 
   // BUG-010: scoped (credit/field-filtered or search-matched) view banner,
   // with a way back to the full series.
@@ -2481,32 +2502,351 @@ function buildSeriesHeader(data) {
   return wrapper;
 }
 
-// ── Issue list — flat by default (Section 20.7) ──────────────────────────────
+// ── Series menu bar (MENU_BAR_SPEC.md) — filters/sorts/groups this series'
+// own issue list only. Parallel to bindFilterEvents()/getFilteredLibrary()
+// (index.html's browse menu bar), not shared with them — /series/{id}
+// returns issue-shaped objects, a different data shape from /library's
+// series-aggregate objects, and series.html has none of index.html's
+// surface-switching DOM, so a shared implementation isn't feasible. ────────
 
-function buildIssueList(data) {
-  const wrapper = el('div', 'issue-list');
-  const group   = el('div', 'arc-group');
-  for (const issue of data.issues) group.appendChild(buildIssueRow(issue));
-  wrapper.appendChild(group);
-  return wrapper;
+function bindSeriesFilterEvents() {
+  const bindSelect = (id, setter) => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.addEventListener('change', e => {
+      setter(e.target.value);
+      e.target.classList.toggle('active', !!e.target.value);
+      seriesCurrentPage = 1;
+      renderSeriesIssuePage();
+    });
+  };
+
+  bindSelect('genreFilter',  v => seriesActiveGenre  = v);
+  bindSelect('formatFilter', v => seriesActiveFormat = v);
+  bindSelect('decadeFilter', v => seriesActiveDecade = v);
+  bindSelect('yearFilter',   v => seriesActiveYear   = v);
+  bindSelect('ratingFilter', v => seriesActiveRating = v);
+  bindSelect('bwFilter',     v => seriesActiveBW     = v);
+
+  document.getElementById('filterClearAll').addEventListener('click', () => {
+    clearAllSeriesFilters();
+    seriesCurrentPage = 1;
+    renderSeriesIssuePage();
+  });
+
+  document.getElementById('sortSelect').addEventListener('change', e => {
+    seriesActiveSort = e.target.value;
+    renderSeriesIssuePage();
+  });
+  document.getElementById('sortDirBtn').addEventListener('click', () => {
+    seriesActiveSortDir = seriesActiveSortDir === 'asc' ? 'desc' : 'asc';
+    document.getElementById('sortDirBtn').innerHTML = seriesActiveSortDir === 'asc' ? '&#8593;' : '&#8595;';
+    renderSeriesIssuePage();
+  });
+
+  document.getElementById('starRatingFilter').addEventListener('change', e => {
+    seriesActiveStars = e.target.value;
+    e.target.classList.toggle('active', !!seriesActiveStars);
+    seriesCurrentPage = 1;
+    renderSeriesIssuePage();
+  });
+
+  document.getElementById('favFilterBtn').addEventListener('click', () => {
+    seriesActiveFavorites = !seriesActiveFavorites;
+    document.getElementById('favFilterBtn').classList.toggle('active', seriesActiveFavorites);
+    seriesCurrentPage = 1;
+    renderSeriesIssuePage();
+  });
+
+  document.getElementById('flagReviewFilterBtn').addEventListener('click', () => {
+    seriesActiveFlaggedReview = !seriesActiveFlaggedReview;
+    document.getElementById('flagReviewFilterBtn').classList.toggle('active', seriesActiveFlaggedReview);
+    seriesCurrentPage = 1;
+    renderSeriesIssuePage();
+  });
+
+  document.getElementById('groupBySelect').addEventListener('change', e => {
+    seriesActiveGroupBy = e.target.value;
+    renderSeriesIssuePage();
+  });
+
+  // Grid/list toggle — unlike the browse menu bar's viewToggle (which just
+  // flips a CSS class on an unchanged card set), grid vs. list here are two
+  // different renderers (cover cards vs. issue-rows), so this must trigger a
+  // full re-render rather than a class toggle.
+  const viewBtn = document.getElementById('viewToggle');
+  viewBtn.textContent = viewMode === 'list' ? '⊞' : '☰';
+  viewBtn.dataset.tooltip = viewMode === 'list' ? 'Switch to grid layout' : 'Switch to list layout';
+  viewBtn.addEventListener('click', () => {
+    viewMode = viewMode === 'grid' ? 'list' : 'grid';
+    localStorage.setItem('cv_view_mode', viewMode);
+    viewBtn.textContent = viewMode === 'list' ? '⊞' : '☰';
+    viewBtn.dataset.tooltip = viewMode === 'list' ? 'Switch to grid layout' : 'Switch to list layout';
+    renderSeriesIssuePage();
+  });
+
+  applyCardSize(cardSize);
 }
 
-// Slices seriesPageData.issues to the current page and (re)renders the
-// issue list + pagination controls, same paging behaviour as Browse
-// (renderPaginationControls) — called on load and on every page click.
+// Mirrors populateFilterDropdowns() but derives options from this series'
+// own issues (data.issues) instead of the whole library.
+function populateSeriesFilterDropdowns(issues) {
+  const addOpts = (selId, values, labelFn) => {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    for (const v of values) {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = labelFn ? labelFn(v) : v;
+      sel.appendChild(o);
+    }
+  };
+
+  const genres  = [...new Set(issues.flatMap(i => i.genres || []))].sort();
+  const years   = [...new Set(issues.map(i => i.year).filter(Boolean))].sort((a, b) => b - a);
+  const decades = [...new Set(years.map(y => Math.floor(y / 10) * 10))].sort((a, b) => b - a);
+  const formats = [...new Set(issues.map(i => i.format).filter(Boolean))].sort();
+  const ratings = [...new Set(issues.map(i => i.age_rating).filter(Boolean))].sort();
+
+  addOpts('genreFilter',  genres,  null);
+  addOpts('yearFilter',   years,   null);
+  addOpts('decadeFilter', decades, d => `${d}s`);
+  addOpts('formatFilter', formats, null);
+  addOpts('ratingFilter', ratings, null);
+}
+
+// Mirrors SORT_KEY_FNS/sortComparator, keyed on issue-level fields.
+// 'recent' has no date_added in the /series/{id} payload, so it falls
+// through to alpha — same known gap as Browse's own 'recent' key, not new.
+const SERIES_SORT_KEY_FNS = {
+  number: i => { const n = parseFloat(i.number); return Number.isNaN(n) ? Infinity : n; },
+  alpha:  i => (i.title || '').toLowerCase(),
+  newest: i => i.year || 0,
+  recent: i => (i.title || '').toLowerCase(),
+  pages:  i => i.page_count || 0,
+};
+
+function seriesSortComparator(a, b) {
+  const keyFn = SERIES_SORT_KEY_FNS[seriesActiveSort] || SERIES_SORT_KEY_FNS.number;
+  const ka = keyFn(a), kb = keyFn(b);
+  const cmp = typeof ka === 'string' ? ka.localeCompare(kb) : ka - kb;
+  return seriesActiveSortDir === 'desc' ? -cmp : cmp;
+}
+
+// Mirrors getFilteredLibrary(), but against seriesPageData.issues and
+// correcting for the issue-level field shapes (singular `format`,
+// `black_and_white` boolean, no `has_bw`/plural-array fields).
+function getFilteredSeriesIssues() {
+  let pool = (seriesPageData && seriesPageData.issues) || [];
+
+  if (seriesActiveGenre)  pool = pool.filter(i => (i.genres || []).includes(seriesActiveGenre));
+  if (seriesActiveFormat) pool = pool.filter(i => i.format === seriesActiveFormat);
+  if (seriesActiveRating) pool = pool.filter(i => i.age_rating === seriesActiveRating);
+  if (seriesActiveDecade) pool = pool.filter(i => i.year && Math.floor(i.year / 10) * 10 === parseInt(seriesActiveDecade));
+  if (seriesActiveYear)   pool = pool.filter(i => String(i.year) === String(seriesActiveYear));
+  if (seriesActiveBW === 'yes') pool = pool.filter(i => i.black_and_white);
+  if (seriesActiveBW === 'no')  pool = pool.filter(i => !i.black_and_white);
+  if (seriesActiveStars)  pool = pool.filter(i => String(i.personal_rating || '') === seriesActiveStars);
+  if (seriesActiveFavorites)     pool = pool.filter(i => !!i.favorites);
+  if (seriesActiveFlaggedReview) pool = pool.filter(i => !!i.flagged_for_review);
+
+  return [...pool].sort(seriesSortComparator);
+}
+
+function seriesHasActiveFilters() {
+  return !!(seriesActiveGenre || seriesActiveFormat || seriesActiveDecade || seriesActiveYear ||
+    seriesActiveRating || seriesActiveBW || seriesActiveStars || seriesActiveFavorites || seriesActiveFlaggedReview);
+}
+
+function clearAllSeriesFilters() {
+  seriesActiveGenre = seriesActiveFormat = seriesActiveDecade =
+    seriesActiveYear = seriesActiveRating = seriesActiveBW = seriesActiveStars = '';
+  seriesActiveFavorites     = false;
+  seriesActiveFlaggedReview = false;
+
+  ['genreFilter', 'formatFilter', 'decadeFilter', 'yearFilter', 'ratingFilter', 'bwFilter', 'starRatingFilter'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (sel) { sel.value = ''; sel.classList.remove('active'); }
+  });
+  const favBtn = document.getElementById('favFilterBtn');
+  if (favBtn) favBtn.classList.remove('active');
+  const flagBtn = document.getElementById('flagReviewFilterBtn');
+  if (flagBtn) flagBtn.classList.remove('active');
+}
+
+// Mirrors FILTER_CHIP_SELECTS/renderActiveFilterChips() — one labeled chip
+// per active dropdown filter, each with its own scoped clear.
+const SERIES_FILTER_CHIP_SELECTS = [
+  { id: 'genreFilter',      get: () => seriesActiveGenre,  clear: () => { seriesActiveGenre  = ''; } },
+  { id: 'formatFilter',     get: () => seriesActiveFormat, clear: () => { seriesActiveFormat = ''; } },
+  { id: 'decadeFilter',     get: () => seriesActiveDecade, clear: () => { seriesActiveDecade = ''; } },
+  { id: 'yearFilter',       get: () => seriesActiveYear,   clear: () => { seriesActiveYear   = ''; } },
+  { id: 'ratingFilter',     get: () => seriesActiveRating, clear: () => { seriesActiveRating = ''; } },
+  { id: 'bwFilter',         get: () => seriesActiveBW,     clear: () => { seriesActiveBW     = ''; } },
+  { id: 'starRatingFilter', get: () => seriesActiveStars,  clear: () => { seriesActiveStars  = ''; } },
+];
+
+function renderSeriesFilterChips() {
+  const container   = document.getElementById('activeFilterChips');
+  const clearAllBtn = document.getElementById('filterClearAll');
+  if (!container || !clearAllBtn) return;
+  container.innerHTML = '';
+
+  SERIES_FILTER_CHIP_SELECTS.forEach(({ id, get, clear }) => {
+    if (!get()) return;
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const labelPrefix = sel.options[0] ? sel.options[0].textContent : id;
+    const valueText    = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : sel.value;
+
+    const chip = el('span', 'filter-chip');
+    chip.appendChild(document.createTextNode(`${labelPrefix}: ${valueText}`));
+    const clearBtn = el('button', 'filter-chip-clear', '×');
+    clearBtn.type = 'button';
+    clearBtn.setAttribute('aria-label', `Clear ${labelPrefix} filter`);
+    clearBtn.addEventListener('click', () => {
+      clear();
+      sel.value = '';
+      sel.classList.remove('active');
+      seriesCurrentPage = 1;
+      renderSeriesIssuePage();
+    });
+    chip.appendChild(clearBtn);
+    container.appendChild(chip);
+  });
+
+  clearAllBtn.hidden = !seriesHasActiveFilters();
+}
+
+// Mirrors renderGrouped(), but takes the card-builder function to use
+// (buildIssueCoverCard in grid mode, buildIssueRow in list mode) since this
+// page has two different renderers instead of one.
+function renderSeriesGrouped(container, items, buildFn) {
+  const groups = new Map();
+  for (const i of items) {
+    let key = 'Unknown';
+    if (seriesActiveGroupBy === 'year')      key = String(i.year || 'Unknown');
+    if (seriesActiveGroupBy === 'publisher') key = i.publisher || 'Unknown';
+    if (seriesActiveGroupBy === 'genre')     key = (i.genres && i.genres[0]) || 'Unknown';
+    if (seriesActiveGroupBy === 'writer')    key = i.writer || 'Unknown';
+    if (seriesActiveGroupBy === 'format')    key = i.format || 'Unknown';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(i);
+  }
+
+  for (const [groupName, groupItems] of groups) {
+    const heading = el('div', 'group-heading', groupName);
+    heading.style.gridColumn = '1 / -1';
+    container.appendChild(heading);
+    for (const i of groupItems) container.appendChild(buildFn(i));
+  }
+}
+
+// ── Issue grid card (Section 20.5's grid/list toggle, applied to a single
+// series) — structurally mirrors buildCoverCard() (same CSS classes/helpers,
+// so it inherits .cover-card styling with no new CSS) but reads issue-shaped
+// fields and links straight to /issue/{id}. List mode keeps buildIssueRow()
+// below instead of this — see renderSeriesIssuePage(). ─────────────────────
+
+function issueCardState(issue) {
+  if (issue.read_status === 'read')    return 'state-read';
+  if (issue.read_status === 'reading') return 'state-part-read';
+  return 'state-unread';
+}
+
+function buildIssueCoverCard(issue) {
+  const state = issueCardState(issue);
+  const card  = el('a', `cover-card cover-card--redesign ${state}${issue.favorites ? ' is-favorite' : ''}${issue.flagged_for_review ? ' is-flagged-review' : ''}${issue.queued_for_reading ? ' is-queued-reading' : ''}`);
+  card.href = `/issue/${issue.id}`;
+  makeSelectable(card, issue.id);
+
+  const wrap = el('div', 'cover-img-wrap');
+  const img  = el('img');
+  img.src     = issue.cover_path;
+  img.alt     = issue.title || '';
+  img.loading = 'lazy';
+  img.onerror = () => { wrap.innerHTML = '<div class="cover-placeholder">📖</div>'; };
+  wrap.appendChild(img);
+  wrap.appendChild(buildSelectDot(issue.id));
+  if (issue.flagged_for_review) wrap.appendChild(buildFlagBadge());
+  if (state === 'state-read') wrap.appendChild(buildReadBadge());
+
+  if (state === 'state-part-read' || state === 'state-read') {
+    const pct   = issue.page_count > 0 ? Math.min(100, Math.round((issue.current_page / issue.page_count) * 100)) : 0;
+    const track = el('div', 'card-progress-track');
+    const fill  = el('div', 'card-progress-fill');
+    fill.style.width = `${pct}%`;
+    track.appendChild(fill);
+    wrap.appendChild(track);
+  }
+
+  const info = el('div', 'cover-info');
+  const numText = issue.number != null && issue.number !== '' ? `#${issue.number} ` : '';
+  info.appendChild(el('div', 'cover-title', `${numText}${issue.title || ''}`));
+
+  const genreRibbon = buildGenreRibbon(issue.genres);
+  const ratingRow    = issue.personal_rating > 0 ? buildRatingRow(issue.personal_rating) : null;
+
+  const yearRow = el('div', 'cover-meta-row');
+  if (issue.year) yearRow.appendChild(el('div', 'cover-year', String(issue.year)));
+  if (genreRibbon) yearRow.appendChild(genreRibbon);
+  if (yearRow.children.length) info.appendChild(yearRow);
+
+  const countRow = el('div', 'cover-meta-row cover-count-row');
+  if (issue.page_count) countRow.appendChild(el('div', 'cover-count', `${issue.page_count} pages`));
+  if (ratingRow) countRow.appendChild(ratingRow);
+  info.appendChild(countRow);
+
+  card.append(wrap, info);
+  return card;
+}
+
+// Slices getFilteredSeriesIssues() to the current page and (re)renders the
+// issue list/grid + pagination controls, same paging behaviour as Browse
+// (renderPaginationControls) — called on load and on every filter/sort/
+// group/page/view change.
 function renderSeriesIssuePage() {
   const wrap = document.getElementById('seriesIssueWrap');
   if (!wrap || !seriesPageData) return;
 
-  const issues     = seriesPageData.issues;
-  const totalPages = Math.max(1, Math.ceil(issues.length / pageSize));
+  const filtered   = getFilteredSeriesIssues();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   seriesCurrentPage = Math.min(seriesCurrentPage, totalPages);
 
-  const start     = (seriesCurrentPage - 1) * pageSize;
-  const pageItems = issues.slice(start, start + pageSize);
+  const countEl = document.getElementById('browseCount');
+  if (countEl) {
+    const total = seriesPageData.issues.length;
+    countEl.textContent = filtered.length === total
+      ? `${total.toLocaleString()} Issues`
+      : `${filtered.length.toLocaleString()} of ${total.toLocaleString()} Issues`;
+  }
+  renderSeriesFilterChips();
 
   wrap.innerHTML = '';
-  wrap.appendChild(buildIssueList({ issues: pageItems }));
+
+  if (!filtered.length) {
+    wrap.innerHTML =
+      '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
+      '<p>No matching issues in this series.</p></div>';
+    return;
+  }
+
+  const start     = (seriesCurrentPage - 1) * pageSize;
+  const pageItems = filtered.slice(start, start + pageSize);
+
+  if (viewMode === 'grid') {
+    const grid = el('div', 'cover-grid');
+    grid.id = 'coverGrid';
+    if (seriesActiveGroupBy) renderSeriesGrouped(grid, pageItems, buildIssueCoverCard);
+    else for (const issue of pageItems) grid.appendChild(buildIssueCoverCard(issue));
+    wrap.appendChild(grid);
+  } else {
+    const listWrap = el('div', 'issue-list');
+    const group    = el('div', 'arc-group');
+    if (seriesActiveGroupBy) renderSeriesGrouped(group, pageItems, buildIssueRow);
+    else for (const issue of pageItems) group.appendChild(buildIssueRow(issue));
+    listWrap.appendChild(group);
+    wrap.appendChild(listWrap);
+  }
 
   const pagEl = el('div', 'pagination');
   wrap.appendChild(pagEl);

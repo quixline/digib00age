@@ -283,7 +283,7 @@ function renderScanSection(scanState, missingCount, logStatus) {
   scanCard.className = 'stat-card scan-now-card';
   scanCard.id = 'scanNowCard';
   scanCard.innerHTML = `
-    <button class="btn-primary" id="scanNowBtn" data-tooltip="Scan the entire library for new and changed files">Scan Now</button>
+    <button class="btn-primary" id="scanNowBtn" data-mode="start" data-tooltip="Scan the entire library for new and changed files">Scan Now</button>
     <div class="scan-progress" id="scanProgress" hidden>
       <div class="scan-bar-wrap"><div class="scan-bar" id="scanBar"></div></div>
       <div class="scan-status-text" id="scanStatusText"></div>
@@ -291,10 +291,14 @@ function renderScanSection(scanState, missingCount, logStatus) {
     <div class="stat-label" style="margin-top:auto;">Scan library for new and changed files</div>
   `;
   grid.appendChild(scanCard);
-  document.getElementById('scanNowBtn').addEventListener('click', doScan);
+  document.getElementById('scanNowBtn').addEventListener('click', onScanBtnClick);
 
   if (scanState.running) {
-    showScanProgress();
+    setScanButtonMode('stop');
+    const prog = document.getElementById('scanProgress');
+    const card = document.getElementById('scanNowCard');
+    if (prog) prog.hidden = false;
+    if (card) card.classList.add('is-scanning');
     startScanPoll();
   }
 
@@ -364,20 +368,33 @@ function closeLogViewer() {
   document.getElementById('logViewerOverlay').hidden = true;
 }
 
-function showScanProgress() {
+// Scan Now button has three states, driven by data-mode:
+//   start    — idle, click begins a scan
+//   stop     — scan running, click requests a stop (styled as a danger action)
+//   stopping — stop requested, waiting for the scan to reach its next safe point
+function setScanButtonMode(mode) {
   const btn  = document.getElementById('scanNowBtn');
   const prog = document.getElementById('scanProgress');
   const card = document.getElementById('scanNowCard');
-  if (btn) { btn.disabled = true; btn.textContent = 'Scanning…'; }
-  if (prog) prog.hidden = false;
-  if (card) card.classList.add('is-scanning');
-}
-
-function resetScanButton() {
-  const btn  = document.getElementById('scanNowBtn');
-  const card = document.getElementById('scanNowCard');
-  if (btn)  { btn.disabled = false; btn.textContent = 'Scan Now'; }
-  if (card) card.classList.remove('is-scanning');
+  if (!btn) return;
+  btn.dataset.mode = mode;
+  btn.classList.toggle('btn-primary', mode !== 'stop' && mode !== 'stopping');
+  btn.classList.toggle('btn-danger', mode === 'stop' || mode === 'stopping');
+  if (mode === 'start') {
+    btn.disabled = false;
+    btn.textContent = 'Scan Now';
+    if (card) card.classList.remove('is-scanning');
+  } else if (mode === 'stop') {
+    btn.disabled = false;
+    btn.textContent = 'Stop Scan';
+    if (prog) prog.hidden = false;
+    if (card) card.classList.add('is-scanning');
+  } else if (mode === 'stopping') {
+    btn.disabled = true;
+    btn.textContent = 'Stopping…';
+    if (prog) prog.hidden = false;
+    if (card) card.classList.add('is-scanning');
+  }
 }
 
 function showNoLibraryModal() {
@@ -385,23 +402,44 @@ function showNoLibraryModal() {
     'No library setup - setup new library in Library Management > Library Folders > Scan Roots.', []);
 }
 
+function onScanBtnClick() {
+  const btn = document.getElementById('scanNowBtn');
+  if (!btn || btn.dataset.mode === 'stopping') return;
+  if (btn.dataset.mode === 'stop') {
+    doStopScan();
+  } else {
+    doScan();
+  }
+}
+
 async function doScan() {
   if (!_config.library_roots || _config.library_roots.length === 0) {
     showNoLibraryModal();
     return;
   }
-  showScanProgress();
+  setScanButtonMode('stop');
   try {
     const d = await apiFetch(`/scan`, { method: 'POST' });
     if (d.running) {
       startScanPoll();
     } else {
-      resetScanButton();
+      setScanButtonMode('start');
       showNoLibraryModal();
     }
   } catch (e) {
-    resetScanButton();
+    setScanButtonMode('start');
     showToast('Failed to start scan: ' + e.message, true);
+  }
+}
+
+async function doStopScan() {
+  setScanButtonMode('stopping');
+  try {
+    await apiFetch(`/scan/cancel`, { method: 'POST' });
+    startScanPoll(); // no-op if already polling
+  } catch (e) {
+    setScanButtonMode('stop');
+    showToast('Failed to stop scan: ' + e.message, true);
   }
 }
 
@@ -448,32 +486,29 @@ async function pollScanStatus() {
 
 function updateScanUI(state) {
   const btn    = document.getElementById('scanNowBtn');
-  const prog   = document.getElementById('scanProgress');
   const barEl  = document.getElementById('scanBar');
   const textEl = document.getElementById('scanStatusText');
-  const card   = document.getElementById('scanNowCard');
 
   if (!btn) return;
 
   if (state.running) {
-    btn.disabled = true;
-    btn.textContent = 'Scanning…';
-    if (prog) prog.hidden = false;
-    if (card) card.classList.add('is-scanning');
+    setScanButtonMode(state.cancel_requested ? 'stopping' : 'stop');
 
     const pct = state.total_files > 0
       ? Math.round((state.processed_files / state.total_files) * 100)
       : 0;
     if (barEl) barEl.style.width = `${pct}%`;
-    if (textEl) textEl.textContent = `${state.processed_files} / ${state.total_files}`;
+    if (textEl) {
+      textEl.textContent = `${state.processed_files} / ${state.total_files}`
+        + (state.cancel_requested ? ' — stopping…' : '');
+    }
   } else {
-    btn.disabled = false;
-    btn.textContent = 'Scan Now';
-    if (card) card.classList.remove('is-scanning');
+    setScanButtonMode('start');
     if (barEl) barEl.style.width = '100%';
     if (textEl && state.finished_at) {
       textEl.textContent =
-        `Done — ${state.new_files} new, ${state.updated_files} updated, ${state.missing_files} missing`
+        (state.cancelled ? `Stopped — ${state.processed_files} / ${state.total_files} scanned, ` : 'Done — ')
+        + `${state.new_files} new, ${state.updated_files} updated, ${state.missing_files} missing`
         + (state.error_files ? `, ${state.error_files} errors` : '');
     }
     if (state.error && textEl) {
