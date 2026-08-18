@@ -73,6 +73,76 @@
     </nav>
 
     <div class="app-content">
+      <!-- ── UNIFIED MENU BAR (MENU_BAR_SPEC.md) — series-scoped instance:
+           same markup/ids as index.html's copy, but filters/sorts/groups only
+           this series' own issue list (see bindSeriesFilterEvents() in app.js).
+           Always visible here — this page has only one surface. ──────────── -->
+      <div class="menu-bar" id="menuBar">
+       <div class="container menu-bar-inner">
+        <select class="filter-select" id="sortSelect" aria-label="Sort by">
+          <option value="number">Issue #</option>
+          <option value="alpha">A–Z</option>
+          <option value="newest">Newest</option>
+          <option value="recent">Recent</option>
+          <option value="pages" id="sortPagesOpt">Pages</option>
+        </select>
+        <span class="menu-bar-divider"></span>
+        <button class="sort-dir-btn" id="sortDirBtn" data-tooltip="Reverse the sort order">&#8593;</button>
+        <span class="menu-bar-divider"></span>
+        <button class="view-toggle-btn" id="viewToggle" data-tooltip="Switch to list layout">&#9783;</button>
+        <span class="menu-bar-divider"></span>
+        <select class="filter-select" id="starRatingFilter" aria-label="Rated">
+          <option value="">Rated</option>
+          <option value="1">&#9733; 1</option>
+          <option value="2">&#9733; 2</option>
+          <option value="3">&#9733; 3</option>
+          <option value="4">&#9733; 4</option>
+          <option value="5">&#9733; 5</option>
+        </select>
+        <span class="menu-bar-divider"></span>
+        <button class="fav-filter-btn" id="favFilterBtn" data-tooltip="Show only favourited items">&#9733; Favourites</button>
+        <button class="fav-filter-btn" id="flagReviewFilterBtn" data-tooltip="Show only issues flagged for review">&#127991; Flagged</button>
+        <span class="menu-bar-divider"></span>
+
+        <!-- Grouping — same options as Browse's menu bar. -->
+        <select class="filter-select group-by-select" id="groupBySelect" aria-label="Group by">
+          <option value="">No grouping</option>
+          <option value="year">Year</option>
+          <option value="genre">Genre</option>
+          <option value="publisher">Publisher</option>
+          <option value="writer">Writer</option>
+          <option value="format">Format</option>
+        </select>
+        <span class="menu-bar-divider"></span>
+
+        <!-- Secondary filters — same set as Browse's menu bar, scoped to this series' issues. -->
+        <div class="browse-filters" id="browseFilters">
+          <select class="filter-select" id="genreFilter"     aria-label="Genre"><option value="">Genre</option></select>
+          <span class="menu-bar-divider"></span>
+          <select class="filter-select" id="formatFilter"    aria-label="Format"><option value="">Format</option></select>
+          <span class="menu-bar-divider"></span>
+          <select class="filter-select" id="decadeFilter"    aria-label="Decade"><option value="">Decade</option></select>
+          <span class="menu-bar-divider"></span>
+          <select class="filter-select" id="yearFilter"      aria-label="Year"><option value="">Year</option></select>
+          <span class="menu-bar-divider"></span>
+          <select class="filter-select" id="ratingFilter"    aria-label="Rating"><option value="">Rating</option></select>
+          <span class="menu-bar-divider"></span>
+          <select class="filter-select" id="bwFilter"        aria-label="B&amp;W">
+            <option value="">B&amp;W</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <div class="menu-bar-trailing">
+          <!-- Active-filter chips — populated by renderSeriesFilterChips(). -->
+          <div class="active-filter-chips" id="activeFilterChips"></div>
+          <button class="filter-clear-all" id="filterClearAll" hidden data-tooltip="Reset every active filter, sort and grouping">Clear All Filters</button>
+          <span class="browse-count" id="browseCount"></span>
+        </div>
+       </div>
+      </div>
+
       <main class="container">
 
         <!-- Populated by JS -->
