@@ -2109,8 +2109,14 @@ select.filter-select:focus,
      text cut off mid-glyph, sometimes hiding the top title line entirely) —
      10% (2026-07-22) leaves more headroom above the logo band most covers
      use. Still a single fixed anchor shared by every cover in the library,
-     so it's a best-effort default, not a per-cover guarantee. */
-  object-position: center 10%;
+     so it's a best-effort default, not a per-cover guarantee.
+     3% (2026-08-19) — shrinking .series-hero-wrap's min-height to 150px
+     (same session) made the box short enough that 10% was cropping into the
+     logo band itself rather than just leaving headroom above it; 3% shows
+     the top of the cover (and its logo) again. This rule is series-page-
+     only (`.issue-backdrop-img` below keeps its own separate 10%) since
+     only the series hero's box got shorter. */
+  object-position: center 3%;
   opacity: var(--backdrop-opacity);
   filter: blur(var(--blur-backdrop));
   display: block;
@@ -2550,7 +2556,10 @@ select.filter-select:focus,
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* See .series-backdrop-img's comment — same fix, same reason. */
+  /* Originally matched .series-backdrop-img's 20%→10% crop-position fix
+     (2026-07-22, see that rule's comment) — kept at 10% here since
+     .issue-backdrop's box height wasn't touched by the 2026-08-19 series-
+     page change that moved .series-backdrop-img to 3%. */
   object-position: center 10%;
   opacity: var(--backdrop-opacity);
   filter: blur(var(--blur-backdrop));
