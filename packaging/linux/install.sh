@@ -26,7 +26,7 @@ STAGE_DIR="$(mktemp -d)"
 trap 'rm -rf "$STAGE_DIR"' EXIT
 cp "$SDIST" "$STAGE_DIR/"
 cp "$PKG_DIR/digib00age.desktop" "$STAGE_DIR/"
-cp "$REPO_ROOT/src/frontend/images/favicon.png" "$STAGE_DIR/"
+cp "$REPO_ROOT/src/frontend/images/icons/icon-512.png" "$STAGE_DIR/favicon.png"
 cp "$PKG_DIR/release-template/install.sh" "$STAGE_DIR/"
 cp "$PKG_DIR/release-template/preflight-runtime.sh" "$STAGE_DIR/"
 chmod +x "$STAGE_DIR/install.sh"

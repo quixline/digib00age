@@ -68,10 +68,14 @@ python3 -m venv --system-site-packages "$TARGET_DIR/venv"
 "$TARGET_DIR/venv/bin/pip" install --upgrade pip wheel >/dev/null
 "$TARGET_DIR/venv/bin/pip" install "$SDIST"
 
-mkdir -p "$HOME/.local/share/applications" "$HOME/.local/share/icons/hicolor/128x128/apps"
+mkdir -p "$HOME/.local/share/applications" "$HOME/.local/share/icons/hicolor/512x512/apps"
 sed "s|^Exec=.*|Exec=$TARGET_DIR/venv/bin/digib00age-tray|" "$PKG_DIR/digib00age.desktop" \
     > "$HOME/.local/share/applications/digib00age.desktop"
-cp "$PKG_DIR/favicon.png" "$HOME/.local/share/icons/hicolor/128x128/apps/digib00age.png"
+cp "$PKG_DIR/favicon.png" "$HOME/.local/share/icons/hicolor/512x512/apps/digib00age.png"
+# Drop any older, mis-sized icon from a previous install (settled 2026-08-19:
+# was staged as favicon.png, a 192px file, into a 128x128-labelled bucket -
+# looked fine in most places but rendered small/soft in the Alt-Tab switcher).
+rm -f "$HOME/.local/share/icons/hicolor/128x128/apps/digib00age.png"
 
 if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database "$HOME/.local/share/applications" >/dev/null 2>&1 || true
@@ -84,7 +88,7 @@ cat > "$TARGET_DIR/uninstall.sh" <<UNINSTALL
 #!/bin/bash
 set -e
 rm -f "$HOME/.local/share/applications/digib00age.desktop"
-rm -f "$HOME/.local/share/icons/hicolor/128x128/apps/digib00age.png"
+rm -f "$HOME/.local/share/icons/hicolor/512x512/apps/digib00age.png"
 rm -rf "$TARGET_DIR"
 echo "digib00age uninstalled. Your data (~/.local/share/digib00age, ~/.config/digib00age) was left untouched - remove it by hand for a full wipe."
 UNINSTALL

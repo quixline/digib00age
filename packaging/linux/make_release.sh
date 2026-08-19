@@ -33,7 +33,7 @@ mkdir -p "$RELEASE_DIR"
 
 cp "$SDIST" "$RELEASE_DIR/"
 cp "$PKG_DIR/digib00age.desktop" "$RELEASE_DIR/"
-cp "$REPO_ROOT/src/frontend/images/favicon.png" "$RELEASE_DIR/"
+cp "$REPO_ROOT/src/frontend/images/icons/icon-512.png" "$RELEASE_DIR/favicon.png"
 cp "$PKG_DIR/release-template/install.sh" "$RELEASE_DIR/"
 cp "$PKG_DIR/release-template/preflight-runtime.sh" "$RELEASE_DIR/"
 cp "$PKG_DIR/release-template/README.txt" "$RELEASE_DIR/"
