@@ -786,13 +786,14 @@ def scan_library(db: Session):
     scan_progress = ScanProgress(running=True, started_at=datetime.utcnow())
     scan_progress.add_log("Scan started")
 
-    library_root = config.get_library_root()
+    library_roots = config.get_library_roots()
+    missing_roots = [r for r in library_roots if not os.path.isdir(r)]
 
-    if not library_root or not os.path.isdir(library_root):
+    if not library_roots or missing_roots:
         message = (
             "Library location not configured. Go to Admin → Library Folders to set it."
-            if not library_root
-            else f"library_root not found: {library_root}"
+            if not library_roots
+            else f"Scan root not found: {missing_roots[0]}"
         )
         scan_progress.add_log(f"ERROR: {message}")
         scan_progress.error = message
@@ -808,19 +809,20 @@ def scan_library(db: Session):
         scan_progress.add_log(f"Excluding folders: {exclude}")
 
     disk_paths: set[str] = set()
-    for dirpath, dirs, filenames in os.walk(library_root):
-        # Prune excluded directories in-place so os.walk doesn't descend into them
-        if exclude:
-            dirs[:] = [d for d in dirs if not _is_excluded(os.path.join(dirpath, d), exclude)]
+    for library_root in library_roots:
+        for dirpath, dirs, filenames in os.walk(library_root):
+            # Prune excluded directories in-place so os.walk doesn't descend into them
+            if exclude:
+                dirs[:] = [d for d in dirs if not _is_excluded(os.path.join(dirpath, d), exclude)]
 
-        # Also skip if the current directory itself matches an exclusion
-        if exclude and _is_excluded(dirpath, exclude):
-            continue
+            # Also skip if the current directory itself matches an exclusion
+            if exclude and _is_excluded(dirpath, exclude):
+                continue
 
-        for fname in filenames:
-            if fname.lower().endswith((".cbz", ".cbr")):
-                full = str(Path(dirpath) / fname)
-                disk_paths.add(full)
+            for fname in filenames:
+                if fname.lower().endswith((".cbz", ".cbr")):
+                    full = str(Path(dirpath) / fname)
+                    disk_paths.add(full)
 
     scan_progress.total = len(disk_paths)
     scan_progress.add_log(f"Found {len(disk_paths)} CBZ/CBR files on disk")

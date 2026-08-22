@@ -211,6 +211,20 @@ def get_library_root() -> str | None:
     return get_config().get("library_root")
 
 
+def get_library_roots() -> list[str]:
+    """
+    Return every configured scan root (plural). config.json's "library_roots"
+    is the source of truth once the Admin UI has saved more than one root;
+    falls back to the singular "library_root" for configs that predate
+    multi-root support. Callers that need to walk the whole library (the
+    scanner) must use this, not get_library_root() alone, or additional
+    roots saved via Admin -> Library Folders are silently never scanned.
+    """
+    cfg = get_config()
+    root = cfg.get("library_root", "")
+    return cfg.get("library_roots", [root] if root else [])
+
+
 def get_scan_exclude() -> list[str]:
     """
     Return the current scan_exclude list, re-read fresh from config.json on
