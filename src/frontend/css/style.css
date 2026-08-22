@@ -3951,6 +3951,12 @@ select.filter-select:focus,
   color: var(--text-3);
 }
 
+.admin-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 14px 0;
+}
+
 /* Advanced settings */
 .admin-lock-label {
   display: flex;
