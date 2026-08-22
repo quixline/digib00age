@@ -7,7 +7,7 @@ Run from the repo root:
     python3 src/tray/tray_app.py         (Linux)
 
 Tray icon (left or right click) shows a menu with:
-    - Open Library                  (opens in an app-mode window, see open_app_window())
+    - Open Library                  (opens in the user's default browser, a normal tab)
     - Admin                         (same)
     - Metadata Editor               (same; opens the URL only — does not launch/manage that process)
     - Start digib00age at login     (checkable — creates/removes the OS-appropriate autostart
@@ -28,9 +28,11 @@ Server"/"Close" (see `manually_stopped`).
 A local-only control server (127.0.0.1:TRAY_CONTROL_PORT, see
 start_control_server()) also runs alongside the reader subprocess so the web
 UI's "Read"/cover-click action can ask the tray to open the browser-popout
-reader (frontend/reader.html/js) as its own chromeless --app= window,
-matching Open Library/Admin/Metadata Editor above — added 2026-07-29 to
-replace the old Windows Flutter reader's comicvault:// deep link.
+reader (frontend/reader.html/js) as its own chromeless --app= window, sized
+to that issue's pages — added 2026-07-29 to replace the old Windows Flutter
+reader's comicvault:// deep link. This is the only remaining app-mode launch
+path; Open Library/Admin/Metadata Editor open as normal browser tabs (see
+open_library()/open_admin()/open_editor() below).
 """
 
 import configparser
@@ -499,9 +501,9 @@ def _find_new_window(before_hwnds, target_name, timeout=4.0, poll_interval=0.1):
     """Diffs against `before_hwnds` (a snapshot taken right before Popen) to
     find the browser window this launch just created. Matching "whichever
     browser window is foreground" isn't enough once more than one reader
-    window is open (one per issue — Edge doesn't reuse a single app-mode
-    window across different --app= URLs the way Library/Admin/Editor's
-    shared, unchanging URLs let it appear to; confirmed live 2026-07-30)."""
+    window is open — Edge doesn't reuse a single app-mode window across
+    different --app= URLs, so each issue opened gets its own window
+    (confirmed live 2026-07-30)."""
     deadline = time.time() + timeout
     while time.time() < deadline:
         fresh = _snapshot_top_level_hwnds(target_name) - before_hwnds
@@ -756,17 +758,17 @@ def make_icon_image(status):
 
 
 def open_library(icon=None, item=None):
-    open_app_window(f"http://localhost:{READER_PORT}")
+    webbrowser.open(f"http://localhost:{READER_PORT}")
 
 
 def open_admin(icon=None, item=None):
-    open_app_window(f"http://localhost:{READER_PORT}/admin")
+    webbrowser.open(f"http://localhost:{READER_PORT}/admin")
 
 
 def open_editor(icon=None, item=None):
     # Editor is part of the same FastAPI app, no separate process/port
     # (EDITOR_SPEC.md Section 2) — was http://localhost:{EDITOR_PORT} (8001).
-    open_app_window(f"http://localhost:{READER_PORT}/editor")
+    webbrowser.open(f"http://localhost:{READER_PORT}/editor")
 
 
 class _ReaderControlHandler(BaseHTTPRequestHandler):
