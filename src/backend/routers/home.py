@@ -47,6 +47,7 @@ def _issue_card(issue: Issue, progress_map: dict[int, str], *,
     return {
         "id": issue.id,
         "series": issue.series,
+        "title": issue.title,
         "number": issue.number,
         "year": issue.year,
         "publisher": issue.publisher,

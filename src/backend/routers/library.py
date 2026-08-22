@@ -252,6 +252,7 @@ def get_library(
                 status = read_map.get(issue.id, "unread")
                 result.append({
                     "series": series_name,
+                    "title": issue.title,
                     "number": issue.number,
                     "issue_count": 1,
                     "unread_count": 1 if status == "unread" else 0,
@@ -301,6 +302,10 @@ def get_library(
 
         result.append({
             "series": series_name,
+            # Cover issue's own title — only meaningful for a Singles card
+            # (issue_count == 1); a true multi-issue Series card has no single
+            # issue title to attribute, and the frontend skips it there.
+            "title": cover_issue.title,
             "issue_count": len(issues),
             "unread_count": unread_count,
             "read_count": read_count,

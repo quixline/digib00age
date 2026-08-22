@@ -10,6 +10,17 @@ function el(tag, cls, text) {
   return node;
 }
 
+// Scanner falls back to series as the issue title whenever a comic has no
+// distinct <Title> in its ComicInfo.xml (backend/scanner.py), so most issues'
+// title === series. Returns the real distinct title, or null to suppress —
+// used to auto-hide the "show issue title on cards" second line rather than
+// duplicating the series title on nearly every card.
+function distinctIssueTitle(item) {
+  const t = (item && item.title || '').trim();
+  const s = (item && item.series || '').trim();
+  return t && t.toLowerCase() !== s.toLowerCase() ? t : null;
+}
+
 // Cascading hover preview for star-rating widgets: hovering star N highlights
 // stars 1..N (not just the one under the cursor), so the rightmost star shows
 // the whole row gold. CSS :hover alone can't do this (no "preceding sibling"
@@ -810,6 +821,11 @@ let folderViewReturnPath   = '';   // path to restore when search is cleared
 
 let viewMode = localStorage.getItem('cv_view_mode') || 'grid';
 
+// Library-wide toggle (config.json, set from Admin > Library Appearance >
+// Theme Selection) — whether cards show a second line for a distinct issue
+// title. Fetched once in initLibrary(); defaults to off until that resolves.
+let showIssueTitleOnCards = false;
+
 let currentPage = 1;
 let pageSize    = parseInt(localStorage.getItem('cv_page_size') || '50', 10);
 
@@ -866,6 +882,10 @@ async function initLibrary() {
     bindSidebarNav();
     bindFilterEvents();
     bindSearchEvents();
+    try {
+      const cfg = await apiFetch('/admin/config');
+      showIssueTitleOnCards = !!cfg.show_issue_title_on_cards;
+    } catch (_) { /* default off if config fetch fails */ }
     await loadCustomTabsNav();
     // Honour ?surface= so the back button from detail pages returns to the
     // right tab. replace:true (not fromPopstate) so switchSurface() still
@@ -1354,6 +1374,10 @@ function buildStripCard(item) {
 
   const info = el('div', 'cover-info');
   info.appendChild(el('div', 'cover-title', item.series));
+  if (showIssueTitleOnCards) {
+    const issueTitle = distinctIssueTitle(item);
+    if (issueTitle) info.appendChild(el('div', 'cover-issue-title', issueTitle));
+  }
 
   const genreRibbon = buildGenreRibbon(item.genres);
   const ratingRow    = item.personal_rating > 0 ? buildRatingRow(item.personal_rating) : null;
@@ -1934,6 +1958,12 @@ function buildCoverCard(s) {
 
   const info = el('div', 'cover-info');
   info.appendChild(el('div', 'cover-title', s.series));
+  if (showIssueTitleOnCards && linksToIssue) {
+    // Series-aggregate cards (linksToIssue === false) cover many issues —
+    // there's no single issue title to attribute, so they're left as-is.
+    const issueTitle = distinctIssueTitle(s);
+    if (issueTitle) info.appendChild(el('div', 'cover-issue-title', issueTitle));
+  }
 
   // Genre ribbon + rating stars, moved off the cover image into the info
   // block — each paired onto its own row (year/ribbon, count/stars) rather
@@ -2320,7 +2350,11 @@ function buildFolderFileCard(issue) {
   }
 
   const info = el('div', 'cover-info');
-  info.appendChild(el('div', 'cover-title', issue.title || issue.series || `#${issue.number}`));
+  info.appendChild(el('div', 'cover-title', issue.series || issue.title || `#${issue.number}`));
+  if (showIssueTitleOnCards) {
+    const issueTitle = distinctIssueTitle(issue);
+    if (issueTitle) info.appendChild(el('div', 'cover-issue-title', issueTitle));
+  }
 
   const genreRibbon = buildGenreRibbon(issue.genres);
   const ratingRow    = issue.personal_rating > 0 ? buildRatingRow(issue.personal_rating) : null;

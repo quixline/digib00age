@@ -551,6 +551,7 @@ async function loadConfig() {
   document.getElementById('serverPortInput').value = _config.reader_port || 8000;
   document.getElementById('backupFolderInput').value = _config.backup_folder || '';
   document.getElementById('backupFreqSelect').value = _config.backup_frequency || 'off';
+  document.getElementById('showIssueTitleCheckbox').checked = !!_config.show_issue_title_on_cards;
 }
 
 function initScanSettings() {
@@ -865,6 +866,10 @@ function initTheme() {
     if (sel.value === 'auto') delete document.documentElement.dataset.theme;
     else document.documentElement.dataset.theme = sel.value;
     showToast(sel.value === 'auto' ? 'Theme set to match Windows' : `Theme set to ${sel.value}`);
+  });
+
+  document.getElementById('showIssueTitleCheckbox').addEventListener('change', (e) => {
+    patchConfig({ show_issue_title_on_cards: e.target.checked });
   });
 }
 

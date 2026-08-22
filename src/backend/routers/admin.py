@@ -257,6 +257,7 @@ def get_admin_config():
         "reader_port": cfg.get("reader_port", 9800),
         "backup_folder": cfg.get("backup_folder", ""),
         "backup_frequency": cfg.get("backup_frequency", "off"),
+        "show_issue_title_on_cards": cfg.get("show_issue_title_on_cards", False),
     }
 
 
@@ -296,6 +297,9 @@ def save_admin_config(data: dict):
 
     if "backup_frequency" in data:
         update["backup_frequency"] = data["backup_frequency"]
+
+    if "show_issue_title_on_cards" in data:
+        update["show_issue_title_on_cards"] = bool(data["show_issue_title_on_cards"])
 
     save_config(update)
 
