@@ -5983,7 +5983,8 @@ select.fe-genre-add:focus {
   z-index: 1;
 }
 
-.reader-zones--disabled {
+.reader-zones--disabled .reader-zone--left,
+.reader-zones--disabled .reader-zone--right {
   pointer-events: none;
 }
 
