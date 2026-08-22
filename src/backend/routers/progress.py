@@ -82,7 +82,10 @@ def update_progress(
     marks an issue read/unread from the issue detail page.
 
     Auto-promotion rules:
-    - If current_page > 0 and status is still "unread" → promote to "reading"
+    - If current_page > 0 and status is "unread" or "read" → promote/demote
+      to "reading" (covers both starting an unread issue and re-reading one
+      already marked read — either way, turning pages without an explicit
+      status means it's in progress again)
     - If current_page is the last page → caller should pass status="read"
       (the reader JS does this automatically on reaching the final page)
     """
@@ -99,8 +102,10 @@ def update_progress(
     if body.status is not None:
         progress.status = body.status
     elif body.current_page is not None and body.current_page > 0:
-        # Auto-promote from unread to reading when pages are being turned
-        if progress.status == "unread":
+        # Auto-promote/demote to reading when pages are turned without an
+        # explicit status — covers both starting an unread issue and
+        # re-reading one already marked read.
+        if progress.status in ("unread", "read"):
             progress.status = "reading"
 
     # Always update last_read_at when anything changes
@@ -150,6 +155,7 @@ def bulk_mark_read(body: BulkIssueIds, db: Session = Depends(get_db)):
     for issue_id in body.issue_ids:
         progress = _get_or_create_progress(issue_id, db)
         progress.status = "read"
+        progress.current_page = 0
         progress.last_read_at = datetime.now(timezone.utc)
     db.commit()
     return {"updated": body.issue_ids}
@@ -260,8 +266,16 @@ def bulk_delete(body: BulkIssueIds, db: Session = Depends(get_db)):
 
 @router.post("/progress/{issue_id}/mark-read")
 def mark_read(issue_id: int, db: Session = Depends(get_db)):
-    """Mark an issue as fully read. Convenience endpoint for the UI toggle."""
-    return update_progress(issue_id, ProgressUpdate(status="read"), db)
+    """Mark an issue as fully read. Convenience endpoint for the UI toggle.
+
+    Resets current_page to 0, mirroring mark_unread below — this is a
+    manual "flag it read" action, not an actual finish-reading event (that
+    path is the reader's own last-page POST to update_progress, which sends
+    its own current_page and is untouched by this), so reopening the reader
+    afterward should start from the first page rather than resume wherever
+    the issue was left.
+    """
+    return update_progress(issue_id, ProgressUpdate(status="read", current_page=0), db)
 
 
 @router.post("/progress/{issue_id}/mark-unread")
