@@ -2337,12 +2337,12 @@ select.filter-select:focus,
 }
 
 .issue-row.state-reading {
-  background: color-mix(in srgb, var(--blue) 8%, var(--surface));
-  border-left-color: var(--blue);
+  background: color-mix(in srgb, var(--green) 8%, var(--surface));
+  border-left-color: var(--green);
 }
 
 .issue-row.state-reading:hover {
-  border-left-color: var(--blue);
+  border-left-color: var(--green);
 }
 
 /* Thumbnail — flush against the card edge; .issue-row's own overflow:hidden
@@ -2450,7 +2450,7 @@ select.filter-select:focus,
 
 .issue-progress-fill {
   height: 100%;
-  background: var(--blue);
+  background: var(--green);
   border-radius: 2px;
   min-width: 3px;
 }
