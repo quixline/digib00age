@@ -1,7 +1,13 @@
 # Local working space — docs, caches, scratchpad, /graphify output,
 # everything that isn't meant to go public. One blanket rule instead of the
 # pile of individual entries this used to be (single-repo restructure).
-dev/
+# No trailing slash: dev is now a symlink to windy's dev folder on this
+# machine, and a trailing-slash rule only matches real directories.
+dev
+
+# Local Linux build/packaging output (PyInstaller/sdist staging trees) —
+# machine-specific build artifacts, not meant to go public.
+linux-build-files/
 
 # Processing/scan tool logs — lives at repo root (not dev/) so a dev checkout
 # mirrors the installed layout (<install-dir>/logs), just gitignored either way.
