@@ -1344,7 +1344,7 @@ function buildStripCard(item) {
 
   // Part-read/read progress pill — same math as before, new track/fill visual.
   if ((state === 'state-part-read' || state === 'state-read') && item.page_count > 0) {
-    const pct = Math.min(100, Math.round((item.current_page / item.page_count) * 100));
+    const pct = state === 'state-read' ? 100 : Math.min(100, Math.round((item.current_page / item.page_count) * 100));
     const track = el('div', 'card-progress-track');
     const fill  = el('div', 'card-progress-fill');
     fill.style.width = `${pct}%`;
@@ -1920,7 +1920,7 @@ function buildCoverCard(s) {
   // or 100% for a single issue. Series cards keep the issue-count aggregate.
   let pct;
   if (linksToIssue && s.page_count > 0) {
-    pct = Math.min(100, Math.round((s.current_page / s.page_count) * 100));
+    pct = state === 'state-read' ? 100 : Math.min(100, Math.round((s.current_page / s.page_count) * 100));
   } else {
     pct = Math.round((s.read_count / s.issue_count) * 100);
   }
@@ -2311,7 +2311,7 @@ function buildFolderFileCard(issue) {
   if (state === 'state-read') wrap.appendChild(buildReadBadge());
 
   if ((state === 'state-part-read' || state === 'state-read') && issue.page_count > 0) {
-    const pct = Math.min(100, Math.round((issue.current_page / issue.page_count) * 100));
+    const pct = state === 'state-read' ? 100 : Math.min(100, Math.round((issue.current_page / issue.page_count) * 100));
     const track = el('div', 'card-progress-track');
     const fill  = el('div', 'card-progress-fill');
     fill.style.width = `${pct}%`;
@@ -2771,7 +2771,7 @@ function buildIssueCoverCard(issue) {
   if (state === 'state-read') wrap.appendChild(buildReadBadge());
 
   if (state === 'state-part-read' || state === 'state-read') {
-    const pct   = issue.page_count > 0 ? Math.min(100, Math.round((issue.current_page / issue.page_count) * 100)) : 0;
+    const pct   = state === 'state-read' ? 100 : issue.page_count > 0 ? Math.min(100, Math.round((issue.current_page / issue.page_count) * 100)) : 0;
     const track = el('div', 'card-progress-track');
     const fill  = el('div', 'card-progress-fill');
     fill.style.width = `${pct}%`;
@@ -2969,14 +2969,11 @@ async function markAllRead(issues) {
 
   for (const issue of issues) issue.read_status = 'read';
 
-  document.querySelectorAll('.status-btn').forEach(b => {
-    b.className   = 'status-btn read';
-    b.textContent = '✓';
-  });
-  document.querySelectorAll('.issue-row').forEach(row => {
-    row.classList.remove('state-reading');
-    row.classList.add('state-read');
-  });
+  // Re-render from the now-updated data rather than patching DOM classes
+  // directly — patching only ever touched list-view elements
+  // (.status-btn/.issue-row), so grid view (the default) stayed visually
+  // unread until a manual reload despite the backend call succeeding.
+  renderSeriesIssuePage();
 
   btn.textContent       = 'All read ✓';
   btn.style.background  = 'var(--green)';
