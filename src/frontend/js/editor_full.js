@@ -786,7 +786,7 @@ function updateStatusBar() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  COMIC VIEWER (Column 3) — zoom / fit / fullscreen / lazy thumbnail strip
+//  COMIC VIEWER (Column 3) — zoom / fit / lazy thumbnail strip
 // ══════════════════════════════════════════════════════════════════════════════
 
 function wireImageViewer() {
@@ -797,7 +797,6 @@ function wireImageViewer() {
   document.getElementById('feZoomInBtn').onclick = () => setZoom(viewerZoom + 0.25);
   document.getElementById('feZoomOutBtn').onclick = () => setZoom(viewerZoom - 0.25);
   document.getElementById('feFitBtn').onclick = fitViewer;
-  document.getElementById('feFullscreenBtn').onclick = toggleFullscreen;
   wireViewerPan();
 }
 
@@ -840,7 +839,7 @@ function wireViewerPan() {
 }
 
 const VIEWER_BTNS = ['fePrevBtn', 'feNextBtn', 'feThumbPrev', 'feThumbNext',
-  'feZoomInBtn', 'feZoomOutBtn', 'feFitBtn', 'feFullscreenBtn'];
+  'feZoomInBtn', 'feZoomOutBtn', 'feFitBtn'];
 
 function resetViewer() {
   viewerFileId = null;
@@ -873,7 +872,7 @@ async function loadFileIntoViewer(fileId) {
   const hasPages = viewerImageList.length > 0;
   document.getElementById('feViewerEmpty').hidden = hasPages;
   document.getElementById('feViewerImg').hidden = !hasPages;
-  for (const id of ['feZoomInBtn', 'feZoomOutBtn', 'feFitBtn', 'feFullscreenBtn']) {
+  for (const id of ['feZoomInBtn', 'feZoomOutBtn', 'feFitBtn']) {
     document.getElementById(id).disabled = !hasPages;
   }
 
@@ -944,15 +943,6 @@ function applyViewerZoom() {
   }
   document.getElementById('feViewerFrame')
     .classList.toggle('fe-viewer-frame--zoomed', viewerZoom !== 1);
-}
-
-function toggleFullscreen() {
-  const frame = document.getElementById('feViewerFrame');
-  if (!document.fullscreenElement) {
-    if (frame.requestFullscreen) frame.requestFullscreen();
-  } else if (document.exitFullscreen) {
-    document.exitFullscreen();
-  }
 }
 
 // Lazy thumbnail strip — renders a 7-cell window around the current page and
@@ -1285,17 +1275,15 @@ async function resolveMultiXml(keepFilename) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  SEARCH GOODREADS — plain external link, prefilled with Series and Writer
+//  SEARCH GOODREADS — plain external link, prefilled with the Series field
 // ══════════════════════════════════════════════════════════════════════════════
 
 function wireGoodreadsLink() {
   const link = document.getElementById('fe-search-goodreads-link');
   link.addEventListener('click', (event) => {
     const series = document.getElementById('fe-series').value.trim();
-    const writer = document.getElementById('fe-writer').value.trim();
-    const q = [series, writer].filter(Boolean).join(', ');
-    event.currentTarget.href = q
-      ? `https://www.goodreads.com/search?q=${encodeURIComponent(q)}`
+    event.currentTarget.href = series
+      ? `https://www.goodreads.com/search?q=${encodeURIComponent(series)}`
       : 'https://www.goodreads.com/search?';
   });
 }
@@ -1313,7 +1301,7 @@ function wireSearchOnlineModal() {
   document.getElementById('feSoSortSelect').onchange = (e) => { soSortKey = e.target.value; renderSoSeriesTable(); };
   document.getElementById('feSoSortDirBtn').onclick = () => {
     soSortDir = soSortDir === 'asc' ? 'desc' : 'asc';
-    document.getElementById('feSoSortDirBtn').innerHTML = soSortDir === 'asc' ? '&#8593;' : '&#8595;';
+    document.getElementById('feSoSortDirBtn').innerHTML = soSortDir === 'asc' ? '&#9650;' : '&#9660;';
     renderSoSeriesTable();
   };
   document.getElementById('feSoCancelBtn').onclick = closeSearchOnlineModal;

@@ -5156,11 +5156,6 @@ select.fe-genre-add:focus {
   font-size: 13px;
 }
 
-.fe-viewer-frame:fullscreen {
-  background: var(--bg);
-  padding: 24px;
-}
-
 .fe-thumb-row {
   display: flex;
   align-items: center;

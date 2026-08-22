@@ -2091,7 +2091,7 @@ function bindFilterEvents() {
   });
   document.getElementById('sortDirBtn').addEventListener('click', () => {
     activeSortDir = activeSortDir === 'asc' ? 'desc' : 'asc';
-    document.getElementById('sortDirBtn').innerHTML = activeSortDir === 'asc' ? '&#8593;' : '&#8595;';
+    document.getElementById('sortDirBtn').innerHTML = activeSortDir === 'asc' ? '&#9650;' : '&#9660;';
     renderActiveSurface();
   });
 
@@ -2540,7 +2540,7 @@ function bindSeriesFilterEvents() {
   });
   document.getElementById('sortDirBtn').addEventListener('click', () => {
     seriesActiveSortDir = seriesActiveSortDir === 'asc' ? 'desc' : 'asc';
-    document.getElementById('sortDirBtn').innerHTML = seriesActiveSortDir === 'asc' ? '&#8593;' : '&#8595;';
+    document.getElementById('sortDirBtn').innerHTML = seriesActiveSortDir === 'asc' ? '&#9650;' : '&#9660;';
     renderSeriesIssuePage();
   });
 
