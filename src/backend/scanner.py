@@ -4,7 +4,9 @@ scanner.py — Library walker, ComicInfo.xml parser, thumbnail generator.
 Rules:
 - Incremental only: INSERT new, UPDATE changed, FLAG missing — never DELETE
 - Thumbnail generated on first scan, regenerated if file changes
-- format_group detected from folder path ("Series" or "Singles"), never from XML
+- format_group detected primarily from ComicInfo.xml (Format/Number), falling
+  back to filename, then folder path ("Series" or "Singles") only when the file
+  carries no series-identifying metadata at all (see _format_group())
 - Genres and the 6 credit roles (writer/penciller/inker/colorist/letterer/
   cover_artist) are split into junction tables (IssueGenre, IssueCredit) —
   credit rows resolve to a deduped Person entity (Tier 4 Item 3). The raw CSV
@@ -204,17 +206,55 @@ def _parse_filename(filename: str) -> dict:
     }
 
 
+_BARE_NUMBER_RE = re.compile(
+    r"^.+\s(?P<number>\d{2,4})\s*\.(?:cbz|cbr)$",
+    re.IGNORECASE,
+)
+
+
+def _has_bare_issue_number(filename: str) -> bool:
+    """
+    Detect a bare zero-padded issue number at the end of a filename with no
+    ComicInfo.xml to go on, e.g. "Batman 001.cbz" / "Batman 02.cbz".
+    Excludes a 4-digit token in a plausible year range (1900-2099) so
+    "Batman 2024.cbz" isn't mistaken for issue #2024 — a real 4-digit issue
+    number is rare and the false-positive cost (a year misread as a series
+    signal) is worse than the false-negative cost here.
+    """
+    m = _BARE_NUMBER_RE.match(filename)
+    if not m:
+        return False
+    number = m.group("number")
+    if len(number) == 4 and 1900 <= int(number) <= 2099:
+        return False
+    return True
+
+
 # ---------------------------------------------------------------------------
 # Format group detection
 # ---------------------------------------------------------------------------
 
-def _format_group(file_path: str) -> str:
-    """Derive format_group from folder path. 'Singles' takes priority."""
+def _format_group(meta: dict, source: str, file_path: str) -> str:
+    """
+    Derive format_group. XML is the primary signal (SPEC.md §6 "Format group
+    detection"); folder path is a last-resort tiebreak only when the file has
+    no series-identifying metadata at all (DECISIONS.md's folder-priority
+    entry reversed for the has-signal cases).
+    """
+    fmt = meta.get("format") or ""
+    if "series" in fmt.lower():
+        return "Series"
+    if meta.get("number"):
+        return "Series"
+    if source == "filename":
+        filename = Path(file_path).name
+        if _FILENAME_RE.match(filename) or _has_bare_issue_number(filename):
+            return "Series"
     if config.SINGLES_FOLDER in file_path:
         return "Singles"
     if config.SERIES_FOLDER in file_path:
         return "Series"
-    return "Series"  # safe default
+    return "Singles"
 
 
 # ---------------------------------------------------------------------------
@@ -483,7 +523,7 @@ def _apply_metadata(issue: Issue, meta: dict, source: str,
     issue.month           = meta["month"]
     issue.publisher       = meta["publisher"]
     issue.format          = meta["format"]
-    issue.format_group    = _format_group(file_path)
+    issue.format_group    = _format_group(meta, source, file_path)
     issue.summary         = meta["summary"]
     issue.story_arc       = meta["story_arc"]
     issue.story_arc_number = meta["story_arc_number"]
