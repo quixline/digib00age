@@ -82,7 +82,10 @@ see `packaging/docker/README.txt`). From the repo root:
 Restart Server, Clear/Restore Database, and Processing Tools stay
 unavailable from any machine other than the one running the container —
 same local-only boundary every other remote client already hits, not a
-Docker-specific limitation.
+Docker-specific limitation. **On a headless host, first-run password setup
+requires a one-time shell command** (no way to do it from a browser by
+design — see `packaging/docker/README.txt`), flagged for a UX/security
+rework.
 
 ## Status
 
