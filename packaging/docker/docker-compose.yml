@@ -1,0 +1,22 @@
+# digib00age - example Docker Compose file. Copy this alongside a clone of
+# the repo (or edit in place) and run `docker compose up -d --build` from
+# the repo root. See README.txt in this folder for the full walkthrough.
+
+services:
+  digib00age:
+    build:
+      context: ../..
+      dockerfile: packaging/docker/Dockerfile
+    ports:
+      - "9800:9800"
+    volumes:
+      # config.json lands here (XDG_CONFIG_HOME) - persists across container
+      # rebuilds/restarts.
+      - ./config:/config
+      # DB + thumbnails land here (XDG_DATA_HOME).
+      - ./data:/data
+      # Edit the left side to your real comic library path on the host.
+      # The right side (/library) is what you point "library_root" at in
+      # the Admin UI after first launch - not the host path.
+      - /path/to/your/comics:/library
+    restart: unless-stopped

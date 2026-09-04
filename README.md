@@ -76,6 +76,14 @@ via apt first. Without these, pystray silently falls back to a legacy X11 systra
 backend that renders an icon but supports no menu at all — no error, just a tray
 icon that does nothing when clicked.
 
+**Docker:** backend + web frontend only (no Flutter app, no tray launcher —
+see `packaging/docker/README.txt`). From the repo root:
+`docker compose -f packaging/docker/docker-compose.yml up -d --build`.
+Restart Server, Clear/Restore Database, and Processing Tools stay
+unavailable from any machine other than the one running the container —
+same local-only boundary every other remote client already hits, not a
+Docker-specific limitation.
+
 ## Status
 
 V1 is complete. V2 is active — editor integration, Custom Tabs, Home Strips, and a

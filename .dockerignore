@@ -1,0 +1,29 @@
+# Docker build context excludes. dev/ is a symlink to a large local working
+# tree (scratch DBs, docs, personal data) that must never enter the build
+# context - mirrors .gitignore's "dev" rule but Docker doesn't follow
+# .gitignore on its own, so this is required separately.
+dev
+.git
+.Trash-1000
+linux-build-files/
+logs/
+config.json.bak
+src/backend/*.db
+src/backend/*.db-wal
+src/backend/*.db-shm
+src/backend/*.db.bak
+src/backend/thumbnails/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+src/tray/*.log
+src/flutter_app/build/
+src/flutter_app/.dart_tool/
+.claude/
+.vscode/
+.idea/
