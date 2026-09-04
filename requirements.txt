@@ -1,4 +1,5 @@
-fastapi
+fastapi>=0.100   # floor: CORSMiddleware reflects the actual Origin (not a literal "*")
+                 # whenever allow_credentials=True — main.py's CORS config relies on this
 uvicorn[standard]
 sqlalchemy
 pillow

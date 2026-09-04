@@ -463,13 +463,9 @@
          unaffected. ──────────────────────────────────────────────────── -->
     <fieldset class="admin-fieldset" id="advancedFields" disabled>
 
-      <!-- ── Password Protection (ADMIN_SPEC.md §7.1 / §7.2) ─────────── -->
+      <!-- ── Password Protection (ADMIN_SPEC.md §7.1) ────────────────── -->
       <div class="admin-content-block" data-category="advanced-settings" data-subitem="password-protection" hidden>
         <h3 class="admin-content-heading">Password Protection</h3>
-        <p class="admin-card-hint" id="authLocalOnlyHint" hidden>
-          Password protection, remote administration and password changes can only be
-          changed from this machine — log in locally to change these settings.
-        </p>
         <div class="admin-card">
           <label class="admin-lock-label">
             <input type="checkbox" id="authProtectionToggle" />
@@ -496,12 +492,6 @@
               <p class="editor-error" id="authDisableError" hidden></p>
             </div>
           </div>
-
-          <label class="admin-lock-label" id="authRemoteLabel" data-tooltip="Let non-local devices access Admin (requires a password)">
-            <input type="checkbox" id="authRemoteToggle" disabled />
-            <span>Allow Remote Administration (non-local access)</span>
-          </label>
-          <p class="admin-field-hint">Requires password protection to be on.</p>
         </div>
       </div>
 
@@ -573,15 +563,9 @@
          content-pane nav, same ID-preserving pattern as Phase C1/C2a. Kept
          id="processingToolsSection" on the wrapping div (dropped the old
          <section><h2> wrapper, redundant once the category card carries
-         that label) so refreshProcessingToolsLocalGate() (processingTools.js)
-         still finds and disables every descendant when accessed
-         non-locally, same as before. ──────────────────────────────────── -->
+         that label). Gated by admin auth like every other Danger Zone
+         action — no separate local-only gate. ────────────────────────── -->
     <div id="processingToolsSection">
-      <p class="admin-card-hint" id="ptLocalOnlyHint" hidden>
-        Processing Tools perform real, irreversible filesystem changes and are only
-        available from a local (127.0.0.1) session.
-      </p>
-
       <!-- ── Filename Editor (§11.1) ───────────────────────────────────── -->
       <div class="admin-content-block" data-category="processing-tools" data-subitem="filename-editor" hidden>
         <h3 class="admin-content-heading">Filename Editor</h3>

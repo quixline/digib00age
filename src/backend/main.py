@@ -109,7 +109,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Allow requests from any origin on the home network
+# Allow requests from any origin on the home network. allow_origins=["*"] combined
+# with allow_credentials=True looks like the classic broken wildcard-plus-credentials
+# combo, but it isn't here: Starlette's CORSMiddleware reflects the actual request
+# Origin instead of a literal "*" whenever allow_credentials=True, for both preflight
+# and simple responses. Verified against starlette>=0.27 (see requirements pin) —
+# don't "fix" this into an explicit origin list/regex without re-checking that.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -122,7 +127,7 @@ app.add_middleware(
 # Routers — each file owns a slice of the API
 # ---------------------------------------------------------------------------
 from fastapi import Depends  # noqa: E402
-from backend.auth import is_local_request, is_remote_admin_enabled, require_admin_auth  # noqa: E402
+from backend.auth import require_admin_auth  # noqa: E402
 from backend.routers import (  # noqa: E402
     library, reader, progress, admin, home, editor_basic, editor_full, admin_auth,
     rename, convert, convert_images, processing_folder, filename_sort, xml_tagging, sync,
@@ -174,7 +179,7 @@ if FRONTEND_DIR.exists():
 
     # Serve the HTML pages at their short URLs
     from fastapi.responses import FileResponse, Response
-    from fastapi import HTTPException, Request
+    from fastapi import Request
 
     _NO_CACHE_HEADERS = {"Cache-Control": "no-cache"}
 
@@ -195,12 +200,7 @@ if FRONTEND_DIR.exists():
         return FileResponse(str(FRONTEND_DIR / "reader.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/admin", include_in_schema=False)
-    async def admin_page(request: Request):
-        # v2.4 Item 1: page navigation itself is part of the gate, not just the
-        # API calls the page makes — a remote request with Remote Administration
-        # off gets no page at all, matching require_admin_auth's API-level block.
-        if not is_local_request(request) and not is_remote_admin_enabled():
-            raise HTTPException(status_code=403, detail={"error": "remote_admin_disabled"})
+    async def admin_page():
         return FileResponse(str(FRONTEND_DIR / "admin.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/guide", include_in_schema=False)
@@ -228,9 +228,7 @@ if FRONTEND_DIR.exists():
         return FileResponse(str(FRONTEND_DIR / "guide-editor-full.html"), headers=_NO_CACHE_HEADERS)
 
     @app.get("/editor", include_in_schema=False)
-    async def editor_full_page(request: Request):
-        if not is_local_request(request) and not is_remote_admin_enabled():
-            raise HTTPException(status_code=403, detail={"error": "remote_admin_disabled"})
+    async def editor_full_page():
         return FileResponse(str(FRONTEND_DIR / "editor_full.html"), headers=_NO_CACHE_HEADERS)
 
     def _frontend_asset_version() -> str:
@@ -259,10 +257,10 @@ if FRONTEND_DIR.exists():
     # that diagnosed this, the browser's SW update check fetched /sw.js
     # successfully while the navigation itself never dispatched at all.
     #
-    # Keyed on the request's *origin* (the Host header), not on
-    # auth.is_local_request(), which tests the peer IP. The two differ for
-    # someone on this machine browsing to the LAN IP — exactly the client that
-    # must keep its PWA — so don't "unify" them later.
+    # Keyed on the request's *origin* (the Host header), not on peer IP — this
+    # is unrelated to the admin/editor auth gate in backend/auth.py. Someone on
+    # this machine browsing to the LAN IP has a different Host than "localhost"
+    # and must keep its PWA, so don't fold this into the auth gate later.
     _LOOPBACK_HOSTNAMES = {"localhost", "127.0.0.1", "::1"}
 
     # Deliberately constant, with no ASSET_VERSION_TOKEN substitution: the

@@ -20,13 +20,12 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from backend import file_picker, scan_logs
 from backend import config as config_module
-from backend.auth import is_local_request
 from backend.config import get_config, save_config, reset_config, get_library_root, PROJECT_ROOT, REPO_ROOT
 from backend.database import get_db, SessionLocal, checkpoint_wal, engine
 from backend.models import CustomTab, HomeStrip, Issue, Person, ReadingProgress
@@ -309,16 +308,11 @@ def save_admin_config(data: dict):
 # ---------------------------------------------------------------------------
 # POST /api/admin/restart  — deliberately exit the process so the tray app's
 # existing crash-recovery relaunches it on the freshly-saved port
-# (ADMIN_SPEC.md §7.3). Local-only — restarting is disruptive to anyone
-# currently using the library, same local-access boundary as the admin
-# password controls.
+# (ADMIN_SPEC.md §7.3). Gated by admin auth like every other Danger Zone action.
 # ---------------------------------------------------------------------------
 
 @router.post("/admin/restart")
-async def restart_server(request: Request):
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
+async def restart_server():
     _schedule_delayed_exit()
     return {"message": "Restarting"}
 
@@ -349,12 +343,13 @@ def get_logs_folder_path():
 
 
 @router.post("/admin/logs/open-folder")
-def open_logs_folder(request: Request):
-    # Local-only, same boundary as restart/restore — opens a window on the
-    # server machine itself, so it's only meaningful for someone sitting at it.
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
+def open_logs_folder():
+    # Opens a native OS file-explorer window on the machine running the backend
+    # process. Gated by admin auth like every other Danger Zone action, but that
+    # doesn't make this work remotely/headless — on a display-less Docker host
+    # this still fails (no display to open a window on). Pre-existing functional
+    # gap, not a security concern; needs its own future redesign (e.g. a
+    # web-based file picker) — see ADMIN_SPEC.md and ROADMAP.md.
     scan_logs.LOGS_DIR.mkdir(parents=True, exist_ok=True)
     path = str(scan_logs.LOGS_DIR)
     system = platform.system()
@@ -407,12 +402,12 @@ def cleanup_missing(db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 # POST /api/admin/clear-database
 # POST /api/admin/clear-reading-progress
-# Both destructive, irreversible — local-access-only, same tier as
-# restart_server / browse_folder_dialog (ADMIN_SPEC.md §7.4, §7.5).
+# Both destructive, irreversible — gated by admin auth like every other Danger
+# Zone action (ADMIN_SPEC.md §7.4, §7.5).
 # ---------------------------------------------------------------------------
 
 @router.post("/admin/clear-database")
-async def clear_database(request: Request, db: Session = Depends(get_db)):
+async def clear_database(db: Session = Depends(get_db)):
     """
     Hard-deletes ALL library data: issues, genres, credits, reading progress,
     and now-orphaned people. CustomTab and HomeStrip rows are configuration,
@@ -428,9 +423,6 @@ async def clear_database(request: Request, db: Session = Depends(get_db)):
     connection can't otherwise be safely reset, so the endpoint self-restarts
     instead of requiring the caller to stop the server first.
     """
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
     issue_count = db.query(func.count(Issue.id)).scalar()
     db.query(Issue).delete(synchronize_session=False)
     person_count = db.query(func.count(Person.id)).scalar()
@@ -501,11 +493,8 @@ def _vacuum_database(db_path: Path) -> None:
 
 
 @router.post("/admin/clear-reading-progress")
-def clear_reading_progress(request: Request, db: Session = Depends(get_db)):
+def clear_reading_progress(db: Session = Depends(get_db)):
     """Deletes all ReadingProgress rows only. Issues, genres, credits untouched."""
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
     count = db.query(func.count(ReadingProgress.id)).scalar()
     db.query(ReadingProgress).delete(synchronize_session=False)
     db.commit()
@@ -569,15 +558,16 @@ def run_database_backup(prefix: str = "digib00age_backup", sep: str = "_") -> Pa
 # POST /api/admin/browse-backup-file-dialog
 # POST /api/admin/restore-database
 # Restore Database (ADMIN_SPEC.md §9, Restore Database — V2.3 Item 12).
-# Local-only, same tier as Clear Database (§7.4) — a full DB replacement is at
-# least as disruptive.
+# Gated by admin auth like every other Danger Zone action.
 # ---------------------------------------------------------------------------
 
 @router.post("/admin/browse-backup-file-dialog")
-async def browse_backup_file_dialog(request: Request):
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
+async def browse_backup_file_dialog():
+    # Opens a native OS file picker on the machine running the backend process.
+    # Gated by admin auth, but that doesn't make it work remotely/headless — on a
+    # display-less Docker host this still fails (no display). Pre-existing
+    # functional gap, not a security concern; needs its own future redesign
+    # (e.g. a web-based file picker) — see ADMIN_SPEC.md and ROADMAP.md.
     import asyncio
 
     loop = asyncio.get_event_loop()
@@ -608,10 +598,7 @@ def _show_backup_file_dialog() -> str | None:
 
 
 @router.post("/admin/restore-database")
-async def restore_database(request: Request, payload: dict = Body(...)):
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
+async def restore_database(payload: dict = Body(...)):
     source_path = (payload.get("source_path") or "").strip()
     if not source_path:
         raise HTTPException(status_code=400, detail="source_path is required")
@@ -993,18 +980,17 @@ def list_scan_root_drives():
 # Native OS folder picker for the Scheduled Backup destination (ADMIN_SPEC.md
 # §9) — unlike /admin/browse above, this destination is explicitly meant to
 # live outside the library (a different drive, USB, or cloud-sync folder), so
-# the library-scoped tree-view picker doesn't apply here. Frontend and backend
-# always run on the same machine for this app, so a native dialog opened by
-# the backend is the same thing as the user opening one themselves — except
-# for a remote-admin session, where it would open on the wrong (server)
-# machine, hence the local-only gate.
+# the library-scoped tree-view picker doesn't apply here. Opens a window on
+# whatever machine runs the backend process, so it's only meaningful for a
+# session physically at that machine — but that's a functional limitation
+# (no display in headless/Docker deployments), not a security boundary.
+# Gated by admin auth like every other Danger Zone action; needs its own
+# future redesign (e.g. a web-based file picker) — see ADMIN_SPEC.md and
+# ROADMAP.md.
 # ---------------------------------------------------------------------------
 
 @router.post("/admin/browse-folder-dialog")
-async def browse_folder_dialog(request: Request):
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
+async def browse_folder_dialog():
     import asyncio
 
     loop = asyncio.get_event_loop()

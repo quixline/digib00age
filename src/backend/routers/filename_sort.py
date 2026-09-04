@@ -18,20 +18,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Body, HTTPException
 
 from backend import file_picker, filename_sort_log
-from backend.auth import is_local_request
 from backend.config import get_library_root
 from backend.filename_sort import FilenameSortResult, sort_by_filename
 
-
-def _require_local(request: Request) -> None:
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
-
-router = APIRouter(tags=["filename-sort"], dependencies=[Depends(_require_local)])
+router = APIRouter(tags=["filename-sort"])
 
 
 # ---------------------------------------------------------------------------

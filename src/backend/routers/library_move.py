@@ -19,21 +19,14 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, BackgroundTasks, Body, HTTPException, Query
 
 from backend import file_picker, series_move_log, singles_move_log
-from backend.auth import is_local_request
 from backend.config import get_library_root
 from backend.database import SessionLocal
 from backend.library_move import LibraryMoveResult, move_folders, sync_moved_paths_to_db
 
-
-def _require_local(request: Request) -> None:
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
-
-router = APIRouter(tags=["library-move"], dependencies=[Depends(_require_local)])
+router = APIRouter(tags=["library-move"])
 
 
 # ---------------------------------------------------------------------------

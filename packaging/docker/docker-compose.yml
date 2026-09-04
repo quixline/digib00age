@@ -2,24 +2,19 @@
 # the repo (or edit in place) and run `docker compose up -d --build` from
 # the repo root. See README.txt in this folder for the full walkthrough.
 
-# network_mode: host (not the usual ports: mapping) is required, not
-# stylistic - Docker's default bridge networking NATs every incoming
-# connection through docker0, so the backend's is_local_request() check
-# (raw TCP peer IP == 127.0.0.1) never passes, not even for a curl run on
-# the Docker host itself. Since the endpoints that grant remote admin trust
-# (set password, enable remote admin) are hard-gated to local-only with no
-# override, bridge networking makes first-run setup permanently
-# unreachable on a headless host - not just less convenient. Host
-# networking makes a loopback request to localhost:9800 on the Docker host
-# a genuine loopback connection again, restoring the same local/remote
-# distinction a native (non-Docker) install has. Verified 2026-09-04
-# deploying to quixy (headless Ubuntu server) - see DECISIONS.md.
+# Normal bridge networking + port mapping. Earlier revisions of this file
+# required network_mode: host as a workaround for a peer-IP-based "local
+# machine" auth check that made first-run password setup unreachable behind
+# Docker's default NAT (see DECISIONS.md, 2026-09-04 entries). That check has
+# since been removed entirely - password state is the only auth boundary now,
+# not network origin - so ordinary port mapping works fine again.
 services:
   digib00age:
     build:
       context: ../..
       dockerfile: packaging/docker/Dockerfile
-    network_mode: host
+    ports:
+      - "9800:9800"
     volumes:
       # config.json lands here (XDG_CONFIG_HOME) - persists across container
       # rebuilds/restarts.

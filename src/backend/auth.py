@@ -47,10 +47,6 @@ def is_protection_enabled() -> bool:
     return bool(get_config().get("admin_password_hash"))
 
 
-def is_remote_admin_enabled() -> bool:
-    return bool(get_config().get("remote_admin_enabled", False))
-
-
 def make_session_cookie(secret: str, ttl_seconds: int = SESSION_TTL_SECONDS) -> str:
     expiry = int(time.time()) + ttl_seconds
     sig = hmac.new(secret.encode("utf-8"), str(expiry).encode("utf-8"), hashlib.sha256).hexdigest()
@@ -67,11 +63,6 @@ def verify_session_cookie(cookie_val: str, secret: str) -> bool:
     if not hmac.compare_digest(sig, expected_sig):
         return False
     return expiry > time.time()
-
-
-def is_local_request(request: Request) -> bool:
-    host = request.client.host if request.client else None
-    return host in ("127.0.0.1", "::1")
 
 
 def is_locked_out(ip: str) -> bool:
@@ -96,18 +87,11 @@ def clear_failed_attempts(ip: str) -> None:
 def require_admin_auth(request: Request, response: Response) -> None:
     """FastAPI dependency gating /api/admin/* and /api/editor/* routes.
 
-    The remote-admin block applies unconditionally — including when password
-    protection itself is off (the default state). Remote Administration can only
-    ever be enabled while protection is on (see is_remote_admin_enabled callers),
-    so a non-local request reaching here with protection off is exactly the case
-    v2.4 Item 1 closes: previously this whole function no-op'd when protection was
-    disabled, so every admin/editor endpoint without its own is_local_request()
-    check was wide open to the LAN by default. Login/status/enable/disable
-    endpoints live in admin_auth.py and are registered without this dependency.
+    Password state is the only boundary — network origin is never checked. With no
+    password set, everything is open to anyone who can reach the server (accepted
+    by design, see ADMIN_SPEC.md §7.1.1). Login/status/enable/disable endpoints
+    live in admin_auth.py and are registered without this dependency.
     """
-    if not is_local_request(request) and not is_remote_admin_enabled():
-        raise HTTPException(status_code=403, detail={"error": "remote_admin_disabled"})
-
     if not is_protection_enabled():
         return
 

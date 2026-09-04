@@ -59,7 +59,9 @@ config.json     Tracked, bare template — no secrets. Real values (API key,
      initializes the DB if needed, then starts uvicorn; Ctrl+C to stop).
 3. Open `http://localhost:9800` (or `http://<host-pc-ip>:9800` from another device on
    the network) for the library. `/admin` for the Admin page, `/editor` for the Full
-   Editor — both intended for localhost use only.
+   Editor — both reachable from any device on the network. Set a password (Admin >
+   Advanced Settings) if you want to require a login; with no password set, these
+   pages and everything behind them are open to anyone who can reach the server.
 
 Python dependencies are in `requirements.txt` (`pip install -r requirements.txt`).
 
@@ -79,13 +81,13 @@ icon that does nothing when clicked.
 **Docker:** backend + web frontend only (no Flutter app, no tray launcher —
 see `packaging/docker/README.txt`). From the repo root:
 `docker compose -f packaging/docker/docker-compose.yml up -d --build`.
-Restart Server, Clear/Restore Database, and Processing Tools stay
-unavailable from any machine other than the one running the container —
-same local-only boundary every other remote client already hits, not a
-Docker-specific limitation. **On a headless host, first-run password setup
-requires a one-time shell command** (no way to do it from a browser by
-design — see `packaging/docker/README.txt`), flagged for a UX/security
-rework.
+No gated setup — open `/admin` from any browser that can reach the port and
+optionally set a password; everything (including Restart Server, Clear/
+Restore Database, and Processing Tools) works the same from any machine as
+it does locally. Three specific actions (Open Logs Folder, and the native
+file/folder pickers behind Restore Database and Scheduled Backup) open a GUI
+dialog on the container's own machine and stay non-functional headless
+(no display) — unrelated to auth, flagged for a future web-based redesign.
 
 ## Status
 

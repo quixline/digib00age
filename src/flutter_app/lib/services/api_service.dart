@@ -17,9 +17,9 @@ class ApiService {
 
   // Returns true if the server responds within 3 seconds.
   // Uses /api/ping rather than an /api/admin/* route — the admin routes sit
-  // behind require_admin_auth, which rejects any non-local request outright
-  // when Remote Administration is off (the default), so a LAN client like the
-  // Flutter app would always read as "offline" even with a healthy server (BUG-019).
+  // behind require_admin_auth, which requires a login once a password is set,
+  // so a LAN client like the Flutter app would read as "offline" without one
+  // even with a healthy server (BUG-019).
   Future<bool> checkConnection() async {
     try {
       final res = await http

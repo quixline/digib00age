@@ -1044,20 +1044,6 @@ function initXmlTaggingTool() {
   document.getElementById('xtRunBtn').addEventListener('click', runXmlTagging);
 }
 
-// ── Local-only gating (§12 shared notes) ────────────────────────────────
-// Hooked from admin.js's refreshAuthSettingsUi(), which already fetches
-// GET /api/admin/auth/status once per refresh — avoids a second fetch here.
-function refreshProcessingToolsLocalGate(isLocal) {
-  const hint = document.getElementById('ptLocalOnlyHint');
-  const section = document.getElementById('processingToolsSection');
-  if (!hint || !section) return;
-  hint.hidden = isLocal;
-  section.querySelectorAll('input, button, select, textarea').forEach(el => {
-    if (el.id === 'ptLocalOnlyHint') return;
-    el.disabled = !isLocal;
-  });
-}
-
 function initProcessingTools() {
   if (!document.getElementById('renameToolCard')) return;
   document.getElementById('ptSummaryCloseBtn').addEventListener('click', () => {

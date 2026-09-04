@@ -23,24 +23,17 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Body, HTTPException
 
 from backend import ct_autotag_log, ct_bridge, convert_images_log, convert_log, file_picker
 from backend.archive_convert import ConvertResult, convert_archive_file, detect_archive_format
-from backend.auth import is_local_request
 from backend.config import get_config, get_library_root, save_config
 from backend.ct_autotag import CTAutoTagResult, ct_autotag_file
 from backend.image_convert import ConvertImagesResult, convert_images_in_archive
 
 logger = logging.getLogger(__name__)
 
-
-def _require_local(request: Request) -> None:
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
-
-router = APIRouter(tags=["processing-folder"], dependencies=[Depends(_require_local)])
+router = APIRouter(tags=["processing-folder"])
 
 
 # ---------------------------------------------------------------------------

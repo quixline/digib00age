@@ -169,18 +169,6 @@ async function checkAuthStatus() {
     showLoginPopup();
   }
 
-  // v2.4 Item 1: Remote Administration off means the Admin cog has no function
-  // for a non-local request — but the icon stays in place (just inert) rather
-  // than being removed, so the Login/Logout button next to it doesn't shift.
-  const settingsBtn = document.querySelector('.settings-btn');
-  if (settingsBtn) {
-    const disabled = !status.is_local && !status.remote_admin_enabled;
-    settingsBtn.classList.toggle('settings-btn--disabled', disabled);
-    settingsBtn.dataset.tooltip = disabled
-      ? 'Admin access is off for remote sessions'
-      : 'Open admin settings';
-  }
-
   return status;
 }
 

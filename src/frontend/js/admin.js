@@ -651,7 +651,7 @@ async function doRestore() {
     setTimeout(() => { window.location.reload(); }, 4000);
   } catch (e) {
     showToast(e.status
-      ? (e.body?.detail?.error === 'local_access_required' ? 'Local access required' : (e.body?.detail || 'Restore failed'))
+      ? (e.body?.detail || 'Restore failed')
       : 'Restore failed: ' + e.message, true);
     btn.disabled = false;
     btn.textContent = 'Restore Database';
@@ -676,7 +676,7 @@ async function clearReadingProgress() {
     showToast(`Cleared reading progress for ${d.removed} issue(s)`);
     await loadStats();
   } catch (e) {
-    showToast(e.body?.detail?.error === 'local_access_required' ? 'Local access required' : 'Clear failed', true);
+    showToast('Clear failed', true);
   }
 }
 
@@ -700,7 +700,7 @@ async function clearDatabase() {
     setTimeout(() => { window.location.reload(); }, 4000);
   } catch (e) {
     showToast(e.status
-      ? (e.body?.detail?.error === 'local_access_required' ? 'Local access required' : (e.body?.detail || 'Clear failed'))
+      ? (e.body?.detail || 'Clear failed')
       : 'Clear failed: ' + e.message, true);
     btn.disabled = false;
     btn.textContent = 'Clear Database';
@@ -1753,12 +1753,11 @@ function showToast(msg, isError = false) {
   setTimeout(() => toast.classList.remove('admin-toast--show'), 3500);
 }
 
-// ── Password Protection + Remote Administration (ADMIN_SPEC.md §7.1 / §7.2) ────
+// ── Password Protection (ADMIN_SPEC.md §7.1) ────────────────────────────────
 
 async function initAuthSettings() {
   const protectionToggle = document.getElementById('authProtectionToggle');
   const passwordFields = document.getElementById('authPasswordFields');
-  const remoteToggle = document.getElementById('authRemoteToggle');
   const saveBtn = document.getElementById('authSaveBtn');
 
   await refreshAuthSettingsUi();
@@ -1769,8 +1768,7 @@ async function initAuthSettings() {
     passwordFields.hidden = !protectionToggle.checked;
     document.getElementById('authError').hidden = true;
     if (!protectionToggle.checked) {
-      // Turning protection off requires re-entering the current password
-      // (it also force-disables Remote Administration in the same action).
+      // Turning protection off requires re-entering the current password.
       protectionToggle.checked = true;
       passwordFields.hidden = true;
       document.getElementById('authDisableCurrentPassword').value = '';
@@ -1786,21 +1784,6 @@ async function initAuthSettings() {
   });
   document.getElementById('authDisableConfirmBtn').addEventListener('click', disableProtection);
 
-  remoteToggle.addEventListener('change', async () => {
-    try {
-      await apiFetch(`/admin/auth/remote-toggle`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: remoteToggle.checked }),
-      });
-    } catch (_) {
-      remoteToggle.checked = !remoteToggle.checked;
-      showToast('Could not update Remote Administration', true);
-      return;
-    }
-    showToast(remoteToggle.checked ? 'Remote Administration enabled' : 'Remote Administration disabled');
-  });
-
   document.getElementById('passwordResetBtn').addEventListener('click', openPwResetModal);
   document.getElementById('pwResetCloseBtn').addEventListener('click', closePwResetModal);
   document.getElementById('pwResetCancelBtn').addEventListener('click', closePwResetModal);
@@ -1813,32 +1796,6 @@ async function refreshAuthSettingsUi() {
   document.getElementById('authProtectionToggle').checked = status.protection_enabled;
   document.getElementById('authPasswordFields').hidden = true;
   document.getElementById('authDisableConfirmRow').hidden = true;
-  document.getElementById('authRemoteToggle').checked = status.remote_admin_enabled;
-  document.getElementById('authRemoteToggle').disabled = !status.protection_enabled;
-
-  // Local-only enforcement (ADMIN_SPEC.md §7.1.1) — these controls are only ever
-  // submittable from a 127.0.0.1 session, even when advancedLock is unchecked.
-  const localOnlyHint = document.getElementById('authLocalOnlyHint');
-  const remoteLabel = document.getElementById('authRemoteLabel');
-  if (!status.is_local) {
-    localOnlyHint.hidden = false;
-    document.getElementById('authProtectionToggle').disabled = true;
-    document.getElementById('authSaveBtn').disabled = true;
-    remoteLabel.querySelector('input').disabled = true;
-    document.getElementById('passwordResetBtn').disabled = true;
-  } else {
-    localOnlyHint.hidden = true;
-    document.getElementById('authProtectionToggle').disabled = false;
-    document.getElementById('authSaveBtn').disabled = false;
-    remoteLabel.querySelector('input').disabled = !status.protection_enabled;
-    document.getElementById('passwordResetBtn').disabled = false;
-  }
-
-  // Processing Tools (§12 shared notes) — local-only regardless of
-  // protection/remote-admin state, same tier as the controls above.
-  if (typeof refreshProcessingToolsLocalGate === 'function') {
-    refreshProcessingToolsLocalGate(status.is_local);
-  }
 }
 
 async function enableProtection() {
@@ -1918,7 +1875,7 @@ async function submitPwReset(e) {
     });
   } catch (_) {
     errorBox.hidden = false;
-    errorBox.textContent = 'Current password incorrect, or local access required.';
+    errorBox.textContent = 'Current password incorrect.';
     return;
   }
   closePwResetModal();

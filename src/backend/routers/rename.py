@@ -21,23 +21,13 @@ from __future__ import annotations
 
 import os
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, HTTPException
 
 from backend import file_picker, rename_log
-from backend.auth import is_local_request
 from backend.config import get_library_root
 from backend.rename_tool import parse_comic_filename, preview_renames
 
-
-def _require_local(request: Request) -> None:
-    # Processing Tools shared rule (§12 notes) — the whole section is inert
-    # for a remote session, not just the destructive Apply step, since the
-    # picker itself exposes server filesystem structure.
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
-
-router = APIRouter(tags=["rename"], dependencies=[Depends(_require_local)])
+router = APIRouter(tags=["rename"])
 
 # In-memory working file list — mirrors editor_full.py's _working_files
 # pattern (desktop-tool-shaped, single-session, never persisted).

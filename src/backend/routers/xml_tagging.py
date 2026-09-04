@@ -24,21 +24,14 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Body, HTTPException
 
 from backend import ct_autotag_log, file_picker
 from backend.archive_convert import detect_archive_format
-from backend.auth import is_local_request
 from backend.config import get_config, get_library_root
 from backend.ct_autotag import CTAutoTagResult, ct_autotag_file
 
-
-def _require_local(request: Request) -> None:
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
-
-router = APIRouter(tags=["xml-tagging"], dependencies=[Depends(_require_local)])
+router = APIRouter(tags=["xml-tagging"])
 
 
 # ---------------------------------------------------------------------------

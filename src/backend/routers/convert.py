@@ -22,20 +22,13 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Body, HTTPException
 
 from backend import convert_log, file_picker
 from backend.archive_convert import convert_archive_file, detect_archive_format
-from backend.auth import is_local_request
 from backend.config import get_library_root
 
-
-def _require_local(request: Request) -> None:
-    if not is_local_request(request):
-        raise HTTPException(status_code=403, detail={"error": "local_access_required"})
-
-
-router = APIRouter(tags=["convert"], dependencies=[Depends(_require_local)])
+router = APIRouter(tags=["convert"])
 
 _working_files: dict[str, dict] = {}
 _next_id = 1

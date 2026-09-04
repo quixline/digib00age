@@ -3283,16 +3283,6 @@ select.filter-select:focus,
   background: var(--surface-2);
 }
 
-/* Gear icon present but inert — Remote Administration is off and this is a
-   non-local session, so the link has nowhere to go. Stays in place (no
-   layout shift for the Login/Logout button next to it), just visually dimmed
-   and not clickable. */
-.settings-btn--disabled {
-  opacity: 0.35;
-  pointer-events: none;
-  cursor: default;
-}
-
 /* Top action row — four buttons spread across the full width */
 .admin-action-row {
   display: flex;
