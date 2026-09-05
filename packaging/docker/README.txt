@@ -8,28 +8,35 @@ doesn't need desktop tray lifecycle management, and Flutter just needs a
 server URL to point at).
 
 Copy this folder's docker-compose.yml next to a clone of the repo (or edit
-it in place), open it and change the /path/to/your/comics line to your real
-library path, then from the repo root:
+it in place), then from the repo root:
 
     docker compose -f packaging/docker/docker-compose.yml up -d --build
 
-First launch pre-fills the library location as /library (the in-container
-mount point set in docker-compose.yml, not your host path) - if you kept that
-mount as-is, there's nothing further to configure. Every other install path
-still starts from the same bare config.json template with no library set.
+Nothing to edit first in the common case: the default compose file mounts
+the host's whole /mnt tree straight through to the container's /mnt, same
+path on both sides - the same approach qBittorrent's own container uses.
+Every drive mounted under the host's /mnt (USB or otherwise) shows up inside
+the container with its real name, automatically, with no per-drive line to
+add. If your host keeps drives somewhere other than /mnt, edit that one
+volumes: line to match before starting the container.
+
+First launch has nothing pre-set - open http://<host>:9800/admin, go to
+Library Folders, use the Browse picker to navigate to the real path under
+/mnt (e.g. /mnt/your-drive-name/Comics), and add it as a Scan Root. Add as
+many Scan Roots as you have drives/folders, all from the same picker, no
+compose edits or restarts needed. Every install path (Windows MSI, pip,
+Docker) starts from the same bare config.json template with no library set.
 config/DB/thumbnails persist across restarts and rebuilds via the ./config
 and ./data bind mounts next to the compose file.
 
-/library is just this compose file's example mount name, not a hard limit -
-Docker doesn't auto-detect drives or USB devices (true of any containerized
-app), so a folder only exists inside the container if docker-compose.yml
-mounts it there. To use a different or additional location (e.g. a USB
-drive), give it a stable mount point on the host first, add another line
-under volumes: with whatever container-side name you like, restart the
-container, then use the Admin UI's Browse button (Library Folders) to reach
-it and add it as a Scan Root - same web-based picker used everywhere else in
-the app, not a native OS dialog, so it works the same whether the container
-has a display or not.
+Docker never auto-detects drives or USB devices itself (true of any
+containerized app) - a path only exists inside the container if
+docker-compose.yml mounts it there, which is why the default /mnt:/mnt line
+covers the common case without further editing. Prefer one folder mounted
+directly instead (e.g. a single-drive setup)? Replace that line with
+- /path/to/your/comics:/library and it'll be pre-filled as the library
+location on first launch automatically, same as before - see the comments
+in docker-compose.yml for both options.
 
 There is no gated first-run setup. Password protection is entirely optional
 and entirely on you: open http://<host>:9800/admin from any browser on any

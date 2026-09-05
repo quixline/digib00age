@@ -203,7 +203,7 @@
           <div class="admin-card">
             <div class="admin-card-label">Scan Roots</div>
             <p class="admin-card-hint">Select the root location of your library(s), sub folders will be included</p>
-            <p class="admin-card-hint">Paths are resolved on the machine running the server, not your browser. Running in Docker? Point this at the path inside the container — <code>/library</code> by default (see <code>docker-compose.yml</code>); add more <code>volumes:</code> lines there to expose additional locations, and Browse below to reach them.</p>
+            <p class="admin-card-hint">Paths are resolved on the machine running the server, not your browser. Running in Docker? The default <code>docker-compose.yml</code> mounts the host's whole <code>/mnt</code> tree straight through, so any drive mounted there shows up below by its real name — browse to it and pick the folder to use.</p>
             <div class="folder-list" id="rootList"></div>
             <div class="folder-add-row">
               <input type="text" class="admin-input" id="newRootInput" placeholder="e.g. D:\Comics\…" />
