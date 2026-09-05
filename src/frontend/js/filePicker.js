@@ -21,16 +21,19 @@ function wireFilePicker() {
   document.getElementById('ptPickerConfirmBtn').addEventListener('click', ptPickerConfirm);
 }
 
-// config: { browseUrl, drivesUrl, mode: 'files'|'folder', title, onConfirm(paths) }
+// config: { browseUrl, drivesUrl, mode: 'files'|'folder', single, title, onConfirm(paths) }
+// `single` (mode: 'files' only) restricts the file list to one checked item at
+// a time (Restore Database — exactly one backup file makes sense, unlike
+// Rename/Convert's multi-file batches).
 function openFilePicker(config) {
   ptPickerConfig = config;
   ptPickerSelected.clear();
   document.getElementById('ptPickerTitle').textContent = config.title || 'Choose Files';
   document.getElementById('ptPickerConfirmBtn').textContent =
-    config.mode === 'folder' ? 'Select This Folder' : 'Add Selected';
+    config.mode === 'folder' ? 'Select This Folder' : (config.single ? 'Select This File' : 'Add Selected');
   const multiSelectBtns = ['ptPickerSelectAllBtn', 'ptPickerDeselectAllBtn'];
   multiSelectBtns.forEach(id => {
-    document.getElementById(id).style.display = config.mode === 'folder' ? 'none' : '';
+    document.getElementById(id).style.display = (config.mode === 'folder' || config.single) ? 'none' : '';
   });
   document.getElementById('ptPickerOverlay').hidden = false;
   loadPtPickerDirectory(null);
@@ -144,6 +147,11 @@ function renderPtPickerTree(folders, files) {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.addEventListener('change', () => {
+      if (checkbox.checked && ptPickerConfig.single) {
+        document.querySelectorAll('#ptPickerTree input[type="checkbox"]').forEach((cb) => {
+          if (cb !== checkbox && cb.checked) { cb.checked = false; cb.dispatchEvent(new Event('change')); }
+        });
+      }
       row.classList.toggle('selected', checkbox.checked);
       if (checkbox.checked) ptPickerSelected.set(item.path, item.type);
       else ptPickerSelected.delete(item.path);

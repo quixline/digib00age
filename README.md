@@ -81,13 +81,17 @@ icon that does nothing when clicked.
 **Docker:** backend + web frontend only (no Flutter app, no tray launcher —
 see `packaging/docker/README.txt`). From the repo root:
 `docker compose -f packaging/docker/docker-compose.yml up -d --build`.
-No gated setup — open `/admin` from any browser that can reach the port and
+First boot pre-fills the library location as `/library` (the compose file's
+example mount — edit its host-side path to your real comics folder). No
+gated setup — open `/admin` from any browser that can reach the port and
 optionally set a password; everything (including Restart Server, Clear/
-Restore Database, and Processing Tools) works the same from any machine as
-it does locally. Three specific actions (Open Logs Folder, and the native
-file/folder pickers behind Restore Database and Scheduled Backup) open a GUI
-dialog on the container's own machine and stay non-functional headless
-(no display) — unrelated to auth, flagged for a future web-based redesign.
+Restore Database, Scheduled Backup, and Processing Tools) works the same
+from any machine as it does locally, via the same web-based folder/file
+picker used throughout the Admin page — no native OS dialog, no display
+required. Only "Open Logs Folder" stays non-functional headless (it reveals
+the folder in a native file manager on the container's own machine, which
+has no headless equivalent) — unrelated to auth, and the logs path is still
+shown as text in the Admin UI.
 
 ## Status
 

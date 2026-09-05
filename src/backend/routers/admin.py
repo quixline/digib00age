@@ -555,46 +555,43 @@ def run_database_backup(prefix: str = "digib00age_backup", sep: str = "_") -> Pa
 
 
 # ---------------------------------------------------------------------------
-# POST /api/admin/browse-backup-file-dialog
+# GET  /api/admin/restore-db/browse
+# GET  /api/admin/restore-db/drives
 # POST /api/admin/restore-database
-# Restore Database (ADMIN_SPEC.md §9, Restore Database — V2.3 Item 12).
-# Gated by admin auth like every other Danger Zone action.
+# Restore Database (ADMIN_SPEC.md §9, Restore Database — V2.3 Item 12). The
+# browse/drives pair reuses the same shared file_picker pattern already used
+# by Scan Root and the Processing Tools (ADMIN_SPEC.md §12) instead of a
+# native OS dialog — a native dialog opens on whatever machine runs the
+# backend process, which is meaningless on a headless/Docker host with no
+# display; this works identically everywhere since it's plain HTTP +
+# os.listdir on the backend. Gated by admin auth like every other Danger Zone
+# action.
 # ---------------------------------------------------------------------------
 
-@router.post("/admin/browse-backup-file-dialog")
-async def browse_backup_file_dialog():
-    # Opens a native OS file picker on the machine running the backend process.
-    # Gated by admin auth, but that doesn't make it work remotely/headless — on a
-    # display-less Docker host this still fails (no display). Pre-existing
-    # functional gap, not a security concern; needs its own future redesign
-    # (e.g. a web-based file picker) — see ADMIN_SPEC.md and ROADMAP.md.
-    import asyncio
-
-    loop = asyncio.get_event_loop()
-    path = await loop.run_in_executor(None, _show_backup_file_dialog)
-    return {"path": path}
-
-
-def _show_backup_file_dialog() -> str | None:
-    import tkinter
-    from tkinter import filedialog
-
+def _restore_db_initial_dir() -> str:
     config = get_config()
     db_path = PROJECT_ROOT / config.get("db_path", "backend/digib00age.db")
     initial_dir = config.get("backup_folder") or str(db_path.parent)
+    return initial_dir if os.path.isdir(initial_dir) else str(REPO_ROOT.anchor)
 
-    root = tkinter.Tk()
-    root.withdraw()
-    root.attributes("-topmost", True)
+
+@router.get("/admin/restore-db/browse")
+def browse_restore_db(path: str = Query(None)):
+    target = path or _restore_db_initial_dir()
     try:
-        selected = filedialog.askopenfilename(
-            title="Choose Backup File to Restore",
-            initialdir=initial_dir,
-            filetypes=[("Database files", "*.db"), ("All files", "*.*")],
-        )
-    finally:
-        root.destroy()
-    return selected or None
+        listing = file_picker.list_directory(target)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Directory not found")
+    except PermissionError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    listing["files"] = [f for f in listing["files"] if f["name"].lower().endswith(".db")]
+    return listing
+
+
+@router.get("/admin/restore-db/drives")
+def list_restore_db_drives():
+    return {"drives": file_picker.list_drives()}
 
 
 @router.post("/admin/restore-database")
@@ -976,40 +973,34 @@ def list_scan_root_drives():
 
 
 # ---------------------------------------------------------------------------
-# POST /api/admin/browse-folder-dialog
-# Native OS folder picker for the Scheduled Backup destination (ADMIN_SPEC.md
-# §9) — unlike /admin/browse above, this destination is explicitly meant to
-# live outside the library (a different drive, USB, or cloud-sync folder), so
-# the library-scoped tree-view picker doesn't apply here. Opens a window on
-# whatever machine runs the backend process, so it's only meaningful for a
-# session physically at that machine — but that's a functional limitation
-# (no display in headless/Docker deployments), not a security boundary.
-# Gated by admin auth like every other Danger Zone action; needs its own
-# future redesign (e.g. a web-based file picker) — see ADMIN_SPEC.md and
-# ROADMAP.md.
+# GET /api/admin/backup-folder/browse
+# GET /api/admin/backup-folder/drives
+# Folder picker for the Scheduled Backup destination (ADMIN_SPEC.md §9) —
+# unlike /admin/browse above, this destination is explicitly meant to live
+# outside the library (a different drive, USB, or cloud-sync folder), so the
+# library-scoped tree-view picker doesn't apply here. Reuses the same shared
+# file_picker pattern already used by Scan Root and the Processing Tools
+# instead of a native OS dialog — a native dialog opens a window on whatever
+# machine runs the backend process, which is meaningless on a headless/Docker
+# host with no display; this works identically everywhere since it's plain
+# HTTP + os.listdir on the backend. Gated by admin auth like every other
+# Danger Zone action.
 # ---------------------------------------------------------------------------
 
-@router.post("/admin/browse-folder-dialog")
-async def browse_folder_dialog():
-    import asyncio
-
-    loop = asyncio.get_event_loop()
-    path = await loop.run_in_executor(None, _show_folder_dialog)
-    return {"path": path}
-
-
-def _show_folder_dialog() -> str | None:
-    import tkinter
-    from tkinter import filedialog
-
-    root = tkinter.Tk()
-    root.withdraw()
-    root.attributes("-topmost", True)
+@router.get("/admin/backup-folder/browse")
+def browse_backup_folder(path: str = Query(None)):
+    target = path or _restore_db_initial_dir()
     try:
-        selected = filedialog.askdirectory(title="Choose Backup Destination")
-    finally:
-        root.destroy()
-    return selected or None
+        return file_picker.list_directory(target)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Directory not found")
+    except PermissionError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.get("/admin/backup-folder/drives")
+def list_backup_folder_drives():
+    return {"drives": file_picker.list_drives()}
 
 
 # ---------------------------------------------------------------------------

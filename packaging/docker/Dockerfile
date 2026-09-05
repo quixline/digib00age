@@ -70,6 +70,11 @@ ENV XDG_CONFIG_HOME=/config
 ENV XDG_DATA_HOME=/data
 RUN mkdir -p /config /data
 
+# Tells config.py this is a Docker container (not a bare-metal pip install,
+# which is otherwise indistinguishable — both are _IS_PIP_INSTALLED) so it can
+# pre-seed library_root as /library on first boot. See config.py's _IS_DOCKER.
+ENV DIGIB00AGE_DOCKER=1
+
 # Runs as root, deliberately - matches this project's other install paths
 # (the Windows MSI and Linux .deb/sdist both run as the installing user
 # directly, no privilege separation). A non-root user here just breaks on

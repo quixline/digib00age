@@ -73,6 +73,17 @@ _IS_PIP_INSTALLED = (
 # this reuse.
 _USE_XDG_PATHS = _IS_FROZEN_LINUX or _IS_PIP_INSTALLED
 
+# Set by packaging/docker/Dockerfile — distinguishes "Docker container" from a
+# bare-metal pip install on real Linux hardware, both of which are
+# _IS_PIP_INSTALLED/_USE_XDG_PATHS alike. Used only to pre-seed library_root
+# on first boot (see get_config() below); Docker's own filesystem is a
+# container, not the host, so /library (this project's documented fixed mount
+# point — packaging/docker/docker-compose.yml, ADMIN_SPEC.md §5) is the one
+# library path a fresh Docker container can ever resolve without the admin
+# typing anything, unlike a bare-metal pip install where no such fixed path
+# exists.
+_IS_DOCKER = bool(os.environ.get("DIGIB00AGE_DOCKER"))
+
 
 def resolve_frontend_dir() -> Path:
     """Root of frontend/'s static assets — used by main.py (static file
@@ -146,12 +157,17 @@ def get_config() -> dict:
     """Load and return config.json. Cached after first call."""
     config_path = _config_path()
     if _USE_XDG_PATHS and not config_path.exists():
-        # First launch of a packaged .deb install — nothing ships a
+        # First launch of a packaged .deb/pip/Docker install — nothing ships a
         # config.json at the XDG path yet, so seed it with the same bare
-        # template dev/Windows already start from.
+        # template dev/Windows already start from. Docker additionally
+        # pre-fills library_root as /library so a fresh container has a
+        # working scan root with no manual typing — see _IS_DOCKER above.
         config_path.parent.mkdir(parents=True, exist_ok=True)
+        seed = dict(_DEFAULT_CONFIG)
+        if _IS_DOCKER:
+            seed["library_root"] = "/library"
         with open(config_path, "w", encoding="utf-8") as f:
-            json.dump(_DEFAULT_CONFIG, f, indent=2)
+            json.dump(seed, f, indent=2)
     with open(config_path, "r", encoding="utf-8") as f:
         return json.load(f)
 

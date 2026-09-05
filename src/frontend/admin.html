@@ -166,7 +166,7 @@
           <p class="admin-card-hint">
             Replaces the entire database — including Custom Tabs and Home Page
             Strips — and restarts the server. A safety snapshot of the current
-            database is taken automatically before the swap. Local access only.
+            database is taken automatically before the swap.
           </p>
         </div>
       </div>
@@ -203,6 +203,7 @@
           <div class="admin-card">
             <div class="admin-card-label">Scan Roots</div>
             <p class="admin-card-hint">Select the root location of your library(s), sub folders will be included</p>
+            <p class="admin-card-hint">Paths are resolved on the machine running the server, not your browser. Running in Docker? Point this at the path inside the container — <code>/library</code> by default (see <code>docker-compose.yml</code>); add more <code>volumes:</code> lines there to expose additional locations, and Browse below to reach them.</p>
             <div class="folder-list" id="rootList"></div>
             <div class="folder-add-row">
               <input type="text" class="admin-input" id="newRootInput" placeholder="e.g. D:\Comics\…" />

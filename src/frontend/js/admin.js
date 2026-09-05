@@ -591,33 +591,34 @@ function initServerPort() {
 
 // ── Scheduled Database Backup (ADMIN_SPEC.md §9) ────────────────────────────
 function initBackupSettings() {
-  document.getElementById('browseBackupFolderBtn').addEventListener('click', async () => {
-    let d;
-    try {
-      d = await apiFetch(`/admin/browse-folder-dialog`, { method: 'POST' });
-    } catch (_) {
-      showToast('Folder browsing requires a local session', true);
-      return;
-    }
-    if (!d.path) return; // dialog cancelled
-    document.getElementById('backupFolderInput').value = d.path;
-    patchConfig({ backup_folder: d.path });
+  document.getElementById('browseBackupFolderBtn').addEventListener('click', () => {
+    openFilePicker({
+      title: 'Choose Backup Destination Folder',
+      mode: 'folder',
+      browseUrl: '/admin/backup-folder/browse',
+      drivesUrl: '/admin/backup-folder/drives',
+      onConfirm: (paths) => {
+        document.getElementById('backupFolderInput').value = paths[0];
+        patchConfig({ backup_folder: paths[0] });
+      },
+    });
   });
 
   document.getElementById('backupFreqSelect').addEventListener('change', (e) => {
     patchConfig({ backup_frequency: e.target.value });
   });
 
-  document.getElementById('browseRestoreFileBtn').addEventListener('click', async () => {
-    let d;
-    try {
-      d = await apiFetch(`/admin/browse-backup-file-dialog`, { method: 'POST' });
-    } catch (_) {
-      showToast('Local access required', true);
-      return;
-    }
-    if (!d.path) return; // dialog cancelled
-    document.getElementById('restoreFileInput').value = d.path;
+  document.getElementById('browseRestoreFileBtn').addEventListener('click', () => {
+    openFilePicker({
+      title: 'Choose Backup File to Restore',
+      mode: 'files',
+      single: true,
+      browseUrl: '/admin/restore-db/browse',
+      drivesUrl: '/admin/restore-db/drives',
+      onConfirm: (paths) => {
+        document.getElementById('restoreFileInput').value = paths[0];
+      },
+    });
   });
 
   document.getElementById('restoreBtn').addEventListener('click', doRestore);
@@ -793,10 +794,21 @@ async function patchConfig(patch) {
   }
 }
 
-function addRoot() {
+async function addRoot() {
   const input = document.getElementById('newRootInput');
   const val   = input.value.trim();
   if (!val || _config.library_roots.includes(val)) { input.value = ''; document.getElementById('addRootBtn').classList.remove('is-ready'); return; }
+
+  // Validate against the server's filesystem before saving — reuses the same
+  // isdir check the Scan Root browse picker already does (file_picker.py),
+  // just surfaced here instead of deferred until the next scan runs.
+  try {
+    await apiFetch(`/admin/scan-root/browse?path=${encodeURIComponent(val)}`);
+  } catch (e) {
+    showToast(`Path not found on the server: ${val}`, true);
+    return;
+  }
+
   _config.library_roots = [..._config.library_roots, val];
   renderRoots();
   patchConfig({ library_roots: _config.library_roots });

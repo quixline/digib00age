@@ -22,7 +22,16 @@ services:
       # DB + thumbnails land here (XDG_DATA_HOME).
       - ./data:/data
       # Edit the left side to your real comic library path on the host.
-      # The right side (/library) is what you point "library_root" at in
-      # the Admin UI after first launch - not the host path.
+      # The right side (/library) is what "library_root" is pre-filled with
+      # on first launch (see backend/config.py's _IS_DOCKER) - it's just this
+      # file's example mount name, not a hard limit. Docker never auto-detects
+      # drives or USB devices (true of every containerized app, not a
+      # digib00age limitation) - a folder only exists inside the container if
+      # it has a line here. To add another location (e.g. a USB drive), first
+      # give it a stable mount point on the host, then add another line below
+      # with whatever container-side name you like, e.g.:
+      #   - /mnt/usb-comics:/comics-usb
+      # It'll then show up in the Admin page's Browse picker like /library
+      # does, and can be added as an additional Scan Root.
       - /path/to/your/comics:/library
     restart: unless-stopped

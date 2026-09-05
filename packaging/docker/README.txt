@@ -13,12 +13,23 @@ library path, then from the repo root:
 
     docker compose -f packaging/docker/docker-compose.yml up -d --build
 
-First launch starts with the same bare config.json template every install
-path ships with - open the Admin UI (http://<host>:9800/admin) and set the
-library location to /library (the in-container mount point set in
-docker-compose.yml, not your host path). config/DB/thumbnails persist across
-restarts and rebuilds via the ./config and ./data bind mounts next to the
-compose file.
+First launch pre-fills the library location as /library (the in-container
+mount point set in docker-compose.yml, not your host path) - if you kept that
+mount as-is, there's nothing further to configure. Every other install path
+still starts from the same bare config.json template with no library set.
+config/DB/thumbnails persist across restarts and rebuilds via the ./config
+and ./data bind mounts next to the compose file.
+
+/library is just this compose file's example mount name, not a hard limit -
+Docker doesn't auto-detect drives or USB devices (true of any containerized
+app), so a folder only exists inside the container if docker-compose.yml
+mounts it there. To use a different or additional location (e.g. a USB
+drive), give it a stable mount point on the host first, add another line
+under volumes: with whatever container-side name you like, restart the
+container, then use the Admin UI's Browse button (Library Folders) to reach
+it and add it as a Scan Root - same web-based picker used everywhere else in
+the app, not a native OS dialog, so it works the same whether the container
+has a display or not.
 
 There is no gated first-run setup. Password protection is entirely optional
 and entirely on you: open http://<host>:9800/admin from any browser on any
@@ -37,14 +48,15 @@ valid login (from any machine) is the only thing required for any of those
 actions, including from a browser on a different machine than the one
 running the container.
 
-Known limitation, unrelated to auth: three specific actions (Open Logs
-Folder, and the native file/folder pickers behind Restore Database and the
-Scheduled Backup destination) open a GUI dialog on the machine running the
-backend process. In a container that has no display, so these three remain
-non-functional regardless of who's calling them or whether they're logged
-in - this needs a web-based alternative, scoped as its own future session
-(see dev/docs/ROADMAP.md). Everything else works normally, remotely or
-locally.
+Known limitation, unrelated to auth: Open Logs Folder reveals the logs
+folder in a native file-explorer window on the machine running the backend
+process - meaningless in a container with no display, so it remains
+non-functional regardless of who's calling it or whether they're logged in.
+The logs folder path is still shown as plain text in the Admin UI if you need
+it. (Restore Database and the Scheduled Backup destination previously had
+the same native-dialog limitation but now use the same web-based Browse
+picker as Scan Roots and the Processing Tools, so both work normally in
+Docker.) Everything else works normally, remotely or locally.
 
 No image is published to a registry yet - build locally from a repo clone
 as shown above.
