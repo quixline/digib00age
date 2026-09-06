@@ -29,11 +29,11 @@ from comictaggerlib.resulttypes import IssueResult
 from comictalker.talker_utils import cleanup_html
 from comictalker.talkers.comicvine import ComicVineTalker
 
-from backend.config import REPO_ROOT, get_config
+from backend.config import _ct_cache_dir, get_config
 from backend.rename_tool import parse_comic_filename
 
 CT_VERSION = "1.0.0"  # digib00age's own version string, passed to CT's talker/cache
-CT_CACHE_DIR = REPO_ROOT / "dev" / "ct_cache"  # ComicVineTalker's sqlite search-result cache
+CT_CACHE_DIR = _ct_cache_dir()  # ComicVineTalker's sqlite search-result cache
 
 
 def get_talker() -> ComicVineTalker:

@@ -149,6 +149,13 @@ def _logs_dir() -> Path:
     return _xdg_data_dir() / "logs" if _USE_XDG_PATHS else REPO_ROOT / "logs"
 
 
+def _ct_cache_dir() -> Path:
+    """Same split again, for ct_bridge.py's ComicVineTalker search-result
+    cache. Lower stakes than _logs_dir() — losing this only means re-fetching
+    from the ComicVine API, not lost data — but same fix for consistency."""
+    return _xdg_data_dir() / "ct_cache" if _USE_XDG_PATHS else REPO_ROOT / "dev" / "ct_cache"
+
+
 # The bare-minimum keys config.json ships with before any library is set up
 # (see the "Reset config.json to a clean template" commit) — everything else
 # (library_root(s), scan_exclude, backup_*, log_last_viewed, etc.) is added
