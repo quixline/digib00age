@@ -652,7 +652,7 @@ def _read_config_fresh() -> dict:
     at import time and would otherwise silently validate against stale roots
     until the process restarts.
     """
-    config_path = REPO_ROOT / "config.json"
+    config_path = config_module._config_path()
     with open(config_path, "r", encoding="utf-8") as f:
         return json.load(f)
 

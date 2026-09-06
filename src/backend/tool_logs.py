@@ -8,9 +8,9 @@ stays scoped to the four scan logs only.
 
 from __future__ import annotations
 
-from backend.config import REPO_ROOT
+from backend.config import _logs_dir
 
-LOGS_DIR = REPO_ROOT / "logs"
+LOGS_DIR = _logs_dir()
 
 MAX_BYTES = 1 * 1024 * 1024  # fixed 1MB cap, independent of log_size_limit_mb
 

@@ -11,9 +11,9 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from backend.config import REPO_ROOT, get_config
+from backend.config import _logs_dir, get_config
 
-LOGS_DIR = REPO_ROOT / "logs"
+LOGS_DIR = _logs_dir()
 
 _FILENAMES = {
     "last_scan": "last_scan_log.md",

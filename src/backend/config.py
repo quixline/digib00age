@@ -141,6 +141,14 @@ def _config_path() -> Path:
     return _xdg_config_path() if _USE_XDG_PATHS else REPO_ROOT / "config.json"
 
 
+def _logs_dir() -> Path:
+    """Same XDG/Docker-vs-repo-relative split as _config_path() — scan_logs.py
+    and tool_logs.py share this so persistent-install logs land under the
+    bind-mounted XDG data dir instead of a REPO_ROOT that's inside the
+    container/venv install and gone on next rebuild."""
+    return _xdg_data_dir() / "logs" if _USE_XDG_PATHS else REPO_ROOT / "logs"
+
+
 # The bare-minimum keys config.json ships with before any library is set up
 # (see the "Reset config.json to a clean template" commit) — everything else
 # (library_root(s), scan_exclude, backup_*, log_last_viewed, etc.) is added
