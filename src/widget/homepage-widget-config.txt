@@ -1,0 +1,38 @@
+digib00age — gethomepage.dev dashboard widget
+================================================
+
+Lives in Homepage's own config (not this repo): quixy,
+/srv/homepage/config/services.yaml, under the "Media" group, positioned
+right after qBittorrent. This file is a reference copy of that entry.
+
+Requires nothing from digib00age itself beyond the existing
+GET /api/admin/stats endpoint (src/backend/routers/admin.py) — no API key,
+since quixy's admin_password_hash is currently unset. If admin password
+protection is ever turned on, this widget will start getting 401s —
+Homepage's customapi widget has no support for digib00age's cookie/session
+login, only static headers or basic auth, and digib00age has no separate
+API-key auth tier (unlike qBittorrent, which has a native WebUI API key
+since v5.2.0). Revisit then.
+
+    - digib00age:
+        icon: /icons/digib00age.png
+        href: http://192.168.0.151:9800
+        description: Comic library server
+        widget:
+            type: customapi
+            url: http://192.168.0.151:9800/api/admin/stats
+            refreshInterval: 60000
+            display: block
+            mappings:
+                - field: total_issues
+                  label: Issues
+                  format: number
+                - field: series_count
+                  label: Series
+                  format: number
+                - field: read_count
+                  label: Read
+                  format: number
+                - field: reading_count
+                  label: Reading
+                  format: number
