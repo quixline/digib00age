@@ -66,4 +66,23 @@ picker as Scan Roots and the Processing Tools, so both work normally in
 Docker.) Everything else works normally, remotely or locally.
 
 No image is published to a registry yet - build locally from a repo clone
-as shown above.
+as shown above. (This is still the only *confirmed working* install path -
+see the note below before using the other files in this folder.)
+
+------------------------------------------------------------------------
+PENDING (2026-09-07): a second, pull-based install path
+------------------------------------------------------------------------
+This folder also has docker-compose.dist.yml, publish.ps1, setup.sh, and
+setup.ps1 - a second install path that publishes a pre-built image to a
+self-hosted registry on quixy (digib00age.tech:5000) and lets target
+machines install with a one-line curl, no git/source/build required there.
+See dev/docs/DECISIONS.md "Docker distribution: self-hosted registry +
+curl install, no git on target machines" for the full design.
+
+quixy's registry and install site (digib00age.tech) are up and reachable,
+but the actual publish -> pull -> run path has not been exercised end to
+end yet - windy's Docker Desktop won't start (virtualization not enabled
+in BIOS/UEFI), so no image has been built or pushed. Don't rely on
+setup.sh/setup.ps1 until dev/docs/SPEC.md's "Install paths" Docker section
+no longer says PENDING - use the build-from-clone instructions above until
+then.
