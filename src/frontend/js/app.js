@@ -3061,10 +3061,29 @@ async function initIssue() {
 // Falls back to window.open() (address bar visible, but still a dedicated
 // popup, not a full tab) when the tray isn't running the control server —
 // e.g. the backend was started some other way than via the tray.
+//
+// The control-port probe only makes sense when THIS page is itself being
+// viewed from its own machine's tray (localhost/127.0.0.1) — 127.0.0.1
+// always means "whatever machine the browser is running on," not "the
+// server this page came from." Skip it for any remote/Docker/other-host
+// instance: a `fetch(..., {mode:'no-cors'})` resolves (doesn't reject) as
+// long as *some* server answers on that port, even a same-machine tray
+// belonging to a completely different, unrelated digib00age install — so
+// on a machine that also runs its own local tray, the probe would silently
+// "succeed" against the wrong instance and open the wrong comic (or none)
+// instead of ever falling back to this page's own web reader (2026-09-07,
+// BUGS.md).
 const READER_CONTROL_PORT = 9801;
 
 function launchReader(issueId) {
   const readerUrl = `/reader/${issueId}`;
+  const isLocalInstance = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+  if (!isLocalInstance) {
+    window.open(readerUrl, 'cv-reader-window', 'popup,width=900,height=1100');
+    return;
+  }
+
   const controllerUrl = `http://127.0.0.1:${READER_CONTROL_PORT}/open-reader?id=${issueId}`;
   fetch(controllerUrl, { mode: 'no-cors', signal: AbortSignal.timeout(400) })
     .catch(() => {
