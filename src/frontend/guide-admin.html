@@ -75,8 +75,8 @@
         <h3>Library Stats &amp; Scan Controls</h3>
         <ul>
           <li><strong>Library Stats:</strong> Read-only summary cards showing Total Files, Series, Singles, Total Read (count &amp; percentage), and In Progress issues.</li>
-          <li><strong>Library Scan Logs:</strong> Cards for <strong>Last Scan</strong> date, <strong>Files Found</strong>, and <strong>New Files</strong>. Each features a <strong>Logs</strong> button opening recent scan entries. A card's border turns <strong style="color:var(--accent);">green</strong> when unviewed log entries exist — opening the log modal clears the badge.</li>
-          <li><strong>Scan Now:</strong> Triggers an immediate rescan of all configured roots. Shows live progress, scanned counts, and reports thumbnail errors if any occur (affected files are still catalogued).</li>
+          <li><strong>Library Scan Logs:</strong> Cards for <strong>Last Scan</strong> date, <strong>Files Found</strong>, <strong>New Files</strong>, <strong>Changed Files</strong>, and <strong>Missing Records</strong> (with a <strong>Clean Up</strong> button to remove catalogued entries whose files are no longer on disk). Every card except Files Found has its own <strong>Logs</strong> button opening recent scan entries; a card's border turns <strong style="color:var(--accent);">green</strong> when unviewed log entries exist — opening the log modal clears the badge.</li>
+          <li><strong>Scan Now:</strong> Triggers an immediate rescan of all configured roots. Shows live progress, scanned counts, and reports thumbnail errors if any occur (affected files are still catalogued). While a scan is running the button becomes <strong>Stop Scan</strong> — stopping takes effect once the file currently being processed finishes, not mid-file.</li>
         </ul>
       </div>
 
@@ -110,7 +110,7 @@
       <details class="guide-accordion">
         <summary id="db-backup-schedule">Database Backups &amp; Restoration</summary>
         <div class="guide-accordion-content">
-          <p><strong>DB Backup Schedule:</strong> Pick a local backup folder (via native folder picker) and frequency (Off, Day, Week, Month, 6 Months, Year). Displays last backup timestamp or error indicators.</p>
+          <p><strong>DB Backup Schedule:</strong> Pick a local backup folder (via native folder picker) and frequency (Off, Day, Week, Month, 6 Months, Year). The same folder is used for the <strong>Backup Database</strong> button in the top action row. Displays last backup timestamp or error indicators.</p>
           <div class="guide-callout">
             <span class="guide-callout-label">Tip</span>
             <p>Select a local cloud-sync folder (e.g., Google Drive, Dropbox) for automatic off-site backup protection!</p>
@@ -126,20 +126,20 @@
       <details class="guide-accordion">
         <summary id="access-logs">Access Logs &amp; Size Limits</summary>
         <div class="guide-accordion-content">
-          <p>View the disk directory path where scan and processing log files are saved (with a one-click Copy button) and configure <strong>Log Size Limit (MB)</strong> to automatically cap log file size on disk.</p>
+          <p>View the disk directory path where scan and processing log files are saved, with an <strong>Open</strong> button that opens the folder directly, and configure <strong>Log Size Limit (MB)</strong> to automatically cap log file size on disk.</p>
         </div>
       </details>
 
       <a href="#admin-overview" class="guide-back-to-top">↑ Back to top</a>
 
       <h2 id="library-appearance">Library Appearance</h2>
-      <p>Customize the visual layout, Home page strips, card sizing, and custom libraries.</p>
+      <p>Customise the visual layout, Home page strips, card sizing, and custom libraries.</p>
 
       <details class="guide-accordion" open>
         <summary id="home-page-strips">Home Page Strips &amp; Custom Libraries</summary>
         <div class="guide-accordion-content">
           <p><strong>Home Page Strips:</strong> Reorder or add up to 5 custom scrollable strips on the Home view. Custom strips can be Field-based (e.g. Genre = Horror) or Folder-based, sorted randomly or fixed by Title/Newest/Recent.</p>
-          <p><strong>Add/Remove Libraries (Custom Tabs):</strong> Create custom sidebar views with <strong>Flat</strong> (grid) or <strong>Folder View</strong> (directory hierarchy) modes. Quick shortcuts allow adding Genre, Favorites, or Reading Queue libraries with one click.</p>
+          <p><strong>Add/Remove Libraries (Custom Tabs):</strong> Create custom sidebar views with <strong>Flat</strong> (grid) or <strong>Folder View</strong> (directory hierarchy) modes. Quick shortcuts allow adding Genre, Favourites, or Reading Queue libraries with one click.</p>
         </div>
       </details>
 
@@ -189,8 +189,8 @@
       <details class="guide-accordion">
         <summary id="wipe-database">Database &amp; Progress Wipe Tools</summary>
         <div class="guide-accordion-content">
-          <p><strong>Wipe Database:</strong> Permanently deletes all catalogued issues, genres, credits, and progress records (does not delete comic files on disk). Local sessions only.</p>
-          <p><strong>Wipe Reading State:</strong> Resets all issue reading progress to unread while preserving metadata and catalog records.</p>
+          <p><strong>Wipe Database:</strong> Permanently deletes all catalogued issues, genres, credits, and progress records. Comic files on disk and your Custom Libraries/Home Page Strips are not affected. Local sessions only.</p>
+          <p><strong>Wipe Reading State:</strong> Resets all issue reading progress to unread while preserving metadata and catalogue records.</p>
         </div>
       </details>
 
@@ -215,7 +215,7 @@
       <details class="guide-accordion">
         <summary id="converter">Archive &amp; Image Converter</summary>
         <div class="guide-accordion-content">
-          <p><strong>Convert Archives:</strong> Convert CBR or PDF archives directly into standard CBZ format with progress tracking.</p>
+          <p><strong>Convert Archives:</strong> Convert CBR or PDF archives directly into standard CBZ format with progress tracking. Only CBZ/CBR files are picked up by a library scan — a PDF left unconverted won't be catalogued, so run this before scanning any PDF source material in.</p>
           <p><strong>Convert Images:</strong> Repack archives with compressed WebP images. Set quality (1–100) or check <strong>Lossless</strong>. Automatically preserves <code>.bak</code> files if any unreadable pages are encountered during conversion.</p>
         </div>
       </details>
@@ -235,8 +235,8 @@
       <details class="guide-accordion">
         <summary id="folder-processing">Folder Processing &amp; Auto Processing Pipeline</summary>
         <div class="guide-accordion-content">
-          <p><strong>Folder Processing:</strong> Run one-off sorting scripts: <em>Sort by Filename</em> (moves loose CBZs into title subfolders), <em>Move Series Folders</em>, or <em>Move Singles Folders</em>.</p>
-          <p><strong>Auto Processing Pipeline:</strong> Automate pre-ingest staging on a folder schedule. Runs in fixed sequence: Convert Archives &rarr; ComicTagger Auto-Tag &rarr; Convert Images. Filename renaming is deliberately excluded for human verification safety.</p>
+          <p><strong>Folder Processing:</strong> Run one-off sorting scripts: <em>Sort by Filename</em> (creates a new subfolder for each loose CBZ/CBR and moves the file in), <em>Move Series Folders</em>, or <em>Move Singles Folders</em> (moves each immediate subfolder of a staging folder into its correct alphabetical place in the library, matching how your library is already organised). None of these trigger a library scan on their own — run <strong>Scan Now</strong> afterwards.</p>
+          <p><strong>Auto Processing Pipeline:</strong> Automate pre-ingest staging on a folder schedule. Convert Archives, CT Auto-Tag, and Convert Images are each independently optional — enable only the stages you need. Whichever are switched on run in a fixed order: Convert Archives &rarr; CT Auto-Tag &rarr; Convert Images. CT Auto-Tag works on CBR files too (it rebuilds them as CBZ automatically when writing tags), so it isn't dependent on Convert Archives having already run. Filename renaming is deliberately excluded from this pipeline for human verification safety.</p>
         </div>
       </details>
 

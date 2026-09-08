@@ -102,8 +102,8 @@
         <div class="guide-accordion-content">
           <p>Tagging fields split across Main and More tabs with batch controls:</p>
           <ul>
-            <li><strong>Increment # Checkbox:</strong> When checked, issue numbers auto-increment sequentially across loaded files as you tag through them.</li>
-            <li><strong>Apply to All Checkboxes:</strong> Each field features an "Apply to All" box. Checking a box stamps that value across every loaded file when running <strong>Process All</strong>. Unchecked fields remain untouched per-file.</li>
+            <li><strong>Increment # Checkbox:</strong> When checked, issue numbers auto-increment sequentially across loaded files as you tag through them. For example, load a run of issues, select the first one, tick Increment # and set its issue number, then click <strong>Process All</strong> — every other loaded file gets the next number in sequence.</li>
+            <li><strong>Apply to All Checkboxes:</strong> Each field features an "Apply to All" box. Checking a box stamps that value across every loaded file when running <strong>Process All</strong>; unchecked fields remain untouched per-file. Handy when one value is shared across a whole run (e.g. tick Apply to All for Genre) but another varies issue-by-issue (leave Summary unticked).</li>
             <li><strong>Genre Chips:</strong> Easily add or remove genre chips drawn from the Admin managed list.</li>
             <li><strong>＋ Queue:</strong> Adds current file edits to Column 4 save queue. Checks for near-duplicate creator names before adding.</li>
           </ul>
@@ -140,13 +140,13 @@
 
       <a href="#what-is-full-editor" class="guide-back-to-top">↑ Back to top</a>
 
-      <h2 id="comicvine-search">Automated ComicVine Online Search</h2>
-      <p>Click <strong>Search ComicVine</strong> in the header to look up metadata for the focused file based on Series, Issue Number, and Year (Title is not used in search queries):</p>
-      
+      <h2 id="comicvine-search">ComicVine Online Search (via ComicTagger)</h2>
+      <p>Click <strong>Search ComicVine</strong> in the header to look up metadata for the focused file based on Series, Issue Number, and Year (Title is not used in search queries). digib00age talks to ComicVine through the ComicTagger backend, then ranks the results itself:</p>
+
       <div class="guide-card">
         <h3>2-Step Lookup Flow</h3>
         <ol>
-          <li><strong>Select Series:</strong> Returns a results table ranked by digib00age's <strong>Best Match</strong> algorithm (fuzzy title matching + issue count ranking). Double-click or click <strong>Issues</strong> to view issue list, or click <strong>Ok</strong> for single-issue fast path.</li>
+          <li><strong>Select Series:</strong> Returns a results table ranked by digib00age's own <strong>Best Match</strong> scoring (fuzzy title matching, with issue count as a tiebreak) — built on top of the raw ComicVine results to keep the most likely match at the top. Double-click or click <strong>Issues</strong> to view issue list, or click <strong>Ok</strong> for single-issue fast path.</li>
           <li><strong>Select Issue:</strong> Natural-sorted issue list with cover preview. Double-click an issue to confirm and populate form fields.</li>
         </ol>
       </div>
@@ -168,7 +168,7 @@
           </ol>
           <div class="guide-callout">
             <span class="guide-callout-label">Tip</span>
-            <p>Scraped genres are automatically matched against your Admin Genre list (case-insensitive); unrecognized genres are silently skipped to preserve data validity.</p>
+            <p>Scraped genres are automatically matched against your Admin Genre list (case-insensitive); unrecognised genres are silently skipped to preserve data validity.</p>
           </div>
         </div>
       </details>
