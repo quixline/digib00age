@@ -154,7 +154,9 @@ def _run_batch(file_ids: list[str], quality: int, lossless: bool) -> None:
             images_skipped=result.images_skipped, error=result.error,
         )
 
-        status = "failed" if not result.success else ("success_with_warning" if result.images_skipped else "success")
+        status = "critical" if result.critical else (
+            "failed" if not result.success else ("success_with_warning" if result.images_skipped else "success")
+        )
         convert_images_progress.results.append({
             "file_id": file_id, "filename": entry["filename"], "new_filename": new_name,
             "status": status, "images_skipped": result.images_skipped, "error": result.error,

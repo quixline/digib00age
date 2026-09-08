@@ -3350,6 +3350,58 @@ select.filter-select:focus,
   border-bottom: 1px solid var(--border);
 }
 
+/* Needs Attention — Processing Tools recovery failures (attention_log.py).
+   Same visual language as .editor-error, but a standing section rather
+   than a transient message, so it reads as "unresolved" not "just happened". */
+.admin-alert-section {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface-2));
+  border: 1px solid var(--danger);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px 18px;
+}
+
+.admin-alert-heading {
+  color: var(--danger-text);
+  border-bottom-color: color-mix(in srgb, var(--danger) 40%, var(--border));
+}
+
+.attention-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.attention-entry {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.attention-entry-head {
+  font-weight: 600;
+  color: var(--danger-text);
+  margin-bottom: 4px;
+}
+
+.attention-entry-message {
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.attention-entry-path {
+  color: var(--text-3);
+  font-family: monospace;
+  font-size: 12px;
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+
+.attention-resolve-btn {
+  margin-top: 4px;
+}
+
 /* Stat grid — centred, cards fixed-width */
 .stat-grid {
   display: flex;

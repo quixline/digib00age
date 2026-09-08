@@ -191,7 +191,9 @@ def _run_convert_archives_stage(folder: str, from_format: str, auto: bool) -> li
         result: ConvertResult = convert_archive_file(path, from_format)
         new_name = os.path.basename(os.path.splitext(path)[0] + ".cbz")
         convert_log.append_entry(filename, new_name, pages_skipped=result.pages_skipped, error=result.error, auto=auto)
-        status = "failed" if not result.success else ("success_with_warning" if result.pages_skipped else "success")
+        status = "critical" if result.critical else (
+            "failed" if not result.success else ("success_with_warning" if result.pages_skipped else "success")
+        )
         results.append({"filename": filename, "new_filename": new_name, "status": status,
                          "pages_skipped": result.pages_skipped, "error": result.error})
     return results
@@ -232,7 +234,9 @@ def _run_convert_images_stage(folder: str, quality: int, lossless: bool, auto: b
         result: ConvertImagesResult = convert_images_in_archive(path, quality=quality, lossless=lossless)
         new_name = os.path.basename(os.path.splitext(path)[0] + ".cbz")
         convert_images_log.append_entry(filename, new_name, images_skipped=result.images_skipped, error=result.error, auto=auto)
-        status = "failed" if not result.success else ("success_with_warning" if result.images_skipped else "success")
+        status = "critical" if result.critical else (
+            "failed" if not result.success else ("success_with_warning" if result.images_skipped else "success")
+        )
         results.append({"filename": filename, "new_filename": new_name, "status": status,
                          "images_skipped": result.images_skipped, "error": result.error})
     return results

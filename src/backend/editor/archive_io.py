@@ -154,7 +154,16 @@ def _rebuild_archive(extract_dir: str, archive_path: str) -> str:
         raise FileExistsError(f"{final_path} already exists")
 
     staged_zip = flatten_and_zip(extract_dir, os.path.dirname(final_path))
-    os.replace(staged_zip, final_path)
+    try:
+        os.replace(staged_zip, final_path)
+    except OSError:
+        # final_path is untouched on a failed replace — only staged_zip
+        # would otherwise be orphaned in the library folder.
+        try:
+            os.remove(staged_zip)
+        except OSError:
+            pass
+        raise
 
     if is_cbr:
         os.remove(archive_path)

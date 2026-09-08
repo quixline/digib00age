@@ -46,6 +46,23 @@
       <button class="btn-admin-action" id="pwaInstallBtn" hidden>Install App</button>
     </div>
 
+    <!-- ── Needs Attention — Processing Tools recovery failures that couldn't
+         self-resolve (backend/attention_log.py). Persists across page loads
+         and Processing Folder Automation runs until resolved by hand, so it
+         can't get lost the way a single line in a large batch's results
+         could. Hidden when there's nothing to show. ──────────────────────── -->
+    <section class="admin-section admin-alert-section" id="attentionSection" hidden>
+      <h2 class="admin-section-heading admin-alert-heading">Needs Attention</h2>
+      <p class="admin-card-hint">
+        A Processing Tools run couldn't finish safely for these files — the
+        original was renamed to <code>.bak</code> and the converted file
+        could not be placed at its expected path, so nothing currently
+        exists there. Rename the <code>.bak</code> file back by hand (or
+        confirm the converted file is actually fine), then mark it resolved.
+      </p>
+      <div id="attentionList" class="attention-list"></div>
+    </section>
+
     <!-- ── Library Stats ───────────────────────────────────────────────────── -->
     <section class="admin-section">
       <h2 class="admin-section-heading">Library Stats</h2>

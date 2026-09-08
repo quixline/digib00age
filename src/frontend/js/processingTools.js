@@ -30,6 +30,11 @@ function showPtSummary(title, headline, errors) {
     list.appendChild(li);
   }
   document.getElementById('ptSummaryOverlay').hidden = false;
+
+  // Every tool's run funnels through here on completion — refresh the
+  // Needs Attention banner (admin.js) so a critical_failure from this run
+  // shows up immediately, not just on the next page load.
+  if (typeof loadNeedsAttention === 'function') loadNeedsAttention();
 }
 
 // ── File Rename (§12.1) ──────────────────────────────────────────────────

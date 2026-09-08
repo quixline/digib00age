@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from backend import archive_formats, backup_model, image_utils
+from backend import archive_formats, attention_log, backup_model, image_utils
 from backend.editor.archive_io import flatten_and_zip
 
 CONVERT_EXTENSIONS = {".jpg", ".jpeg", ".tiff", ".gif", ".png", ".bmp"}
@@ -32,6 +32,7 @@ class ConvertImagesResult:
     success: bool
     images_skipped: int = 0
     error: Optional[str] = None
+    critical: bool = False
 
 
 def _extract_all(source_path: str, extract_dir: str) -> list[str]:
@@ -121,7 +122,7 @@ def convert_images_in_archive(archive_path: str, quality: int = 95, lossless: bo
         except Exception as exc:
             return ConvertImagesResult(success=False, error=str(exc))
 
-        outcome, _bak = backup_model.stage_validate_and_replace(
+        outcome, _bak, detail = backup_model.stage_validate_and_replace(
             str(source),
             staged_path,
             str(target_path),
@@ -129,8 +130,18 @@ def convert_images_in_archive(archive_path: str, quality: int = 95, lossless: bo
             has_warnings=images_skipped > 0,
         )
 
+        if outcome == "critical_failure":
+            attention_log.add(
+                kind="convert_images",
+                message=detail,
+                original_path=str(source),
+                bak_path=_bak,
+                target_path=str(target_path),
+            )
+            return ConvertImagesResult(success=False, error=detail, critical=True)
+
         if outcome == "failure":
-            return ConvertImagesResult(success=False, error="Converted archive failed validation")
+            return ConvertImagesResult(success=False, error=detail or "Converted archive failed validation")
 
         return ConvertImagesResult(success=True, images_skipped=images_skipped)
     finally:

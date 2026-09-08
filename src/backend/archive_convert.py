@@ -12,6 +12,7 @@ admin UI's HTTP layer.
 
 from __future__ import annotations
 
+import os
 import tempfile
 import zipfile
 from dataclasses import dataclass
@@ -21,7 +22,7 @@ from typing import Optional
 import fitz  # PyMuPDF
 import rarfile
 
-from backend import archive_formats, backup_model
+from backend import archive_formats, attention_log, backup_model
 
 # Print-scan-grade sharpness — replaces CAPT's hardcoded Matrix(1, 1) (72 DPI).
 # Isolated constant: adjusting DPI later needs no other code/schema changes.
@@ -35,6 +36,7 @@ class ConvertResult:
     success: bool
     pages_skipped: int = 0
     error: Optional[str] = None
+    critical: bool = False
 
 
 def detect_archive_format(path: str) -> Optional[str]:
@@ -156,9 +158,16 @@ def convert_archive_file(source_path: str, from_format: str) -> ConvertResult:
         else:
             return ConvertResult(success=False, error=f"Unsupported from_format: {from_format}")
     except Exception as exc:
+        # source is untouched at this point — only the never-committed
+        # staged_path might exist (e.g. the zip write failed partway
+        # through _convert_cbr's loop) — don't leave it behind.
+        try:
+            os.remove(staged_path)
+        except OSError:
+            pass
         return ConvertResult(success=False, error=str(exc))
 
-    outcome, _bak = backup_model.stage_validate_and_replace(
+    outcome, _bak, detail = backup_model.stage_validate_and_replace(
         str(source),
         staged_path,
         str(target_path),
@@ -166,7 +175,17 @@ def convert_archive_file(source_path: str, from_format: str) -> ConvertResult:
         has_warnings=pages_skipped > 0,
     )
 
+    if outcome == "critical_failure":
+        attention_log.add(
+            kind="convert_archives",
+            message=detail,
+            original_path=str(source),
+            bak_path=_bak,
+            target_path=str(target_path),
+        )
+        return ConvertResult(success=False, error=detail, critical=True)
+
     if outcome == "failure":
-        return ConvertResult(success=False, error="Converted archive failed validation")
+        return ConvertResult(success=False, error=detail or "Converted archive failed validation")
 
     return ConvertResult(success=True, pages_skipped=pages_skipped)

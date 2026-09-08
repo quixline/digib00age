@@ -155,7 +155,9 @@ def _run_batch(file_ids: list[str], from_format: str) -> None:
             pages_skipped=result.pages_skipped, error=result.error,
         )
 
-        status = "failed" if not result.success else ("success_with_warning" if result.pages_skipped else "success")
+        status = "critical" if result.critical else (
+            "failed" if not result.success else ("success_with_warning" if result.pages_skipped else "success")
+        )
         convert_progress.results.append({
             "file_id": file_id, "filename": entry["filename"], "new_filename": new_name,
             "status": status, "pages_skipped": result.pages_skipped, "error": result.error,

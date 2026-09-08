@@ -8,6 +8,8 @@ GET  /api/scan/status        Live scan progress for admin UI
 POST /api/admin/backup       Copy digib00age.db to dated backup file
 POST /api/admin/restore-database  Restore digib00age.db from a chosen backup file
 POST /api/admin/logs/open-folder  Open the logs folder in the OS file explorer
+GET  /api/admin/needs-attention   List unresolved Processing Tools recovery failures
+POST /api/admin/needs-attention/{entry_id}/resolve  Dismiss one entry
 """
 
 from __future__ import annotations
@@ -24,7 +26,7 @@ from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Qu
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from backend import file_picker, scan_logs
+from backend import attention_log, file_picker, scan_logs
 from backend import config as config_module
 from backend.config import get_config, save_config, reset_config, get_library_root, PROJECT_ROOT, REPO_ROOT
 from backend.database import get_db, SessionLocal, checkpoint_wal, engine
@@ -379,6 +381,28 @@ def mark_log_viewed(log_name: str):
     viewed[log_name] = datetime.now(timezone.utc).isoformat()
     save_config({"log_last_viewed": viewed})
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# GET  /api/admin/needs-attention
+# POST /api/admin/needs-attention/{entry_id}/resolve
+#
+# Processing Tools recovery failures that couldn't safely self-resolve (see
+# backend/attention_log.py) — a standing list, not a one-run summary, so a
+# failure from an unattended Processing Folder Automation run stays visible
+# until someone has actually gone and fixed the file by hand.
+# ---------------------------------------------------------------------------
+
+@router.get("/admin/needs-attention")
+def get_needs_attention():
+    return {"entries": attention_log.list_entries()}
+
+
+@router.post("/admin/needs-attention/{entry_id}/resolve")
+def resolve_needs_attention(entry_id: str):
+    if not attention_log.resolve(entry_id):
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return {"success": True}
 
 
 # ---------------------------------------------------------------------------

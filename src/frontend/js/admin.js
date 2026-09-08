@@ -118,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initAdminBackLink();
   bindAdminNav();
   loadStats();
+  loadNeedsAttention();
   loadConfig();
   initPagination();
   initCardSize();
@@ -213,6 +214,77 @@ async function loadStats() {
       '<div class="loading-state">Failed to load stats</div>';
     document.getElementById('scanGrid').innerHTML =
       '<div class="loading-state">Failed to load scan info</div>';
+  }
+}
+
+// ── Needs Attention ─────────────────────────────────────────────────────────
+// Standing list of Processing Tools recovery failures (backend/attention_log.py)
+// — kinds map to the tool that hit them, checked once on page load, so this
+// shows up the moment Tez next opens Admin even after an unattended
+// Processing Folder Automation run produced one overnight.
+const ATTENTION_KIND_LABELS = {
+  convert_archives: 'Convert Archives',
+  convert_images: 'Convert Images',
+};
+
+async function loadNeedsAttention() {
+  try {
+    const d = await apiFetch(`/admin/needs-attention`);
+    renderNeedsAttention(d.entries || []);
+  } catch (e) {
+    // Non-critical — leave the section hidden rather than show a broken state.
+  }
+}
+
+function renderNeedsAttention(entries) {
+  const section = document.getElementById('attentionSection');
+  const list = document.getElementById('attentionList');
+  list.innerHTML = '';
+
+  if (!entries.length) {
+    section.hidden = true;
+    return;
+  }
+  section.hidden = false;
+
+  for (const entry of entries) {
+    const item = document.createElement('div');
+    item.className = 'attention-entry';
+
+    const head = document.createElement('div');
+    head.className = 'attention-entry-head';
+    head.textContent = `${ATTENTION_KIND_LABELS[entry.kind] || entry.kind} — ${entry.timestamp}`;
+    item.appendChild(head);
+
+    const msg = document.createElement('div');
+    msg.className = 'attention-entry-message';
+    msg.textContent = entry.message;
+    item.appendChild(msg);
+
+    if (entry.bak_path) {
+      const bak = document.createElement('div');
+      bak.className = 'attention-entry-path';
+      bak.textContent = `Original currently at: ${entry.bak_path}`;
+      item.appendChild(bak);
+    }
+
+    const resolveBtn = document.createElement('button');
+    resolveBtn.type = 'button';
+    resolveBtn.className = 'btn-admin-action attention-resolve-btn';
+    resolveBtn.textContent = 'Mark Resolved';
+    resolveBtn.addEventListener('click', () => resolveAttentionEntry(entry.id));
+    item.appendChild(resolveBtn);
+
+    list.appendChild(item);
+  }
+}
+
+async function resolveAttentionEntry(id) {
+  try {
+    await apiFetch(`/admin/needs-attention/${id}/resolve`, { method: 'POST' });
+    loadNeedsAttention();
+  } catch (e) {
+    alert('Could not mark this entry resolved — try again.');
   }
 }
 
