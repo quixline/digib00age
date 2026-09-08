@@ -1035,11 +1035,16 @@ async function loadPickerDirectory(path) {
 
 function renderPickerBreadcrumb(path) {
   const breadcrumb = document.getElementById('fePickerBreadcrumb');
-  const parts = path.split('\\').filter(Boolean);
+  // Separator is detected per-path, not hardcoded to '\\' — library_root can
+  // be a Windows path (native/tray install) or a Unix path (Linux native or
+  // Docker install, e.g. quixy's /mnt/... mounts). Mirrors filePicker.js's
+  // renderPtPickerBreadcrumb, the picker that already got this right.
+  const sep = path.includes('\\') ? '\\' : '/';
+  const parts = path.split(/[\\/]/).filter(Boolean);
   let accumulated = '';
   breadcrumb.innerHTML = '';
   parts.forEach((part, index) => {
-    accumulated += (index === 0 ? '' : '\\') + part;
+    accumulated += (index === 0 && sep === '\\' ? '' : sep) + part;
     const isLast = index === parts.length - 1;
     if (isLast) {
       const span = document.createElement('span');
@@ -1053,7 +1058,7 @@ function renderPickerBreadcrumb(path) {
       link.onclick = (e) => { e.preventDefault(); loadPickerDirectory(target); };
       breadcrumb.appendChild(link);
     }
-    if (!isLast) breadcrumb.appendChild(document.createTextNode(' \\ '));
+    if (!isLast) breadcrumb.appendChild(document.createTextNode(` ${sep} `));
   });
 }
 
@@ -1147,11 +1152,12 @@ function pickerDeselectAll() {
 }
 
 function pickerNavigateUp() {
-  const parts = (pickerPath || '').split('\\').filter(Boolean);
-  if (parts.length > 1) {
-    parts.pop();
-    loadPickerDirectory(parts.join('\\'));
-  }
+  if (!pickerPath) return;
+  const sep = pickerPath.includes('\\') ? '\\' : '/';
+  const parts = pickerPath.split(/[\\/]/).filter(Boolean);
+  if (parts.length <= 1) return;
+  parts.pop();
+  loadPickerDirectory(sep === '\\' ? parts.join(sep) : sep + parts.join(sep));
 }
 
 function pickerGetSelectedPaths(type) {

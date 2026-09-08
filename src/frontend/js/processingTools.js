@@ -997,7 +997,8 @@ async function runXmlTagging() {
     showToast('Choose a folder first', true);
     return;
   }
-  const res = await postJSON('/xml-tagging/run', { folder });
+  const includeSubfolders = document.getElementById('xtIncludeSubfolders').checked;
+  const res = await postJSON('/xml-tagging/run', { folder, include_subfolders: includeSubfolders });
   if (res.started === false || res.detail) {
     showToast(res.detail || res.message || 'Could not start run', true);
     return;

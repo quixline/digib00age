@@ -169,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ctAddPublisherBtn').addEventListener('click', addPublisherTab);
   document.getElementById('ctBrowseBtn').addEventListener('click', () => openCtPicker('ctPathInput'));
   document.getElementById('ctPickerCloseBtn').addEventListener('click', closeCtPicker);
+  document.getElementById('ctPickerUpBtn').addEventListener('click', ctPickerNavigateUp);
   document.getElementById('ctPickerSelectBtn').addEventListener('click', selectCtPickerFolder);
 
   loadHomeStrips();
@@ -1363,11 +1364,16 @@ function renderCtPickerRoots() {
 
 function renderCtPickerBreadcrumb(path) {
   const breadcrumb = document.getElementById('ctPickerBreadcrumb');
-  const parts = path.split('\\').filter(Boolean);
+  // Separator is detected per-path, not hardcoded to '\\' — library_root can
+  // be a Windows path (native/tray install) or a Unix path (Linux native or
+  // Docker install, e.g. quixy's /mnt/... mounts). Mirrors filePicker.js's
+  // renderPtPickerBreadcrumb, the picker that already got this right.
+  const sep = path.includes('\\') ? '\\' : '/';
+  const parts = path.split(/[\\/]/).filter(Boolean);
   let accumulated = '';
   breadcrumb.innerHTML = '';
   parts.forEach((part, index) => {
-    accumulated += (index === 0 ? '' : '\\') + part;
+    accumulated += (index === 0 && sep === '\\' ? '' : sep) + part;
     const isLast = index === parts.length - 1;
     if (isLast) {
       const span = document.createElement('span');
@@ -1381,8 +1387,17 @@ function renderCtPickerBreadcrumb(path) {
       link.onclick = (e) => { e.preventDefault(); loadCtPickerDir(target); };
       breadcrumb.appendChild(link);
     }
-    if (!isLast) breadcrumb.appendChild(document.createTextNode(' \\ '));
+    if (!isLast) breadcrumb.appendChild(document.createTextNode(` ${sep} `));
   });
+}
+
+function ctPickerNavigateUp() {
+  if (!ctPickerPath) return;
+  const sep = ctPickerPath.includes('\\') ? '\\' : '/';
+  const parts = ctPickerPath.split(/[\\/]/).filter(Boolean);
+  if (parts.length <= 1) return;
+  parts.pop();
+  loadCtPickerDir(sep === '\\' ? parts.join(sep) : sep + parts.join(sep));
 }
 
 function renderCtPickerTree(items) {

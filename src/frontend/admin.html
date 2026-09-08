@@ -754,6 +754,10 @@
           </div>
 
           <div class="admin-field-row">
+            <label class="admin-field-label"><input type="checkbox" id="xtIncludeSubfolders" data-tooltip="Also match and tag CBZ/CBR files in every subfolder of the chosen folder"> Include subfolders</label>
+          </div>
+
+          <div class="admin-field-row">
             <label class="admin-field-label"><input type="checkbox" id="pfCtSaveLowConfidence" data-tooltip="Tag files even when the ComicVine match confidence is low" checked> Save on Low Confidence</label>
           </div>
 
@@ -937,6 +941,9 @@
         <button type="button" class="editor-close-btn" id="ctPickerCloseBtn" aria-label="Close">&times;</button>
       </div>
       <div class="fe-picker-breadcrumb" id="ctPickerBreadcrumb"></div>
+      <div class="fe-picker-controls">
+        <button type="button" class="btn-admin-action" id="ctPickerUpBtn" data-tooltip="Go up one folder level">Up One Level</button>
+      </div>
       <div class="fe-picker-controls" id="ctPickerRoots"></div>
       <div class="fe-picker-tree" id="ctPickerTree"></div>
       <div class="editor-actions">

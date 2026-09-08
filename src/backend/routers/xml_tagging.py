@@ -69,23 +69,40 @@ class XmlTaggingProgress:
 xml_tagging_progress = XmlTaggingProgress()
 
 
-def _taggable_files(folder: str) -> list[str]:
+def _is_taggable(path: str) -> bool:
+    return (
+        os.path.isfile(path)
+        and not os.path.basename(path).lower().endswith(".bak")
+        and detect_archive_format(path) in ("CBZ", "CBR")
+    )
+
+
+def _taggable_files(folder: str, include_subfolders: bool = False) -> list[str]:
     """CBZ/CBR minus .bak — same filter as processing_folder.py's private
     _ct_taggable_files(), duplicated here rather than imported to keep this
-    router independent (matches filename_sort.py's existing precedent)."""
-    try:
-        entries = os.listdir(folder)
-    except (OSError, PermissionError):
-        return []
-    return [
-        os.path.join(folder, name) for name in entries
-        if os.path.isfile(os.path.join(folder, name))
-        and not name.lower().endswith(".bak")
-        and detect_archive_format(os.path.join(folder, name)) in ("CBZ", "CBR")
-    ]
+    router independent (matches filename_sort.py's existing precedent).
+    Recurses into subfolders only when asked; default stays the original
+    single-folder behaviour."""
+    if not include_subfolders:
+        try:
+            entries = os.listdir(folder)
+        except (OSError, PermissionError):
+            return []
+        return [
+            os.path.join(folder, name) for name in entries
+            if _is_taggable(os.path.join(folder, name))
+        ]
+
+    files = []
+    for root, _dirs, names in os.walk(folder):
+        for name in names:
+            path = os.path.join(root, name)
+            if _is_taggable(path):
+                files.append(path)
+    return files
 
 
-def _run(folder: str) -> None:
+def _run(folder: str, include_subfolders: bool = False) -> None:
     global xml_tagging_progress
     xml_tagging_progress = XmlTaggingProgress(running=True)
 
@@ -100,7 +117,7 @@ def _run(folder: str) -> None:
     save_low_confidence = cfg.get("processing_folder_ct_save_low_confidence", True)
 
     files = []
-    for path in _taggable_files(folder):
+    for path in _taggable_files(folder, include_subfolders):
         filename = os.path.basename(path)
         result: CTAutoTagResult = ct_autotag_file(path, api_key, save_low_confidence)
         # A .cbr source that got tagged rebuilds as a sibling .cbz
@@ -133,8 +150,9 @@ def run_now(background_tasks: BackgroundTasks, payload: dict = Body(...)):
     folder = (payload.get("folder") or "").strip()
     if not folder:
         raise HTTPException(status_code=400, detail="No folder selected")
+    include_subfolders = bool(payload.get("include_subfolders"))
 
-    background_tasks.add_task(_run, folder)
+    background_tasks.add_task(_run, folder, include_subfolders)
     return {"message": "XML Tagging started", "running": True, "started": True}
 
 
