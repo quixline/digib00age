@@ -306,7 +306,7 @@ function ensureSelectionToolbar() {
     () => runBulkAction('/progress/bulk/mark-read',   {}, ids => applyReadStateToDom(ids, 'read')));
   mkBtn('selMarkUnread', 'Mark Unread',
     () => runBulkAction('/progress/bulk/mark-unread', {}, ids => applyReadStateToDom(ids, 'unread')));
-  mkBtn('selFavorite',   '★ Favorite', () => {
+  mkBtn('selFavorite',   '★ Favourite', () => {
     const ids = Array.from(selectedIds.keys());
     const allFavorited = ids.length > 0 && ids.every(id => {
       const node = document.querySelector(`[data-issue-id="${id}"]`);
@@ -3390,7 +3390,7 @@ function buildFavoriteToggle(data, badgeEl) {
   const btn = el('button', 'btn-favorite-toggle');
 
   function sync() {
-    btn.textContent = data.favorites ? '★ Favorited' : '☆ Add to Favorites';
+    btn.textContent = data.favorites ? '★ Favourited' : '☆ Add to Favourites';
     btn.classList.toggle('is-favorite', !!data.favorites);
     if (badgeEl) badgeEl.hidden = !data.favorites;
   }
