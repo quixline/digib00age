@@ -311,9 +311,14 @@ def _generate_thumbnail(cbz_path: str, issue_id: int) -> Optional[str]:
         w, h = img.size
         target_height = int(h * target_width / w) if w > 0 else target_width
 
+        # reducing_gap=3.0 box-reduces in steps before the final Lanczos pass
+        # instead of one direct large-ratio resize — avoids the ringing
+        # Lanczos otherwise produces around thin crosshatch/line art at high
+        # reduction ratios (e.g. a 1987x3056 scan down to a 300px-wide
+        # thumbnail, a 6.6x reduction).
         img = img.convert("RGB")  # ensure JPEG-safe colour mode
-        img = img.resize((target_width, target_height), Image.LANCZOS)
-        img.save(str(thumb_path), "JPEG", quality=85, optimize=True)
+        img = img.resize((target_width, target_height), Image.LANCZOS, reducing_gap=3.0)
+        img.save(str(thumb_path), "JPEG", quality=90, optimize=True)
         return str(thumb_path)
 
     except archive_formats.BAD_ARCHIVE_EXCEPTIONS:
