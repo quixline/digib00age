@@ -1,3 +1,47 @@
+importScripts('content-scripts-config.js');
+
+// Reconciles chrome.storage.local's extraOrigins list (added via options.js)
+// against actually-registered dynamic content scripts on every startup/install.
+// Dynamic registrations normally persist across restarts on their own, but this
+// covers the edge cases where they don't (an extension update clearing them) or
+// where the user revoked site access outside the options page (chrome://extensions
+// → Site access), in which case the stale origin is dropped rather than left
+// pointing at a permission the extension no longer has.
+async function reconcileExtraOrigins() {
+  const { extraOrigins } = await chrome.storage.local.get('extraOrigins');
+  if (!extraOrigins || !extraOrigins.length) return;
+
+  const registered = await chrome.scripting.getRegisteredContentScripts();
+  const registeredIds = new Set(registered.map((s) => s.id));
+
+  const survivors = [];
+  for (const origin of extraOrigins) {
+    const hasPermission = await chrome.permissions.contains({ origins: [`${origin}/*`] });
+    if (!hasPermission) {
+      console.warn('[GR-bridge] permission for', origin, 'was revoked externally, dropping it');
+      continue;
+    }
+    survivors.push(origin);
+
+    const ids = contentScriptIdsFor(origin);
+    if (!ids.every((id) => registeredIds.has(id))) {
+      console.warn('[GR-bridge] re-registering content scripts for', origin);
+      // Clear out any partial registration first — registerContentScripts()
+      // throws if an id in the batch is already registered.
+      const idsPresent = ids.filter((id) => registeredIds.has(id));
+      if (idsPresent.length) await chrome.scripting.unregisterContentScripts({ ids: idsPresent });
+      await chrome.scripting.registerContentScripts(contentScriptDefsFor(origin));
+    }
+  }
+
+  if (survivors.length !== extraOrigins.length) {
+    await chrome.storage.local.set({ extraOrigins: survivors });
+  }
+}
+
+chrome.runtime.onStartup.addListener(reconcileExtraOrigins);
+chrome.runtime.onInstalled.addListener(reconcileExtraOrigins);
+
 // Runs the scrape on demand only — no persistent content script on
 // goodreads.com, no goodreads.com host_permissions entry. activeTab grants
 // momentary access to whichever tab the toolbar icon was clicked on.

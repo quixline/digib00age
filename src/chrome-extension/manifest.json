@@ -1,10 +1,12 @@
 {
   "manifest_version": 3,
   "name": "GoodReads → digib00age Editor Bridge",
-  "version": "0.2.1",
-  "description": "Scrapes Writer/Artist/Publisher/Year/Language/Genre/Summary off a GoodReads book page and pastes them into the digib00age Full Editor. Personal tool, single instance.",
+  "version": "0.3.0",
+  "description": "Scrapes Writer/Artist/Publisher/Year/Language/Genre/Summary off a GoodReads book page and pastes them into the digib00age Full Editor. Works out of the box against http://localhost:9800; add other install addresses (LAN, Docker) via the extension's Options page.",
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["http://localhost:9800/*"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "options_page": "options.html",
   "background": {
     "service_worker": "background.js"
   },
