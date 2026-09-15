@@ -62,10 +62,6 @@
     to :root, so it silently resolved to nothing and broke sticky entirely. */
   --sidebar-w: 180px; /* fallback before sizeSidebarToContent() (app.js)
     measures the real longest-label width on load and overwrites this. */
-  --pagebg-blur: 30px;         /* .page-bg-blob cloud blur — dark theme's value;
-    light theme overrides both these in tokens-light.css (2026-07-22 — was
-    near-invisible against light's paler --bg/--surface at this value) */
-  --pagebg-blob-opacity: 0.32; /* per-blob opacity; overlaps build up denser */
   --space-12: 48px;
   --space-16: 64px;
   --container-pad-x: 30px; /* .container's horizontal gutter — also drives the

@@ -46,14 +46,6 @@
          two here if the backdrop still looks too faint/strong. */
       --backdrop-opacity: 0.5;
       --blur-backdrop: 3px;
-
-      /* Library-page cover "cloud field" background (style.css .page-bg-blob,
-         Home/Browse/Folder View) — overrides tokens-base.css's shared 0.32
-         blob opacity / 30px blur, same faint-against-light problem as the
-         backdrop above. Dark theme keeps the base values untouched. Tune
-         these two here if the cloud field still looks too faint/strong. */
-      --pagebg-blob-opacity: 0.5;
-      --pagebg-blur: 32px;
    }
 }
 
@@ -84,8 +76,4 @@
    /* See the matching comment in the @media block above. */
    --backdrop-opacity: 0.5;
    --blur-backdrop: 3px;
-
-   /* See the matching comment in the @media block above. */
-   --pagebg-blob-opacity: 0.5;
-   --pagebg-blur: 32px;
 }

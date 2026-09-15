@@ -1264,17 +1264,12 @@ async function loadHome() {
       homeStrips.innerHTML =
         '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt=""><p>No content yet.</p></div>';
     }
-    // Home has no single filtered list of its own (it's curated strips) — the
-    // random background pool is the union of everything currently shown
-    // across all strips, not the whole library.
-    setPageBackground(stripsData.strips.flatMap(s => s.items || []));
   } catch (err) {
     clearTimeout(timerId);
     const msg   = err.name === 'AbortError' ? 'Server took too long to respond.' : err.message;
     homeStrips.innerHTML =
       '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt="">' +
       `<p>${msg}<br><button onclick="loadHome()">Retry</button></p></div>`;
-    setPageBackground([]);
   }
 }
 
@@ -1614,57 +1609,8 @@ function clearAllFilters() {
   document.getElementById('searchClear').style.display = 'none';
 }
 
-// Random cover background (INBOX 2026-07-13; richer multi-cover cloud field
-// 2026-07-15) — one shared #pageBg layer behind Home/Browse/Folder View
-// (index.html, .page-bg). On each surface-entry (not on every filter/
-// pagination re-render) it composites up to PAGE_BG_BLOBS distinct random
-// covers from the pool that surface passes in as soft-masked, blurred,
-// scattered "blobs" that together fill the whole content area. Scoped to the
-// current library page only (e.g. a custom tab like 2000 AD only ever shows
-// its own covers) and stable while filtering/paging within a surface.
-const PAGE_BG_BLOBS = 4;
-// One base anchor (% x / % y) per rough quadrant, so a shuffled subset still
-// spreads across the whole area instead of clustering; jitter + scale below
-// add the per-page randomness on top.
-const PAGE_BG_ANCHORS = [[22, 26], [80, 22], [30, 76], [74, 70]];
-function shufflePageBg(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-function setPageBackground(pool) {
-  const bg = document.getElementById('pageBg');
-  if (!bg) return;
-  const candidates = (pool || []).filter(item => item && item.cover_path);
-  bg.replaceChildren();
-  if (!candidates.length) {
-    bg.hidden = true;
-    return;
-  }
-  // Up to N *distinct* covers (fewer if the pool is smaller — never padded
-  // with repeats), each dropped onto its own shuffled quadrant anchor.
-  const covers  = shufflePageBg(candidates.slice());
-  const anchors = shufflePageBg(PAGE_BG_ANCHORS.slice());
-  const count   = Math.min(PAGE_BG_BLOBS, covers.length);
-  for (let i = 0; i < count; i++) {
-    const [ax, ay] = anchors[i % anchors.length];
-    const img = document.createElement('img');
-    img.className = 'page-bg-blob';
-    img.alt = '';
-    img.src = covers[i].cover_path;
-    img.style.setProperty('--x', (ax + (Math.random() * 20 - 10)) + '%'); // ±10%
-    img.style.setProperty('--y', (ay + (Math.random() * 20 - 10)) + '%');
-    img.style.setProperty('--s', (0.9 + Math.random() * 0.5).toFixed(2)); // 0.9–1.4
-    bg.appendChild(img);
-  }
-  bg.hidden = false;
-}
-
 function renderBrowse() {
   currentPage = 1;
-  setPageBackground(getFilteredLibrary());
   _renderBrowsePage();
 }
 
@@ -2228,7 +2174,6 @@ async function renderFolderView(tabId, path) {
   } catch (err) {
     grid.innerHTML =
       '<div class="empty-state"><img class="empty-logo" src="/static/images/logo1.png" alt=""><p>Could not load this folder.</p></div>';
-    setPageBackground([]);
     return;
   }
 
@@ -2263,11 +2208,6 @@ async function renderFolderView(tabId, path) {
   // alphabetical order — most sort criteria (newest/issues/pages) don't map
   // cleanly onto a folder aggregate the way they do a series aggregate.
   files = [...files].sort(sortComparator);
-
-  // Folder View's own current-directory contents — never the whole tab or
-  // the whole library, matching the "current library page" scoping rule
-  // (e.g. a 2000 AD year folder only draws from that folder's own covers).
-  setPageBackground([...folders, ...files]);
 
   grid.innerHTML = '';
   for (const folder of folders) grid.appendChild(buildFolderCard(tabId, path, folder));
