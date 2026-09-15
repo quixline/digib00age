@@ -922,7 +922,6 @@ select.filter-select:focus,
   flex-direction: row;
   align-items: stretch;
   height: auto;
-  padding-top: 10px;
 }
 
 .cover-grid.list-view .cover-img-wrap {
@@ -1528,11 +1527,6 @@ select.filter-select:focus,
   background: linear-gradient(160deg, #1b2028 0%, #12161d 100%);
   border: none;
   border-radius: 5px;
-  /* Matte gap between the cover and the card's outer ring, matching the
-     design reference — the cover no longer sits flush against the border
-     (2026-07-15 fine-tune). Info block's own padding is reset below so
-     text aligns with the cover's inset edges rather than double-indenting. */
-  padding: 5px 5px 7px;
 }
 
 .cover-card.cover-card--redesign .cover-title {
@@ -1549,13 +1543,25 @@ select.filter-select:focus,
 }
 
 .cover-card--redesign .cover-img-wrap {
-  border-radius: 5px;
+  border-radius: 5px 5px 0 0;
 }
 
-/* Hover / selected — a single 1px gold line around the cover, no glow. */
+/* Hover / selected — a single 1px gold line around the cover, no glow.
+   Inset, not outset — the cover sits flush against the card's own edges
+   (2026-09-15), so an outset ring has no room to render before the card's
+   own overflow:hidden clips it away. */
 .cover-card--redesign:hover .cover-img-wrap,
 .cover-card--redesign.selected .cover-img-wrap {
-  box-shadow: 0 0 0 1px var(--favourite);
+  box-shadow: inset 0 0 0 1px var(--favourite);
+}
+
+/* Suppress the legacy blue multi-select ring (.cover-card.selected, ~line
+   1056) on redesigned cards — the gold line on .cover-img-wrap above is the
+   only selected-state signal now. Needed since removing the card-level gold
+   glow rule here (2026-09-15) left that older, lower-specificity rule's
+   box-shadow unopposed. */
+.cover-card.cover-card--redesign.selected {
+  box-shadow: none;
 }
 
 /* Kill two legacy read-state layers that bleed through the fixed dark
@@ -1652,7 +1658,11 @@ select.filter-select:focus,
    fine-tune — a side-column layout let the ribbon drift up/down). */
 .cover-card--redesign .cover-info {
   gap: 5px;
-  padding: 10px 0 0;
+  /* Cover now sits flush to the card's top/left/right edges (2026-09-15) —
+     this padding is the only inset left, so it carries the side/bottom
+     margins the outer card used to provide as well as the top gap below
+     the cover. */
+  padding: 10px 5px 7px;
 }
 
 /* Anchor both meta rows to the bottom of the info block instead of letting
