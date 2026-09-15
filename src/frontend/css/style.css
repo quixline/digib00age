@@ -1527,6 +1527,7 @@ select.filter-select:focus,
   --rc-genre-text: #F2F4F7;
   background: linear-gradient(160deg, #1b2028 0%, #12161d 100%);
   border: none;
+  border-radius: 5px;
   /* Matte gap between the cover and the card's outer ring, matching the
      design reference — the cover no longer sits flush against the border
      (2026-07-15 fine-tune). Info block's own padding is reset below so
@@ -1548,7 +1549,13 @@ select.filter-select:focus,
 }
 
 .cover-card--redesign .cover-img-wrap {
-  border-radius: var(--radius);
+  border-radius: 5px;
+}
+
+/* Hover / selected — a single 1px gold line around the cover, no glow. */
+.cover-card--redesign:hover .cover-img-wrap,
+.cover-card--redesign.selected .cover-img-wrap {
+  box-shadow: 0 0 0 1px var(--favourite);
 }
 
 /* Kill two legacy read-state layers that bleed through the fixed dark
@@ -1565,41 +1572,9 @@ select.filter-select:focus,
   content: none;
 }
 
-/* Card frame — thin white glow only at rest, drop shadow added on :hover
-   (~line 1316, 2026-07-17 fine-tune). Originally one box-shadow with both
-   layers permanently on; split because the two layers read very
-   differently across the two surfaces sharing this class — a couple of
-   Home strip cards floating in open space made the dark drop-shadow layer
-   obvious, while the same shadow packed into a dense multi-row grid just
-   blended into the grid's own darkness. The white ring layer is kept at
-   rest (it's the "card edge" signal, wanted on both surfaces); the drop
-   shadow layer moved to hover-only, where it stacks with hover's own
-   glow/lift for the "lifted off the page" effect.
-   Blur tightened 5px→3px, alpha boosted 0.45→0.7 (2026-07-17 follow-up) —
-   the original 5px blur was bleeding past the 5px top / 10px bottom
-   padding .strip-track .continue-strip carries for hover headroom, giving
-   the ring a visible hard-clipped edge on Home (that container is
-   `overflow-x: auto`, and per the CSS overflow spec a non-visible x-axis
-   forces the y-axis to compute to `auto` too — see getComputedStyle,
-   there's no `overflow-x: auto` + `overflow-y: visible` combo on one
-   element). Tighter blur keeps the ring inside that headroom instead of
-   getting clipped; upping alpha keeps it reading as clearly as before
-   despite the smaller reach.
-   Specificity: repeats .cover-card (see note ~line 1143) because the old
-   .cover-card.selected rule (2 classes) would otherwise beat a bare
-   .cover-card--redesign (1 class) on a selected redesigned card. */
-.cover-card.cover-card--redesign {
-  box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.5);
-}
-
-/* No red border for flagged-for-review cards either — same uniform glow
-   ring as every other card at rest, explicit override so it beats the
-   base rule (style.css ~930) and its even-more-specific .is-favorite combo
-   (~934) regardless of source order. The flag SVG badge is the only signal
-   now. */
-.cover-card.cover-card--redesign.is-flagged-review {
-  box-shadow: 0 0 3px 1px rgba(255, 255, 255, 0.7);
-}
+/* No border/glow on the cover at rest (2026-09-15 simplification) — the
+   favourite/flagged/queued state rings (~line 1102) now show through
+   unobstructed instead of being masked by a uniform white ring here. */
 
 /* Progress bar — a floating pill overlay on the cover (2026-07-15
    fine-tune), not a flush full-width line: inset from the edges and from
@@ -1766,53 +1741,31 @@ select.filter-select:focus,
   font-size: 8px;
 }
 
-/* Hover / selected — glow + lift, since the ring already owns the border,
-   a simple border-color swap wouldn't read. Hover intensifies the same
-   uniform white border; selected still turns gold (a distinct, temporary
-   multi-select state, unrelated to favourite). */
+/* Hover / selected — a single 1px gold line around the cover, no glow
+   (rule lives with .cover-img-wrap above); this transition/lift applies to
+   the card itself regardless of theme. */
 .cover-card--redesign {
   transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
 
 .cover-card--redesign:hover {
   transform: translateY(-3px);
-  border-color: transparent;
 }
 
-.cover-card.cover-card--redesign:hover {
-  box-shadow:
-    0 0 4px 2px rgba(255, 255, 255, 0.85),
-    0 5px 26px rgba(0, 0, 0, 0);
-}
-
-/* Light Mode overrides for redesigned library cards */
+/* Light Mode overrides for redesigned library cards — background/text vars
+   only; border/glow removed in the 2026-09-15 simplification (hover/selected
+   gold line, ~.cover-img-wrap, applies identically in both themes). */
 :root[data-theme="light"] .cover-card.cover-card--redesign {
   background: var(--surface-card) !important;
-  border: 1px solid #96b7d1 !important;
-  box-shadow: 0 0 0 1px #454566 !important;
   --rc-title: var(--text);
   --rc-meta: var(--text-2);
-}
-
-:root[data-theme="light"] .cover-card.cover-card--redesign:hover {
-  transform: translateY(-3px);
-  border: 1px solid #454566 !important;
-  box-shadow: 0 0 10px 2px rgba(69, 69, 102, 0.75), 0 8px 24px rgba(0, 0, 0, 0.25) !important;
 }
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) .cover-card.cover-card--redesign {
     background: var(--surface-card) !important;
-    border: 1px solid #96b7d1 !important;
-    box-shadow: 0 0 0 1px #454566 !important;
     --rc-title: var(--text);
     --rc-meta: var(--text-2);
-  }
-
-  :root:not([data-theme]) .cover-card.cover-card--redesign:hover {
-    transform: translateY(-3px);
-    border: 1px solid #96b7d1 !important;
-    box-shadow: 0 0 10px 2px rgba(69, 69, 102, 0.75), 0 8px 24px rgba(0, 0, 0, 0.25) !important;
   }
 }
 
@@ -1886,13 +1839,6 @@ select.filter-select:focus,
   font-weight: 400;
 }
 
-.cover-card.cover-card--redesign.selected {
-  box-shadow:
-    0 0 0 2px var(--favourite),
-    0 0 18px 4px color-mix(in srgb, var(--favourite) 55%, transparent),
-    0 10px 26px rgba(0, 0, 0, 0.6);
-}
-
 /* List view is a separate, not-yet-redesigned pass — hide the ribbon/stars
    entirely so list rows keep their plain pre-redesign look (year/count text
    only), regardless of specificity. */
@@ -1927,7 +1873,7 @@ select.filter-select:focus,
 }
 
 .cover-grid.list-view .cover-card--redesign .cover-img-wrap {
-  border-radius: var(--radius) 0 0 var(--radius);
+  border-radius: 5px 0 0 5px;
 }
 
 /* Extra breathing room between cards, requested alongside the border
@@ -1973,7 +1919,7 @@ select.filter-select:focus,
 .folder-card {
   background: linear-gradient(160deg, #1b2028 0%, #12161d 100%);
   border: none;
-  border-radius: var(--radius-lg);
+  border-radius: 5px;
   padding: 18px 16px;
   cursor: pointer;
   transition: box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
@@ -1982,40 +1928,29 @@ select.filter-select:focus,
   gap: 4px;
   justify-content: center;
   aspect-ratio: 2 / 3;
-  /* Thin white ring at rest, matching .cover-card.cover-card--redesign (~line 1532) */
-  box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.5);
 }
 
 .folder-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 0 4px 2px rgba(255, 255, 255, 0.85), 0 5px 26px rgba(0, 0, 0, 0);
 }
 
-/* Light Mode overrides — match .cover-card.cover-card--redesign's light-theme
-   treatment (~line 1710) so folder tiles look consistent with library cards. */
+/* Hover — a 1px gold line, no glow. Not selectable (no .selected variant).
+   Plain icon tiles get the line on the whole tile; has-cover tiles get it
+   on the cover thumbnail instead (rule with .cover-img-wrap below). */
+.folder-card:not(.has-cover):hover {
+  box-shadow: 0 0 0 1px var(--favourite);
+}
+
+/* Light Mode overrides — background only; border/glow removed in the
+   2026-09-15 simplification (hover gold line above applies identically in
+   both themes). */
 :root[data-theme="light"] .folder-card {
   background: var(--surface-card) !important;
-  border: 1px solid #96b7d1 !important;
-  box-shadow: 0 0 0 1px #454566 !important;
-}
-
-:root[data-theme="light"] .folder-card:hover {
-  transform: translateY(-3px);
-  border: 1px solid #454566 !important;
-  box-shadow: 0 0 10px 2px rgba(69, 69, 102, 0.75), 0 8px 24px rgba(0, 0, 0, 0.25) !important;
 }
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme]) .folder-card {
     background: var(--surface-card) !important;
-    border: 1px solid #96b7d1 !important;
-    box-shadow: 0 0 0 1px #454566 !important;
-  }
-
-  :root:not([data-theme]) .folder-card:hover {
-    transform: translateY(-3px);
-    border: 1px solid #96b7d1 !important;
-    box-shadow: 0 0 10px 2px rgba(69, 69, 102, 0.75), 0 8px 24px rgba(0, 0, 0, 0.25) !important;
   }
 }
 
@@ -2046,7 +1981,11 @@ select.filter-select:focus,
 }
 
 .folder-card.has-cover .cover-img-wrap {
-  border-radius: var(--radius);
+  border-radius: 5px;
+}
+
+.folder-card.has-cover:hover .cover-img-wrap {
+  box-shadow: 0 0 0 1px var(--favourite);
 }
 
 .folder-card-info {
