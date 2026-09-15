@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from backend import archive_formats
 from backend.database import get_db
 from backend.models import Issue
-from backend.config import get_config
+from backend.config import THUMBNAIL_DIR
 
 router = APIRouter(tags=["reader"])
 
@@ -177,14 +177,6 @@ def get_cover(issue_id: int, request: Request, db: Session = Depends(get_db)):
     logic below stays as cheap defense-in-depth for the rare
     `date_modified is None` fallback case (unversioned URL).
     """
-    config = get_config()
-    thumb_dir = Path(config["thumbnail_dir"])
-
-    # Resolve relative paths from project root
-    if not thumb_dir.is_absolute():
-        from backend.config import PROJECT_ROOT
-        thumb_dir = PROJECT_ROOT / thumb_dir
-
     issue = db.query(Issue).filter(Issue.id == issue_id).first()
     if not issue or issue.missing:
         raise HTTPException(status_code=404, detail="Cover not found")
@@ -193,7 +185,15 @@ def get_cover(issue_id: int, request: Request, db: Session = Depends(get_db)):
     # actually generated for this issue (BUGS.md BUG-028) — otherwise a
     # stale file from a reused/orphaned ID (BUG-026) gets served as this
     # issue's cover even though generation failed.
-    thumb_path = thumb_dir / f"{issue_id}.jpg"
+    #
+    # Must use the same THUMBNAIL_DIR constant scanner.py writes thumbnails
+    # to (XDG-aware via config._resolve()) rather than re-deriving the path
+    # from raw config["thumbnail_dir"] + PROJECT_ROOT — that recomputation
+    # diverged from _resolve() under any XDG-redirected install (Docker,
+    # pip sdist, packaged .deb), landing on a path with nothing in it and
+    # silently falling through to the raw-CBZ fallback below on every
+    # request (BUGS.md, cover-serves-full-page-not-thumbnail).
+    thumb_path = THUMBNAIL_DIR / f"{issue_id}.jpg"
 
     if issue.cover_path and thumb_path.exists():
         stat = thumb_path.stat()
