@@ -1594,30 +1594,40 @@ select.filter-select:focus,
    border), heart glyph 18px → 24px across two fine-tune rounds. Scoped to
    the redesigned card only; Folder View/Series rows keep the original
    badge (style.css ~877) untouched.
-   14px circle, 14px glyph (2026-09-18, was the base rule's 20x18px circle /
-   24px glyph) — sized and top/bottom-aligned to match `.card-read-badge`'s
-   14x14px circle exactly (both `top: 6px`, both `height: 14px`), so the two
-   opposite-corner badges now share one bottom edge instead of the heart
-   circle (18px tall against read-badge's 14px) overhanging 4px lower.
-   `padding-bottom: 2px` re-centres the glyph inside the shorter box — the
-   ♥ character's own font metrics sit low in its line box at this size (its
-   ink has effectively no descent), the mirror image of the base rule's
-   `padding-top: 2px` nudge for the same glyph at a different size. Checked
-   via `CanvasRenderingContext2D.measureText`'s actual ink bounding box
-   (~10x10px at this font-size) against the 14px box rather than eyeballing
-   alone — leaves ~2px of pixel space on every side, including the heart's
-   two top lobes and its bottom point (its "extended points"), matching
-   evenly. Verified live on quixy against a real favourited+read card ("The
-   Complete Bad Company") at 6x CSS `transform: scale()` for pixel-level
-   inspection. */
+   14px circle box (2026-09-18, was the base rule's 20x18px box) —
+   top/bottom-aligned to match `.card-read-badge`'s 14x14px circle exactly
+   (both `top: 6px`, both `height: 14px`), so the two opposite-corner
+   badges share one bottom edge instead of the heart circle (18px tall
+   against read-badge's 14px) overhanging 4px lower.
+   Glyph size went 14px → 22px the same session, second round: 14px (matched
+   to the new 14px circle 1:1) read as noticeably smaller than the read
+   badge's solid-filled dot once live, since a glyph inset inside its box
+   always shows more surrounding chrome than a plain filled circle does.
+   Checked whether a circle sized to the glyph's own width would touch both
+   the bottom tip and the two top lobes at once (rendered the real glyph at
+   10x scale against a test-circle overlay, stepping font-size) — it
+   doesn't: the lobes are the glyph's widest point but sit near its top,
+   where a circle of that diameter is narrower than at its own vertical
+   middle, so the lobes reach the circle a couple of px *before* the tip
+   does as the glyph grows. 22px is the size where both are simultaneously
+   at (not past) the circle's edge — this is why the glyph is deliberately
+   allowed to slightly exceed its 14px box (`.cover-img-wrap` has no
+   `overflow: hidden`), same as the original 24px/20x18px design's own
+   intentional overflow. `padding-bottom: 3px` re-centres it vertically —
+   the ♥ character's line-box placement sits low at this size regardless of
+   box size (same direction as the 14px round's nudge, different value) —
+   tuned by eye against a solid-fill/outline test swap of the badge's real
+   background so the circle edge was visible against the cover art.
+   Verified live on quixy against a real favourited+read card ("The
+   Complete Bad Company"). */
 .cover-card--redesign.is-favorite .cover-img-wrap::before {
   width: 14px;
   height: 14px;
   padding-top: 0;
-  padding-bottom: 2px;
+  padding-bottom: 3px;
   background: rgba(255, 255, 255, 0.6);
   border: none;
-  font-size: 14px;
+  font-size: 22px;
   line-height: 1;
 }
 
