@@ -158,7 +158,10 @@
   // same as Flutter's ComicPageView(reversePages: issue.isManga).
 
   function goNext() {
-    if (state.currentPage >= state.pageUrls.length - 1) return;
+    if (state.currentPage >= state.pageUrls.length - 1) {
+      maybeShowNextIssuePrompt();
+      return;
+    }
     showPage(state.currentPage + 1);
   }
   function goPrev() {
@@ -184,7 +187,6 @@
 
     if (!opts.skipSave) {
       postProgress(n, isLast);
-      if (isLast) maybeShowNextIssuePrompt();
     }
   }
 
