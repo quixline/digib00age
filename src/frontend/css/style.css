@@ -2487,8 +2487,16 @@ select.filter-select:focus,
   /* Originally matched .series-backdrop-img's 20%→10% crop-position fix
      (2026-07-22, see that rule's comment) — kept at 10% here since
      .issue-backdrop's box height wasn't touched by the 2026-08-19 series-
-     page change that moved .series-backdrop-img to 3%. */
-  object-position: center 10%;
+     page change that moved .series-backdrop-img to 3%.
+     0% (2026-09-18): this box's extreme aspect ratio (~1770px wide by
+     440px tall) forces object-fit: cover to scale portrait covers up by
+     ~2.7x to cover the width, so only ~16% of the source image's height
+     is ever visible — at 10% that visible slice already starts 8% down
+     the source, cropping straight through cover-top logo/title art (seen
+     on "2000 AD Yearbook", "20 km/h"). 0% shows the visible slice from
+     the source's true top instead, so top-of-cover art has its full
+     headroom. Confirmed live against multiple covers, no regressions. */
+  object-position: center 0%;
   opacity: var(--backdrop-opacity);
   filter: blur(var(--blur-backdrop));
   display: block;
