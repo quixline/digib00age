@@ -2022,7 +2022,19 @@ select.filter-select:focus,
 .series-backdrop {
   position: absolute;
   top: 0;
-  bottom: 0;
+  /* height: 460px (2026-09-18, was bottom: 0 i.e. bound to
+     .series-hero-wrap's own ~150px content height) — the short box made
+     the fade gradient below complete within the first ~45px, reading as
+     an abrupt cutoff right above the issue-cards grid instead of a hero
+     backdrop. An explicit height lets the backdrop bleed past its
+     .series-hero-wrap parent's own (unchanged) height, overlapping the
+     top of the cards grid, so the image extends further down the page and
+     fades out lower — .series-hero-wrap's own layout height, and so the
+     cards grid's position, is untouched. Requires #seriesIssueWrap (the
+     cards grid's wrapper, in app.js) to be `position: relative; z-index:
+     1` below so it paints above this extended, lower-stacked (z-index: 0)
+     backdrop instead of being covered by it. */
+  height: 460px;
   left: calc(var(--container-pad-x) * -1);
   right: calc(var(--container-pad-x) * -1);
   z-index: 0;
@@ -2056,6 +2068,19 @@ select.filter-select:focus,
   position: absolute;
   inset: 0;
   background: linear-gradient(to bottom, var(--bg) 0%, transparent 30%, var(--bg) 100%);
+}
+
+/* Cards-grid wrapper (2026-09-18, id assigned in app.js) — .series-backdrop
+   above now bleeds past .series-hero-wrap's own height and overlaps the
+   top of this grid. Without its own stacking context, this non-positioned
+   sibling would still paint first (normal-flow boxes paint before
+   positioned ones), letting the backdrop cover the cover-card thumbnails.
+   position: relative + z-index: 1 lifts it above the backdrop's z-index:
+   0, same trick as .series-hero/.issue-content use for their own
+   backdrops. */
+#seriesIssueWrap {
+  position: relative;
+  z-index: 1;
 }
 
 /* Content sits above the backdrop */
