@@ -1529,7 +1529,7 @@ function getFilteredLibrary() {
   // Status
   if (activeStatus === 'unread')  pool = pool.filter(s => s.unread_count === s.issue_count);
   if (activeStatus === 'reading') pool = pool.filter(s => s.reading_count > 0);
-  if (activeStatus === 'read')    pool = pool.filter(s => s.read_count === s.issue_count);
+  if (activeStatus === 'read')    pool = pool.filter(s => s.read_count > 0);
 
   // Dropdowns
   if (activeGenre)     pool = pool.filter(s => (s.genres     || []).includes(activeGenre));
