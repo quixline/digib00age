@@ -2750,31 +2750,15 @@ select.filter-select:focus,
   background: var(--surface-2);
 }
 
-/* Favourite badge overlaid on the art itself (mirrors the grid card's
-   corner badge, styled to match the slab rather than reusing its
-   white-circle version). Toggled via [hidden] from buildFavoriteToggle's
-   sync(), not a CSS state class — same element persists across toggles. */
+/* Favourite badge overlaid on the art itself — hidden (2026-09-18): this
+   page already has an unambiguous "★ Favourited" pill among the action
+   buttons below the cover (buildFavoriteToggle), the same way read state
+   shows only via the "✓ Read" pill with no on-cover icon at all. The
+   on-cover heart was redundant with that pill. Element/JS (`buildIssueDetail`,
+   `buildFavoriteToggle`'s [hidden] toggle) left as-is — only suppressing the
+   visual here, not removing the underlying element. */
 .cc-favorite-badge {
-  position: absolute;
-  z-index: 2;
-  top: 8px;
-  left: 8px;
-  width: 26px;
-  /* height+padding-top = 26px, matching the circle's original envelope —
-     nudges the flex-centered glyph down 2px without moving the circle. */
-  height: 24px;
-  padding-top: 2px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(60, 64, 72, 0.55);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-  color: #e8342a;
-  font-size: 18px;
-  line-height: 1;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
-  pointer-events: none;
+  display: none;
 }
 
 /* Flag-for-review badge overlaid on the art, bottom-right (top-left is the
