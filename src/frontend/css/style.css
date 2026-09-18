@@ -1593,13 +1593,32 @@ select.filter-select:focus,
 /* Heart badge circle — 60% white, no border (was solid #fff + 1px black
    border), heart glyph 18px → 24px across two fine-tune rounds. Scoped to
    the redesigned card only; Folder View/Series rows keep the original
-   badge (style.css ~877) untouched. Circle itself stays 20px — heart now
-   slightly exceeds it (no overflow:hidden set), which reads fine for an
-   icon glyph; flag if it needs the circle enlarged to match. */
+   badge (style.css ~877) untouched.
+   14px circle, 14px glyph (2026-09-18, was the base rule's 20x18px circle /
+   24px glyph) — sized and top/bottom-aligned to match `.card-read-badge`'s
+   14x14px circle exactly (both `top: 6px`, both `height: 14px`), so the two
+   opposite-corner badges now share one bottom edge instead of the heart
+   circle (18px tall against read-badge's 14px) overhanging 4px lower.
+   `padding-bottom: 2px` re-centres the glyph inside the shorter box — the
+   ♥ character's own font metrics sit low in its line box at this size (its
+   ink has effectively no descent), the mirror image of the base rule's
+   `padding-top: 2px` nudge for the same glyph at a different size. Checked
+   via `CanvasRenderingContext2D.measureText`'s actual ink bounding box
+   (~10x10px at this font-size) against the 14px box rather than eyeballing
+   alone — leaves ~2px of pixel space on every side, including the heart's
+   two top lobes and its bottom point (its "extended points"), matching
+   evenly. Verified live on quixy against a real favourited+read card ("The
+   Complete Bad Company") at 6x CSS `transform: scale()` for pixel-level
+   inspection. */
 .cover-card--redesign.is-favorite .cover-img-wrap::before {
+  width: 14px;
+  height: 14px;
+  padding-top: 0;
+  padding-bottom: 2px;
   background: rgba(255, 255, 255, 0.6);
   border: none;
-  font-size: 24px;
+  font-size: 14px;
+  line-height: 1;
 }
 
 /* Info block — genre ribbon + rating stars, moved off the cover image and
