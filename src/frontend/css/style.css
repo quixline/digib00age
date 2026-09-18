@@ -2465,16 +2465,16 @@ select.filter-select:focus,
    of sitting inset with visible margin either side. */
 .issue-backdrop {
   position: absolute;
-  /* Extends 40px above #issueContent's own top — .back-nav's rendered row
-     height — so the image reaches up behind the Back button instead of
-     stopping right below it and leaving a flat-bg seam there. height grows
-     by the same 40px so the bottom edge (and everything below it) doesn't
-     shift. .back-nav's own z-index (above) keeps the Back button legible
-     over the extended image. */
-  top: -40px;
+  /* Starts at #issueContent's own top, just below the header/Back-nav row
+     (2026-09-18 — was top: -40px/height: 480px, extending up behind the
+     Back button; that read as touching the header with no breathing room,
+     so the box was pulled back down to start right under it instead. This
+     reintroduces the flat-bg seam behind the Back button that the -40px
+     offset existed to avoid — accepted trade-off for the requested look. */
+  top: 0;
   left: calc(var(--container-pad-x) * -1);
   right: calc(var(--container-pad-x) * -1);
-  height: 480px;
+  height: 440px;
   overflow: hidden;
   z-index: 0;
   pointer-events: none;

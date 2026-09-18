@@ -528,6 +528,7 @@ async function doCleanup() {
     if (countEl) countEl.textContent = '0';
     if (result)  result.textContent = `${d.removed} record${d.removed !== 1 ? 's' : ''} removed`;
     if (card)    card.classList.remove('has-pending');
+    btn.textContent = 'Cleaned';
     showToast(`Removed ${d.removed} missing record${d.removed !== 1 ? 's' : ''}`);
   } catch (e) {
     btn.disabled = false;
