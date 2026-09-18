@@ -1549,13 +1549,19 @@ function getFilteredLibrary() {
   return pool;
 }
 
+// Ignores a leading quote and a leading The/A/An article, matching the
+// backend's title_sort_key() — 'A Dream' sorts under 'D', not 'A'.
+function titleSortKey(str) {
+  return (str || '').replace(/^['"]/, '').replace(/^(the|a|an)\s+/i, '').toLowerCase();
+}
+
 // MENU_BAR_SPEC.md §2.1 — unified sort dropdown + ascend/descend toggle.
 // 'recent' has no date_added field in the /library response, so it falls
 // through to alpha (same gap as before this item; not new).
 const SORT_KEY_FNS = {
-  alpha:  s => s.series.replace(/^['"]/, '').toLowerCase(),
+  alpha:  s => titleSortKey(s.series),
   newest: s => s.year || 0,
-  recent: s => s.series.replace(/^['"]/, '').toLowerCase(),
+  recent: s => titleSortKey(s.series),
   issues: s => s.issue_count || 0,
   pages:  s => s.page_count  || 0,
 };
@@ -2593,9 +2599,9 @@ function populateSeriesFilterDropdowns(issues) {
 // through to alpha — same known gap as Browse's own 'recent' key, not new.
 const SERIES_SORT_KEY_FNS = {
   number: i => { const n = parseFloat(i.number); return Number.isNaN(n) ? Infinity : n; },
-  alpha:  i => (i.title || '').toLowerCase(),
+  alpha:  i => titleSortKey(i.title),
   newest: i => i.year || 0,
-  recent: i => (i.title || '').toLowerCase(),
+  recent: i => titleSortKey(i.title),
   pages:  i => i.page_count || 0,
 };
 

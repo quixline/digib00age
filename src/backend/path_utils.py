@@ -6,15 +6,29 @@ normalize_path/is_under: folder-path normalization and prefix-matching
 boundary check means a folder "C:\\Comics\\Batman" won't match "C:\\Comics\\Batman2\\...").
 matches_field: the 10 field-filter dimensions shared by the browse filter bar,
 Custom Tabs, and HOME_STRIPS_SPEC.md's field-based strips.
+title_sort_key: the leading-article-ignoring sort key shared by every
+library-listing sort site and library_move.py's shelf-filing bucket.
 """
 
 import os
+import re
 
 from backend.models import Issue
+
+_LEADING_QUOTE_RE = re.compile(r"^['\"]")
+_LEADING_ARTICLE_RE = re.compile(r"^(the|a|an)\s+", re.IGNORECASE)
 
 
 def normalize_path(path: str) -> str:
     return os.path.normpath(os.path.abspath(path))
+
+
+def title_sort_key(name: str) -> str:
+    """Case-insensitive sort key ignoring a leading quote and a leading
+    The/A/An article — matches library_move.py's _alpha_bucket() shelf-filing
+    convention, so 'A Dream' sorts under 'D', not 'A'."""
+    stripped = _LEADING_ARTICLE_RE.sub("", _LEADING_QUOTE_RE.sub("", name or ""))
+    return stripped.lower()
 
 
 def is_under(child: str, parent: str) -> bool:

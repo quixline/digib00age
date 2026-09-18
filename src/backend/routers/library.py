@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from backend.database import get_db
 from backend.models import CustomTab, Issue, IssueCredit, IssueGenre, Person, ReadingProgress
-from backend.path_utils import cover_url, is_under, matches_field, matches_search, normalize_path
+from backend.path_utils import cover_url, is_under, matches_field, matches_search, normalize_path, title_sort_key
 from backend.routers.progress import _get_or_create_progress
 
 router = APIRouter(tags=["library"])
@@ -234,7 +234,7 @@ def get_library(
     page_map = {p.issue_id: p.current_page for p in all_progress}
 
     result = []
-    for series_name, issues in sorted(series_map.items(), key=lambda x: x[0].lstrip("'\"").lower()):
+    for series_name, issues in sorted(series_map.items(), key=lambda x: title_sort_key(x[0])):
         # BUG-034: a partially-queued series (some but not all of its issues
         # queued) has no scoped series-page destination to send the user to —
         # the series page always shows the whole series — so each queued
@@ -427,11 +427,11 @@ def get_tab_folder_contents(
             "year_min": min(subfolder_years[name]) if subfolder_years.get(name) else None,
             "year_max": max(subfolder_years[name]) if subfolder_years.get(name) else None,
         }
-        for name, count in sorted(subfolder_counts.items(), key=lambda kv: kv[0].lower())
+        for name, count in sorted(subfolder_counts.items(), key=lambda kv: title_sort_key(kv[0]))
     ]
     files = [
         _issue_to_dict(issue, progress_map.get(issue.id))
-        for issue in sorted(direct_files, key=lambda i: (i.series or "", i.number or ""))
+        for issue in sorted(direct_files, key=lambda i: (title_sort_key(i.series or ""), i.number or ""))
     ]
 
     return {"tab_id": tab_id, "path": path, "folders": folders, "files": files}
@@ -495,7 +495,7 @@ def search_tab_folder(
     scoped = [i for i in issues if is_under(i.file_path, tab.folder_path)]
 
     results = []
-    for issue in sorted(scoped, key=lambda i: (i.series or "", i.number or "")):
+    for issue in sorted(scoped, key=lambda i: (title_sort_key(i.series or ""), i.number or "")):
         progress = _progress_for(issue.id, db)
         d = _issue_to_dict(issue, progress)
         issue_dir = normalize_path(os.path.dirname(issue.file_path))
@@ -706,6 +706,7 @@ def search(
         .limit(100)
         .all()
     )
+    issues = sorted(issues, key=lambda i: (title_sort_key(i.series or ""), i.number or ""))
 
     results = []
     for issue in issues:

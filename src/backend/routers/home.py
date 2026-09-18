@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models import CustomTab, HomeStrip, Issue, IssueGenre, Person, ReadingProgress
-from backend.path_utils import cover_url, is_under, matches_field
+from backend.path_utils import cover_url, is_under, matches_field, title_sort_key
 
 router = APIRouter(tags=["home"])
 
@@ -168,7 +168,7 @@ def _sort_issues(issues: list[Issue], sort_field: str | None) -> list[Issue]:
         return sorted(issues, key=lambda i: i.year or 0, reverse=True)
     if sort_field == "recent":
         return sorted(issues, key=lambda i: i.date_added, reverse=True)
-    return sorted(issues, key=lambda i: (i.series or "").lstrip("'\"").lower())
+    return sorted(issues, key=lambda i: title_sort_key(i.series or ""))
 
 
 def _resolve_added_strip(row: HomeStrip, db: Session, pm: dict[int, str], pr: dict) -> dict:

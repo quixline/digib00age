@@ -22,7 +22,7 @@ import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
-_LEADING_ARTICLE_RE = re.compile(r"^(the|a|an)\s+", re.IGNORECASE)
+from backend.path_utils import _LEADING_ARTICLE_RE
 
 # Folders that already differ only by punctuation/case/year-suffix from an
 # existing library folder get flagged as a near-miss rather than silently
