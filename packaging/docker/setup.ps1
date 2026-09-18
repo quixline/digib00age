@@ -1,13 +1,24 @@
 <#
 .SYNOPSIS
-    digib00age - one-line install (Windows, Docker Desktop already installed). No
+    digib00age - two-line install (Windows, Docker Desktop already installed). No
     git, no source checkout, no build - pulls a pre-built image from the self-hosted
     registry on quixy and starts it.
 
 .DESCRIPTION
-    curl -fsSL http://digib00age.tech/setup.ps1 -o setup.ps1 ; Get-Content setup.ps1 ; .\setup.ps1
+    From a normal (non-elevated) folder, in cmd.exe or PowerShell - both work:
 
-    (Fetch and read it before running it, same as any curl-piped installer.)
+        curl.exe -fsSL http://digib00age.tech/setup.ps1 -o setup.ps1
+        powershell -ExecutionPolicy Bypass -File setup.ps1
+
+    (Fetch and read it before running it, same as any curl-fetched installer -
+    `type setup.ps1` in cmd.exe or `Get-Content setup.ps1` in PowerShell.)
+
+    Two separate commands deliberately, not chained with `;` or `&&`: Windows
+    PowerShell 5.1 doesn't support `&&`, and cmd.exe doesn't support `;`, so no
+    single one-liner runs in both. `curl.exe` (not plain `curl`) avoids
+    PowerShell's built-in `Invoke-WebRequest` alias, which doesn't understand
+    `-fsSL`. `powershell -File` (not `.\setup.ps1`) works from cmd.exe too,
+    where a .ps1 can't be run directly.
 
     See packaging/docker/README.txt for the full walkthrough, including the
     windy-only build/publish path this pulls from (publish.ps1).

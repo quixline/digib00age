@@ -65,24 +65,120 @@ the same native-dialog limitation but now use the same web-based Browse
 picker as Scan Roots and the Processing Tools, so both work normally in
 Docker.) Everything else works normally, remotely or locally.
 
-No image is published to a registry yet - build locally from a repo clone
-as shown above. (This is still the only *confirmed working* install path -
-see the note below before using the other files in this folder.)
+This build-from-clone path is the only *confirmed working* install path
+end to end. See the note below before using the other files in this
+folder.
 
 ------------------------------------------------------------------------
-PENDING (2026-09-07): a second, pull-based install path
+PENDING (2026-09-09): a second, pull-based install path
 ------------------------------------------------------------------------
 This folder also has docker-compose.dist.yml, publish.ps1, setup.sh, and
-setup.ps1 - a second install path that publishes a pre-built image to a
-self-hosted registry on quixy (digib00age.tech:5000) and lets target
-machines install with a one-line curl, no git/source/build required there.
-See dev/docs/DECISIONS.md "Docker distribution: self-hosted registry +
-curl install, no git on target machines" for the full design.
+setup.ps1 - a second install path where a maintainer publishes a
+pre-built image once, and target machines then install with a one-line
+curl, no git/source/build required there. See dev/docs/DECISIONS.md
+"Docker distribution: self-hosted registry + curl install, no git on
+target machines" for the full design.
 
-quixy's registry and install site (digib00age.tech) are up and reachable,
-but the actual publish -> pull -> run path has not been exercised end to
-end yet - windy's Docker Desktop won't start (virtualization not enabled
-in BIOS/UEFI), so no image has been built or pushed. Don't rely on
-setup.sh/setup.ps1 until dev/docs/SPEC.md's "Install paths" Docker section
-no longer says PENDING - use the build-from-clone instructions above until
-then.
+quixy's registry and install site (digib00age.tech) are up, and an image
+(digib00age.tech:5000/digib00age:v2.6-dev1 and :latest) has been
+published and pulls successfully. Still marked PENDING because the
+pulled image hasn't yet been confirmed to actually run correctly
+end-to-end (container starts, app reachable on :9800, Library Folders
+picker works). Don't rely on setup.sh/setup.ps1 as the documented path
+until dev/docs/SPEC.md's "Install paths" Docker section no longer says
+PENDING - use the build-from-clone instructions above until then.
+
+**This is two different jobs - don't conflate them:**
+
+MAINTAINER, one-time per release, on the machine building the image
+(windy) - a real end user never does this or sees publish.ps1:
+
+  1. Docker Desktop must trust digib00age.tech:5000 as an insecure
+     (plain-HTTP) registry, since it has no TLS (LAN-only). Settings >
+     Docker Engine, add to the JSON:
+
+         "insecure-registries": ["digib00age.tech:5000"]
+
+     then Apply & Restart. (Editing %USERPROFILE%\.docker\daemon.json
+     directly does NOT work - Docker Desktop treats its own settings
+     store as the source of truth and silently overwrites daemon.json
+     from it in the background whenever it starts. This setting has to
+     go through the Settings UI, not a text editor.)
+
+  2. From the repo root:
+
+         .\packaging\docker\publish.ps1 -Tag v2.6-dev1
+
+     Builds the image and pushes both that tag and :latest to
+     digib00age.tech:5000. Pick a real version tag once this stops being
+     a dev rehearsal.
+
+END USER, every time they install - this is the actual pitch, and it is
+NOT just the curl line by itself:
+
+  1. Install Docker Desktop, make sure it's running.
+  2. Same insecure-registries setting as above (Settings > Docker Engine
+     > Apply & Restart) - required on every machine that will *pull*,
+     not just the one that published. The registry is plain HTTP with no
+     TLS cert (LAN-only), so Docker refuses the pull without this.
+  3. Open a terminal in a normal, definitely-writable folder - don't
+     trust whatever directory a shortcut/pinned icon happens to open in.
+     Easiest way: in File Explorer, go to a normal folder (Documents,
+     Desktop, etc.), then right-click inside it and choose "Open in
+     Terminal" (Windows 11) or shift-right-click > "Open PowerShell
+     window here" (Windows 10). Works whether that gives you cmd.exe or
+     PowerShell - see why that no longer matters, next. Don't run it
+     elevated ("Run as administrator") - Docker Desktop doesn't need it
+     (just the current user in the docker-users group), and an elevated
+     shell's cwd more often defaults to C:\Windows\System32 regardless of
+     which folder you right-clicked in.
+
+     setup.ps1 installs to .\digib00age relative to wherever it's run
+     from, with no warning if that's a bad location. Installing into
+     System32 in particular breaks it: Docker Desktop's WSL2 file
+     sharing can't get proper bind-mount write access to a path under
+     System32, so the container crash-loops with "PermissionError:
+     /config/digib00age" even though it runs as root inside the
+     container.
+
+  4. Run these two lines (not chained with `;` or `&&` - deliberately
+     two separate commands, since PowerShell 5.1 doesn't support `&&`
+     and cmd.exe doesn't support `;`, so no single chained one-liner
+     works in both). Both lines work as-is in cmd.exe, Windows
+     PowerShell, and PowerShell 7+ - no need to know or care which shell
+     you're in:
+
+         curl.exe -fsSL http://digib00age.tech/setup.ps1 -o setup.ps1
+         powershell -ExecutionPolicy Bypass -File setup.ps1
+
+     `curl.exe` is used explicitly rather than plain `curl` because in
+     PowerShell, `curl` can resolve to the built-in `Invoke-WebRequest`
+     alias instead of the real curl.exe on PATH, and that alias doesn't
+     understand `-fsSL` ("A parameter cannot be found that matches
+     parameter name 'fsSL'" means you hit the alias). `powershell -File`
+     is used instead of `.\setup.ps1` because cmd.exe can't execute a
+     .ps1 directly, and -ExecutionPolicy Bypass avoids a default
+     execution-policy prompt/block on running an unsigned script -
+     scoped to this one process only, not a system-wide policy change.
+     Read setup.ps1 before running it if you want to check it first
+     (same as any curl-fetched installer) - it's a small file, open it
+     in a text editor or `Get-Content .\setup.ps1` from PowerShell.
+
+  If step 2 was skipped, `docker compose pull` fails with "server gave
+  HTTP response to HTTPS client" (or, if nothing has ever been published
+  yet, "failed to resolve reference ... not found" - that one means the
+  maintainer's publish.ps1 hasn't run, not a problem on the user's end).
+
+Windy's Docker Desktop originally wouldn't start at all ("virtualization
+not enabled") - that turned out not to be a BIOS/UEFI setting (firmware
+virtualization was already on) but two disabled Windows optional features:
+Microsoft-Windows-Subsystem-Linux and VirtualMachinePlatform. Fixed via:
+
+    dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
+    dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /norestart
+
+(exit code 194 = reboot required, not an error) then reboot, then
+`wsl --update` before launching Docker Desktop. This was a one-off fix
+for windy specifically, not part of the regular install flow above -
+noted here in case another test machine hits the same "virtualization
+not enabled" message despite BIOS already being correct.
