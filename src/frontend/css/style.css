@@ -2007,7 +2007,11 @@ select.filter-select:focus,
 /* ── Series page header with backdrop (Section 20.6) ────────────────────── */
 .series-hero-wrap {
   position: relative;
-  margin: 18px 0 24px;
+  /* 6px/10px (was 18px/24px, 2026-09-18) — matched against .back-nav +
+     .issue-layout's tighter top/bottom spacing on the Issue detail page;
+     the old margins left a lot of dead space between the menu bar, the
+     Back button, and the card grid below. */
+  margin: 6px 0 10px;
   /* 150px (was 180px) — the old value matched the 4-stacked-line header;
      pairing title+genre-tags and pub/year+count onto two rows (2026-08-19)
      shrank the hero content, and min-height didn't follow, leaving ~30px of
@@ -2033,8 +2037,15 @@ select.filter-select:focus,
      cards grid's position, is untouched. Requires #seriesIssueWrap (the
      cards grid's wrapper, in app.js) to be `position: relative; z-index:
      1` below so it paints above this extended, lower-stacked (z-index: 0)
-     backdrop instead of being covered by it. */
-  height: 460px;
+     backdrop instead of being covered by it.
+     820px (2026-09-18, later same session) — 460px still completed the
+     fade-to-solid well above the bottom of a typical viewport, so a short
+     series (few issues, grid ends within the first screen) read as a hard
+     seam followed by a long flat gap before the page's actual bottom.
+     820px pairs with the unchanged gradient stops below to carry the
+     image/fade most of the way down a normal-height window instead of
+     stopping partway. */
+  height: 820px;
   left: calc(var(--container-pad-x) * -1);
   right: calc(var(--container-pad-x) * -1);
   z-index: 0;
@@ -2087,14 +2098,16 @@ select.filter-select:focus,
 .series-hero {
   position: relative;
   z-index: 1;
-  padding: 18px 22px 22px;
+  /* 10px/14px top/bottom (was 18px/22px, 2026-09-18) — see
+     .series-hero-wrap's margin comment above; same tightening pass. */
+  padding: 10px 22px 14px;
 }
 
 .series-hero-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
 }
 
 .series-mark-btn {
@@ -2121,7 +2134,7 @@ select.filter-select:focus,
 }
 
 .series-meta-row {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .series-name {
