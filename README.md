@@ -55,8 +55,12 @@ config.json     Tracked, bare template — no secrets. Real values (API key,
 2. Either:
    - Run `start.bat` (Windows) or `start.sh` (Linux) for normal use — launches the
      tray app, which manages the backend and gives you the full tray menu, or
-   - Run `python start_server.py` directly for manual/dev use (checks config,
-     initializes the DB if needed, then starts uvicorn; Ctrl+C to stop).
+   - Run `python start_server.py` directly (checks config, initializes the DB if
+     needed, then starts uvicorn; Ctrl+C to stop). This is also the **headless
+     server** install path — no tray, no GUI, no Docker required — confirmed
+     working as a standing deployment (e.g. wrapped in a systemd unit) via a
+     comparison install run on quixy, see `dev/docs/DECISIONS.md` "Headless
+     server confirmed as a fourth install option".
 3. Open `http://localhost:9800` (or `http://<host-pc-ip>:9800` from another device on
    the network) for the library. `/admin` for the Admin page, `/editor` for the Full
    Editor — both reachable from any device on the network. Set a password (Admin >
@@ -97,8 +101,9 @@ shown as text in the Admin UI.
 
 V1 is complete. V2 is active — editor integration, Custom Tabs, Home Strips, and a
 Genre/Format admin editor have all shipped; see `dev/docs/CHANGELOG.md` for the dated
-list. Check `dev/docs/ROADMAP.md` for what's next. No installer yet — setup is manual
-(`config.json.bak` → `config.json` + `start.bat`); not currently prioritized.
+list. Check `dev/docs/ROADMAP.md` for what's next. Four install options exist: Windows
+MSI, Linux `.deb`/GUI installer, headless server (no tray/GUI, no Docker), and Docker —
+see `dev/docs/SPEC.md` §1 "Install paths" for the full breakdown.
 
 See `dev/docs/SPEC.md` for the full V1 technical specification and `dev/docs/INDEX.md`
 for the complete doc map (what governs what, and the authority order between docs).
