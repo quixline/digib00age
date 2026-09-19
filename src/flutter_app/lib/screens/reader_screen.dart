@@ -5,8 +5,12 @@ import '../services/api_service.dart';
 import '../services/settings_service.dart';
 import '../services/local_cbz_service.dart';
 import '../services/sync_store.dart';
+import '../services/download_service.dart';
+import '../services/sync_service.dart';
+import '../models/downloaded_issue.dart';
 import '../widgets/comic_page_view.dart';
 import '../widgets/toolbar_overlay.dart';
+import '../theme/tokens.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Server-mode reader
@@ -46,9 +50,17 @@ class _ReaderScreenState extends State<ReaderScreen> {
     _load();
   }
 
+  // Deliberately doesn't restore edgeToEdge here — see build()'s PopScope
+  // instead. pushReplacementNamed (advancing to the next issue) disposes
+  // this screen too, but its MaterialPageRoute transition means dispose()
+  // here can run AFTER the new ReaderScreen's initState() has already
+  // re-asserted immersiveSticky, silently undoing it and leaving system UI
+  // (status bar +, on some devices, a persistent nav dock) visible for the
+  // rest of the reading session. Restoring only on an actual pop (via
+  // PopScope, which fires deterministically before disposal) means a
+  // same-series issue-to-issue advance never toggles system UI at all.
   @override
   void dispose() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
@@ -81,7 +93,6 @@ class _ReaderScreenState extends State<ReaderScreen> {
       currentPage: page,
       status: page == _pageUrls.length - 1 ? 'read' : null,
     );
-    if (page == _pageUrls.length - 1) _showNextIssuePrompt();
   }
 
   void _onModeChanged(ReadingMode m) {
@@ -90,15 +101,37 @@ class _ReaderScreenState extends State<ReaderScreen> {
   }
 
   void _onPrevPage() => _pageViewKey.currentState?.prevPage();
-  void _onNextPage() => _pageViewKey.currentState?.nextPage();
+
+  // Reaching the last page no longer auto-pops the next-issue sheet (it used
+  // to fire the instant _onPageChanged saw the last index, however the user
+  // got there — swipe, scroll estimate, or slider drag — which interrupted
+  // reading that page's own content). It now only shows when the reader
+  // deliberately tries to advance past the last page: tapping this button,
+  // or an overscroll attempt (see onOverscrollNext below). Mirrors the web
+  // reader's goNext() fix (commit d5bf08d).
+  void _onNextPage() {
+    if (_currentPage == _pageUrls.length - 1) {
+      _showNextIssuePrompt();
+      return;
+    }
+    _pageViewKey.currentState?.nextPage();
+  }
+
   void _onDoubleTapMiddle() => _pageViewKey.currentState?.toggleZoom();
 
+  void _handleOverscrollNext() {
+    if (_currentPage == _pageUrls.length - 1) _showNextIssuePrompt();
+  }
+
+  bool _nextPromptOpen = false;
+
   void _showNextIssuePrompt() {
-    if (_issue?.nextIssueId == null) return;
+    if (_nextPromptOpen || _issue?.nextIssueId == null) return;
     final nextId = _issue!.nextIssueId!;
-    showModalBottomSheet(
+    _nextPromptOpen = true;
+    showDialog<void>(
       context: context,
-      builder: (_) => _NextIssueSheet(
+      builder: (_) => _NextIssueDialog(
         nextIssueId: nextId,
         api: widget.api,
         onOpen: () {
@@ -106,16 +139,16 @@ class _ReaderScreenState extends State<ReaderScreen> {
           Navigator.of(context).pushReplacementNamed('/reader', arguments: nextId);
         },
       ),
-    );
+    ).whenComplete(() => _nextPromptOpen = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    final Widget body;
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    if (_error != null) {
-      return Scaffold(
+      body = const Scaffold(body: Center(child: CircularProgressIndicator()));
+    } else if (_error != null) {
+      body = Scaffold(
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -127,45 +160,54 @@ class _ReaderScreenState extends State<ReaderScreen> {
           ),
         ),
       );
-    }
+    } else {
+      final issue = _issue!;
+      final pageCount = _pageUrls.length;
+      final label = issue.number != null ? '${issue.series} #${issue.number}' : issue.series;
 
-    final issue = _issue!;
-    final pageCount = _pageUrls.length;
-    final label = issue.number != null ? '${issue.series} #${issue.number}' : issue.series;
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: ToolbarOverlay(
-        mode: _mode,
-        onPrevPage: _onPrevPage,
-        onNextPage: _onNextPage,
-        onDoubleTapMiddle: _onDoubleTapMiddle,
-        onBack: () => Navigator.of(context).pop(),
-        topBar: _TopBar(
-          title: label,
-          currentPage: _currentPage,
-          pageCount: pageCount,
+      body = Scaffold(
+        backgroundColor: Colors.black,
+        body: ToolbarOverlay(
+          mode: _mode,
+          onPrevPage: _onPrevPage,
+          onNextPage: _onNextPage,
+          onDoubleTapMiddle: _onDoubleTapMiddle,
           onBack: () => Navigator.of(context).pop(),
+          topBar: _TopBar(
+            title: label,
+            currentPage: _currentPage,
+            pageCount: pageCount,
+            onBack: () => Navigator.of(context).pop(),
+          ),
+          bottomBar: _BottomBar(
+            currentPage: _currentPage,
+            pageCount: pageCount,
+            mode: _mode,
+            onModeChanged: _onModeChanged,
+            onSliderChanged: (v) {
+              setState(() => _currentPage = v);
+              _pageViewKey.currentState?.jumpToPage(v);
+            },
+          ),
+          child: ComicPageView(
+            key: _pageViewKey,
+            pageUrls: _pageUrls,
+            mode: _mode,
+            reversePages: issue.isManga,
+            initialPage: _currentPage,
+            onPageChanged: _onPageChanged,
+            onOverscrollNext: _handleOverscrollNext,
+          ),
         ),
-        bottomBar: _BottomBar(
-          currentPage: _currentPage,
-          pageCount: pageCount,
-          mode: _mode,
-          onModeChanged: _onModeChanged,
-          onSliderChanged: (v) {
-            setState(() => _currentPage = v);
-            _pageViewKey.currentState?.jumpToPage(v);
-          },
-        ),
-        child: ComicPageView(
-          key: _pageViewKey,
-          pageUrls: _pageUrls,
-          mode: _mode,
-          reversePages: issue.isManga,
-          initialPage: _currentPage,
-          onPageChanged: _onPageChanged,
-        ),
-      ),
+      );
+    }
+    // Only restore system UI on an actual pop — see the note on dispose()
+    // above for why that (not dispose) is the reliable place to do it.
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      },
+      child: body,
     );
   }
 }
@@ -183,12 +225,30 @@ class LocalReaderArgs {
   const LocalReaderArgs(this.filePath, {this.issueId});
 }
 
+// Adjacency order for downloaded issues of one series — the offline
+// equivalent of the backend's _find_adjacent_issue sort_key
+// (src/backend/routers/library.py), since there's no server to ask offline.
+// Numeric-parseable numbers sort first by value; anything else falls back to
+// issueId so the order is at least stable.
+int _compareDownloaded(DownloadedIssue a, DownloadedIssue b) {
+  int rank(DownloadedIssue d) => double.tryParse(d.number ?? '') != null ? 0 : 1;
+  final ra = rank(a), rb = rank(b);
+  if (ra != rb) return ra.compareTo(rb);
+  if (ra == 0) {
+    final cmp = double.parse(a.number!).compareTo(double.parse(b.number!));
+    if (cmp != 0) return cmp;
+  }
+  return a.issueId.compareTo(b.issueId);
+}
+
 class LocalReaderScreen extends StatefulWidget {
   final String filePath;
   final SettingsService settings;
   final LocalCbzService localCbz;
   final int? issueId;
   final SyncStore? syncStore; // required iff issueId != null
+  final DownloadService? downloads; // required iff issueId != null
+  final SyncService? syncService; // required iff issueId != null
 
   const LocalReaderScreen({
     super.key,
@@ -197,6 +257,8 @@ class LocalReaderScreen extends StatefulWidget {
     required this.localCbz,
     this.issueId,
     this.syncStore,
+    this.downloads,
+    this.syncService,
   });
 
   @override
@@ -211,6 +273,7 @@ class _LocalReaderScreenState extends State<LocalReaderScreen> {
   String? _error;
   int _currentPage = 0;
   late ReadingMode _mode;
+  DownloadedIssue? _nextDownloaded;
 
   @override
   void initState() {
@@ -220,9 +283,10 @@ class _LocalReaderScreenState extends State<LocalReaderScreen> {
     _load();
   }
 
+  // See ReaderScreen.dispose() — same reasoning, same fix: restore system UI
+  // only on an actual pop (PopScope, in build()), never here.
   @override
   void dispose() {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     widget.localCbz.clear();
     super.dispose();
   }
@@ -242,10 +306,28 @@ class _LocalReaderScreenState extends State<LocalReaderScreen> {
         _pageCount = pageCount;
         _currentPage = saved?.currentPage ?? 0;
         _loading = false;
+        _nextDownloaded = _findNextDownloaded();
       });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
+  }
+
+  // Offline counterpart of the server's next_issue_id: since there's no
+  // network to ask "what's next in this series", the only issues it can ever
+  // offer are ones already downloaded to this device — never issues that
+  // exist in the library but haven't been downloaded yet.
+  DownloadedIssue? _findNextDownloaded() {
+    if (widget.issueId == null || widget.downloads == null) return null;
+    final current = widget.downloads!.findByIssueId(widget.issueId!);
+    if (current == null) return null;
+    final siblings = widget.downloads!.list()
+        .where((d) => d.series == current.series)
+        .toList()
+      ..sort(_compareDownloaded);
+    final idx = siblings.indexWhere((d) => d.issueId == current.issueId);
+    if (idx == -1 || idx + 1 >= siblings.length) return null;
+    return siblings[idx + 1];
   }
 
   void _onPageChanged(int page) {
@@ -266,15 +348,59 @@ class _LocalReaderScreenState extends State<LocalReaderScreen> {
   }
 
   void _onPrevPage() => _pageViewKey.currentState?.prevPage();
-  void _onNextPage() => _pageViewKey.currentState?.nextPage();
+
+  // See ReaderScreen._onNextPage — same fix, same reasoning: only offer the
+  // next issue on a deliberate advance attempt, never automatically on
+  // arrival at the last page.
+  void _onNextPage() {
+    if (_currentPage == _pageCount - 1 && _nextDownloaded != null) {
+      _showNextIssuePrompt();
+      return;
+    }
+    _pageViewKey.currentState?.nextPage();
+  }
+
   void _onDoubleTapMiddle() => _pageViewKey.currentState?.toggleZoom();
+
+  void _handleOverscrollNext() {
+    if (_currentPage == _pageCount - 1) _showNextIssuePrompt();
+  }
+
+  bool _nextPromptOpen = false;
+
+  void _showNextIssuePrompt() {
+    final next = _nextDownloaded;
+    if (_nextPromptOpen || next == null) return;
+    _nextPromptOpen = true;
+    showDialog<void>(
+      context: context,
+      builder: (_) => _NextIssueDialog(
+        series: next.series,
+        number: next.number,
+        onOpen: () {
+          Navigator.of(context).pop();
+          // Best-effort: flush any queued offline progress the moment we
+          // have a chance, without waiting for the user to back out to the
+          // shell (the only other place a sync is currently triggered).
+          // Safe to fire-and-forget — syncNow() already degrades gracefully
+          // when there's no connection.
+          widget.syncService?.syncNow();
+          Navigator.of(context).pushReplacementNamed(
+            '/reader/local',
+            arguments: LocalReaderArgs(next.localFilePath, issueId: next.issueId),
+          );
+        },
+      ),
+    ).whenComplete(() => _nextPromptOpen = false);
+  }
 
   @override
   Widget build(BuildContext context) {
     final title = widget.localCbz.titleFromPath(widget.filePath);
+    final Widget body;
 
     if (_loading) {
-      return Scaffold(
+      body = Scaffold(
         backgroundColor: Colors.black,
         body: Center(
           child: Column(
@@ -287,50 +413,56 @@ class _LocalReaderScreenState extends State<LocalReaderScreen> {
           ),
         ),
       );
-    }
-    if (_error != null) {
-      return Scaffold(
+    } else if (_error != null) {
+      body = Scaffold(
         body: Center(child: Text(_error!, style: const TextStyle(color: Colors.redAccent))),
       );
-    }
+    } else {
+      final pageCount = _pageCount;
 
-    final pageCount = _pageCount;
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: ToolbarOverlay(
-        mode: _mode,
-        onPrevPage: _onPrevPage,
-        onNextPage: _onNextPage,
-        onDoubleTapMiddle: _onDoubleTapMiddle,
-        onBack: () => Navigator.of(context).pop(),
-        topBar: _TopBar(
-          title: title,
-          currentPage: _currentPage,
-          pageCount: pageCount,
+      body = Scaffold(
+        backgroundColor: Colors.black,
+        body: ToolbarOverlay(
+          mode: _mode,
+          onPrevPage: _onPrevPage,
+          onNextPage: _onNextPage,
+          onDoubleTapMiddle: _onDoubleTapMiddle,
           onBack: () => Navigator.of(context).pop(),
+          topBar: _TopBar(
+            title: title,
+            currentPage: _currentPage,
+            pageCount: pageCount,
+            onBack: () => Navigator.of(context).pop(),
+          ),
+          bottomBar: _BottomBar(
+            currentPage: _currentPage,
+            pageCount: pageCount,
+            mode: _mode,
+            onModeChanged: _onModeChanged,
+            onSliderChanged: (v) {
+              setState(() => _currentPage = v);
+              _pageViewKey.currentState?.jumpToPage(v);
+            },
+          ),
+          child: LocalComicPageView(
+            key: _pageViewKey,
+            filePath: widget.filePath,
+            localCbz: widget.localCbz,
+            pageCount: pageCount,
+            mode: _mode,
+            reversePages: false,
+            initialPage: _currentPage,
+            onPageChanged: _onPageChanged,
+            onOverscrollNext: _handleOverscrollNext,
+          ),
         ),
-        bottomBar: _BottomBar(
-          currentPage: _currentPage,
-          pageCount: pageCount,
-          mode: _mode,
-          onModeChanged: _onModeChanged,
-          onSliderChanged: (v) {
-            setState(() => _currentPage = v);
-            _pageViewKey.currentState?.jumpToPage(v);
-          },
-        ),
-        child: LocalComicPageView(
-          key: _pageViewKey,
-          filePath: widget.filePath,
-          localCbz: widget.localCbz,
-          pageCount: pageCount,
-          mode: _mode,
-          reversePages: false,
-          initialPage: _currentPage,
-          onPageChanged: _onPageChanged,
-        ),
-      ),
+      );
+    }
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      },
+      child: body,
     );
   }
 }
@@ -517,33 +649,45 @@ class _ModeButton extends StatelessWidget {
 // Next issue prompt
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _NextIssueSheet extends StatefulWidget {
-  final int nextIssueId;
-  final ApiService api;
+class _NextIssueDialog extends StatefulWidget {
+  // Online (ReaderScreen) passes nextIssueId + api and lets this widget fetch
+  // the next issue's series/number itself. Offline (LocalReaderScreen)
+  // already has that data locally (no network available to fetch with), so
+  // it passes series/number directly and skips the fetch entirely.
+  final int? nextIssueId;
+  final ApiService? api;
+  final String? series;
+  final String? number;
   final VoidCallback onOpen;
 
-  const _NextIssueSheet({
-    required this.nextIssueId,
-    required this.api,
+  const _NextIssueDialog({
+    this.nextIssueId,
+    this.api,
+    this.series,
+    this.number,
     required this.onOpen,
-  });
+  }) : assert(series != null || (nextIssueId != null && api != null));
 
   @override
-  State<_NextIssueSheet> createState() => _NextIssueSheetState();
+  State<_NextIssueDialog> createState() => _NextIssueDialogState();
 }
 
-class _NextIssueSheetState extends State<_NextIssueSheet> {
+class _NextIssueDialogState extends State<_NextIssueDialog> {
   Map<String, dynamic>? _issueData;
 
   @override
   void initState() {
     super.initState();
-    _loadNext();
+    if (widget.series != null) {
+      _issueData = {'series': widget.series, 'number': widget.number};
+    } else {
+      _loadNext();
+    }
   }
 
   Future<void> _loadNext() async {
     try {
-      final issue = await widget.api.getIssue(widget.nextIssueId);
+      final issue = await widget.api!.getIssue(widget.nextIssueId!);
       if (mounted) {
         setState(() => _issueData = {
           'series': issue.series,
@@ -557,35 +701,50 @@ class _NextIssueSheetState extends State<_NextIssueSheet> {
   Widget build(BuildContext context) {
     final series = _issueData?['series'] as String? ?? '…';
     final number = _issueData?['number'] as String?;
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.check_circle, color: Colors.greenAccent, size: 40),
-          const SizedBox(height: 12),
-          const Text('Issue complete', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Text(
-            number != null ? 'Up next: $series #$number' : 'Up next: $series',
-            style: const TextStyle(color: Colors.white60),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              OutlinedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Stay here'),
-              ),
-              FilledButton.icon(
-                onPressed: widget.onOpen,
-                icon: const Icon(Icons.arrow_forward),
-                label: const Text('Next issue'),
-              ),
-            ],
-          ),
-        ],
+    final colors = AppColors.of(context);
+    // Centered rather than pinned to the bottom: a bottom sheet's buttons can
+    // end up underneath a device's own system UI (status bar, or on some OEM
+    // tablets a persistent nav dock) if that reclaims screen space after a
+    // route transition. A centered dialog isn't anchored to either screen
+    // edge, so it's never exposed to that class of problem regardless of
+    // platform/device — the real fix for that is ReaderScreen/
+    // LocalReaderScreen's PopScope-based system-UI handling; this is the
+    // second, independent layer that makes the prompt itself robust too.
+    return Dialog(
+      backgroundColor: colors.surfaceRaised,
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.check_circle, color: Colors.greenAccent, size: 40),
+            const SizedBox(height: 12),
+            Text(
+              'Issue complete',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: colors.textPrimary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              number != null ? 'Up next: $series #$number' : 'Up next: $series',
+              style: TextStyle(color: colors.textSecondary),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Stay here'),
+                ),
+                FilledButton.icon(
+                  onPressed: widget.onOpen,
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('Next issue'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

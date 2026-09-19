@@ -134,6 +134,8 @@ class _Digib00ageAppState extends State<Digib00ageApp> {
             localCbz: _localCbz,
             issueId: args.issueId,
             syncStore: args.issueId != null ? _syncStore : null,
+            downloads: args.issueId != null ? _downloads : null,
+            syncService: args.issueId != null ? _syncService : null,
           ),
         );
       case '/settings':

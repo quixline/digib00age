@@ -15,6 +15,12 @@ class ComicPageView extends StatefulWidget {
   final bool reversePages;
   final int initialPage;
   final ValueChanged<int> onPageChanged;
+  // Fired when the reader tries to go past the last page — a forward swipe
+  // past the end (page mode) or a scroll attempt past the bottom (scroll
+  // mode). Both PageView and ListView report this as overscroll at a true
+  // scroll boundary regardless of platform physics, so any positive
+  // overscroll observed here already means "tried to advance past the end".
+  final VoidCallback? onOverscrollNext;
 
   const ComicPageView({
     super.key,
@@ -23,6 +29,7 @@ class ComicPageView extends StatefulWidget {
     required this.reversePages,
     required this.initialPage,
     required this.onPageChanged,
+    this.onOverscrollNext,
   });
 
   @override
@@ -180,9 +187,17 @@ class ComicPageViewState extends State<ComicPageView> {
 
   @override
   Widget build(BuildContext context) {
-    return widget.mode == ReadingMode.scroll
+    final child = widget.mode == ReadingMode.scroll
         ? _buildScrollMode()
         : _buildPageMode();
+    if (widget.onOverscrollNext == null) return child;
+    return NotificationListener<OverscrollNotification>(
+      onNotification: (notification) {
+        if (notification.overscroll > 0) widget.onOverscrollNext!();
+        return false;
+      },
+      child: child,
+    );
   }
 
   Widget _buildScrollMode() {
@@ -263,6 +278,8 @@ class LocalComicPageView extends StatefulWidget {
   final bool reversePages;
   final int initialPage;
   final ValueChanged<int> onPageChanged;
+  // See ComicPageView.onOverscrollNext — same meaning, same detection.
+  final VoidCallback? onOverscrollNext;
 
   const LocalComicPageView({
     super.key,
@@ -273,6 +290,7 @@ class LocalComicPageView extends StatefulWidget {
     required this.reversePages,
     required this.initialPage,
     required this.onPageChanged,
+    this.onOverscrollNext,
   });
 
   @override
@@ -434,6 +452,18 @@ class LocalComicPageViewState extends State<LocalComicPageView> {
 
   @override
   Widget build(BuildContext context) {
+    final child = _buildContent(context);
+    if (widget.onOverscrollNext == null) return child;
+    return NotificationListener<OverscrollNotification>(
+      onNotification: (notification) {
+        if (notification.overscroll > 0) widget.onOverscrollNext!();
+        return false;
+      },
+      child: child,
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final cacheWidth = _cacheWidth(context);
 
     if (widget.mode == ReadingMode.scroll) {
