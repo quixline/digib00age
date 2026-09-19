@@ -31,6 +31,20 @@ def title_sort_key(name: str) -> str:
     return stripped.lower()
 
 
+def number_sort_key(number) -> tuple:
+    """Natural sort key for issue numbers: '2' < '10' < '11', not the plain
+    string order that puts '10' before '2'. Numeric numbers sort by value,
+    non-numeric ones (e.g. 'Annual 1') sort after all numeric ones, and a
+    missing number sorts last of all. Matches get_series()'s issue_sort
+    semantics, so Folder View orders issues the same way the Series page does."""
+    if number is None or number == "":
+        return (2, 0.0, "")
+    try:
+        return (0, float(number), "")
+    except (ValueError, TypeError):
+        return (1, 0.0, str(number).lower())
+
+
 def is_under(child: str, parent: str) -> bool:
     """True if `child` is `parent` itself or a path beneath it."""
     c = normalize_path(child).lower()

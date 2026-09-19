@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from backend.database import get_db
 from backend.models import CustomTab, Issue, IssueCredit, IssueGenre, Person, ReadingProgress
-from backend.path_utils import cover_url, is_under, matches_field, matches_search, normalize_path, title_sort_key
+from backend.path_utils import cover_url, is_under, matches_field, matches_search, normalize_path, number_sort_key, title_sort_key
 from backend.routers.progress import _get_or_create_progress
 
 router = APIRouter(tags=["library"])
@@ -431,7 +431,7 @@ def get_tab_folder_contents(
     ]
     files = [
         _issue_to_dict(issue, progress_map.get(issue.id))
-        for issue in sorted(direct_files, key=lambda i: (title_sort_key(i.series or ""), i.number or ""))
+        for issue in sorted(direct_files, key=lambda i: (title_sort_key(i.series or ""), number_sort_key(i.number)))
     ]
 
     return {"tab_id": tab_id, "path": path, "folders": folders, "files": files}
@@ -495,7 +495,7 @@ def search_tab_folder(
     scoped = [i for i in issues if is_under(i.file_path, tab.folder_path)]
 
     results = []
-    for issue in sorted(scoped, key=lambda i: (title_sort_key(i.series or ""), i.number or "")):
+    for issue in sorted(scoped, key=lambda i: (title_sort_key(i.series or ""), number_sort_key(i.number))):
         progress = _progress_for(issue.id, db)
         d = _issue_to_dict(issue, progress)
         issue_dir = normalize_path(os.path.dirname(issue.file_path))
@@ -706,7 +706,7 @@ def search(
         .limit(100)
         .all()
     )
-    issues = sorted(issues, key=lambda i: (title_sort_key(i.series or ""), i.number or ""))
+    issues = sorted(issues, key=lambda i: (title_sort_key(i.series or ""), number_sort_key(i.number)))
 
     results = []
     for issue in issues:
