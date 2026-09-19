@@ -889,6 +889,13 @@ select.filter-select:focus,
   object-position: center top;
 }
 
+/* List View drops the thumbnail progress-bar overlay entirely — the
+   list-progress-text line below (~line 969) is the only reading-progress
+   tracker in this view. */
+.cover-grid.list-view .card-progress-track {
+  display: none;
+}
+
 .cover-grid.list-view .cover-info {
   flex: 1;
   flex-direction: column;

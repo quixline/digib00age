@@ -1358,8 +1358,8 @@ function buildStripCard(item) {
   if (state === 'state-read') wrap.appendChild(buildReadBadge());
 
   // Part-read/read progress pill — same math as before, new track/fill visual.
-  if ((state === 'state-part-read' || state === 'state-read') && item.page_count > 0) {
-    const pct = state === 'state-read' ? 100 : Math.min(100, Math.round((item.current_page / item.page_count) * 100));
+  if (state === 'state-part-read' && item.page_count > 0) {
+    const pct = Math.min(100, Math.round((item.current_page / item.page_count) * 100));
     const track = el('div', 'card-progress-track');
     const fill  = el('div', 'card-progress-fill');
     fill.style.width = `${pct}%`;
@@ -1896,11 +1896,11 @@ function buildCoverCard(s) {
   // or 100% for a single issue. Series cards keep the issue-count aggregate.
   let pct;
   if (linksToIssue && s.page_count > 0) {
-    pct = state === 'state-read' ? 100 : Math.min(100, Math.round((s.current_page / s.page_count) * 100));
+    pct = Math.min(100, Math.round((s.current_page / s.page_count) * 100));
   } else {
     pct = Math.round((s.read_count / s.issue_count) * 100);
   }
-  if (state === 'state-part-read' || state === 'state-read') {
+  if (state === 'state-part-read') {
     const track = el('div', 'card-progress-track');
     const fill  = el('div', 'card-progress-fill');
     fill.style.width = `${pct}%`;
@@ -2286,8 +2286,8 @@ function buildFolderFileCard(issue) {
   if (issue.flagged_for_review) wrap.appendChild(buildFlagBadge());
   if (state === 'state-read') wrap.appendChild(buildReadBadge());
 
-  if ((state === 'state-part-read' || state === 'state-read') && issue.page_count > 0) {
-    const pct = state === 'state-read' ? 100 : Math.min(100, Math.round((issue.current_page / issue.page_count) * 100));
+  if (state === 'state-part-read' && issue.page_count > 0) {
+    const pct = Math.min(100, Math.round((issue.current_page / issue.page_count) * 100));
     const track = el('div', 'card-progress-track');
     const fill  = el('div', 'card-progress-fill');
     fill.style.width = `${pct}%`;
@@ -2750,8 +2750,8 @@ function buildIssueCoverCard(issue) {
   if (issue.flagged_for_review) wrap.appendChild(buildFlagBadge());
   if (state === 'state-read') wrap.appendChild(buildReadBadge());
 
-  if (state === 'state-part-read' || state === 'state-read') {
-    const pct   = state === 'state-read' ? 100 : issue.page_count > 0 ? Math.min(100, Math.round((issue.current_page / issue.page_count) * 100)) : 0;
+  if (state === 'state-part-read') {
+    const pct   = issue.page_count > 0 ? Math.min(100, Math.round((issue.current_page / issue.page_count) * 100)) : 0;
     const track = el('div', 'card-progress-track');
     const fill  = el('div', 'card-progress-fill');
     fill.style.width = `${pct}%`;
@@ -2892,12 +2892,8 @@ function buildIssueRow(issue) {
   if (issue.summary) detail.appendChild(el('div', 'issue-summary', issue.summary));
 
   if (issue.read_status === 'reading' && issue.page_count > 0) {
-    const pct   = Math.min(100, Math.round((issue.current_page / issue.page_count) * 100));
-    const track = el('div', 'issue-progress-track');
-    const fill  = el('div', 'issue-progress-fill');
-    fill.style.width = `${pct}%`;
-    track.appendChild(fill);
-    detail.appendChild(track);
+    const pct = Math.min(100, Math.round((issue.current_page / issue.page_count) * 100));
+    detail.appendChild(el('div', 'list-progress-text', `${pct}% Read`));
   }
 
   row.appendChild(detail);
