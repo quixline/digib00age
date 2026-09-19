@@ -1925,8 +1925,9 @@ select.filter-select:focus,
 }
 
 /* Hover — a 1px gold line, no glow. Not selectable (no .selected variant).
-   Plain icon tiles get the line on the whole tile; has-cover tiles get it
-   on the cover thumbnail instead (rule with .cover-img-wrap below). */
+   Plain icon tiles only — has-cover tiles (2026-09-19) dropped the gold
+   line to match the redesigned card's plain lift-on-hover, no colour
+   change. */
 .folder-card:not(.has-cover):hover {
   box-shadow: 0 0 0 1px var(--favourite);
 }
@@ -1964,18 +1965,14 @@ select.filter-select:focus,
    switch from the centered icon layout to an image-on-top, info-below
    layout matching .cover-card, instead of overlaying text on the image. */
 .folder-card.has-cover {
-  padding: 5px 5px 7px;
+  padding: 0 0 7px;
   justify-content: flex-start;
   overflow: hidden;
   aspect-ratio: auto;
 }
 
 .folder-card.has-cover .cover-img-wrap {
-  border-radius: 5px;
-}
-
-.folder-card.has-cover:hover .cover-img-wrap {
-  box-shadow: 0 0 0 1px var(--favourite);
+  border-radius: 5px 5px 0 0;
 }
 
 .folder-card-info {
