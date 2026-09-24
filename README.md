@@ -3,71 +3,37 @@
 A personal, local comic book server for a single user on a home network. Serves a CBZ
 collection with metadata read from embedded `ComicInfo.xml`.
 
-Start here, then see `dev/docs/INDEX.md` for the full doc map (local working docs,
-not part of this repo's public git history — see "Repo layout" below).
-
 ## Architecture
 
-A FastAPI + SQLite backend (`src/backend/`) scans a CBZ library, serves a REST API,
-and hosts a vanilla-JS web UI (`src/frontend/`) for browsing, the Admin page, and the
-metadata editor — all as **one process on one port**. A Flutter app
-(`src/flutter_app/`) installs on Android and Windows for actual reading, connecting to
-the backend over the home network or falling back to local CBZ files when offline. A
-pystray tray app (`src/tray/`) launches the backend on Windows login and keeps it
-alive, with menu items for Open Library, Admin, Metadata Editor, Start/Stop Server,
-login autostart, and Close.
+A FastAPI + SQLite backend (src/backend/) scans a CBZ library, serves a REST API, and hosts a vanilla-JS web UI (src/frontend/) for browsing, the Admin page, and the metadata editor — all as one process on one port. A Flutter app (src/flutter_app/) installs on Android and Windows for actual reading, connecting to the backend over the home network or falling back to local CBZ files when offline. A pystray tray app (src/tray/) launches the backend on Windows login and keeps it alive, with menu items for Open Library, Admin, Metadata Editor, Start/Stop Server, login autostart, and Close.
 
-The metadata editor used to be a separate Flask app ("CAPT") syncing over a webhook —
-that's no longer true. Its editing logic (read/parse/rebuild `ComicInfo.xml`) was
-ported into this backend (`src/backend/editor/`) and is now exposed as two UIs in the
-same FastAPI app:
-- **Basic Editor** — quick single-issue edits, popup from `/issue/{id}`
-- **Full Editor** — batch tagging of new comics before they enter the library, at
-  `/editor`
+The metadata editor used to be a separate Flask app ("CAPT") syncing over a webhook — that's no longer true. Its editing logic (read/parse/rebuild ComicInfo.xml) was ported into this backend (src/backend/editor/) and is now exposed as two UIs in the same FastAPI app:
 
-See `dev/docs/EDITOR_SPEC.md` for the full editor design.
-
-## Repo layout
-
-```
-src/            Everything the app needs to run — backend, frontend, flutter_app,
-                chrome-extension, tray. This is what's meant to be public.
-packaging/      Source for building distributable installers (PyInstaller specs,
-                Debian package files, app-menu/icon assets). Not the installers
-                themselves — those are build output, not source.
-dev/            Local working space (docs, ct_cache) — gitignored, not part
-                of this repo's public history.
-logs/           Processing/scan tool logs — gitignored, mirrors the installed
-                layout (<install-dir>/logs).
-config.json     Tracked, bare template — no secrets. Real values (API key,
-                session secret, admin password, real library path) live in
-                config.json.bak, which stays gitignored; rename it in locally
-                when you need to run against real data.
-```
+Basic Editor — quick single-issue edits, popup from /issue/{id}
+Full Editor — batch tagging of new comics before they enter the library, at /editor
 
 ## Running it
 
-1. `config.json` at the repo root is a bare template (safe to commit — no
-   secrets). To run against real data, rename `config.json.bak` (gitignored,
-   holds the real library path and secrets) onto `config.json` locally. If
-   `library_root` isn't set, the app still boots fine; set it from the Admin
-   page's Library Folders section afterward.
-2. Either:
-   - Run `start.bat` (Windows) or `start.sh` (Linux) for normal use — launches the
-     tray app, which manages the backend and gives you the full tray menu, or
-   - Run `python start_server.py` directly (checks config, initializes the DB if
-     needed, then starts uvicorn; Ctrl+C to stop). This is also the **headless
-     server** install path — no tray, no GUI, no Docker required — confirmed
-     working as a standing deployment (e.g. wrapped in a systemd unit) via a
-     comparison install run on quixy, see `dev/docs/DECISIONS.md` "Headless
-     server confirmed as a fourth install option".
+**Most users:** download a prebuilt installer from **[digib00age.com](https://digib00age.com)**
+— Windows MSI, Linux zip, or a one-line Docker setup, with full install
+instructions on the site. Installers are also available directly from this
+repo's [Releases](../../releases) page.
+
+**Running from source** (cloning this repo):
+
+1. Edit `config.json` with your library path and settings.
+2. Run `start.bat` (Windows) or `start.sh` (Linux) for normal use — launches the
+   tray app, which manages the backend and gives you the full tray menu, or
+   run `python start_server.py` directly (checks config, initializes the DB if
+   needed, then starts uvicorn; Ctrl+C to stop) for a headless server — no
+   tray, no GUI required, confirmed working as a standing deployment (e.g.
+   wrapped in a systemd unit). Python dependencies are in `requirements.txt`
+   (`pip install -r requirements.txt`).
 3. Open `http://localhost:9800` (or `http://<host-pc-ip>:9800` from another device on
    the network) for the library. `/admin` for the Admin page, `/editor` for the Full
    Editor — both reachable from any device on the network. Set a password (Admin >
    Advanced Settings) if you want to require a login; with no password set, these
    pages and everything behind them are open to anyone who can reach the server.
-
-Python dependencies are in `requirements.txt` (`pip install -r requirements.txt`).
 
 **Linux hosts:** if the mobile reader (or any other device) can't reach
 `http://<host-pc-ip>:9800`, check whether a host firewall is blocking the port —
@@ -82,28 +48,6 @@ via apt first. Without these, pystray silently falls back to a legacy X11 systra
 backend that renders an icon but supports no menu at all — no error, just a tray
 icon that does nothing when clicked.
 
-**Docker:** backend + web frontend only (no Flutter app, no tray launcher —
-see `packaging/docker/README.txt`). From the repo root:
-`docker compose -f packaging/docker/docker-compose.yml up -d --build`.
-First boot pre-fills the library location as `/library` (the compose file's
-example mount — edit its host-side path to your real comics folder). No
-gated setup — open `/admin` from any browser that can reach the port and
-optionally set a password; everything (including Restart Server, Clear/
-Restore Database, Scheduled Backup, and Processing Tools) works the same
-from any machine as it does locally, via the same web-based folder/file
-picker used throughout the Admin page — no native OS dialog, no display
-required. Only "Open Logs Folder" stays non-functional headless (it reveals
-the folder in a native file manager on the container's own machine, which
-has no headless equivalent) — unrelated to auth, and the logs path is still
-shown as text in the Admin UI.
-
-## Status
-
-V1 is complete. V2 is active — editor integration, Custom Tabs, Home Strips, and a
-Genre/Format admin editor have all shipped; see `dev/docs/CHANGELOG.md` for the dated
-list. Check `dev/docs/ROADMAP.md` for what's next. Four install options exist: Windows
-MSI, Linux `.deb`/GUI installer, headless server (no tray/GUI, no Docker), and Docker —
-see `dev/docs/SPEC.md` §1 "Install paths" for the full breakdown.
-
-See `dev/docs/SPEC.md` for the full V1 technical specification and `dev/docs/INDEX.md`
-for the complete doc map (what governs what, and the authority order between docs).
+This repo contains the full application source. Packaging/deployment tooling
+and internal working docs are intentionally left out of the public repo to
+keep it minimal — open an issue if you need something that isn't here.

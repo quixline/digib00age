@@ -9,6 +9,14 @@ dev
 # machine-specific build artifacts, not meant to go public.
 linux-build-files/
 
+# Packaging/deployment tooling — build scripts and deployment configs, not
+# meant to ship in the public repo. MSI/zip/Docker installers are
+# distributed via GitHub Releases and digib00age.com instead.
+packaging/
+
+# CodeGraph local index — dev-tool cache/db, not meant to go public.
+.codegraph/
+
 # Processing/scan tool logs — lives at repo root (not dev/) so a dev checkout
 # mirrors the installed layout (<install-dir>/logs), just gitignored either way.
 logs/
