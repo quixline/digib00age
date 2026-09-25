@@ -100,12 +100,15 @@ def cover_url(issue: Issue) -> str:
 def matches_search(issue: Issue, q: str) -> bool:
     """
     Free-text match across the same fields as GET /api/search (series, title,
-    writer, characters, story_arc, publisher) — used to scope GET /library and
+    writer, story_arc, publisher) — used to scope GET /library and
     GET /series/{id} to matching issues *before* grouping by series, so a
     series-level result's issue_count/issues only ever reflects the issues
     that actually matched (BUG-010: a series with one matching issue out of
     many must not surface/expand as if every issue in it matched).
+    `characters` is deliberately excluded (2026-09-25): it's never displayed
+    anywhere in the UI, so a characters-only match looks like a false
+    positive with no way to explain it.
     """
     pattern = q.lower()
-    fields = [issue.series, issue.title, issue.writer, issue.characters, issue.story_arc, issue.publisher]
+    fields = [issue.series, issue.title, issue.writer, issue.story_arc, issue.publisher]
     return any(f and pattern in f.lower() for f in fields)

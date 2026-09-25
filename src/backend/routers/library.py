@@ -685,7 +685,10 @@ def search(
     db: Session = Depends(get_db),
 ):
     """
-    Search across series, title, writer, characters, story_arc.
+    Search across series, title, writer, story_arc, publisher.
+    `characters` is deliberately excluded (2026-09-25) — it's never
+    displayed anywhere in the UI, so a characters-only match looks like a
+    false positive with no way to explain it.
     Returns up to 100 results.
     """
     pattern = f"%{q}%"
@@ -697,7 +700,6 @@ def search(
                 Issue.series.ilike(pattern),
                 Issue.title.ilike(pattern),
                 Issue.writer.ilike(pattern),
-                Issue.characters.ilike(pattern),
                 Issue.story_arc.ilike(pattern),
                 Issue.publisher.ilike(pattern),
             ),
