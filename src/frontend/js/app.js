@@ -1082,13 +1082,16 @@ function renderActiveSurface() {
   }
 }
 
-// MENU_BAR_SPEC.md §2.1 — "# of Pages" is suppressed on surfaces showing
-// aggregate cards: Series/Singles (page_count there is just the cover
-// issue's page count, not series-wide) and all of Folder View.
+// MENU_BAR_SPEC.md §2.1 — "# of Pages" is suppressed only in Folder View,
+// where a folder card represents many issues with no single page_count to
+// sort by. Series and Singles both use the same page_count already carried
+// on their card payload (cover issue's page count — the only issue at all
+// for Singles, so exact there; for Series it's the same field the All
+// screen has always sorted on for series cards too).
 function updateSortPagesOption(surface) {
   const opt = document.getElementById('sortPagesOpt');
   if (!opt) return;
-  const suppress = surface === 'series' || surface === 'singles' || isFolderViewTab(surface);
+  const suppress = isFolderViewTab(surface);
   opt.hidden = suppress;
   opt.disabled = suppress;
   if (suppress && activeSort === 'pages') {
