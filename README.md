@@ -51,3 +51,5 @@ icon that does nothing when clicked.
 This repo contains the full application source. Packaging/deployment tooling
 and internal working docs are intentionally left out of the public repo to
 keep it minimal — open an issue if you need something that isn't here.
+
+**BUILT WITH AI**
