@@ -1,6 +1,6 @@
 # digib00age
 
-A personal, local comic book server for a single user on a home network. Serves a CBZ
+A personal, local comic book server to run on a home network. Serves a CBZ
 collection with metadata read from embedded `ComicInfo.xml`.
 
 ## Architecture
@@ -14,7 +14,7 @@ Full Editor — batch tagging of new comics before they enter the library, at /e
 
 ## Running it
 
-**Most users:** download a prebuilt installer from **[digib00age.com](https://digib00age.com)**
+**Most users:** download a prebuilt installer from **[digib00age.cc](https://digib00age.cc)**
 — Windows MSI, Linux zip, or a one-line Docker setup, with full install
 instructions on the site. Installers are also available directly from this
 repo's [Releases](../../releases) page.
