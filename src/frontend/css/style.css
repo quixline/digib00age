@@ -4480,6 +4480,11 @@ select.filter-select:focus,
   color: var(--text);
 }
 
+.editor-error a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .editor-actions {
   display: flex;
   justify-content: flex-end;

@@ -751,15 +751,18 @@ function updateActionButtonStates() {
   document.getElementById('feClearQueueBtn').disabled = queueFiles.length === 0;
 }
 
-function showError(msg) {
+function showError(msg, { notice = false, html = false } = {}) {
   const box = document.getElementById('feError');
   box.hidden = false;
-  box.textContent = msg;
+  box.classList.toggle('editor-error--notice', notice);
+  if (html) box.innerHTML = msg;
+  else box.textContent = msg;
 }
 
 function clearError() {
   const box = document.getElementById('feError');
   box.hidden = true;
+  box.classList.remove('editor-error--notice');
   box.textContent = '';
 }
 
@@ -1307,6 +1310,17 @@ function wireGoodreadsLink() {
     event.currentTarget.href = series
       ? `https://www.goodreads.com/search?q=${encodeURIComponent(series)}`
       : 'https://www.goodreads.com/search?';
+
+    // The "Paste from GR" button only exists when the GoodReads Chrome
+    // extension's content script has injected it — a reliable, no-API
+    // signal for "extension not installed" (it's always present, just
+    // disabled, once the extension is).
+    if (!document.getElementById('gr-bridge-paste-btn')) {
+      showError(
+        'GoodReads extension not detected — see the <a href="/guide/editor-full#goodreads-extension" target="_blank" rel="noopener noreferrer">User Guide</a> for install steps.',
+        { notice: true, html: true }
+      );
+    }
   });
 }
 
