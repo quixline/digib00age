@@ -35,8 +35,8 @@ from backend.routers.progress import _get_or_create_progress
 from backend.schemas import (
     ContinueReadingOut, DecadeCount, FormatCount, FuzzyMatchOut, GenreCount,
     IssueDetailOut, PersonCount, PublisherCount, RatingCount, SearchOut,
-    StoryArcCount, TabFolderMarkReadOut, TabFolderOut, TabSearchOut,
-    UnreadIssueOut, YearCount,
+    SeriesCardOut, SeriesDetailOut, StoryArcCount, TabFolderMarkReadOut,
+    TabFolderOut, TabSearchOut, UnreadIssueOut, YearCount,
 )
 
 router = APIRouter(tags=["library"])
@@ -133,7 +133,7 @@ def _series_cover_issue(series_name: str, db: Session) -> Issue | None:
 # GET /api/library
 # ---------------------------------------------------------------------------
 
-@router.get("/library")
+@router.get("/library", response_model=list[SeriesCardOut])
 def get_library(
     group: Optional[str] = Query(None, description="Filter by 'Series' or 'Singles'"),
     tab_id: Optional[int] = Query(None, description="Filter to a custom tab's folder_path"),
@@ -516,7 +516,7 @@ def search_tab_folder(
 # id here is any issue id belonging to the series — we look up by series name
 # ---------------------------------------------------------------------------
 
-@router.get("/series/{issue_id}")
+@router.get("/series/{issue_id}", response_model=SeriesDetailOut)
 def get_series(
     issue_id: int,
     field: Optional[str] = Query(None, description="BUG-010: scope to issues matching a credit field (e.g. writer/artist), same semantics as GET /library's field+value"),

@@ -190,6 +190,90 @@ class UnreadIssueOut(BaseModel):
     format_group: str | None
 
 
+class SeriesCardOut(BaseModel):
+    """GET /library — one entry per series (or, for a partially-queued
+    reading-queue tab, one entry per queued issue card instead — see
+    get_library()). The two branches are identical except `number`, which
+    only the per-issue branch sets; `link_as_issue` is the real
+    discriminator the frontend uses (app.js buildCoverCard()), not the
+    presence of this field — confirmed its only frontend read is a
+    truthy-check (`if (s.number) ...`), so treating it as always-optional
+    is a verified no-op for the branch that omits it. NOT the same shape
+    as IssueOut — `writers`/`artists` here are plain `list[str]` (raw
+    aggregated values), not `list[PersonCredit]`."""
+    series: str
+    title: str | None
+    number: str | None = None
+    issue_count: int
+    unread_count: int
+    read_count: int
+    reading_count: int
+    cover_issue_id: int
+    cover_path: str
+    publisher: str | None
+    year: int | None
+    format_group: str | None
+    page_count: int | None
+    current_page: int
+    summary: str | None
+    genres: list[str]
+    writers: list[str]
+    artists: list[str]
+    formats: list[str]
+    age_ratings: list[str]
+    has_bw: bool
+    series_anchor_id: int
+    favorites: bool
+    flagged_for_review: bool
+    queued_for_reading: bool
+    personal_rating: int | None
+    link_as_issue: bool
+
+
+class SeriesIssueOut(BaseModel):
+    """GET /series/{issue_id}'s issue list items — a distinct, smaller
+    shape from IssueOut (no writers/pencillers credit lists, no
+    metadata_source, no next/prev navigation)."""
+    id: int
+    number: str | None
+    title: str | None
+    year: int | None
+    cover_path: str
+    story_arc: str | None
+    story_arc_number: int | None
+    format: str | None
+    black_and_white: bool
+    publisher: str | None
+    writer: str | None
+    age_rating: str | None
+    missing: bool
+    read_status: str
+    current_page: int
+    page_count: int | None
+    summary: str | None
+    genres: list[str]
+    favorites: bool
+    flagged_for_review: bool
+    queued_for_reading: bool
+    personal_rating: int | None
+
+
+class SeriesDetailOut(BaseModel):
+    """GET /series/{issue_id}"""
+    series: str
+    publisher: str | None
+    year: int | None
+    format_group: str | None
+    cover_path: str | None
+    genres: list[str]
+    issue_count: int
+    issues: list[SeriesIssueOut]
+    filtered_field: str | None
+    filtered_value: str | None
+    filtered_query: str | None
+    total_issue_count: int
+
+
 class FuzzyMatchResult(BaseModel):
     person_id: int
     name: str
