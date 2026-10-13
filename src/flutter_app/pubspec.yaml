@@ -30,6 +30,11 @@ flutter:
   uses-material-design: true
   assets:
     - assets/logo/
+  fonts:
+    - family: BigShouldersDisplay
+      fonts:
+        - asset: assets/fonts/BigShouldersDisplay/BigShouldersDisplay-ExtraBold.ttf
+          weight: 800
 
 flutter_launcher_icons:
   android: true

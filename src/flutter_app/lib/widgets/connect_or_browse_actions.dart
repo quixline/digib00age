@@ -31,7 +31,8 @@ class ConnectOrBrowseActions extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: colors.accent,
             foregroundColor: colors.onAccent,
-            padding: EdgeInsets.symmetric(vertical: dense ? 10 : 14),
+            padding: EdgeInsets.symmetric(horizontal: 15, vertical: dense ? 10 : 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
           ),
         ),
       if (onBrowseLocal != null && _localFilePickingSupported)
@@ -42,7 +43,8 @@ class ConnectOrBrowseActions extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: colors.textPrimary,
             side: BorderSide(color: colors.border),
-            padding: EdgeInsets.symmetric(vertical: dense ? 10 : 14),
+            padding: EdgeInsets.symmetric(horizontal: 15, vertical: dense ? 10 : 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSpacing.radiusMd)),
           ),
         ),
     ];

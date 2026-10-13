@@ -3,7 +3,6 @@
 // and routes into the two existing entry flows (server settings, local file
 // picker) rather than introducing new ones.
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../services/settings_service.dart';
 import '../services/local_cbz_service.dart';
 import '../theme/tokens.dart';
@@ -67,9 +66,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           children: [
             SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(28, 24, 28, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 360),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                   const SizedBox(height: 24),
                   Image.asset(
                     Theme.of(context).brightness == Brightness.light
@@ -81,15 +83,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   Text(
                     'Your comics,\nat home or on the go',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.bigShouldersDisplay(
+                    style: const TextStyle(
+                      fontFamily: 'BigShouldersDisplay',
                       fontWeight: FontWeight.w800,
                       fontSize: 32,
                       height: 1.05,
                       letterSpacing: 0,
                     ).copyWith(color: colors.textPrimary),
                   ),
-                  const SizedBox(height: 10),
-                  _Badge(colors: colors, label: '100% advert-free'),
                   const SizedBox(height: 16),
                   Text(
                     'Connect to your own digib00age server, or open CBZ files '
@@ -98,37 +99,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     style: text.secondary(size: 14),
                   ),
                   const SizedBox(height: 20),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: colors.surfaceCard,
-                      border: Border.all(color: colors.border),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.tablet_mac, color: colors.accent, size: 22),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: RichText(
-                            text: TextSpan(
-                              style: text.meta(size: 12, color: colors.textSecondary),
-                              children: [
-                                TextSpan(
-                                  text: 'Best on tablet or a large screen. ',
-                                  style: TextStyle(fontWeight: FontWeight.w700, color: colors.textPrimary),
-                                ),
-                                const TextSpan(
-                                  text: 'Phones work, but comic pages are made for bigger '
-                                      'displays — expect more pinch-to-zoom here.',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _FeatureCard(colors: colors),
                   const SizedBox(height: 28),
                   ConnectOrBrowseActions(onConnect: _goConnect, onBrowseLocal: _goLocal),
                   const SizedBox(height: 14),
@@ -151,7 +122,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       ),
                     ),
                   ),
-                ],
+                    ],
+                  ),
+                ),
               ),
             ),
             if (canClose)
@@ -170,24 +143,89 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 }
 
-class _Badge extends StatelessWidget {
+class _FeatureCard extends StatelessWidget {
   final AppColors colors;
-  final String label;
-  const _Badge({required this.colors, required this.label});
+  const _FeatureCard({required this.colors});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 15),
       decoration: BoxDecoration(
         color: colors.surfaceCard,
         border: Border.all(color: colors.border),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Text(
-        label.toUpperCase(),
-        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: 0.4, color: colors.accent),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(color: colors.accent, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 7),
+              Text(
+                'BUILT FOR TABLETS',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1, color: colors.accent),
+              ),
+            ],
+          ),
+          const SizedBox(height: 11),
+          _FeatureBullet(
+            colors: colors,
+            bold: 'Reading progress syncs',
+            rest: ' between server and device, with a visible "last synced" indicator',
+          ),
+          const SizedBox(height: 9),
+          _FeatureBullet(
+            colors: colors,
+            bold: 'Download issues',
+            rest: ' for offline reading — no connection needed',
+          ),
+          const SizedBox(height: 9),
+          _FeatureBullet(
+            colors: colors,
+            bold: 'Scroll or page',
+            rest: ' reading modes, with manga right-to-left support',
+          ),
+        ],
       ),
+    );
+  }
+}
+
+class _FeatureBullet extends StatelessWidget {
+  final AppColors colors;
+  final String bold;
+  final String rest;
+  const _FeatureBullet({required this.colors, required this.bold, required this.rest});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(Icons.check, size: 14, color: colors.accent),
+        ),
+        const SizedBox(width: 9),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: TextStyle(fontSize: 12.5, height: 1.45, color: colors.textSecondary),
+              children: [
+                TextSpan(text: bold, style: TextStyle(fontWeight: FontWeight.w700, color: colors.textPrimary)),
+                TextSpan(text: rest),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

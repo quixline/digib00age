@@ -3,7 +3,6 @@
 // with no issues yet) — same explainer as WelcomeScreen, without the
 // first-launch dismiss control.
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../theme/tokens.dart';
 import 'connect_or_browse_actions.dart';
 
@@ -28,20 +27,13 @@ class EmptyLibraryNotice extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Wrap(
-            spacing: 6,
-            alignment: WrapAlignment.center,
-            children: [
-              _Chip(colors: colors, icon: Icons.tablet_mac, label: 'Best on tablet'),
-              _Chip(colors: colors, icon: Icons.block, label: '100% advert-free'),
-            ],
-          ),
+          _BuiltForTabletsChip(colors: colors),
           const SizedBox(height: 10),
           Text(
             'Nothing here yet',
             textAlign: TextAlign.center,
-            style: GoogleFonts.bigShouldersDisplay(
-              textStyle: text.titleMedium(),
+            style: const TextStyle(
+              fontFamily: 'BigShouldersDisplay',
               fontWeight: FontWeight.w800,
               fontSize: 24,
               letterSpacing: 0,
@@ -61,16 +53,14 @@ class EmptyLibraryNotice extends StatelessWidget {
   }
 }
 
-class _Chip extends StatelessWidget {
+class _BuiltForTabletsChip extends StatelessWidget {
   final AppColors colors;
-  final IconData icon;
-  final String label;
-  const _Chip({required this.colors, required this.icon, required this.label});
+  const _BuiltForTabletsChip({required this.colors});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
       decoration: BoxDecoration(
         color: colors.surfaceCard,
         border: Border.all(color: colors.border),
@@ -79,16 +69,15 @@ class _Chip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: colors.accent),
-          const SizedBox(width: 4),
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: colors.accent, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 6),
           Text(
-            label.toUpperCase(),
-            style: TextStyle(
-              fontSize: 9.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.4,
-              color: colors.accent,
-            ),
+            'BUILT FOR TABLETS',
+            style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 0.6, color: colors.accent),
           ),
         ],
       ),
