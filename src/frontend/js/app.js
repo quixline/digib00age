@@ -2177,7 +2177,9 @@ async function renderFolderView(tabId, path) {
   let data;
   try {
     if (!folderViewCache[cacheKey]) {
-      folderViewCache[cacheKey] = await apiFetch(`/library/tab/${tabId}/folder?path=${encodeURIComponent(path)}`);
+      /** @type {TabFolderOut} */
+      const folderData = await apiFetch(`/library/tab/${tabId}/folder?path=${encodeURIComponent(path)}`);
+      folderViewCache[cacheKey] = folderData;
     }
     data = folderViewCache[cacheKey];
   } catch (err) {
@@ -2338,6 +2340,7 @@ async function startFolderViewSearch(tabId, q) {
   const resultsGrid = document.getElementById('folderGrid');
   resultsGrid.innerHTML = '<div class="loading-state">Loading…</div>';
   try {
+    /** @type {TabSearchOut} */
     const data = await apiFetch(`/library/tab/${tabId}/search?q=${encodeURIComponent(q)}`);
     resultsGrid.innerHTML = '';
     if (!data.results.length) {
@@ -2971,6 +2974,7 @@ async function initIssue() {
   const content = document.getElementById('issueContent');
 
   try {
+    /** @type {IssueDetailOut} */
     const data = await apiFetch(`/issue/${issueId}`);
 
     const numSuffix = data.number ? ` #${data.number}` : '';

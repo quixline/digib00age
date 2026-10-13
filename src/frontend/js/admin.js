@@ -1014,7 +1014,8 @@ function renderCustomTabs() {
 }
 
 // ── Genre Library (CUSTOM_TABS_SPEC.md §10.9) ───────────────────────────────
-let ctAllGenres = []; // cached from /browse/genres: [{genre, issue_count}, ...]
+/** @type {GenreCount[]} cached from /browse/genres */
+let ctAllGenres = [];
 
 async function loadCtGenreOptions() {
   try {
@@ -1067,7 +1068,8 @@ async function addGenreTab() {
 }
 
 // ── Writer Library (CUSTOM_TABS_SPEC.md §10.12) ─────────────────────────────
-let ctAllWriters = []; // cached from /browse/writers: [{person_id, name, series_count}, ...]
+/** @type {PersonCount[]} cached from /browse/writers */
+let ctAllWriters = [];
 
 async function loadCtWriterOptions() {
   try {
@@ -1118,7 +1120,8 @@ async function addWriterTab() {
 }
 
 // ── Publisher Library (CUSTOM_TABS_SPEC.md §10.11) ──────────────────────────
-let ctAllPublishers = []; // cached from /browse/publishers: [{publisher, series_count}, ...]
+/** @type {PublisherCount[]} cached from /browse/publishers */
+let ctAllPublishers = [];
 
 async function loadCtPublisherOptions() {
   try {

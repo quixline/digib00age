@@ -32,6 +32,12 @@ from backend.database import get_db
 from backend.models import CustomTab, Issue, IssueCredit, IssueGenre, Person, ReadingProgress
 from backend.path_utils import cover_url, is_under, matches_field, matches_search, normalize_path, number_sort_key, title_sort_key
 from backend.routers.progress import _get_or_create_progress
+from backend.schemas import (
+    ContinueReadingOut, DecadeCount, FormatCount, FuzzyMatchOut, GenreCount,
+    IssueDetailOut, PersonCount, PublisherCount, RatingCount, SearchOut,
+    StoryArcCount, TabFolderMarkReadOut, TabFolderOut, TabSearchOut,
+    UnreadIssueOut, YearCount,
+)
 
 router = APIRouter(tags=["library"])
 
@@ -363,7 +369,7 @@ def _resolve_tab_path(tab: CustomTab, path: str) -> str:
     return target
 
 
-@router.get("/library/tab/{tab_id}/folder")
+@router.get("/library/tab/{tab_id}/folder", response_model=TabFolderOut)
 def get_tab_folder_contents(
     tab_id: int,
     path: str = Query("", description="Relative path under the tab's folder_path root"),
@@ -437,7 +443,7 @@ def get_tab_folder_contents(
     return {"tab_id": tab_id, "path": path, "folders": folders, "files": files}
 
 
-@router.post("/library/tab/{tab_id}/folder/mark-read")
+@router.post("/library/tab/{tab_id}/folder/mark-read", response_model=TabFolderMarkReadOut)
 def mark_tab_folder_read(
     tab_id: int,
     path: str = Query(""),
@@ -464,7 +470,7 @@ def mark_tab_folder_read(
     return {"updated": [i.id for i in scoped]}
 
 
-@router.get("/library/tab/{tab_id}/search")
+@router.get("/library/tab/{tab_id}/search", response_model=TabSearchOut)
 def search_tab_folder(
     tab_id: int,
     q: str = Query(..., min_length=1),
@@ -626,7 +632,7 @@ def get_series(
 # GET /api/issue/{id}
 # ---------------------------------------------------------------------------
 
-@router.get("/issue/{issue_id}")
+@router.get("/issue/{issue_id}", response_model=IssueDetailOut)
 def get_issue(issue_id: int, db: Session = Depends(get_db)):
     """Full issue metadata including reading progress."""
     issue = db.query(Issue).filter(Issue.id == issue_id).first()
@@ -679,7 +685,7 @@ def _find_adjacent_issue(issue: Issue, db: Session, direction: str) -> Issue | N
 # GET /api/search?q=
 # ---------------------------------------------------------------------------
 
-@router.get("/search")
+@router.get("/search", response_model=SearchOut)
 def search(
     q: str = Query(..., min_length=1),
     db: Session = Depends(get_db),
@@ -732,7 +738,7 @@ def search(
 # GET /api/browse/publishers
 # ---------------------------------------------------------------------------
 
-@router.get("/browse/publishers")
+@router.get("/browse/publishers", response_model=list[PublisherCount])
 def browse_publishers(db: Session = Depends(get_db)):
     """Publisher list with series counts."""
     rows = (
@@ -749,7 +755,7 @@ def browse_publishers(db: Session = Depends(get_db)):
 # GET /api/browse/genres
 # ---------------------------------------------------------------------------
 
-@router.get("/browse/genres")
+@router.get("/browse/genres", response_model=list[GenreCount])
 def browse_genres(db: Session = Depends(get_db)):
     """Genre list with issue counts."""
     rows = (
@@ -765,7 +771,7 @@ def browse_genres(db: Session = Depends(get_db)):
 # GET /api/browse/arcs
 # ---------------------------------------------------------------------------
 
-@router.get("/browse/arcs")
+@router.get("/browse/arcs", response_model=list[StoryArcCount])
 def browse_arcs(db: Session = Depends(get_db)):
     """Story arc list with issue counts."""
     rows = (
@@ -782,7 +788,7 @@ def browse_arcs(db: Session = Depends(get_db)):
 # GET /api/browse/formats
 # ---------------------------------------------------------------------------
 
-@router.get("/browse/formats")
+@router.get("/browse/formats", response_model=list[FormatCount])
 def browse_formats(db: Session = Depends(get_db)):
     """All Format values with counts (for format badge filtering)."""
     rows = (
@@ -799,7 +805,7 @@ def browse_formats(db: Session = Depends(get_db)):
 # GET /api/reading/continue
 # ---------------------------------------------------------------------------
 
-@router.get("/reading/continue")
+@router.get("/reading/continue", response_model=list[ContinueReadingOut])
 def reading_continue(db: Session = Depends(get_db)):
     """Issues with status='reading', sorted by most recently read."""
     progress_rows = (
@@ -847,7 +853,7 @@ def _browse_people(role: str, db: Session) -> list[dict]:
     return [{"person_id": r.id, "name": r.name, "series_count": r.series_count} for r in rows]
 
 
-@router.get("/browse/writers")
+@router.get("/browse/writers", response_model=list[PersonCount])
 def browse_writers(db: Session = Depends(get_db)):
     """Distinct writers (deduped people, Tier 4 Item 3) with series counts."""
     return _browse_people("writer", db)
@@ -857,7 +863,7 @@ def browse_writers(db: Session = Depends(get_db)):
 # GET /api/browse/artists
 # ---------------------------------------------------------------------------
 
-@router.get("/browse/artists")
+@router.get("/browse/artists", response_model=list[PersonCount])
 def browse_artists(db: Session = Depends(get_db)):
     """Distinct artists/pencillers (deduped people, Tier 4 Item 3) with series counts."""
     return _browse_people("penciller", db)
@@ -867,7 +873,7 @@ def browse_artists(db: Session = Depends(get_db)):
 # GET /api/people/fuzzy-match — editor save-time warn-on-save (Tier 4 Item 3)
 # ---------------------------------------------------------------------------
 
-@router.get("/people/fuzzy-match")
+@router.get("/people/fuzzy-match", response_model=FuzzyMatchOut)
 def people_fuzzy_match(
     name: str = Query(..., min_length=1),
     threshold: float = Query(0.82),
@@ -903,7 +909,7 @@ def people_fuzzy_match(
 # GET /api/browse/decades
 # ---------------------------------------------------------------------------
 
-@router.get("/browse/decades")
+@router.get("/browse/decades", response_model=list[DecadeCount])
 def browse_decades(db: Session = Depends(get_db)):
     """Distinct decades (e.g. 1970, 1980 … current) with issue counts."""
     years = (
@@ -927,7 +933,7 @@ def browse_decades(db: Session = Depends(get_db)):
 # GET /api/browse/years
 # ---------------------------------------------------------------------------
 
-@router.get("/browse/years")
+@router.get("/browse/years", response_model=list[YearCount])
 def browse_years(db: Session = Depends(get_db)):
     """
     Distinct years with issue counts — the web UI's own Year filter dropdown
@@ -949,7 +955,7 @@ def browse_years(db: Session = Depends(get_db)):
 # GET /api/browse/ratings
 # ---------------------------------------------------------------------------
 
-@router.get("/browse/ratings")
+@router.get("/browse/ratings", response_model=list[RatingCount])
 def browse_ratings(db: Session = Depends(get_db)):
     """Distinct age_rating values with issue counts."""
     rows = (
@@ -966,7 +972,7 @@ def browse_ratings(db: Session = Depends(get_db)):
 # GET /api/reading/unread
 # ---------------------------------------------------------------------------
 
-@router.get("/reading/unread")
+@router.get("/reading/unread", response_model=list[UnreadIssueOut])
 def reading_unread(
     group: Optional[str] = Query(None),
     db: Session = Depends(get_db),
