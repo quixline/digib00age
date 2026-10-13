@@ -8,6 +8,7 @@ The process stays alive — Ctrl+C to stop.
 Also runnable via the dev-convenience `start_server.py` at the repo root.
 """
 
+import argparse
 import os
 
 from backend.config import (
@@ -26,7 +27,37 @@ def _sep(title=""):
         print("=" * width)
 
 
+def _stamp_head() -> None:
+    """One-time upgrade step for an install that already has the full
+    current schema from years of the old ad hoc migration functions (e.g.
+    quixy's live DB) — tells Alembic "already at baseline" without running
+    0001_baseline's DDL. See DECISIONS.md "Adopted Alembic for schema
+    migrations". Back up the DB before running this."""
+    from alembic.command import stamp
+    from alembic.config import Config
+
+    from backend.config import BACKEND_DIR
+
+    cfg = Config()
+    cfg.set_main_option("script_location", str(BACKEND_DIR / "migrations"))
+    cfg.set_main_option("sqlalchemy.url", f"sqlite:///{DB_PATH}")
+    stamp(cfg, "head")
+    print(f"  [OK] Stamped {DB_PATH} as already at the Alembic baseline.")
+
+
 def main():
+    parser = argparse.ArgumentParser(prog="digib00age-server")
+    parser.add_argument(
+        "--stamp-head", action="store_true",
+        help="One-time: mark an existing, already-current-schema DB as "
+             "migrated to Alembic's baseline, then exit without starting "
+             "the server. Back up the DB first.",
+    )
+    args = parser.parse_args()
+    if args.stamp_head:
+        _stamp_head()
+        return
+
     _sep("digib00age")
 
     _sep("Config")

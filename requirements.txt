@@ -2,6 +2,9 @@ fastapi>=0.100   # floor: CORSMiddleware reflects the actual Origin (not a liter
                  # whenever allow_credentials=True — main.py's CORS config relies on this
 uvicorn[standard]
 sqlalchemy
+alembic         # versioned schema migrations, replacing the old ad hoc
+                # _add_missing_*/_drop_legacy_* ALTER TABLE functions in
+                # database.py (see DECISIONS.md)
 pillow
 pystray[appindicator] ; sys_platform == 'linux'   # AppIndicator/GTK backend for the Linux tray icon —
                                                    # the extra alone isn't enough: the venv also needs

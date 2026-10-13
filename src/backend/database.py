@@ -83,97 +83,36 @@ def _seed_default_home_strips():
         session.commit()
 
 
-def _add_missing_issue_columns():
-    """
-    create_all() only creates missing *tables* — it never adds columns to a
-    table that already exists. New additive Issue columns need a manual
-    ALTER TABLE here, run once per missing column (idempotent).
-    """
-    with engine.connect() as conn:
-        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(issues)"))}
-        if "favorites" not in cols:
-            conn.execute(text("ALTER TABLE issues ADD COLUMN favorites BOOLEAN NOT NULL DEFAULT 0"))
-        if "personal_rating" not in cols:
-            conn.execute(text("ALTER TABLE issues ADD COLUMN personal_rating INTEGER"))
-        if "container_format" not in cols:
-            conn.execute(text("ALTER TABLE issues ADD COLUMN container_format TEXT"))
-            # Backfill every already-scanned row from its file_path extension —
-            # not just new ones (SPEC.md §7, v2.4 Item 5/11).
-            conn.execute(text(
-                "UPDATE issues SET container_format = "
-                "CASE WHEN lower(file_path) LIKE '%.cbr' THEN 'cbr' ELSE 'cbz' END"
-            ))
-        if "flagged_for_review" not in cols:
-            conn.execute(text("ALTER TABLE issues ADD COLUMN flagged_for_review BOOLEAN NOT NULL DEFAULT 0"))
-        if "file_size" not in cols:
-            conn.execute(text("ALTER TABLE issues ADD COLUMN file_size INTEGER"))
-            conn.commit()
-            # Backfill from disk so the next scan doesn't treat every
-            # already-scanned row as "changed" (BUG-013 fix, size now part
-            # of the unchanged-file check alongside mtime).
-            rows = conn.execute(text("SELECT id, file_path FROM issues")).fetchall()
-            for row in rows:
-                try:
-                    size = os.path.getsize(row.file_path)
-                except OSError:
-                    continue
-                conn.execute(
-                    text("UPDATE issues SET file_size = :size WHERE id = :id"),
-                    {"size": size, "id": row.id},
-                )
-        if "content_hash" not in cols:
-            # No backfill here, unlike file_size above — that's a cheap stat
-            # call, this would mean reading every archive's full bytes
-            # (~75-95 min across the library on the USB HDD, see
-            # PERFORMANCE.md). Forward-only: existing rows stay NULL until
-            # next inserted/updated by scanner.py (BUG-029).
-            conn.execute(text("ALTER TABLE issues ADD COLUMN content_hash TEXT"))
-        if "queued_for_reading" not in cols:
-            conn.execute(text("ALTER TABLE issues ADD COLUMN queued_for_reading BOOLEAN NOT NULL DEFAULT 0"))
-        conn.commit()
+def _run_alembic_upgrade() -> None:
+    """Versioned schema migrations (src/backend/migrations/), replacing the
+    _add_missing_*/_drop_legacy_* functions above — see DECISIONS.md "Adopted
+    Alembic for schema migrations". script_location is passed explicitly
+    (not read from alembic.ini, which is dev-ergonomics-only and not shipped
+    with any real install) so this works unmodified across every runtime
+    layout (dev, frozen Windows, Docker, pip/XDG)."""
+    from alembic.command import upgrade
+    from alembic.config import Config
 
+    from backend.config import BACKEND_DIR
 
-def _drop_legacy_credit_columns():
-    """
-    2026-07-15: inker/colorist/letterer/cover_artist confirmed dead (no
-    reader anywhere in backend/frontend — see DECISIONS.md) and dropped.
-    writer/penciller are NOT included here — still power search/Group-by-
-    Writer/series-card display, deliberately left in place. Idempotent, same
-    guarded-ALTER-TABLE pattern as _add_missing_issue_columns(). Requires
-    SQLite 3.35+ (2021) for DROP COLUMN support.
-    """
-    with engine.connect() as conn:
-        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(issues)"))}
-        for col in ("inker", "colorist", "letterer", "cover_artist"):
-            if col in cols:
-                conn.execute(text(f"ALTER TABLE issues DROP COLUMN {col}"))
-        conn.commit()
-
-
-def _add_missing_custom_tab_columns():
-    """
-    create_all() only creates missing *tables* — it never adds columns to a
-    table that already exists. The additive CustomTab.view_mode/basis_type/
-    field_value columns need a manual ALTER TABLE here, run once each (idempotent).
-    """
-    with engine.connect() as conn:
-        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(custom_tabs)"))}
-        if "view_mode" not in cols:
-            conn.execute(text("ALTER TABLE custom_tabs ADD COLUMN view_mode TEXT NOT NULL DEFAULT 'flat'"))
-        if "basis_type" not in cols:
-            conn.execute(text("ALTER TABLE custom_tabs ADD COLUMN basis_type TEXT NOT NULL DEFAULT 'folder'"))
-        if "field_value" not in cols:
-            conn.execute(text("ALTER TABLE custom_tabs ADD COLUMN field_value TEXT"))
-        conn.commit()
+    cfg = Config()
+    cfg.set_main_option("script_location", str(BACKEND_DIR / "migrations"))
+    cfg.set_main_option("sqlalchemy.url", f"sqlite:///{DB_PATH}")
+    upgrade(cfg, "head")
 
 
 def init_db():
-    """Create all tables and performance indexes if they don't already exist."""
+    """Create/migrate the schema, then ensure performance indexes and default
+    rows exist. Tests take a fast path that skips Alembic entirely (see
+    DIGIB00AGE_SKIP_ALEMBIC in dev/tests/conftest.py) — safe because tests
+    always drop_all() immediately before calling this, so there's never
+    column drift for Alembic to reconcile; it's equivalent to create_all()
+    for a bare table set."""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    Base.metadata.create_all(bind=engine)
-    _add_missing_issue_columns()
-    _drop_legacy_credit_columns()
-    _add_missing_custom_tab_columns()
+    if os.environ.get("DIGIB00AGE_SKIP_ALEMBIC"):
+        Base.metadata.create_all(bind=engine)
+    else:
+        _run_alembic_upgrade()
     with engine.connect() as conn:
         for ddl in _PERF_INDEXES:
             conn.execute(text(ddl))

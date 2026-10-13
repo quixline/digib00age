@@ -12,6 +12,7 @@ dependencies = [
                        # literal "*" whenever allow_credentials=True (see main.py CORS setup)
     "uvicorn[standard]",
     "sqlalchemy",
+    "alembic",
     "pillow",
     "pystray[appindicator] ; sys_platform == 'linux'",
     "pystray ; sys_platform != 'linux'",
@@ -43,6 +44,10 @@ include = ["backend", "backend.*", "tray", "frontend"]
 [tool.setuptools.package-data]
 "backend.editor" = ["*.json"]
 "backend" = ["bin/linux/*", "bin/windows/*"]
+# Revision filenames (e.g. 0001_baseline.py) aren't valid import identifiers —
+# Alembic loads them by filesystem path, not via Python's import system, so
+# they need an explicit glob to guarantee inclusion in a built sdist/wheel.
+"backend.migrations.versions" = ["*.py"]
 "frontend" = [
     "*.html",
     "*.json",
