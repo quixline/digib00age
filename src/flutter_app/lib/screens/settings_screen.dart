@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/api_service.dart';
 import '../services/settings_service.dart';
 
@@ -119,6 +120,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 8),
           _ItemsPerPageTile(settings: widget.settings),
           const Divider(height: 32),
+          Text('About', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.info_outline),
+            title: const Text('What is this app?'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).pushNamed('/welcome'),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.privacy_tip_outlined),
+            title: const Text('Privacy Policy'),
+            trailing: const Icon(Icons.open_in_new, size: 18),
+            onTap: () => _openUrl('https://digib00age.cc/privacy.html'),
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.description_outlined),
+            title: const Text('Terms of Service'),
+            trailing: const Icon(Icons.open_in_new, size: 18),
+            onTap: () => _openUrl('https://digib00age.cc/terms.html'),
+          ),
+          const Divider(height: 32),
           Text(
             'digib00age v1.0',
             style: Theme.of(context).textTheme.bodySmall,
@@ -128,6 +153,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open $url')),
+      );
+    }
   }
 }
 

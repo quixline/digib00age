@@ -9,6 +9,7 @@ import '../services/download_service.dart';
 import '../services/sync_service.dart';
 import '../screens/reader_screen.dart' show LocalReaderArgs;
 import '../theme/tokens.dart';
+import 'empty_library_notice.dart';
 
 class OfflineLibraryView extends StatelessWidget {
   final SettingsService settings;
@@ -39,6 +40,7 @@ class OfflineLibraryView extends StatelessWidget {
     final colors = AppColors.of(context);
     final recentFiles = settings.recentLocalFiles;
     final downloaded = downloads.list();
+    final isEmpty = downloaded.isEmpty && (!_localFilePickingSupported || recentFiles.isEmpty);
     return Column(
       children: [
         Container(
@@ -57,73 +59,91 @@ class OfflineLibraryView extends StatelessWidget {
             ],
           ),
         ),
-        if (_localFilePickingSupported)
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              onPressed: () => _openLocalFile(context),
-              icon: const Icon(Icons.folder_open),
-              label: const Text('Open local CBZ file'),
+        if (isEmpty)
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                child: EmptyLibraryNotice(
+                  message: 'Connect to your digib00age server, or open a CBZ '
+                      'file from this device to start reading.',
+                  onConnect: () async {
+                    await Navigator.of(context).pushNamed('/settings');
+                    onRetry();
+                  },
+                  onBrowseLocal: _localFilePickingSupported ? () => _openLocalFile(context) : null,
+                ),
+              ),
             ),
-          ),
-        Expanded(
-          child: ListView(
-            children: [
-              if (downloaded.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Downloaded', style: TextStyle(color: colors.textSecondary)),
-                  ),
-                ),
-                ...downloaded.map((d) {
-                  final dirty = syncService.store
-                      .dirtyItems()
-                      .any((p) => p.issueId == d.issueId);
-                  return ListTile(
-                    leading: const Icon(Icons.check_circle, color: Colors.greenAccent, size: 20),
-                    title: Text(
-                      d.number != null ? '${d.series} #${d.number}' : d.series,
-                      style: const TextStyle(fontSize: 14),
+          )
+        else ...[
+          if (_localFilePickingSupported)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton.icon(
+                onPressed: () => _openLocalFile(context),
+                icon: const Icon(Icons.folder_open),
+                label: const Text('Open local CBZ file'),
+              ),
+            ),
+          Expanded(
+            child: ListView(
+              children: [
+                if (downloaded.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('Downloaded', style: TextStyle(color: colors.textSecondary)),
                     ),
-                    subtitle: Text(
-                      dirty
-                          ? 'Downloaded ${_formatAgo(d.downloadedAt)} · Not synced'
-                          : 'Downloaded ${_formatAgo(d.downloadedAt)}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: dirty ? Colors.amber : colors.textMuted,
+                  ),
+                  ...downloaded.map((d) {
+                    final dirty = syncService.store
+                        .dirtyItems()
+                        .any((p) => p.issueId == d.issueId);
+                    return ListTile(
+                      leading: const Icon(Icons.check_circle, color: Colors.greenAccent, size: 20),
+                      title: Text(
+                        d.number != null ? '${d.series} #${d.number}' : d.series,
+                        style: const TextStyle(fontSize: 14),
                       ),
-                    ),
-                    onTap: () => Navigator.of(context).pushNamed(
-                      '/reader/local',
-                      arguments: LocalReaderArgs(d.localFilePath, issueId: d.issueId),
-                    ),
-                  );
-                }),
-              ],
-              if (_localFilePickingSupported && recentFiles.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Recent files', style: TextStyle(color: colors.textSecondary)),
-                  ),
-                ),
-                ...recentFiles.map((path) => ListTile(
-                      leading: const Icon(Icons.book),
-                      title: Text(localCbz.titleFromPath(path), style: const TextStyle(fontSize: 14)),
-                      subtitle: Text(path, style: TextStyle(fontSize: 11, color: colors.textMuted)),
+                      subtitle: Text(
+                        dirty
+                            ? 'Downloaded ${_formatAgo(d.downloadedAt)} · Not synced'
+                            : 'Downloaded ${_formatAgo(d.downloadedAt)}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: dirty ? Colors.amber : colors.textMuted,
+                        ),
+                      ),
                       onTap: () => Navigator.of(context).pushNamed(
                         '/reader/local',
-                        arguments: LocalReaderArgs(path),
+                        arguments: LocalReaderArgs(d.localFilePath, issueId: d.issueId),
                       ),
-                    )),
+                    );
+                  }),
+                ],
+                if (_localFilePickingSupported && recentFiles.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text('Recent files', style: TextStyle(color: colors.textSecondary)),
+                    ),
+                  ),
+                  ...recentFiles.map((path) => ListTile(
+                        leading: const Icon(Icons.book),
+                        title: Text(localCbz.titleFromPath(path), style: const TextStyle(fontSize: 14)),
+                        subtitle: Text(path, style: TextStyle(fontSize: 11, color: colors.textMuted)),
+                        onTap: () => Navigator.of(context).pushNamed(
+                          '/reader/local',
+                          arguments: LocalReaderArgs(path),
+                        ),
+                      )),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

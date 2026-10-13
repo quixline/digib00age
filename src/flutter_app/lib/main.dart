@@ -11,6 +11,7 @@ import 'theme/tokens.dart';
 import 'screens/shell_screen.dart';
 import 'screens/reader_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/welcome_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -98,14 +99,29 @@ class _Digib00ageAppState extends State<Digib00ageApp> {
         theme: buildLightTheme(),
         darkTheme: buildDarkTheme(),
         themeMode: themeMode,
-        initialRoute: '/',
+        onGenerateInitialRoutes: _buildInitialRoutes,
         onGenerateRoute: _buildRoute,
       ),
     );
   }
 
+  // Flutter's default initial-route generation (triggered by plain
+  // `initialRoute:`) silently also builds and pushes '/' underneath any
+  // non-'/' initial route, so WelcomeScreen would always find itself able to
+  // pop straight to an already-built ShellScreen even on a genuinely fresh
+  // launch. Returning a single explicit route here is what actually makes
+  // '/welcome' the one and only route on first launch.
+  List<Route<dynamic>> _buildInitialRoutes(String initialRouteName) {
+    final name = widget.settings.suppressWelcome ? '/' : '/welcome';
+    return [_buildRoute(RouteSettings(name: name))!];
+  }
+
   Route<dynamic>? _buildRoute(RouteSettings routeSettings) {
     switch (routeSettings.name) {
+      case '/welcome':
+        return MaterialPageRoute(
+          builder: (_) => WelcomeScreen(settings: widget.settings, localCbz: _localCbz),
+        );
       case '/':
         return MaterialPageRoute(
           builder: (_) => ShellScreen(

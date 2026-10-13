@@ -7,6 +7,7 @@ class SettingsService {
   static const _keyConnectionMode = 'connection_mode';
   static const _keyThemeMode = 'theme_mode';
   static const _keyItemsPerPage = 'items_per_page';
+  static const _keySuppressWelcome = 'suppress_welcome';
 
   static const defaultServerUrl = 'http://192.168.1.10:9800';
   static const _validItemsPerPage = {25, 50, 75, 100};
@@ -90,6 +91,12 @@ class SettingsService {
   // "auto", "server", "local"
   String get connectionMode => _prefs.getString(_keyConnectionMode) ?? 'auto';
   set connectionMode(String v) => _prefs.setString(_keyConnectionMode, v);
+
+  // Whether the Welcome screen (WelcomeScreen, route '/welcome') should be
+  // skipped on launch — false by default, so it keeps appearing on cold
+  // starts until the user explicitly ticks "Don't show this again".
+  bool get suppressWelcome => _prefs.getBool(_keySuppressWelcome) ?? false;
+  set suppressWelcome(bool v) => _prefs.setBool(_keySuppressWelcome, v);
 
   // Local progress for travel/offline mode — keyed by file path
   String _progressKey(String filePath) => 'local_progress:$filePath';

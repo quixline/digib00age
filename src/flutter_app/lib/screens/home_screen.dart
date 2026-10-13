@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/local_cbz_service.dart';
+import '../services/settings_service.dart';
 import '../theme/tokens.dart';
 import '../widgets/cover_card.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/page_backdrop.dart';
+import '../widgets/empty_library_notice.dart';
+import 'reader_screen.dart' show LocalReaderArgs;
 
 class HomeScreen extends StatefulWidget {
   final ApiService api;
+  final SettingsService settings;
+  final LocalCbzService localCbz;
   final VoidCallback onSettingsReturn;
-  const HomeScreen({super.key, required this.api, required this.onSettingsReturn});
+  const HomeScreen({
+    super.key,
+    required this.api,
+    required this.settings,
+    required this.localCbz,
+    required this.onSettingsReturn,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -52,6 +64,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _openLocalFile() async {
+    final path = await widget.localCbz.pickFile();
+    if (path == null || !mounted) return;
+    widget.settings.addRecentLocalFile(path);
+    // '/reader/local' is a root-level route (declared in main.dart), not one
+    // ShellScreen's nested content Navigator knows about — same reasoning as
+    // AppTopBar's rootNavigator: true use for '/settings'.
+    Navigator.of(context, rootNavigator: true)
+        .pushNamed('/reader/local', arguments: LocalReaderArgs(path));
+  }
+
   Widget _buildBody() {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) {
@@ -63,6 +86,18 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             ElevatedButton(onPressed: _load, child: const Text('Retry')),
           ],
+        ),
+      );
+    }
+    final hasContent = _strips.any((s) => (s['items'] as List? ?? []).isNotEmpty);
+    if (!hasContent) {
+      return Center(
+        child: SingleChildScrollView(
+          child: EmptyLibraryNotice(
+            message: "Your library's empty — add comics to your digib00age "
+                'server, or open a local CBZ file to read right away.',
+            onBrowseLocal: _openLocalFile,
+          ),
         ),
       );
     }

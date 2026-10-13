@@ -134,7 +134,12 @@ class _ShellScreenState extends State<ShellScreen> with RouteAware {
     switch (routeSettings.name) {
       case '/home':
         return MaterialPageRoute(
-          builder: (_) => HomeScreen(api: widget.api, onSettingsReturn: _checkAndLoad),
+          builder: (_) => HomeScreen(
+            api: widget.api,
+            settings: widget.settings,
+            localCbz: widget.localCbz,
+            onSettingsReturn: _checkAndLoad,
+          ),
         );
       case '/browse':
         final filter = routeSettings.arguments as BrowseFilter;
