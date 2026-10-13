@@ -107,7 +107,6 @@
   color: var(--text);
   margin: 40px 0 12px;
   padding-top: 8px;
-  scroll-margin-top: calc(var(--header-h) + 12px);
 }
 
 .guide-main h2:first-of-type {
@@ -119,7 +118,14 @@
   font-weight: var(--weight-bold);
   color: var(--text);
   margin: 24px 0 8px;
-  scroll-margin-top: calc(var(--header-h) + 12px);
+}
+
+/* every anchor target in the guide (headings, accordion summaries) lands
+   below the header and the sticky Quick Jump bar — a flat clearance rather
+   than header-h + toc-h, since the Quick Jump bar's own height is never
+   measured and varies per page (1 vs 2 wrapped pill rows) */
+.guide-main [id] {
+  scroll-margin-top: var(--guide-toc-clear);
 }
 
 .guide-main p,
@@ -207,6 +213,10 @@
 /* UX & Navigation Enhancements — Sticky TOC, Accordions, Keycaps */
 html {
   scroll-behavior: smooth;
+}
+
+:root {
+  --guide-toc-clear: 200px;
 }
 
 .guide-toc {
