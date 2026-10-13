@@ -1303,17 +1303,33 @@ async function resolveMultiXml(keepFilename) {
 function wireGoodreadsLink() {
   const link = document.getElementById('fe-search-goodreads-link');
   const notice = document.getElementById('feGoodreadsNotice');
+  const actions = document.querySelector('.fe-header-actions');
+
+  // The "Paste from GR" button only exists once the GoodReads Chrome
+  // extension's content script has injected it — a reliable, no-API signal
+  // for "extension not installed" (it's always present, just disabled,
+  // once the extension is).
+  function updateExtensionNotice() {
+    notice.hidden = !!document.getElementById('gr-bridge-paste-btn');
+  }
+
+  updateExtensionNotice();
+
+  // The extension injects its button asynchronously (manifest's
+  // content_scripts run at document_idle, which lands after this script's
+  // own DOMContentLoaded handler) — watch the toolbar rather than guessing
+  // a timeout, so the notice clears itself the moment the button actually
+  // shows up instead of needing a page refresh.
+  if (actions) {
+    new MutationObserver(updateExtensionNotice).observe(actions, { childList: true });
+  }
+
   link.addEventListener('click', (event) => {
     const series = document.getElementById('fe-series').value.trim();
     event.currentTarget.href = series
       ? `https://www.goodreads.com/search?q=${encodeURIComponent(series)}`
       : 'https://www.goodreads.com/search?';
-
-    // The "Paste from GR" button only exists when the GoodReads Chrome
-    // extension's content script has injected it — a reliable, no-API
-    // signal for "extension not installed" (it's always present, just
-    // disabled, once the extension is).
-    notice.hidden = !!document.getElementById('gr-bridge-paste-btn');
+    updateExtensionNotice();
   });
 }
 
