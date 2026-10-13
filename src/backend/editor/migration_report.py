@@ -6,7 +6,7 @@ value doesn't match the newly-enforced lists (Section 4). Run as a script —
 writes a CSV that's sortable/filterable in any spreadsheet tool. Issues
 flagged "missing" (no value at all) are distinguished from issues flagged
 "invalid" (a value present, but not one of the enforced options), since
-those are different kinds of cleanup work for Tez to triage.
+those are different kinds of cleanup work for digib00age to triage.
 
 Usage (from the project root):
     python -m backend.editor.migration_report

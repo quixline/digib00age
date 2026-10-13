@@ -221,7 +221,7 @@ async function loadStats() {
 // ── Needs Attention ─────────────────────────────────────────────────────────
 // Standing list of Processing Tools recovery failures (backend/attention_log.py)
 // — kinds map to the tool that hit them, checked once on page load, so this
-// shows up the moment Tez next opens Admin even after an unattended
+// shows up the moment digib00age next opens Admin even after an unattended
 // Processing Folder Automation run produced one overnight.
 const ATTENTION_KIND_LABELS = {
   convert_archives: 'Convert Archives',
@@ -1367,7 +1367,7 @@ function renderCtPickerBreadcrumb(path) {
   const breadcrumb = document.getElementById('ctPickerBreadcrumb');
   // Separator is detected per-path, not hardcoded to '\\' — library_root can
   // be a Windows path (native/tray install) or a Unix path (Linux native or
-  // Docker install, e.g. quixy's /mnt/... mounts). Mirrors filePicker.js's
+  // Docker install, e.g. a self-hosted server's /mnt/... mounts). Mirrors filePicker.js's
   // renderPtPickerBreadcrumb, the picker that already got this right.
   const sep = path.includes('\\') ? '\\' : '/';
   const parts = path.split(/[\\/]/).filter(Boolean);

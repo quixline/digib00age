@@ -531,7 +531,7 @@ body.sidebar-collapsed .app-sidebar-lib-badge {
 }
 
 /* Trailing group — pushed to the right end of the bar. View toggle moved out
-   (now sits with sort-dir/Rated, Tez's tweak pass) — just the count here now. */
+   (now sits with sort-dir/Rated, digib00age's tweak pass) — just the count here now. */
 .menu-bar-trailing {
   display: flex;
   align-items: center;
@@ -1577,7 +1577,7 @@ select.filter-select:focus,
    (both `top: 6px`, both `height: 14px`) so the two opposite-corner badges
    share one bottom edge.
    2026-09-18 re-tune, superseding the earlier 22px/intentional-overflow
-   approach below this line's predecessor: Tez supplied a GIMP-edited mockup
+   approach below this line's predecessor: digib00age supplied a GIMP-edited mockup
    of the target look (an inset heart with visible margin on all sides, not
    touching the circle edge) and it was measured directly (pixel bounding-
    box scan of the mockup) rather than eyeballed — heart ≈ 68–70% of the
@@ -1859,7 +1859,7 @@ select.filter-select:focus,
    var(--card-min) (90-120px), narrower than the main grid's cards, which
    grow via minmax(...,1fr). The redesign's fixed-size badges/ribbon/
    progress-pill are sized for the wider grid card, so widen strip cards to
-   fit rather than shrinking the redesign to match (Tez's call) — still
+   fit rather than shrinking the redesign to match (digib00age's call) — still
    grows further if the admin's card-size setting is already wider. */
 .continue-strip .cover-card.strip-card.cover-card--redesign {
   width: max(var(--card-min), 160px);

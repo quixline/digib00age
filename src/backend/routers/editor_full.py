@@ -119,8 +119,8 @@ def _is_within_library(path: str) -> bool:
     """
     Path-validity guard, now backed by config.json's library_root instead of
     a hardcoded string (EDITOR_SPEC.md Section 5.1 bug fix — the old CAPT
-    code checked against a typo'd "L:\\Comics Archives" in some routes and
-    the correct "L:\\Comic Archives" only loosely in others).
+    code checked against a typo'd example path in some routes and the
+    correct one only loosely in others).
     """
     try:
         norm_path = os.path.normpath(os.path.abspath(path)).lower()
@@ -454,7 +454,7 @@ def process_batch(payload: dict = Body(...), db: Session = Depends(get_db)):
     """
     mode="queue": process every file currently in the Queue, using each
         file's own captured field values. Successfully-processed files are
-        removed from the Queue; failures stay so Tez can retry.
+        removed from the Queue; failures stay so digib00age can retry.
     mode="all": process every file in file_ids, in the order given, using
         the single shared `fields` payload for all of them. The frontend is
         responsible for sending file_ids in the same natural-sorted order

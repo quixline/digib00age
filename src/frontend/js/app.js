@@ -664,7 +664,7 @@ function _patchQueueReadingInCaches(id, value) {
 
 // Review-queue flag — mirrors applyFavoriteToDom/_patchFavoritesInCaches.
 // No dedicated-tab basis type for this flag (unlike favorites' §10.3 case,
-// Tez's call was a filter toggle only), so just re-render when the current
+// digib00age's call was a filter toggle only), so just re-render when the current
 // view is filtered to flagged-only and an item stops matching.
 function applyFlagReviewToDom(ids, value) {
   for (const id of ids) {
@@ -1206,7 +1206,7 @@ async function switchSurface(surface, opts = {}) {
       });
     }
     await loadBrowse();
-    // BUG-015 bonus (Tez's call) — cosmetic, one-time-per-switch sync of the
+    // BUG-015 bonus (digib00age's call) — cosmetic, one-time-per-switch sync of the
     // Genre dropdown's displayed value when landing on a genre fieldview, so
     // it doesn't just show the placeholder while a genre is actually active.
     // Deliberately NOT touching activeGenre (see hasActiveFilters()/

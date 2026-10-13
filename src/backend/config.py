@@ -40,8 +40,8 @@ else:
 # unlike the Windows per-user install (%LocalAppData%, already writable) or
 # any dev/unfrozen run (writes next to the repo as always). Only this exact
 # combination redirects config/db/thumbnails to XDG user paths; every other
-# run — including minty's current unfrozen dev/manual testing — is
-# unaffected. Mirrors the frozen-branch precedent in tray_app.py.
+# run — including a secondary dev machine's current unfrozen dev/manual
+# testing — is unaffected. Mirrors the frozen-branch precedent in tray_app.py.
 _IS_FROZEN_LINUX = getattr(sys, "frozen", False) and platform.system() == "Linux"
 
 

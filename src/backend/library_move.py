@@ -8,8 +8,8 @@ the library structure — the final stage of processing before a library scan.
 Pure function, no router/logging concerns — same pattern as filename_sort.py.
 
 Also runnable directly from a terminal:
-    python -m backend.library_move series  "L:\\...\\Processing\\Stage 3\\series"
-    python -m backend.library_move singles "L:\\...\\Processing\\Stage 3\\singles"
+    python -m backend.library_move series  "X:\\...\\Processing\\Stage 3\\series"
+    python -m backend.library_move singles "X:\\...\\Processing\\Stage 3\\singles"
 """
 
 from __future__ import annotations

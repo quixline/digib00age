@@ -297,7 +297,7 @@ class AutoTagIdentifyResult:
 # series_match_identify_thresh are overridden at call-time in identify_file()
 # from the Admin page's Match Ratio Threshold slider (processing_folder_
 # ct_match_threshold, default 80 -- added 2026-07-04, no UI to tune at first,
-# added once Tez had more real-world experience with match quality). Both
+# added once digib00age had more real-world experience with match quality). Both
 # stay tied to one value, matching CT's own single "match ratio" concept.
 _DEFAULT_IIO_KWARGS = dict(
     use_publisher_filter=False,
@@ -317,7 +317,7 @@ def identify_file(archive_path: str) -> AutoTagIdentifyResult:
 
     A one-shot/OGN filename with no issue number defaults to "1" (matches
     ComicTagger's own default-on "If no issue number, assume 1" Auto-Tag
-    option, confirmed with Tez 2026-07-04 after live testing surfaced a
+    option, confirmed with digib00age 2026-07-04 after live testing surfaced a
     real file this fixes). Only genuinely produces no_match now if even the
     filename can't supply a series name at all."""
     talker = get_talker()

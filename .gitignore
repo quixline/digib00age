@@ -1,8 +1,8 @@
 # Local working space — docs, caches, scratchpad, /graphify output,
 # everything that isn't meant to go public. One blanket rule instead of the
 # pile of individual entries this used to be (single-repo restructure).
-# No trailing slash: dev is now a symlink to windy's dev folder on this
-# machine, and a trailing-slash rule only matches real directories.
+# No trailing slash: dev is now a symlink to the dev machine's dev folder on
+# this machine, and a trailing-slash rule only matches real directories.
 dev
 
 # Local Linux build/packaging output (PyInstaller/sdist staging trees) —

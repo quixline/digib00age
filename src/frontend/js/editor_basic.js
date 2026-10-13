@@ -167,9 +167,7 @@ async function openEditorModal(issueId, onSaved) {
   setField('ed-publisher', fields.Publisher);
   setField('ed-storyarc', fields.StoryArc);
   setField('ed-language', fields.Language);
-  // Notes defaults to the established convention when blank, rather than
-  // saving an empty tag (EDITOR_SPEC.md Section 3.3).
-  setField('ed-notes', fields.Notes || 'Modified with the CAPT');
+  setField('ed-notes', fields.Notes);
 
   document.getElementById('ed-bw').checked = fields.BlackAndWhite === 'on';
 

@@ -653,7 +653,7 @@ async function loadFileIntoEditor(fileId) {
     return;
   }
 
-  // Lazy-on-focus (confirmed with Tez, 2026-07-03): this XML parse already
+  // Lazy-on-focus (confirmed with digib00age, 2026-07-03): this XML parse already
   // happens on every focus, so reading NeedsReview off it costs nothing extra.
   const entry = loadedFiles.find((f) => f.id === fileId);
   if (entry) {
@@ -677,7 +677,7 @@ function populateForm(fields) {
   setField('fe-publisher', fields.Publisher);
   setField('fe-storyarc', fields.StoryArc);
   setField('fe-language', fields.Language);
-  setField('fe-notes', fields.Notes || 'Modified with the CAPT');
+  setField('fe-notes', fields.Notes);
 
   document.getElementById('fe-bw').checked = fields.BlackAndWhite === 'on';
 
@@ -1043,7 +1043,7 @@ function renderPickerBreadcrumb(path) {
   const breadcrumb = document.getElementById('fePickerBreadcrumb');
   // Separator is detected per-path, not hardcoded to '\\' — library_root can
   // be a Windows path (native/tray install) or a Unix path (Linux native or
-  // Docker install, e.g. quixy's /mnt/... mounts). Mirrors filePicker.js's
+  // Docker install, e.g. a self-hosted server's /mnt/... mounts). Mirrors filePicker.js's
   // renderPtPickerBreadcrumb, the picker that already got this right.
   const sep = path.includes('\\') ? '\\' : '/';
   const parts = path.split(/[\\/]/).filter(Boolean);

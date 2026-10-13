@@ -171,7 +171,7 @@ if IS_WINDOWS:
     # once the new-named shortcut is created via a toggle, since
     # is_autostart_enabled() only checks the new path. Cleaned up once at
     # startup (see _migrate_legacy_startup_shortcut()) rather than requiring
-    # Tez to manually re-toggle autostart after updating.
+    # digib00age to manually re-toggle autostart after updating.
     LEGACY_STARTUP_SHORTCUT_PATH = os.path.join(
         os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs", "Startup", "ComicVault.lnk"
     )
@@ -413,7 +413,7 @@ def _compute_reader_window_geometry(issue_id, timeout=15):
     100% of the comic's actual page-1 pixel dimensions, capped to fit the
     display's work area (preserving aspect ratio) if that's too big,
     centered. Reads the full-resolution page (not /api/cover's downscaled
-    thumbnail — Tez found the thumbnail-based 75% version visibly smaller
+    thumbnail — digib00age found the thumbnail-based 75% version visibly smaller
     than the cover on the issue page, 2026-07-30) since "100% of the page"
     has to mean actual page pixels. `timeout` defaults generously (some
     archives sit on slow/networked storage — a cold first-page extraction
