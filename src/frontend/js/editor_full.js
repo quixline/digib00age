@@ -392,6 +392,11 @@ function toggleTreeNode(key) {
 async function focusFile(fileId) {
   if (searchOnlineOpen) return;  // Search Online modal traps focus (§9.6)
   focusedFileId = fileId;
+  // Closes the stale-fields race: without this, "+ Queue" stays enabled
+  // (updateActionButtonStates only gates on focusedFileId) while the fetch
+  // below is in flight, so a fast click queues the PREVIOUS file's still-
+  // displayed values tagged with this new file's id.
+  document.getElementById('feQueueBtn').disabled = true;
   renderFileTree();
   await loadFileIntoEditor(fileId);
   await loadFileIntoViewer(fileId);
@@ -639,6 +644,7 @@ async function loadFileIntoEditor(fileId) {
     data = await apiFetch(`/editor/full/files/${fileId}/xml`);
   } catch (_) {
     showError('Could not load this file for editing.');
+    updateActionButtonStates();
     return;
   }
 
@@ -1195,6 +1201,16 @@ async function pickerAddSelectedFolder() {
 function wireMultiXmlModal() {
   document.getElementById('feMultiXmlCloseBtn').onclick = () => {
     document.getElementById('feMultiXmlOverlay').hidden = true;
+    // Dismissing without picking a candidate is treated as "nothing
+    // focused" (same reset sequence as removeFile()/clearFileList()), not
+    // "revert to the previously-focused file" — otherwise the form is left
+    // showing the PREVIOUS file's values while focusedFileId already points
+    // at this one, and queueing blends the two files' data together.
+    focusedFileId = null;
+    resetForm();
+    resetViewer();
+    renderFileTree();
+    updateActionButtonStates();
   };
 }
 
