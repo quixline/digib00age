@@ -175,6 +175,10 @@
             <span class="guide-callout-label">Tip</span>
             <p>Scraped genres are automatically matched against your Admin Genre list (case-insensitive); unrecognised genres are silently skipped to preserve data validity.</p>
           </div>
+          <div class="guide-callout">
+            <span class="guide-callout-label">Tip</span>
+            <p>Still seeing <strong>"GoodReads extension not detected"</strong> after installing? This almost always means the extension itself is fine but hasn't been granted the address you're actually using yet — Chrome only auto-runs the extension's page scripts on <code>http://localhost:9800</code> out of the box, so any other address (a LAN IP, a Docker host, a custom port) needs a one-off approval step. Right-click the extension's toolbar icon → <strong>Options</strong>, paste the exact address from your browser's address bar — including the port, e.g. <code>http://192.168.0.151:9800</code> — into the field, and click <strong>Add</strong>. Chrome will prompt you to grant access to that address; accept it, then reload the Full Editor page. The notice disappears as soon as the extension is detected on that address.</p>
+          </div>
         </div>
       </details>
 
