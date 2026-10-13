@@ -39,7 +39,21 @@ class ComicSearchDelegate extends SearchDelegate<void> {
         }
         final results = snap.data ?? [];
         if (results.isEmpty) {
-          return const Center(child: Text('No results', style: TextStyle(color: Colors.white38)));
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  Theme.of(context).brightness == Brightness.light
+                      ? 'assets/logo/logo-light.png'
+                      : 'assets/logo/logo-dark.png',
+                  height: 56,
+                ),
+                const SizedBox(height: 12),
+                const Text('No results', style: TextStyle(color: Colors.white38)),
+              ],
+            ),
+          );
         }
         return ListView.builder(
           itemCount: results.length,

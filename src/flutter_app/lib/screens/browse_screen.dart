@@ -215,7 +215,21 @@ class _BrowseScreenState extends State<BrowseScreen> {
       );
     }
     if (_items.isEmpty) {
-      return const Center(child: Text('No results', style: TextStyle(color: Colors.white38)));
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              Theme.of(context).brightness == Brightness.light
+                  ? 'assets/logo/logo-light.png'
+                  : 'assets/logo/logo-dark.png',
+              height: 56,
+            ),
+            const SizedBox(height: 12),
+            const Text('No results', style: TextStyle(color: Colors.white38)),
+          ],
+        ),
+      );
     }
 
     final itemsPerPage = widget.settings.itemsPerPage;
