@@ -4480,11 +4480,6 @@ select.filter-select:focus,
   color: var(--text);
 }
 
-.editor-error a {
-  color: inherit;
-  text-decoration: underline;
-}
-
 .editor-actions {
   display: flex;
   justify-content: flex-end;
@@ -4571,6 +4566,16 @@ select.filter-select:focus,
 
 .fe-header-actions .settings-btn {
   margin-left: 0;
+}
+
+.fe-header-notice {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.fe-header-notice a {
+  color: inherit;
+  text-decoration: underline;
 }
 
 .btn-admin-action--ghost {
