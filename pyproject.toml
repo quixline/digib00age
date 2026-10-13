@@ -23,6 +23,11 @@ dependencies = [
     "comictagger @ git+https://github.com/comictagger/comictagger.git@0cc9e76f8d45d3ef27bcf2feabb676e124412abf",
 ]
 
+[project.optional-dependencies]
+# Backend regression suite — see dev/tests/ (gitignored) and dev/docs/TESTING.md.
+# Not installed by default; `pip install -e .[test]` once locally.
+test = ["pytest", "httpx"]
+
 [project.scripts]
 digib00age-server = "backend.cli:main"
 digib00age-tray = "tray.tray_app:main"

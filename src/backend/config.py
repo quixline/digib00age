@@ -138,6 +138,13 @@ _configure_unrar_tool()
 
 
 def _config_path() -> Path:
+    # Test-only seam (dev/tests/conftest.py): point at a scratch config.json
+    # instead of the real one. Must be set before backend.config is first
+    # imported, since DB_PATH/engine freeze at that point. Unset in every
+    # real run path (dev, frozen Windows, Docker, pip/XDG).
+    override = os.environ.get("DIGIB00AGE_CONFIG_PATH")
+    if override:
+        return Path(override)
     return _xdg_config_path() if _USE_XDG_PATHS else REPO_ROOT / "config.json"
 
 
