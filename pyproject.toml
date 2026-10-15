@@ -44,6 +44,12 @@ include = ["backend", "backend.*", "tray", "frontend"]
 [tool.setuptools.package-data]
 "backend.editor" = ["*.json"]
 "backend" = ["bin/linux/*", "bin/windows/*"]
+# Vendored ComicTagger data (dev/docs/comictagger-vendoring-scope.md) -
+# backend.vendor.* submodules get swept in as implicit namespace packages by
+# setuptools' default discovery, but a non-.py data file still needs its own
+# explicit glob the same way backend.editor's JSONs do above - confirmed by
+# building the real wheel: publishers.json was silently absent without this.
+"backend.vendor.comicapi.data" = ["*.json"]
 # Revision filenames (e.g. 0001_baseline.py) aren't valid import identifiers —
 # Alembic loads them by filesystem path, not via Python's import system, so
 # they need an explicit glob to guarantee inclusion in a built sdist/wheel.
