@@ -21,7 +21,28 @@ dependencies = [
     "lxml",
     "rarfile",
     "pymupdf",
-    "comictagger @ git+https://github.com/comictagger/comictagger.git@0cc9e76f8d45d3ef27bcf2feabb676e124412abf",
+    # ComicTagger's own transitive runtime deps — needed directly now that
+    # comicapi/comictalker/comictaggerlib are vendored under backend/vendor/
+    # instead of pip-installed (dev/docs/comictagger-vendoring-scope.md,
+    # v2.6 Item 11, Step 5). pyrate-limiter deliberately excluded: comicvine.py
+    # imports comictalker's own embedded vendor/pyrate_limiter/ copy, not the
+    # real pip package.
+    "appdirs==1.4.4",
+    "beautifulsoup4>=4.1",
+    "chardet>=5.1.0,<6",
+    "comicfn2dict>=0.2.1",
+    "importlib-metadata>=3.3.0",
+    "isocodes>=2025.8.22",
+    "natsort>=8.1.0",
+    "packaging>=20",
+    "pathvalidate",
+    "pyyaml",
+    "requests==2.*",
+    "settngs==0.11.0",
+    "text2digits",
+    "typing-extensions>=4.3.0",
+    "wordninja",
+    "zipremove",
 ]
 
 [project.optional-dependencies]
