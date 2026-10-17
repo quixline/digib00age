@@ -1,0 +1,33 @@
+digib00age — third-party attribution notice
+=============================================
+
+digib00age itself is licensed under the GNU General Public License v3.0
+(see LICENSE at the repository root).
+
+digib00age vendors a subset of ComicTagger's source code directly into its
+own tree, under `src/backend/vendor/` (`comicapi/`, `comictalker/`, and a
+subset of `comictaggerlib/`). ComicTagger is a separate project, licensed
+under the Apache License, Version 2.0, and is used here under that
+license's own terms — vendoring it does not change or relicense that code;
+it remains Apache-2.0 regardless of which GPLv3 project bundles it, and the
+reverse is also true: bundling Apache-2.0 code alongside digib00age's own
+GPLv3 code does not relicense digib00age's own code under Apache-2.0. The
+two licenses apply to their respective code, side by side, in the same
+repository.
+
+Component: ComicTagger (comicapi, comictalker, comictaggerlib subset)
+Source: https://github.com/comictagger/comictagger
+License: Apache License, Version 2.0 — full text in LICENSE-APACHE at the
+  repository root (http://www.apache.org/licenses/LICENSE-2.0)
+Copyright: ComicTagger team and contributors — original per-file copyright
+  headers are preserved as-is in the vendored source under
+  `src/backend/vendor/`
+Vendored from: upstream commit 0cc9e76f8d45d3ef27bcf2feabb676e124412abf
+  (reported version 1.6.0b11.dev45), confirmed 2026-10-15
+
+This vendoring is a straight copy for packaging/distribution reasons (see
+dev/docs/comictagger-vendoring-scope.md) — no modification to ComicTagger's
+own logic. Code added by digib00age to integrate with the vendored copy
+(e.g. plugin-registration wiring) is digib00age's own code, licensed under
+digib00age's GPLv3 like the rest of the project, and is not part of this
+notice.

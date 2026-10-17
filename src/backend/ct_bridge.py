@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
+from backend import ct_vendor_bootstrap  # noqa: F401 — seeds comicapi archiver/tag plugins before any ComicArchive() call below
+
 from comicapi.comicarchive import ComicArchive
 from comicapi.genericmetadata import ComicSeries, GenericMetadata
 from comicapi.utils import sanitize_title
