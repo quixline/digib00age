@@ -148,6 +148,83 @@ async def backup_loop(poll_seconds: int = DEFAULT_POLL_SECONDS) -> None:
 
 
 # ---------------------------------------------------------------------------
+# ComicVine API-drift canary (ROADMAP.md "ComicTagger vendoring — follow-on
+# hardening") — fires one real ComicVine call a day against a fixed,
+# permanent issue and checks the response still parses the way the vendored
+# comicvine.py expects, independent of whether CT's own upstream has
+# reacted to any API change. No admin-facing frequency setting — this is an
+# internal diagnostic, not a user feature, so the interval is fixed.
+# ---------------------------------------------------------------------------
+
+COMICVINE_DRIFT_POLL_SECONDS = 86400  # fixed daily interval
+
+# Action Comics #1 (1938) — Superman's debut, ComicVine's most permanent
+# possible record. Bare numeric ComicVine issue ID (comicvine.py builds the
+# "4000-" issue-type prefix itself) for
+# https://comicvine.gamespot.com/action-comics-issue-1/4000-105403/
+_COMICVINE_DRIFT_ISSUE_ID = "105403"
+
+
+def _run_comicvine_drift_check_background() -> None:
+    from comictalker.comictalker import TalkerError
+
+    from backend import ct_bridge
+
+    now_iso = datetime.now().isoformat()
+    try:
+        md = ct_bridge.fetch_issue_metadata(_COMICVINE_DRIFT_ISSUE_ID)
+        missing = [
+            field
+            for field, value in (
+                ("series", md.series),
+                ("issue", md.issue),
+                ("title", md.title),
+                ("year", md.year),
+            )
+            if not value
+        ]
+        if not md._cover_image or not md._cover_image.URL:
+            missing.append("cover image URL")
+        if missing:
+            raise ValueError(f"expected fields missing or empty: {', '.join(missing)}")
+    except TalkerError as exc:
+        logger.error("ComicVine drift canary failed (talker error): %s", exc)
+        save_config(
+            {
+                "last_comicvine_check_at": now_iso,
+                "last_comicvine_check_ok": False,
+                "last_comicvine_check_error": str(exc),
+            }
+        )
+    except Exception as exc:
+        logger.exception("ComicVine drift canary failed")
+        save_config(
+            {
+                "last_comicvine_check_at": now_iso,
+                "last_comicvine_check_ok": False,
+                "last_comicvine_check_error": str(exc),
+            }
+        )
+    else:
+        save_config(
+            {
+                "last_comicvine_check_at": now_iso,
+                "last_comicvine_check_ok": True,
+                "last_comicvine_check_error": None,
+            }
+        )
+
+
+async def comicvine_drift_loop(poll_seconds: int = COMICVINE_DRIFT_POLL_SECONDS) -> None:
+    """Runs forever (until cancelled). One real ComicVine call every
+    poll_seconds (default: daily) — see module note above."""
+    while True:
+        await asyncio.sleep(poll_seconds)
+        logger.info("ComicVine drift canary triggered")
+        await asyncio.get_event_loop().run_in_executor(None, _run_comicvine_drift_check_background)
+
+
+# ---------------------------------------------------------------------------
 # Processing Folder Automation (§11.4.5) — wall-clock scheduling, not
 # elapsed-time polling like auto_scan_loop/backup_loop above. Computes the
 # next scheduled datetime from the configured day/time and fires when

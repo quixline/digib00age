@@ -101,6 +101,9 @@ def get_stats(db: Session = Depends(get_db)):
         "log_status": log_status,
         "last_backup_at": config.get("last_backup_at"),
         "last_backup_error": config.get("last_backup_error"),
+        "last_comicvine_check_at": config.get("last_comicvine_check_at"),
+        "last_comicvine_check_ok": config.get("last_comicvine_check_ok"),
+        "last_comicvine_check_error": config.get("last_comicvine_check_error"),
     }
 
 

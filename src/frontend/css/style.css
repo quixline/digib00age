@@ -3233,6 +3233,10 @@ select.filter-select:focus,
   text-transform: uppercase;
 }
 
+.admin-page-label.is-error {
+  color: var(--danger-text);
+}
+
 /* Gear icon highlighted when on the admin page */
 .settings-btn--active {
   color: var(--accent);

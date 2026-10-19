@@ -81,19 +81,27 @@ async def lifespan(app: FastAPI):
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, _warmup_db)
 
-    from backend.scheduler import auto_scan_loop, backup_loop, maybe_scan_on_launch, processing_folder_loop
+    from backend.scheduler import (
+        auto_scan_loop,
+        backup_loop,
+        comicvine_drift_loop,
+        maybe_scan_on_launch,
+        processing_folder_loop,
+    )
 
     # Fire-and-forget — must not block startup waiting for a full scan.
     asyncio.create_task(maybe_scan_on_launch())
     scan_task = asyncio.create_task(auto_scan_loop())
     backup_task = asyncio.create_task(backup_loop())
     processing_folder_task = asyncio.create_task(processing_folder_loop())
+    comicvine_drift_task = asyncio.create_task(comicvine_drift_loop())
 
     yield
 
-    for task in (scan_task, backup_task, processing_folder_task):
+    tasks = (scan_task, backup_task, processing_folder_task, comicvine_drift_task)
+    for task in tasks:
         task.cancel()
-    for task in (scan_task, backup_task, processing_folder_task):
+    for task in tasks:
         try:
             await task
         except asyncio.CancelledError:
