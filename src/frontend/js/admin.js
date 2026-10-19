@@ -210,7 +210,6 @@ async function loadStats() {
     renderStats(d);
     renderScanSection(d.scan_state, d.missing_count, d.log_status);
     renderLastBackup(d.last_backup_at, d.last_backup_error);
-    renderComicVineDriftStatus(d.last_comicvine_check_at, d.last_comicvine_check_ok, d.last_comicvine_check_error);
   } catch (e) {
     document.getElementById('statGrid').innerHTML =
       '<div class="loading-state">Failed to load stats</div>';
@@ -336,28 +335,6 @@ function renderLastBackup(lastBackupAt, lastBackupError) {
   } else {
     errorEl.hidden = true;
     errorEl.textContent = '';
-  }
-}
-
-// ── ComicVine API-drift canary status (header, left of the gear icon) ─────────
-function renderComicVineDriftStatus(lastCheckAt, lastCheckOk, lastCheckError) {
-  const el = document.getElementById('comicvineDriftStatus');
-  if (!el) return;
-
-  if (!lastCheckAt) {
-    el.hidden = true;
-    return;
-  }
-
-  el.hidden = false;
-  if (lastCheckOk) {
-    el.classList.remove('is-error');
-    el.textContent = 'ComicVine OK';
-    el.removeAttribute('data-tooltip');
-  } else {
-    el.classList.add('is-error');
-    el.textContent = '⚠ ComicVine API drift';
-    el.setAttribute('data-tooltip', lastCheckError || 'ComicVine drift canary failed');
   }
 }
 
