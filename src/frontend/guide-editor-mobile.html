@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Reader Guide — digib00age</title>
+  <link rel="icon" href="/static/images/favicon.png">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0A5FFF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script>(function(){var t=localStorage.getItem('cv_theme');if(t&&t!=='auto')document.documentElement.dataset.theme=t;})();</script>
+  <link rel="stylesheet" href="/static/css/tokens-base.css">
+  <link rel="stylesheet" href="/static/css/tokens-dark.css">
+  <link rel="stylesheet" href="/static/css/tokens-light.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/guide.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container inner">
+      <a href="/" class="site-logo">
+        <img src="/static/images/lockup-light.png" alt="digib00age" class="site-logo-img site-logo-img--dark">
+        <img src="/static/images/lockup-dark.png" alt="digib00age" class="site-logo-img site-logo-img--light">
+      </a>
+      <a href="/admin" class="settings-btn" title="Admin / Settings" aria-label="Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+      <button type="button" class="btn-admin-action" id="logoutBtn" hidden>Logout</button>
+    </div>
+  </header>
+
+  <div class="guide-shell">
+    <nav class="guide-sidebar" aria-label="Guide navigation">
+      <span class="guide-sidebar-section-label">Guide</span>
+      <a href="/guide">Overview</a>
+      <a href="/guide/library">Library</a>
+      <a href="/guide/admin">Admin</a>
+      <a href="/guide/editor">Editor</a>
+      <a href="/guide/editor-basic" class="guide-sub-link">Basic Editor</a>
+      <a href="/guide/editor-full" class="guide-sub-link">Full Editor</a>
+      <a href="/guide/editor-mobile" class="guide-sub-link active">Mobile Reader</a>
+      <a href="#getting-the-app" class="guide-sub-link">Getting the App</a>
+      <a href="#connecting-to-your-server" class="guide-sub-link">Connecting</a>
+      <a href="#reading-progress-sync" class="guide-sub-link">Progress Sync</a>
+      <a href="#downloading-for-offline-reading" class="guide-sub-link">Downloads</a>
+    </nav>
+
+    <main class="guide-main">
+      <h1>Mobile Reader</h1>
+      <p class="guide-subtitle">Take your library with you — install the Android app, connect it to your server, and read on or offline.</p>
+
+      <div class="guide-toc">
+        <span class="guide-toc-label">Quick Jump:</span>
+        <div class="guide-toc-pills">
+          <a href="#getting-the-app" class="guide-toc-pill">Getting the App</a>
+          <a href="#connecting-to-your-server" class="guide-toc-pill">Connecting to Your Server</a>
+          <a href="#reading-progress-sync" class="guide-toc-pill">Reading Progress Sync</a>
+          <a href="#downloading-for-offline-reading" class="guide-toc-pill">Downloading for Offline Reading</a>
+        </div>
+      </div>
+
+      <h2 id="getting-the-app">Getting the App on Your Tablet</h2>
+      <p>digib00age's mobile reader is a native Android app, built for tablets and phones. It isn't on the Google Play Store yet, so for now it installs as a direct APK (a closed Play Store testing track is planned).</p>
+      <ol>
+        <li>Download the APK — grab the current release link from <a href="https://digib00age.cc/#download" target="_blank" rel="noopener">digib00age.cc</a>, or ask whoever manages your server for a copy.</li>
+        <li>Open the downloaded file from your tablet's Downloads folder.</li>
+        <li>Android will likely block the install the first time — allow "install unknown apps" for whichever app you downloaded it through, then try again.</li>
+        <li>Tap Install.</li>
+      </ol>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>Not on Google Play yet — direct APK install is the only way to get it today.</p>
+      </div>
+
+      <a href="#getting-the-app" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="connecting-to-your-server">Connecting to Your Server</h2>
+      <p>The first time you open the app, a welcome screen offers two paths: <strong>Connect to a Server</strong>, or (Android only) <strong>Browse Local Files</strong> to open a single CBZ straight off the device with no server involved at all.</p>
+      <p>Connecting takes you to Settings, where you type in your server's address — the same URL you'd use to open digib00age in a browser at home (e.g. <code>http://192.168.1.10:9800</code>). Tap <strong>Test Connection</strong> to confirm the app can reach it, then <strong>Save</strong>.</p>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>No account or sign-in step — just a reachable server address. Your tablet needs to actually reach that address, so you'll want to be on the same home network as the server (or back on it via VPN) the first time you connect.</p>
+      </div>
+
+      <a href="#getting-the-app" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="reading-progress-sync">Reading Progress Sync</h2>
+      <p>While you're connected and reading online, your progress updates live, the same way it does in the Web Reader — nothing extra to do.</p>
+      <p>Downloaded issues work a little differently: since you're reading without a live connection, the app keeps a note of your page and read status locally, then pushes it to your server the next time it gets a good chance to — when you return to your library, or move on to the next downloaded issue. There's no "Sync" button to press.</p>
+      <p>If you've read the same issue on two devices, whichever update happened most recently wins once the two sides reconcile — nothing gets lost in the process.</p>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>Each downloaded issue shows when it was downloaded, and — while a progress update is still waiting to go out — a small "Not synced" note next to it. That clears itself the next time the app manages to reach your server.</p>
+      </div>
+
+      <a href="#getting-the-app" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="downloading-for-offline-reading">Downloading Issues for Offline Reading</h2>
+      <p>From any series page, tap the download icon beside an issue to save a copy onto the tablet for offline or on-the-go reading. The icon fills in once the download finishes.</p>
+      <p>Downloaded issues stay available even if the app can't reach your server at all — open the app and they're right there under Downloaded, same as always.</p>
+      <p>To free up space again, tap the same icon and confirm — that removes only the local copy from your tablet; your library on the server is untouched.</p>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>Only CBZ issues can be downloaded for offline reading today — CBR isn't supported offline yet (the app will tell you if you try). There's also no storage-management screen yet, so it's worth keeping an eye on the tablet's own free space if you download a lot at once.</p>
+      </div>
+
+      <a href="#getting-the-app" class="guide-back-to-top">↑ Back to top</a>
+    </main>
+  </div>
+
+  <script src="/static/js/pwa.js"></script>
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/auth.js"></script>
+</body>
+</html>

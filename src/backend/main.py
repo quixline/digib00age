@@ -235,6 +235,10 @@ if FRONTEND_DIR.exists():
     async def guide_editor_full_page():
         return FileResponse(str(FRONTEND_DIR / "guide-editor-full.html"), headers=_NO_CACHE_HEADERS)
 
+    @app.get("/guide/editor-mobile", include_in_schema=False)
+    async def guide_editor_mobile_page():
+        return FileResponse(str(FRONTEND_DIR / "guide-editor-mobile.html"), headers=_NO_CACHE_HEADERS)
+
     @app.get("/editor", include_in_schema=False)
     async def editor_full_page():
         return FileResponse(str(FRONTEND_DIR / "editor_full.html"), headers=_NO_CACHE_HEADERS)
