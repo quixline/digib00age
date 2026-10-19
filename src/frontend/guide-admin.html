@@ -94,6 +94,11 @@
         <li><strong>Install App:</strong> Install digib00age as a Progressive Web App (PWA) on your desktop or mobile device.</li>
       </ul>
 
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>On Linux, if the installed app shows a generic browser icon instead of digib00age's own in Alt-Tab or the taskbar, your desktop's icon cache probably just hasn't picked up the new icon yet — GTK-based desktops (Cinnamon, GNOME, COSMIC, etc.) don't always refresh it automatically on install. Run <code>gtk-update-icon-cache -f -t ~/.local/share/icons/hicolor</code> from a terminal, then log out and back in (or restart your desktop panel) and the real icon should appear.</p>
+      </div>
+
       <a href="#admin-overview" class="guide-back-to-top">↑ Back to top</a>
 
       <h2 id="library-management">Library Management</h2>

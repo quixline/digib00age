@@ -3007,21 +3007,32 @@ async function initIssue() {
 // start_control_server()) so the reader opens as a fully chromeless --app=
 // window, same as the tray's own Library/Admin/Editor windows — a plain
 // window.open() popup can suppress the tab strip but not the address bar.
+//
 // Falls back to window.open() (address bar visible, but still a dedicated
-// popup, not a full tab) when the tray isn't running the control server —
-// e.g. the backend was started some other way than via the tray.
+// popup, not a full tab) for two different reasons (BUG-057):
+//   1. The control server itself is unreachable (tray isn't running it —
+//      e.g. the backend was started some other way than via the tray) —
+//      the fetch() rejects, caught below.
+//   2. The control server IS reachable but open_app_window() couldn't
+//      launch a chromeless window (no Chromium-family browser resolvable
+//      on this machine, e.g. Firefox-only Linux boxes) — it answers with a
+//      non-2xx status instead of silently opening a plain tab itself, so
+//      we still get a dedicated popup instead of a tab with zero
+//      indication anything was skipped.
+// This needs a real CORS fetch (not the old mode:'no-cors' probe) since
+// only a real response status can distinguish "reachable but failed" from
+// "launched fine" — see _ReaderControlHandler's Access-Control-Allow-Origin
+// header in tray_app.py.
 //
 // The control-port probe only makes sense when THIS page is itself being
 // viewed from its own machine's tray (localhost/127.0.0.1) — 127.0.0.1
 // always means "whatever machine the browser is running on," not "the
 // server this page came from." Skip it for any remote/Docker/other-host
-// instance: a `fetch(..., {mode:'no-cors'})` resolves (doesn't reject) as
-// long as *some* server answers on that port, even a same-machine tray
-// belonging to a completely different, unrelated digib00age install — so
-// on a machine that also runs its own local tray, the probe would silently
-// "succeed" against the wrong instance and open the wrong comic (or none)
-// instead of ever falling back to this page's own web reader (2026-09-07,
-// BUGS.md).
+// instance (this is a separate, unrelated concern from the two fallback
+// reasons above): a probe here could otherwise silently "succeed" against
+// a same-machine tray belonging to a completely different, unrelated
+// digib00age install, opening the wrong comic (or none) instead of ever
+// falling back to this page's own web reader (2026-09-07, BUG-049).
 const READER_CONTROL_PORT = 9801;
 
 function launchReader(issueId) {
@@ -3034,7 +3045,12 @@ function launchReader(issueId) {
   }
 
   const controllerUrl = `http://127.0.0.1:${READER_CONTROL_PORT}/open-reader?id=${issueId}`;
-  fetch(controllerUrl, { mode: 'no-cors', signal: AbortSignal.timeout(400) })
+  fetch(controllerUrl, { signal: AbortSignal.timeout(400) })
+    .then((response) => {
+      if (!response.ok) {
+        window.open(readerUrl, 'cv-reader-window', 'popup,width=900,height=1100');
+      }
+    })
     .catch(() => {
       window.open(readerUrl, 'cv-reader-window', 'popup,width=900,height=1100');
     });

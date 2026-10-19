@@ -31,3 +31,21 @@ own logic. Code added by digib00age to integrate with the vendored copy
 (e.g. plugin-registration wiring) is digib00age's own code, licensed under
 digib00age's GPLv3 like the rest of the project, and is not part of this
 notice.
+
+Component: PyMuPDF (imported as `fitz`)
+Source: https://github.com/pymupdf/PyMuPDF
+License: GNU Affero General Public License v3.0 (AGPL-3.0), or a commercial
+  license purchasable from Artifex Software, Inc. — digib00age uses the
+  AGPL-3.0 option (a normal pip dependency, not vendored source — see
+  `pyproject.toml`).
+Copyright: Artifex Software, Inc.
+
+digib00age's own code is licensed GPLv3 (see LICENSE), and GPLv3 §13
+explicitly permits combining GPLv3 code with AGPLv3 code into a single
+conveyed work provided AGPL §13's own requirement is also met for the
+combination: that users interacting with the program remotely over a
+network must be offered the opportunity to receive the Corresponding
+Source. Since digib00age's own source is itself GPLv3 and publicly
+available at https://github.com/quixline/digib00age, and the app links to
+that source from within its own interface, this requirement is satisfied
+for the combined work.

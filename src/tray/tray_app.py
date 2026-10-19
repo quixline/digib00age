@@ -591,7 +591,14 @@ def open_app_window(url, issue_id=None):
     """Opens `url` in a chromeless app-mode window rather than a browser tab.
     `issue_id`, if given (the reader launch path only), triggers a
     background pass that forces the window to the foreground and sizes it
-    to that issue's page-1 dimensions — see _activate_and_resize_new_window."""
+    to that issue's page-1 dimensions — see _activate_and_resize_new_window.
+
+    Returns True if the app-mode window was launched, False otherwise (no
+    Chromium-family browser resolvable, or the launch itself failed). Does
+    NOT fall back to a plain webbrowser.open() tab on failure — the only
+    caller (_ReaderControlHandler.do_GET) reports the result back to the web
+    UI's launchReader(), which has its own, better fallback (a window.open()
+    popup) and needs to know a fallback is actually needed (BUG-057)."""
     exe = _find_app_browser_exe()
 
     # Windows denies SetForegroundWindow to a process that isn't itself
@@ -630,10 +637,10 @@ def open_app_window(url, issue_id=None):
                     args=(before_hwnds, exe, issue_id),
                     daemon=True,
                 ).start()
-            return
+            return True
         except OSError as e:
-            log(f"App-mode launch failed ({e}), falling back to webbrowser.open().")
-    webbrowser.open(url)
+            log(f"App-mode launch failed ({e}).")
+    return False
 
 # digib00age brand mark (frontend/images/favicon.png) — reused here as the
 # tray icon's base glyph. Square with a transparent background, unlike
@@ -773,10 +780,15 @@ def open_editor(icon=None, item=None):
 
 class _ReaderControlHandler(BaseHTTPRequestHandler):
     """Handles GET /open-reader?id=<issue_id> from the web UI (frontend/js/
-    app.js) — the only route this control server serves. Fire-and-forget:
-    the caller uses fetch(..., {mode: 'no-cors'}) and doesn't read the body,
-    it just needs to know whether the request reached a live listener at
-    all (network reachability is the actual signal, not the response)."""
+    app.js) — the only route this control server serves. The caller reads
+    the response status (200 = app-mode window launched, non-2xx = it
+    wasn't, e.g. no Chromium-family browser available — see BUG-057) and
+    falls back to its own window.open() popup when it isn't 200. This
+    requires a real CORS fetch rather than the old mode:'no-cors' probe
+    (which could only see reachability, not the outcome), hence the
+    Access-Control-Allow-Origin header below — the control port is always a
+    different origin from the page regardless of which port the backend is
+    actually serving on."""
 
     def log_message(self, format, *args):
         pass  # BaseHTTPRequestHandler logs every request to stderr by default; skip it
@@ -785,11 +797,13 @@ class _ReaderControlHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         issue_id = parse_qs(parsed.query).get("id", [None])[0]
         if parsed.path == "/open-reader" and issue_id and issue_id.isdigit():
-            open_app_window(f"http://localhost:{READER_PORT}/reader/{issue_id}", issue_id=issue_id)
-            self.send_response(200)
+            launched = open_app_window(f"http://localhost:{READER_PORT}/reader/{issue_id}", issue_id=issue_id)
+            self.send_response(200 if launched else 503)
+            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
         else:
             self.send_response(400)
+            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
 
 
