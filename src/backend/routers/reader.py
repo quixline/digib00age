@@ -196,13 +196,26 @@ def get_cover(issue_id: int, request: Request, db: Session = Depends(get_db)):
     thumb_path = THUMBNAIL_DIR / f"{issue_id}.jpg"
 
     if issue.cover_path and thumb_path.exists():
-        stat = thumb_path.stat()
-        etag_base = f"{stat.st_mtime}-{stat.st_size}"
-        etag = f'"{hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()}"'
-        headers = {"Cache-Control": COVER_CACHE_CONTROL, "ETag": etag}
-        if request.headers.get("if-none-match") == etag:
-            return Response(status_code=304, headers=headers)
-        return FileResponse(str(thumb_path), media_type="image/jpeg", headers=headers)
+        # Read the whole thumbnail in one go rather than FileResponse
+        # (BUG-033 cause 2, residual after making the thumbnail write itself
+        # atomic via os.replace — BUGS.md). FileResponse stats the path for
+        # Content-Length, then separately opens/streams it; if a thumbnail
+        # regeneration's os.replace() lands between those two steps, the
+        # Content-Length it already sent no longer matches the (now
+        # different-sized) file it actually streams, truncating the
+        # response. A single open()+read() ties Content-Length and body to
+        # the exact same bytes, so no gap remains for a concurrent replace
+        # to land in.
+        try:
+            data = archive_formats.retry_on_windows_replace_race(thumb_path.read_bytes)
+        except FileNotFoundError:
+            data = None
+        if data is not None:
+            etag = f'"{hashlib.md5(data, usedforsecurity=False).hexdigest()}"'
+            headers = {"Cache-Control": COVER_CACHE_CONTROL, "ETag": etag}
+            if request.headers.get("if-none-match") == etag:
+                return Response(status_code=304, headers=headers)
+            return Response(content=data, media_type="image/jpeg", headers=headers)
 
     # Fallback — extract first page from CBZ on the fly
     pages = _sorted_pages(issue.file_path)

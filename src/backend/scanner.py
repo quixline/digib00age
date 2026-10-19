@@ -19,6 +19,7 @@ import hashlib
 import logging
 import os
 import re
+import uuid
 from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -318,7 +319,26 @@ def _generate_thumbnail(cbz_path: str, issue_id: int) -> Optional[str]:
         # thumbnail, a 6.6x reduction).
         img = img.convert("RGB")  # ensure JPEG-safe colour mode
         img = img.resize((target_width, target_height), Image.LANCZOS, reducing_gap=3.0)
-        img.save(str(thumb_path), "JPEG", quality=90, optimize=True)
+
+        # Write to a staged temp file + os.replace rather than saving over
+        # thumb_path directly (BUG-033 cause 2) — an in-place overwrite could
+        # be read mid-write by a concurrent GET /api/cover/{id}, truncating
+        # the response. Staged in THUMBNAIL_DIR itself so the replace stays
+        # on one filesystem (same reasoning as archive_io.py's flatten_and_zip).
+        staged_path = config.THUMBNAIL_DIR / f".cv_tmp_{uuid.uuid4().hex}.jpg"
+        try:
+            img.save(str(staged_path), "JPEG", quality=90, optimize=True)
+            # The replace itself can hit the same Windows PermissionError
+            # race as an archive rebuild (BUG-033 cause 1) if a concurrent
+            # GET /api/cover/{id} has thumb_path open for read at the exact
+            # moment of the swap — retry absorbs it rather than dropping
+            # this regeneration and leaving the stale thumbnail in place.
+            archive_formats.retry_on_windows_replace_race(
+                lambda: os.replace(staged_path, thumb_path)
+            )
+        except Exception:
+            staged_path.unlink(missing_ok=True)
+            raise
         return str(thumb_path)
 
     except archive_formats.BAD_ARCHIVE_EXCEPTIONS:
