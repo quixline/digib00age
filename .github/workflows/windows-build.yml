@@ -58,10 +58,15 @@ jobs:
         # (enforced since v7, https://docs.firegiant.com/wix/osmf/ - the fee
         # itself only applies to orgs earning >$10k/year; a solo OSS project
         # owes nothing, but the EULA still has to be accepted explicitly).
+        # -g installs the extension to the shared global extension cache
+        # (~\.wix\extensions) rather than scoped to the current directory -
+        # without it, the later "Build MSI" step (different working
+        # directory) can't find it (WIX0144). Version pinned to match the
+        # wix 7.0.0 CLI installed above.
         shell: pwsh
         run: |
           dotnet tool install --global wix
-          wix extension add WixToolset.UI.wixext -acceptEula wix7
+          wix extension add -g WixToolset.UI.wixext/7.0.0 -acceptEula wix7
 
       - name: Build MSI
         shell: pwsh
