@@ -18,7 +18,16 @@ rarfile          # CBR extraction — added v2.4 Item 5/11 (2026-06-30/07-01). u
                  # for Windows + Linux are bundled in backend/bin/ (backend/config.py points
                  # rarfile at them) — no host install needed on either platform; falls back
                  # to a PATH lookup on any other OS/arch
-pymupdf          # PDF->CBZ page rendering — added v2.4 Item 12 (2026-07-01), Convert Archives
+pymupdf<2.0      # PDF->CBZ page rendering — added v2.4 Item 12 (2026-07-01), Convert Archives.
+                 # Pinned <2.0 (2026-10-20): PyMuPDF 2.0 adds an eager pymupdf.layout import
+                 # (ONNX-based document-layout analysis) that pulls in model/config resource
+                 # files the PyInstaller spec doesn't bundle — frozen builds crash on startup
+                 # with FileNotFoundError on `pymupdf/layout/resources/onnx/...`. Found via a
+                 # real Windows CI build (windows-build.yml) smoke-tested against a fresh
+                 # checkout with no pin; Tez's existing local installs were unaffected only
+                 # because they were built before PyMuPDF 2.0 existed. Revisit the pin once
+                 # bundling those resources is deliberately scoped, not as a side effect of a
+                 # CI run picking up whatever's newest on PyPI that day.
                  # ComicTagger's own transitive runtime deps — needed directly now that
                  # comicapi/comictalker/comictaggerlib are vendored under backend/vendor/
                  # instead of pip-installed (dev/docs/comictagger-vendoring-scope.md,
