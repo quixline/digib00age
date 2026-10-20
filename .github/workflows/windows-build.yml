@@ -53,16 +53,21 @@ jobs:
             --workpath packaging/windows/build
 
       - name: Install WiX Toolset CLI + UI extension
+        # WiX v7 requires explicit, non-interactive acceptance of its Open
+        # Source Maintenance Fee EULA before any wix.exe command will run
+        # (enforced since v7, https://docs.firegiant.com/wix/osmf/ - the fee
+        # itself only applies to orgs earning >$10k/year; a solo OSS project
+        # owes nothing, but the EULA still has to be accepted explicitly).
         shell: pwsh
         run: |
           dotnet tool install --global wix
-          wix extension add WixToolset.UI.wixext
+          wix extension add WixToolset.UI.wixext -acceptEula wix7
 
       - name: Build MSI
         shell: pwsh
         working-directory: packaging/windows
         run: |
-          wix build installer.wxs -ext WixToolset.UI.wixext `
+          wix build installer.wxs -ext WixToolset.UI.wixext -acceptEula wix7 `
             -d DistDir="dist\digib00age" -out digib00age-setup.msi
 
       - name: Upload MSI artifact
