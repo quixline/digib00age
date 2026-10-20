@@ -9,10 +9,12 @@ dev
 # machine-specific build artifacts, not meant to go public.
 linux-build-files/
 
-# Packaging/deployment tooling — build scripts and deployment configs, not
-# meant to ship in the public repo. MSI/zip/Docker installers are
-# distributed via GitHub Releases and digib00age.com instead.
-packaging/
+# Windows build output (packaging/windows/ holds the source: spec, wxs,
+# icon/bitmap assets, License.rtf — build/dist/ are already covered by the
+# generic Python rules below). Built MSIs are distributed via GitHub
+# Releases, not committed.
+packaging/windows/*.msi
+packaging/windows/*.wixpdb
 
 # CodeGraph local index — dev-tool cache/db, not meant to go public.
 .codegraph/

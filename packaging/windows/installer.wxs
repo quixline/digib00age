@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  digib00age Windows installer (DECISIONS.md "Windows MSI installer").
+  Per-user install to %LocalAppData%\Programs\digib00age\, no admin/UAC.
+  No code signing for v1.
+
+  No automatic Windows Firewall rule (deviates from the original DECISIONS.md
+  scope - see the "Implemented" addendum on that entry). WixToolset.Firewall.
+  wixext v7.0.0 has a reproducible bug: its Program attribute always resolves
+  to the harvested file's build-time source path, never the installed target
+  path, regardless of formatted-text syntax used ([APPINSTALLFOLDER]..., a
+  bindpath-relative [#FileId], all tried). The only known-working alternative
+  mechanisms (netsh advfirewall, PowerShell's New-NetFirewallRule) both
+  require elevation and fail outright in this non-elevated per-user install.
+  Confirmed (2026-08-08): first LAN connection attempt triggers Windows'
+  own built-in "Allow this app through firewall" prompt instead - same
+  pattern as the existing Linux/UFW manual note in README.md.
+
+  Build with (run from this file's own directory, packaging/windows/):
+    wix build installer.wxs -ext WixToolset.UI.wixext -d DistDir="<path to the PyInstaller dist\digib00age output>" -out digib00age-setup.msi
+
+  The install tree is harvested straight from the PyInstaller dist/ output
+  via a glob (Files Include) rather than hand-listed - it's ~200MB / several
+  thousand files (bundled Python runtime, FastAPI/ComicTagger/PyMuPDF deps).
+
+  WixUI_InstallDir (WixToolset.UI.wixext) adds the standard directory-browse
+  dialog, bound to APPINSTALLFOLDER via the WIXUI_INSTALLDIR property below -
+  the user can pick any writable folder/drive instead of the hardcoded
+  %LocalAppData% default; data (config.json/db/thumbnails/logs) follows
+  automatically since config.py/tray_app.py resolve those paths from
+  sys.executable's actual runtime location, not a build-time constant. Still
+  Scope="perUser" (no elevation), so the chosen location must be writable by
+  the current user account - no fallback if the user browses to somewhere
+  that isn't (e.g. Program Files), same accepted-limitation pattern as the
+  Firewall deviation above. The dialog set's License Agreement page uses
+  License.rtf (informal notice, not a real EULA - none exists for this
+  project yet).
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="digib00age"
+           Manufacturer="digib00age"
+           Version="1.0.0.0"
+           UpgradeCode="F32F3ABD-8881-4064-A4BB-8A6E608CD5FB"
+           Scope="perUser">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of digib00age is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <Icon Id="AppIcon.ico" SourceFile="digib00age.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+
+    <!-- Directory-picker dialog (WixUI_InstallDir). Bound to APPINSTALLFOLDER below,
+         so the user can browse to any writable folder/drive instead of the hardcoded
+         %LocalAppData% default. Still Scope="perUser" - no elevation, so the chosen
+         location must be writable by the current user account. -->
+    <Property Id="WIXUI_INSTALLDIR" Value="APPINSTALLFOLDER" />
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+    <!-- Branded installer chrome (dev/docs/DECISIONS.md "Branded MSI installer chrome").
+         dialog.bmp (Welcome/Finish) keeps its original 2026-09-25 layout (dark left
+         panel with logo + blurb, white right side, WiX's required 493x312 24-bit BMP
+         size) - only the logo artwork itself was refreshed 2026-10-18, recomposited
+         from dev/images/png-output/lockup-light-534.png (the same brand-refresh asset
+         already live in src/frontend/images/lockup-light.png since 2026-10-12/13;
+         this installer had been missed by that refresh until now), scaled to the
+         same 140x~20px footprint the old logo occupied and pasted onto the
+         unchanged dark background - no other pixel in the image was touched.
+         banner.bmp is the extension's OWN stock bannrbmp.bmp (extracted from
+         WixToolset.UI.wixext's embedded ui.wixlib) with only its ~43x42 decorative-graphic
+         box (icon centered around 461,28, confirmed via the extension's wix-ir.json
+         Control table) swapped for the digib00age icon mark - every other pixel,
+         including the full-width Title/Description text zones that differ per dialog
+         (LicenseAgreementDlg's Description alone runs to x=486 of 493), is untouched
+         from the proven-safe stock bitmap. Two earlier attempts at a from-scratch
+         banner (full dark strip, then a right-corner wordmark) both collided with
+         native text - see progress.md 2026-09-25 for the dead ends before this
+         approach; the icon artwork itself was refreshed 2026-10-18 from
+         dev/images/png-output/favicon-48.png, same brand refresh as above.
+         digib00age.ico was rebuilt 2026-10-18 from dev/images/png-output/favicon-512.png
+         (previously generated from an unrelated, older dev/icons SVG source - see
+         progress.md 2026-09-24/25). -->
+    <WixVariable Id="WixUIBannerBmp" Value="banner.bmp" />
+    <WixVariable Id="WixUIDialogBmp" Value="dialog.bmp" />
+
+    <ui:WixUI Id="WixUI_InstallDir" />
+
+    <!-- Per-user install target: %LocalAppData%\Programs\digib00age\ (default,
+         overridable via the directory-picker dialog above). -->
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="ProgramsFolder" Name="Programs">
+        <Directory Id="APPINSTALLFOLDER" Name="digib00age">
+          <!-- Deliberately NOT relying on a wildcard folder-remove on
+               uninstall - WiX only removes files it explicitly tracked as
+               components below, so config.json/the DB/thumbnails/logs
+               created after install (not part of the harvest below) are
+               left behind on uninstall rather than deleted. -->
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Harvests the entire flat PyInstaller dist/ tree: both exes,
+         backend/, frontend/, config.json, and every bundled runtime
+         dependency - one component per file, auto-generated. Declared at
+         Package level (not nested in the Directory tree above) with an
+         explicit target Directory, so the Feature below can reference the
+         whole group via ComponentGroupRef. -->
+    <ComponentGroup Id="DistFilesGroup" Directory="APPINSTALLFOLDER">
+      <Files Include="$(var.DistDir)\**" />
+    </ComponentGroup>
+
+    <!-- Start Menu shortcut launching the tray app (which starts the server
+         as a subprocess - see tray_app.py's start_reader()). -->
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Component Id="StartMenuShortcutComponent" Guid="*">
+        <Shortcut Id="ApplicationStartMenuShortcut"
+                  Name="digib00age"
+                  Description="Launches the digib00age comic library server and tray app"
+                  Target="[APPINSTALLFOLDER]digib00age-tray.exe"
+                  WorkingDirectory="APPINSTALLFOLDER"
+                  Icon="AppIcon.ico" />
+        <RemoveFolder Id="CleanUpStartMenuShortcut" Directory="ProgramMenuFolder" On="uninstall" />
+        <RegistryValue Root="HKCU"
+                        Key="Software\digib00age"
+                        Name="StartMenuShortcutInstalled"
+                        Type="integer"
+                        Value="1"
+                        KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+
+    <Feature Id="MainFeature" Title="digib00age" Level="1">
+      <ComponentRef Id="StartMenuShortcutComponent" />
+      <ComponentGroupRef Id="DistFilesGroup" />
+    </Feature>
+
+  </Package>
+</Wix>
