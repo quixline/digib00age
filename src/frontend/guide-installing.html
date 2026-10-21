@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Installing Guide — digib00age</title>
+  <link rel="icon" href="/static/images/favicon.png">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#0A5FFF">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <script>(function(){var t=localStorage.getItem('cv_theme');if(t&&t!=='auto')document.documentElement.dataset.theme=t;})();</script>
+  <link rel="stylesheet" href="/static/css/tokens-base.css">
+  <link rel="stylesheet" href="/static/css/tokens-dark.css">
+  <link rel="stylesheet" href="/static/css/tokens-light.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/guide.css">
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="container inner">
+      <a href="/" class="site-logo">
+        <img src="/static/images/lockup-light.png" alt="digib00age" class="site-logo-img site-logo-img--dark">
+        <img src="/static/images/lockup-dark.png" alt="digib00age" class="site-logo-img site-logo-img--light">
+      </a>
+      <a href="/admin" class="settings-btn" title="Admin / Settings" aria-label="Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+      <button type="button" class="btn-admin-action" id="logoutBtn" hidden>Logout</button>
+    </div>
+  </header>
+
+  <div class="guide-shell">
+    <nav class="guide-sidebar" aria-label="Guide navigation">
+      <span class="guide-sidebar-section-label">Guide</span>
+      <a href="/guide">Overview</a>
+      <a href="/guide/installing" class="active">Installing</a>
+      <a href="#windows" class="guide-sub-link">Windows</a>
+      <a href="#linux" class="guide-sub-link">Linux</a>
+      <a href="#docker" class="guide-sub-link">Docker</a>
+      <a href="#android" class="guide-sub-link">Android</a>
+      <a href="#first-steps" class="guide-sub-link">First Steps</a>
+      <a href="/guide/library">Library</a>
+      <a href="/guide/admin">Admin</a>
+      <a href="/guide/editor">Editor</a>
+      <a href="/guide/editor-mobile">Mobile Reader</a>
+    </nav>
+
+    <main class="guide-main">
+      <h1>Installing digib00age</h1>
+      <p class="guide-subtitle">Pick the platform that matches your setup — more detail than the quick Downloads section on digib00age.cc.</p>
+
+      <div class="guide-toc">
+        <span class="guide-toc-label">Quick Jump:</span>
+        <div class="guide-toc-pills">
+          <a href="#windows" class="guide-toc-pill">Windows</a>
+          <a href="#linux" class="guide-toc-pill">Linux</a>
+          <a href="#docker" class="guide-toc-pill">Docker</a>
+          <a href="#android" class="guide-toc-pill">Android</a>
+          <a href="#first-steps" class="guide-toc-pill">First Steps</a>
+        </div>
+      </div>
+
+      <p>digib00age is self-hosted — you run it on your own hardware, there's nothing to sign up for and nothing phones home. Each platform below has its own install path; pick whichever matches the machine you want running the server. Your Android device is always just a reader connecting to one of these — never the server itself.</p>
+
+      <h2 id="windows">Windows</h2>
+      <p>Ships as a <strong>per-user MSI installer</strong> — no administrator rights needed, nothing installed system-wide. It unpacks to <code>%LocalAppData%\Programs\digib00age</code> and runs from the system tray.</p>
+      <ol>
+        <li>Download <code>digib00age-setup.msi</code> from the <a href="https://digib00age.cc/#download" target="_blank" rel="noopener">Downloads section on digib00age.cc</a> (or this project's <a href="https://github.com/quixline/digib00age/releases" target="_blank" rel="noopener">GitHub Releases</a>) and run it.</li>
+        <li>Windows SmartScreen may flag it as unrecognized — the installer isn't code-signed yet. Choose <strong>More info</strong> &rarr; <strong>Run anyway</strong> to continue.</li>
+        <li>On first launch, Windows Firewall asks whether to allow <code>digib00age-server</code> through public and private networks. Leave <strong>Public unchecked</strong> and <strong>Private checked</strong>, then <strong>Allow</strong> — this is a home-network server, not one you want reachable from a public wifi.</li>
+        <li>The server starts from the tray and opens your library in a browser from the tray menu.</li>
+      </ol>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>Right-click the tray icon any time for Open Library, Admin, Metadata Editor, Start/Stop Server, and a login-autostart toggle.</p>
+      </div>
+
+      <a href="#windows" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="linux">Linux</h2>
+      <p>Download the Linux release, unzip it, and run the <code>install.sh</code> inside. It checks for the system packages digib00age needs — and tells you exactly what's missing if anything is — then creates a private Python virtual environment, installs digib00age into it, and sets up an Applications-menu launcher.</p>
+      <p>Prerequisites (install.sh checks these automatically and fails fast with instructions if anything's missing):</p>
+      <p><code>sudo apt install python3 python3-venv build-essential python3-dev python3-gi gir1.2-gtk-3.0 libayatana-appindicator3-1 gir1.2-ayatanaappindicator3-0.1 python3-icu</code></p>
+      <p>Those are Debian/Ubuntu package names (<code>apt</code>) — distros on a different base (Fedora, Arch, openSUSE) will need their package manager's equivalents; install.sh will still tell you what's missing either way.</p>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>Confirmed working on Linux Mint 21.3 and 22.3 (Cinnamon) and Ubuntu 22.04/26.04. Other Debian/Ubuntu-based distros are very likely fine too — just less directly tested.</p>
+      </div>
+
+      <a href="#windows" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="docker">Docker</h2>
+      <p>Prefer a container? Any OS that runs Docker works, with no Python environment to manage. New to Docker — see <a href="https://www.docker.com/" target="_blank" rel="noopener">docker.com</a> for what it is and how to install Docker Desktop (Windows/Mac) or Docker Engine (Linux) first.</p>
+      <ol>
+        <li><code>docker pull ghcr.io/quixline/digib00age:v1-beta</code></li>
+        <li>Download <code>docker-compose.yml</code> from the Downloads section, and edit its one <code>volumes:</code> line if your library isn't under <code>/mnt</code>.</li>
+        <li><code>docker compose up -d</code></li>
+      </ol>
+      <div class="guide-callout">
+        <span class="guide-callout-label">Tip</span>
+        <p>No gated setup wizard — open <code>http://&lt;host&gt;:9800/admin</code> as soon as it's up, add your library folder under Library Folders, and set a password there if you want to require a login. It's open to anyone who can reach the port until you do, same as every other install path.</p>
+      </div>
+
+      <a href="#windows" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="android">Android</h2>
+      <p>The native Android reader installs as a direct APK — it's not on the Google Play Store yet. It's a reader only, not a server: install it on a tablet or phone and point it at whichever install above is already running your library.</p>
+      <p><a href="/guide/editor-mobile">Full Mobile Reader guide, including connecting it to your server and downloading issues for offline reading &rarr;</a></p>
+
+      <a href="#windows" class="guide-back-to-top">↑ Back to top</a>
+
+      <h2 id="first-steps">First Steps After Installing</h2>
+      <p>Once the server's running, open it in a browser — on Windows, right-click the tray icon and choose Open Library; on Linux or Docker, visit <code>http://localhost:9800</code> (or the host's address from another device). Go to <strong>Admin &rarr; Library Management &rarr; Library Folders</strong>, add the folder(s) where your CBZ/CBR files live, and scan. From there: the homepage is your library, <code>/editor</code> is the Full Editor for batch-tagging new comics before they join it, and the <a href="/guide/library">Library guide</a> and <a href="/guide/admin">Admin guide</a> cover everything else.</p>
+
+      <a href="#windows" class="guide-back-to-top">↑ Back to top</a>
+    </main>
+  </div>
+
+  <script src="/static/js/pwa.js"></script>
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/auth.js"></script>
+</body>
+</html>

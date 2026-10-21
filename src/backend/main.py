@@ -215,6 +215,10 @@ if FRONTEND_DIR.exists():
     async def guide_page():
         return FileResponse(str(FRONTEND_DIR / "guide.html"), headers=_NO_CACHE_HEADERS)
 
+    @app.get("/guide/installing", include_in_schema=False)
+    async def guide_installing_page():
+        return FileResponse(str(FRONTEND_DIR / "guide-installing.html"), headers=_NO_CACHE_HEADERS)
+
     @app.get("/guide/library", include_in_schema=False)
     async def guide_library_page():
         return FileResponse(str(FRONTEND_DIR / "guide-library.html"), headers=_NO_CACHE_HEADERS)
