@@ -45,6 +45,17 @@ repo's [Releases](../../releases) page.
 the server itself binds to `0.0.0.0` correctly. For UFW: `sudo ufw allow 9800/tcp`,
 then `sudo ufw status verbose` to confirm.
 
+**Windows hosts (MSI install):** the installer doesn't register a firewall rule
+itself (see `packaging/windows/installer.wxs` header for why) — instead, the
+first LAN connection attempt triggers Windows' own built-in "Do you want to
+allow public and private networks to access this app?" prompt for
+`digib00age-server`. Leave **Public networks unchecked** and **Private
+networks checked** (Windows' own default on that dialog), then click Allow —
+this is a home-LAN server with no hardening for untrusted public networks. If
+you already allowed Public, fix it anytime without reinstalling via Windows
+Security → Firewall & network protection → Allow an app through firewall →
+edit digib00age-server's checkboxes.
+
 **Linux hosts, tray app:** the venv must be created with `--system-site-packages`
 (or have `include-system-site-packages = true` set in an existing venv's
 `pyvenv.cfg`), and `python3-gi` + `gir1.2-appindicator3-0.1` (or the ayatana
