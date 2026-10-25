@@ -13,7 +13,9 @@ comictalker plugin split this module depends on (confirmed 2026-07-03).
 
 from __future__ import annotations
 
+import contextlib
 import difflib
+import logging
 import os
 import re
 from dataclasses import dataclass
@@ -28,6 +30,7 @@ from comicapi.utils import sanitize_title
 from comictaggerlib.issueidentifier import IssueIdentifier, IssueIdentifierOptions
 from comictaggerlib.issueidentifier import Result as IIResult
 from comictaggerlib.resulttypes import IssueResult
+from comictalker.comictalker import TalkerError
 from comictalker.talker_utils import cleanup_html
 from comictalker.talkers.comicvine import ComicVineTalker
 
@@ -36,6 +39,44 @@ from backend.rename_tool import parse_comic_filename
 
 CT_VERSION = "1.0.0"  # digib00age's own version string, passed to CT's talker/cache
 CT_CACHE_DIR = _ct_cache_dir()  # ComicVineTalker's sqlite search-result cache
+
+
+class _TalkerErrorCapture(logging.Handler):
+    """IssueIdentifier._search_for_issues() catches TalkerError internally
+    (network failures, ComicVine rate limits, timeouts) and returns an empty
+    result rather than raising -- identify() then reports IIResult.no_matches,
+    indistinguishable from a genuine "ComicVine has nothing" result (found
+    2026-10-25: a brief ComicVine hiccup made every single Auto-Tag file in
+    that run log as a normal [skipped: no match], with no trace of the real
+    cause). It does still call self.log_msg(f"Error searching for series...")
+    before swallowing, which reaches the stdlib `logging` module -- this
+    handler captures just that message so identify_file() can tell the two
+    cases apart."""
+
+    def __init__(self) -> None:
+        super().__init__(level=logging.INFO)
+        self.messages: list[str] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.messages.append(record.getMessage())
+
+
+@contextlib.contextmanager
+def _capture_issue_identifier_errors():
+    """Temporarily force comictaggerlib.issueidentifier's logger to emit (it
+    has no handler/level configured by the app otherwise, so these messages
+    normally go nowhere -- confirmed 2026-10-25, nothing app-wide calls
+    logging.basicConfig()) and collect anything it logs during the call."""
+    target_logger = logging.getLogger("comictaggerlib.issueidentifier")
+    handler = _TalkerErrorCapture()
+    prev_level = target_logger.level
+    target_logger.addHandler(handler)
+    target_logger.setLevel(logging.INFO)
+    try:
+        yield handler.messages
+    finally:
+        target_logger.removeHandler(handler)
+        target_logger.setLevel(prev_level)
 
 
 def get_talker() -> ComicVineTalker:
@@ -94,6 +135,15 @@ def _series_match_score(series_name: str, result: ComicSeries) -> tuple[float, i
     return (ratio, result.count_of_issues or 0)
 
 
+class ComicVineLookupError(RuntimeError):
+    """Raised by the manual Search Online path (search_series/
+    list_issues_for_series/fetch_issue_metadata) when the underlying
+    ComicVineTalker call fails (network error, rate limit, timeout). Without
+    this, a TalkerError bubbled up as a bare unhandled 500 with no message
+    reaching the Full Editor UI -- indistinguishable from the modal simply
+    coming back empty (found 2026-10-25 diagnosing a ComicVine hiccup)."""
+
+
 def search_series(series_name: str) -> list[SeriesResult]:
     """Shared backend function (EDITOR_SPEC.md 9.1) — called by the Full
     Editor's Search Online modal. The CT Auto-Tag automation stage shares
@@ -101,7 +151,30 @@ def search_series(series_name: str) -> list[SeriesResult]:
     than calling this function directly (automated identify vs. manual
     search are different CT entry points, per DECISIONS.md 2026-07-03)."""
     talker = get_talker()
-    results: list[ComicSeries] = talker.search_for_series(series_name, on_rate_limit=None)
+    try:
+        results: list[ComicSeries] = talker.search_for_series(series_name, on_rate_limit=None)
+    except TalkerError as e:
+        raise ComicVineLookupError(str(e)) from e
+
+    # ComicVine's /search endpoint (above) is thin -- count_of_issues and the
+    # cover image are frequently 0/blank for many volumes even when real data
+    # exists, because /search returns less than the full per-volume resource
+    # (confirmed 2026-10-25: a long-since-tagged series showed 0 issues/blank
+    # cover here, but full data once Select Issue's separate full-volume fetch
+    # ran). Batch-enrich every result from the richer /volumes/ endpoint in
+    # ONE extra call -- it filters by up to 100 ids per request (_get_id_list)
+    # -- rather than one fetch per row, which would multiply this search's API
+    # cost by its result count and risk the same rate-limit failure mode as
+    # today's Auto-Tag incident. Falls back to the thin data on failure rather
+    # than failing the whole search over an enrichment-only call.
+    if results:
+        try:
+            enriched = talker._fetch_series([int(r.id) for r in results], on_rate_limit=None)
+            enriched_by_id = {series.id: series for series, _complete in enriched}
+            results = [enriched_by_id.get(r.id, r) for r in results]
+        except TalkerError:
+            pass
+
     results.sort(key=lambda r: _series_match_score(series_name, r), reverse=True)
     return [
         SeriesResult(
@@ -147,7 +220,10 @@ def _issue_number_sort_key(number: str) -> tuple:
 
 def list_issues_for_series(series_id: str) -> list[IssueResultDTO]:
     talker = get_talker()
-    issues: list[GenericMetadata] = talker.fetch_issues_in_series(series_id, on_rate_limit=None)
+    try:
+        issues: list[GenericMetadata] = talker.fetch_issues_in_series(series_id, on_rate_limit=None)
+    except TalkerError as e:
+        raise ComicVineLookupError(str(e)) from e
     out = []
     for md in issues:
         date = "-".join(str(x) for x in (md.year, md.month) if x) if (md.year or md.month) else ""
@@ -168,7 +244,10 @@ def list_issues_for_series(series_id: str) -> list[IssueResultDTO]:
 def fetch_issue_metadata(issue_id: str) -> GenericMetadata:
     """Full GenericMetadata for a specific issue — used by both the Search
     Online modal's Confirm step and the CT Auto-Tag stage's write path."""
-    return get_talker().fetch_comic_data(issue_id=issue_id, on_rate_limit=None)
+    try:
+        return get_talker().fetch_comic_data(issue_id=issue_id, on_rate_limit=None)
+    except TalkerError as e:
+        raise ComicVineLookupError(str(e)) from e
 
 
 # -- GenericMetadata -> digib00age field-dict mapping --
@@ -351,12 +430,21 @@ def identify_file(archive_path: str) -> AutoTagIdentifyResult:
     )
     ii = IssueIdentifier(iio, on_rate_limit=None, output=lambda *a, **k: None)
 
-    result, matches = ii.identify(ca, md)
+    with _capture_issue_identifier_errors() as log_messages:
+        result, matches = ii.identify(ca, md)
 
     if result == IIResult.single_good_match:
         return AutoTagIdentifyResult(confidence=ConfidenceLevel.CONFIDENT, best_match=matches[0])
     if result == IIResult.no_matches:
-        return AutoTagIdentifyResult(confidence=ConfidenceLevel.NO_MATCH)
+        # A genuine "ComicVine has nothing" and a swallowed TalkerError both
+        # land here (see _TalkerErrorCapture docstring) -- surface the
+        # captured message when there is one so this doesn't silently look
+        # identical to a real no-match in the Auto-Tag log/admin UI.
+        talker_errors = [m for m in log_messages if "error" in m.lower() or "aborting" in m.lower()]
+        return AutoTagIdentifyResult(
+            confidence=ConfidenceLevel.NO_MATCH,
+            error=" / ".join(talker_errors) if talker_errors else None,
+        )
     # single_bad_cover_score / multiple_bad_cover_scores / multiple_good_matches
     # -- all "low confidence", governed by the Save on Low Confidence toggle.
     best = matches[0] if matches else None

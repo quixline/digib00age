@@ -592,13 +592,19 @@ def process_batch(payload: dict = Body(...), db: Session = Depends(get_db)):
 def search_online_series(q: str):
     if not q or not q.strip():
         raise HTTPException(status_code=400, detail="Series name required")
-    results = ct_bridge.search_series(q.strip())
+    try:
+        results = ct_bridge.search_series(q.strip())
+    except ct_bridge.ComicVineLookupError as exc:
+        raise HTTPException(status_code=502, detail=f"ComicVine lookup failed: {exc}")
     return {"results": [dataclasses.asdict(r) for r in results]}
 
 
 @router.get("/editor/full/search/issues")
 def search_online_issues(series_id: str):
-    results = ct_bridge.list_issues_for_series(series_id)
+    try:
+        results = ct_bridge.list_issues_for_series(series_id)
+    except ct_bridge.ComicVineLookupError as exc:
+        raise HTTPException(status_code=502, detail=f"ComicVine lookup failed: {exc}")
     return {"results": [dataclasses.asdict(r) for r in results]}
 
 
@@ -614,6 +620,9 @@ def search_online_confirm(payload: dict = Body(...)):
     issue_id = payload.get("issue_id")
     if not issue_id:
         raise HTTPException(status_code=400, detail="issue_id required")
-    md = ct_bridge.fetch_issue_metadata(issue_id)
+    try:
+        md = ct_bridge.fetch_issue_metadata(issue_id)
+    except ct_bridge.ComicVineLookupError as exc:
+        raise HTTPException(status_code=502, detail=f"ComicVine lookup failed: {exc}")
     fields = ct_bridge.metadata_to_field_dict(md)
     return {"fields": fields}

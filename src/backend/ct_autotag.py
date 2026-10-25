@@ -50,6 +50,12 @@ def ct_autotag_file(archive_path: str, api_key: str, save_low_confidence: bool =
         return CTAutoTagResult(success=False, confidence="no_match", tags_written=False, error=str(exc))
 
     if result.confidence == ct_bridge.ConfidenceLevel.NO_MATCH or not result.best_match:
+        # result.error is only set when identify_file() caught a real
+        # ComicVine failure (network/rate-limit/timeout) swallowed inside
+        # IssueIdentifier rather than a genuine "no such series" — surface
+        # that distinction instead of reporting it as an ordinary no-match.
+        if result.error:
+            return CTAutoTagResult(success=False, confidence="no_match", tags_written=False, error=result.error)
         return CTAutoTagResult(success=True, confidence="no_match", tags_written=False)
 
     if result.confidence == ct_bridge.ConfidenceLevel.LOW_CONFIDENCE and not save_low_confidence:
