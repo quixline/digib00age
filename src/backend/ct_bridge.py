@@ -156,25 +156,16 @@ def search_series(series_name: str) -> list[SeriesResult]:
     except TalkerError as e:
         raise ComicVineLookupError(str(e)) from e
 
-    # ComicVine's /search endpoint (above) is thin -- count_of_issues and the
-    # cover image are frequently 0/blank for many volumes even when real data
-    # exists, because /search returns less than the full per-volume resource
-    # (confirmed 2026-10-25: a long-since-tagged series showed 0 issues/blank
-    # cover here, but full data once Select Issue's separate full-volume fetch
-    # ran). Batch-enrich every result from the richer /volumes/ endpoint in
-    # ONE extra call -- it filters by up to 100 ids per request (_get_id_list)
-    # -- rather than one fetch per row, which would multiply this search's API
-    # cost by its result count and risk the same rate-limit failure mode as
-    # today's Auto-Tag incident. Falls back to the thin data on failure rather
-    # than failing the whole search over an enrichment-only call.
-    if results:
-        try:
-            enriched = talker._fetch_series([int(r.id) for r in results], on_rate_limit=None)
-            enriched_by_id = {series.id: series for series, _complete in enriched}
-            results = [enriched_by_id.get(r.id, r) for r in results]
-        except TalkerError:
-            pass
-
+    # BUG-058's (2026-10-25) batch-enrichment step lived here briefly --
+    # removed 2026-10-26 after a live side-by-side against ComicTagger's own
+    # GUI (same vendored comicvine.py) showed search_for_series()'s /search
+    # call already returns count_of_issues and image correctly on its own,
+    # because its field_list explicitly requests them (see field_list literal
+    # a few lines up in search_for_series()). The enrichment call added a
+    # ~13s stall (one /volumes/ fetch across every result, each row committed
+    # to the SQLite cache individually in _fetch_series()) and was the actual
+    # cause of the ComicVine rate-limit hit seen on quixy -- not a fix for a
+    # real "0 issues" bug. See DECISIONS.md 2026-10-26.
     results.sort(key=lambda r: _series_match_score(series_name, r), reverse=True)
     return [
         SeriesResult(
